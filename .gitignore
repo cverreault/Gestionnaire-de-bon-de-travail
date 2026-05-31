@@ -32,7 +32,9 @@ logs/
 Thumbs.db
 
 # ── Claude Code project state ────────────────────────────────────────────────
-.claude/
+.claude/*
+!.claude/skills/
+.claude/skills/*/working/
 CLAUDE.md.local
 
 # ── Test coverage ─────────────────────────────────────────────────────────────
