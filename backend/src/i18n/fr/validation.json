@@ -1,0 +1,16 @@
+{
+  "NOT_EMPTY": "Champ obligatoire",
+  "IS_STRING": "Doit être une chaîne de caractères",
+  "IS_BOOLEAN": "Doit être un booléen",
+  "IS_NUMBER": "Doit être un nombre",
+  "IS_EMAIL": "Adresse e-mail invalide",
+  "IS_ENUM": "Valeur non autorisée",
+  "IS_UUID": "Identifiant invalide",
+  "MAX_LENGTH": "Maximum {{constraints.0}} caractères",
+  "MIN_LENGTH": "Minimum {{constraints.0}} caractères",
+  "MIN": "Doit être au minimum {{constraints.0}}",
+  "MAX": "Doit être au maximum {{constraints.0}}",
+  "ALPHANUM_ONLY": "Lettres et chiffres uniquement (pas de tirets ni espaces)",
+  "PREFIX_REQUIRED": "Le préfixe est obligatoire",
+  "NAME_REQUIRED": "Le nom est obligatoire"
+}

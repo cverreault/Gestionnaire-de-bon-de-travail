@@ -1,0 +1,50 @@
+{
+  "title": "Settings",
+  "tabs": {
+    "taskTypes": "Task types",
+    "clientTypes": "Client types",
+    "addressTypes": "Address types",
+    "templates": "Form templates",
+    "processes": "Processes"
+  },
+  "taskType": {
+    "title": "Task types",
+    "create": "+ New task type",
+    "editTitle": "Edit task type",
+    "createTitle": "New task type",
+    "prefixHint": "Unique prefix for reference numbers (e.g. PLB, ELC, MNT) — letters and digits only.",
+    "prefixError": "Letters and digits only (no dashes or spaces)",
+    "template": "Form template",
+    "templateNone": "— None —",
+    "templateHint": "If set, its sections and fields appear automatically when creating/editing a work order of this type.",
+    "process": "Workflow process",
+    "processNone": "— Default process —",
+    "processHint": "Work orders of this type will follow this process's steps. Leave empty to use the default process.",
+    "manageTemplates": "Manage templates →",
+    "manageProcesses": "Manage processes →"
+  },
+  "clientType": {
+    "title": "Client types",
+    "create": "+ New client type",
+    "editTitle": "Edit client type",
+    "createTitle": "New client type"
+  },
+  "addressType": {
+    "title": "Address types",
+    "create": "+ New address type",
+    "customFields": "🔧 Custom fields",
+    "fieldsTitle": "Custom fields",
+    "predominantField": "Predominant field",
+    "predominantHint": "The field marked as predominant is displayed prominently in lists and work order details."
+  },
+  "templates": {
+    "title": "Form templates",
+    "create": "+ New template",
+    "editTitle": "Edit template"
+  },
+  "processes": {
+    "title": "Processes",
+    "create": "+ New process",
+    "default": "(default)"
+  }
+}

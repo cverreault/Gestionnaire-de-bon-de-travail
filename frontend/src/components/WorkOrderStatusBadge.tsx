@@ -1,0 +1,75 @@
+import { WorkOrderStatus } from '../types';
+import { badgeStyles } from '../theme';
+
+// ─── Legacy static map ────────────────────────────────────────────────────────
+
+const STATUS_CONFIG: Record<WorkOrderStatus, { label: string; bg: string; color: string; border: string }> = {
+  [WorkOrderStatus.CREATED]:            { label: 'Créé',          bg: '#dbeafe', color: '#1e40af', border: '#93c5fd' },
+  [WorkOrderStatus.ASSIGNED]:           { label: 'Assigné',       bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
+  [WorkOrderStatus.DISPATCHED]:         { label: 'Réparti',       bg: '#e0e7ff', color: '#3730a3', border: '#a5b4fc' },
+  [WorkOrderStatus.EN_ROUTE]:           { label: 'En route',      bg: '#ddd6fe', color: '#5b21b6', border: '#a78bfa' },
+  [WorkOrderStatus.IN_PROGRESS]:        { label: 'En cours',      bg: '#fde68a', color: '#78350f', border: '#fbbf24' },
+  [WorkOrderStatus.COMPLETED_POSITIVE]: { label: 'Fin positive',  bg: '#d1fae5', color: '#065f46', border: '#6ee7b7' },
+  [WorkOrderStatus.COMPLETED_NEGATIVE]: { label: 'Fin négative',  bg: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
+};
+
+// ─── Props ────────────────────────────────────────────────────────────────────
+
+interface Props {
+  /** Dynamic step from process engine (preferred when available). */
+  step?: { name: string; color: string } | null;
+  /** Legacy fallback — used when `step` is not provided. */
+  status?: WorkOrderStatus;
+  size?: 'sm' | 'md';
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+export default function WorkOrderStatusBadge({ step, status, size = 'md' }: Props) {
+  const fontSize = size === 'sm' ? '0.7rem' : '0.8rem';
+  const padding  = size === 'sm' ? '0.125rem 0.5rem' : '0.25rem 0.75rem';
+
+  // ── Dynamic mode — use process engine step ────────────────────────────────
+  if (step) {
+    const color       = step.color || '#64748b';
+    // 10 % opacity background (hex alpha suffix)
+    const bgColor     = color + '1A';
+    const borderColor = color + '33';
+
+    return (
+      <span
+        style={{
+          ...badgeStyles.base,
+          backgroundColor: bgColor,
+          color: color,
+          border: `1px solid ${borderColor}`,
+          fontSize,
+          padding,
+        }}
+      >
+        {step.name}
+      </span>
+    );
+  }
+
+  // ── Legacy mode — use static status map ──────────────────────────────────
+  const config = status
+    ? (STATUS_CONFIG[status] ?? { label: status, bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' })
+    : { label: '—', bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' };
+
+  return (
+    <span
+      style={{
+        ...badgeStyles.base,
+        background: config.bg,
+        color: config.color,
+        border: `1px solid ${config.border}`,
+        fontSize,
+        padding,
+      }}
+    >
+      {config.label}
+    </span>
+  );
+}
+

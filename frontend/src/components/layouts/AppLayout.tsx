@@ -1,0 +1,93 @@
+import { Outlet } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAuthStore } from '../../context/auth.store';
+import { Role } from '../../types';
+import AdminSidebar from './AdminSidebar';
+import TechnicianNav from './TechnicianNav';
+import OfflineBanner from '../OfflineBanner';
+import { useOnlineStatus } from '../../hooks/useOnlineStatus';
+import { offlineStore } from '../../services/offline-store';
+import { theme } from '../../theme';
+
+/**
+ * Root layout — renders sidebar for admin, bottom nav for technician.
+ * Includes a fixed OfflineBanner when the device loses network connectivity.
+ */
+export default function AppLayout() {
+  const { user } = useAuthStore();
+  const qc = useQueryClient();
+  // Both ADMIN and DISPATCHER get the full desktop sidebar layout
+  const isAdmin = user?.role === Role.ADMIN || user?.role === Role.DISPATCHER;
+  const isOnline = useOnlineStatus();
+  const wasOffline = useRef(false);
+
+  // Initialize IndexedDB offline store on mount
+  useEffect(() => {
+    offlineStore.init().catch(console.error);
+  }, []);
+
+  // Sync pending actions when connectivity is restored, then refresh all queries
+  useEffect(() => {
+    if (!isOnline) {
+      wasOffline.current = true;
+    } else if (wasOffline.current) {
+      wasOffline.current = false;
+      offlineStore
+        .syncPending()
+        .then(() => {
+          console.log('[Offline] Sync completed — refreshing data');
+          // Invalidate all cached queries so the UI reflects the synced state
+          return qc.invalidateQueries();
+        })
+        .catch(console.error);
+    }
+  }, [isOnline, qc]);
+
+  return (
+    <>
+      {!isOnline && <OfflineBanner />}
+      <div
+        style={{
+          display: 'flex',
+          minHeight: '100vh',
+          background: theme.colors.background,
+          paddingTop: isOnline ? 0 : '2.25rem', // compensate for fixed banner height
+        }}
+      >
+        {isAdmin ? (
+          <>
+            <AdminSidebar />
+            <main
+              style={{
+                flex: 1,
+                padding: '1.5rem',
+                overflow: 'auto',
+                background: theme.colors.background,
+                transition: 'background 0.15s ease',
+              }}
+            >
+              <Outlet />
+            </main>
+          </>
+        ) : (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <main
+              style={{
+                flex: 1,
+                padding: '1rem',
+                overflow: 'auto',
+                paddingBottom: '5rem',
+                background: theme.colors.background,
+                transition: 'background 0.15s ease',
+              }}
+            >
+              <Outlet />
+            </main>
+            <TechnicianNav />
+          </div>
+        )}
+      </div>
+    </>
+  );
+}

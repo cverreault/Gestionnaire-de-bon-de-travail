@@ -1,0 +1,876 @@
+import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { theme, cardStyles, layoutStyles, badgeStyles } from '../theme';
+import type { CSSProperties } from 'react';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TYPES
+// ─────────────────────────────────────────────────────────────────────────────
+
+type EntryType = 'new' | 'improvement' | 'fix' | 'infra' | 'security';
+
+interface ReleaseEntry {
+  type: EntryType;
+  text: string;
+}
+
+interface ReleaseVersion {
+  version: string;
+  name: string;
+  date: string;
+  entries: ReleaseEntry[];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ENTRY TYPE METADATA — label, emoji, badge style
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSProperties }> = {
+  new: {
+    label: 'Nouvelle fonctionnalité',
+    icon: '✨',
+    style: { ...badgeStyles.base, ...badgeStyles.success },
+  },
+  improvement: {
+    label: 'Amélioration',
+    icon: '🔧',
+    style: { ...badgeStyles.base, ...badgeStyles.info },
+  },
+  fix: {
+    label: 'Correction',
+    icon: '🐛',
+    style: { ...badgeStyles.base, ...badgeStyles.danger },
+  },
+  infra: {
+    label: 'Infrastructure',
+    icon: '⚙️',
+    style: { ...badgeStyles.base, ...badgeStyles.neutral },
+  },
+  security: {
+    label: 'Sécurité',
+    icon: '🔒',
+    style: { ...badgeStyles.base, ...badgeStyles.warning },
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RELEASE DATA — historique complet, plus récente en premier
+// ─────────────────────────────────────────────────────────────────────────────
+
+const VERSIONS: ReleaseVersion[] = [
+  {
+    version: '2.0.0',
+    name: 'Templates de formulaires et RBAC granulaire',
+    date: 'Mai 2026',
+    entries: [
+      {
+        type: 'new',
+        text: 'Templates de formulaires personnalisés — créez des sections et des champs (texte court/long, nombre, case à cocher, liste déroulante, date) directement depuis /parametres/templates',
+      },
+      {
+        type: 'new',
+        text: 'Chaque type de tâche peut être associé à un template — le formulaire personnalisé s\'affiche automatiquement à la création/édition d\'un BT de ce type',
+      },
+      {
+        type: 'new',
+        text: 'RBAC granulaire par section et par champ : pour chaque rôle, choisir s\'il peut voir, modifier, et pour quel champ il est requis',
+      },
+      {
+        type: 'new',
+        text: 'Matrice de permissions visuelle (bouton 🔒) sur chaque section/champ — coche par rôle avec ADMIN toujours en bypass',
+      },
+      {
+        type: 'security',
+        text: 'Filtrage côté backend : le template est trimé avant d\'être envoyé selon les viewRoles, et toute écriture sur un champ non éditable retourne 403',
+      },
+      {
+        type: 'improvement',
+        text: 'Indicateurs visuels sur les lignes de champ dans le builder : 🙈 (caché pour certains rôles), 🔒 (lecture seule), * (requis)',
+      },
+      {
+        type: 'new',
+        text: 'Affichage en lecture seule des valeurs remplies sur la page détail d\'un BT, organisées par section',
+      },
+    ],
+  },
+  {
+    version: '1.9.0',
+    name: 'Adresses structurées et améliorations UX BT',
+    date: 'Mai 2026',
+    entries: [
+      {
+        type: 'new',
+        text: 'Nouveau module Adresses (/adresses) listant toutes les adresses avec le client associé, type d\'adresse et badge type client',
+      },
+      {
+        type: 'new',
+        text: 'Champ « Appartement / Unité » sur les adresses clients (affiché dans toutes les vues : liste, modal, BT)',
+      },
+      {
+        type: 'new',
+        text: 'Édition d\'adresses depuis le modal client (bouton ✏️) avec formulaire pré-rempli',
+      },
+      {
+        type: 'new',
+        text: 'Sélecteur d\'adresse d\'intervention dans le modal d\'édition d\'un BT — auto-remplit le texte libre',
+      },
+      {
+        type: 'new',
+        text: 'Carte « 📍 Emplacement de l\'intervention » sur la page détail d\'un BT avec l\'adresse structurée (rue + appartement + ville + code postal + libellé)',
+      },
+      {
+        type: 'improvement',
+        text: 'Modal d\'édition BT : section client/adresse refondue en deux blocs distincts avec carte client (nom + email + téléphone + badge)',
+      },
+      {
+        type: 'improvement',
+        text: 'Le formulaire client/adresse sauve désormais infos client ET nouvelle adresse en un seul clic « Enregistrer »',
+      },
+      {
+        type: 'improvement',
+        text: 'Dropdown de changement de statut dans l\'en-tête du BT (auparavant bloc « Actions » au bas de page) avec position fixed pour éviter le clipping',
+      },
+      {
+        type: 'improvement',
+        text: 'Drag & drop des BT vers techniciens : ligne du BT en fond bleu pointillé pendant le drag, technicien survolé en vert vif avec effet de soulèvement',
+      },
+      {
+        type: 'improvement',
+        text: 'Création de BT depuis le calendrier redirige maintenant vers le wizard complet (client → adresse → détails → assignation) avec date/heure pré-remplies depuis le créneau cliqué',
+      },
+      {
+        type: 'fix',
+        text: 'Les heures planifiées (scheduled_start_time/end_time) sont maintenant correctement persistées en ISO 8601 — auparavant elles s\'écrivaient NULL silencieusement',
+      },
+      {
+        type: 'fix',
+        text: 'Affichage du client sur la page détail d\'un BT : cas Client V3 désormais géré (avant : carte vide pour les BT liés à un client enregistré)',
+      },
+      {
+        type: 'fix',
+        text: 'Endpoint /api/clients/addresses/all : nouvelle route retournant toutes les adresses avec leur client associé',
+      },
+    ],
+  },
+  {
+    version: '1.8.0',
+    name: 'Moteur de processus configurable',
+    date: 'Mai 2026',
+    entries: [
+      {
+        type: 'new',
+        text: 'Moteur de processus dynamique : statuts et transitions configurables depuis /parametres/processus (auparavant codés en dur)',
+      },
+      {
+        type: 'new',
+        text: 'Plusieurs processus peuvent coexister — chaque type de tâche peut pointer vers son propre processus avec ses propres étapes et transitions',
+      },
+      {
+        type: 'new',
+        text: 'Module Clients V3 avec modèle Client persistant et adresses multiples (vs anciens clients temporaires)',
+      },
+      {
+        type: 'new',
+        text: 'Types de tâches configurables avec préfixe (PLB, ELC, MNT…) utilisé pour la génération des numéros de référence (LIV-20260511-0001)',
+      },
+      {
+        type: 'new',
+        text: 'Composant TransitionActionBar dynamique : les boutons de transition disponibles sont calculés depuis la définition du processus + le rôle utilisateur',
+      },
+      {
+        type: 'improvement',
+        text: 'Page Clients refondue avec recherche, filtre par type, gestion d\'adresses inline, modal détail/édition',
+      },
+      {
+        type: 'improvement',
+        text: 'Suppression d\'un processus : soft-delete + filtre des inactifs par défaut + toast de feedback + bouton ♻️ Réactiver',
+      },
+      {
+        type: 'improvement',
+        text: 'Création d\'un processus avec messages d\'erreur clairs (nom dupliqué, conflit du processus par défaut)',
+      },
+      {
+        type: 'fix',
+        text: 'Nginx frontend : index.html en no-cache pour qu\'un nouveau bundle JS soit chargé immédiatement après login (auparavant nécessitait un hard refresh)',
+      },
+      {
+        type: 'fix',
+        text: 'Login depuis le bon hôte (port 8088 du nginx reverse-proxy) : ajout d\'un guide quand l\'utilisateur tape l\'URL avec le port 3801 (qui ne sert que le SPA statique)',
+      },
+      {
+        type: 'fix',
+        text: 'AdminSidebar : la limite de fetch des BT pour le compteur par technicien passe de 100 à 500 côté backend pour accommoder de plus grandes bases',
+      },
+      {
+        type: 'infra',
+        text: 'Tables process_definitions, process_statuses, process_transitions + colonne template_id sur task_types + colonne template_data JSONB sur work_orders',
+      },
+    ],
+  },
+  {
+    version: '1.7.0',
+    name: 'Profil et administration',
+    date: 'Avril 2025',
+    entries: [
+      {
+        type: 'improvement',
+        text: 'Rôle DISPATCHER disponible dans les formulaires de création et d\'édition d\'utilisateur',
+      },
+      {
+        type: 'new',
+        text: 'Bouton "Réinitialiser le mot de passe" pour l\'administrateur avec validation de sécurité',
+      },
+      {
+        type: 'new',
+        text: 'Section Types de clients dans Paramètres (Résidentiel, Commercial, Industriel, Institutionnel)',
+      },
+      {
+        type: 'new',
+        text: 'Section Types d\'emplacement dans Paramètres (Bureau, Entrepôt, Résidence, Chantier)',
+      },
+      {
+        type: 'new',
+        text: 'Page Notes de version avec historique complet du développement du projet',
+      },
+    ],
+  },
+  {
+    version: '1.6.0',
+    name: 'Rôles et gestion avancée',
+    date: 'Mars 2025',
+    entries: [
+      {
+        type: 'new',
+        text: 'Nouveau rôle DISPATCHER (Répartiteur) — accès à toutes les sections sauf Paramètres',
+      },
+      {
+        type: 'new',
+        text: 'Case à cocher "Masquer les BT complétés" (backend + frontend, interface mobile technicien)',
+      },
+      {
+        type: 'improvement',
+        text: 'Endpoint dynamique des transitions disponibles calculé selon le rôle de l\'utilisateur connecté',
+      },
+      {
+        type: 'new',
+        text: 'Sidebar techniciens avec Drag & Drop pour assignation directe d\'un bon de travail',
+      },
+      {
+        type: 'new',
+        text: 'Modal de confirmation avec 2 options : "Assigner seulement" ou "Assigner + Dispatcher"',
+      },
+      {
+        type: 'fix',
+        text: 'Correction de la modale silencieuse sans message d\'erreur lors d\'une assignation échouée',
+      },
+      {
+        type: 'fix',
+        text: 'Guard empêchant un technicien de ré-ouvrir un bon de travail terminé',
+      },
+    ],
+  },
+  {
+    version: '1.5.0',
+    name: 'Calendrier interactif et assignation',
+    date: 'Février 2025',
+    entries: [
+      {
+        type: 'new',
+        text: 'Clic sur une zone vide du calendrier → création rapide d\'un BT avec date et heure pré-remplies',
+      },
+      {
+        type: 'new',
+        text: 'Drag & Drop des événements sur le calendrier — déplacement de date/heure avec conservation de la durée',
+      },
+      {
+        type: 'improvement',
+        text: 'Réassignation automatique au technicien filtré lors d\'un glisser-déposer sur le calendrier',
+      },
+      {
+        type: 'new',
+        text: 'Boutons Voir / Éditer / Assigner dans la liste des bons de travail (vue admin)',
+      },
+      {
+        type: 'new',
+        text: 'Bouton "Assigner un client" sur la page de détail d\'un bon de travail',
+      },
+      {
+        type: 'fix',
+        text: 'Correction de l\'échelle de priorité inversée (1 = Très basse → 5 = Critique)',
+      },
+      {
+        type: 'fix',
+        text: 'Correction du clic sur un événement en vue mois du calendrier (ne s\'ouvrait pas)',
+      },
+    ],
+  },
+  {
+    version: '1.4.0',
+    name: 'Statut En Route et mode offline',
+    date: 'Février 2025',
+    entries: [
+      {
+        type: 'new',
+        text: 'Nouveau statut EN_ROUTE dans le workflow (DISPATCHED → EN_ROUTE → IN_PROGRESS)',
+      },
+      {
+        type: 'infra',
+        text: 'Migration Prisma pour l\'ajout du statut EN_ROUTE en base de données PostgreSQL',
+      },
+      {
+        type: 'improvement',
+        text: 'Admin bypass : l\'administrateur peut effectuer toutes les transitions indépendamment des règles de rôle',
+      },
+      {
+        type: 'improvement',
+        text: 'Mode offline amélioré pour les techniciens — mutations en file d\'attente avec synchronisation automatique',
+      },
+      {
+        type: 'improvement',
+        text: 'Boutons de transition dynamiques sur l\'interface technicien selon l\'état courant du BT',
+      },
+    ],
+  },
+  {
+    version: '1.3.0',
+    name: 'Impression Letter et édition admin',
+    date: 'Janvier 2025',
+    entries: [
+      {
+        type: 'improvement',
+        text: 'Template d\'impression format Letter (8,5" × 11") optimisé pour tenir sur une seule page',
+      },
+      {
+        type: 'improvement',
+        text: 'Marges réduites et polices compactées pour maximiser l\'espace d\'impression',
+      },
+      {
+        type: 'new',
+        text: 'L\'administrateur peut éditer TOUS les champs d\'un bon de travail quel que soit son statut',
+      },
+      {
+        type: 'new',
+        text: 'Modal d\'édition admin complète : titre, type, priorité, description, client, technicien, planification',
+      },
+    ],
+  },
+  {
+    version: '1.2.0',
+    name: 'Thème visuel',
+    date: 'Janvier 2025',
+    entries: [
+      {
+        type: 'new',
+        text: 'Fichier thème centralisé (theme.ts) avec palette de 20+ couleurs professionnelles et styles réutilisables',
+      },
+      {
+        type: 'improvement',
+        text: 'Fond de page gris-bleu uniforme pour que les cards blanches ressortent visuellement',
+      },
+      {
+        type: 'improvement',
+        text: 'Bordures de tables rendues visibles — contraste amélioré pour la lisibilité',
+      },
+      {
+        type: 'improvement',
+        text: 'Lignes de tableau alternées (zebrastripes) avec effet hover sur survol',
+      },
+      {
+        type: 'improvement',
+        text: 'Cards avec bordures et ombres uniformisées dans toute l\'application',
+      },
+      {
+        type: 'improvement',
+        text: 'Page de connexion avec dégradé bleu foncé professionnel',
+      },
+      {
+        type: 'improvement',
+        text: 'Cards technicien avec bordure colorée selon le statut du bon de travail',
+      },
+      {
+        type: 'improvement',
+        text: 'Modales uniformisées avec styles, espacements et boutons cohérents',
+      },
+      {
+        type: 'improvement',
+        text: 'Boutons tokenisés en variantes : primary, secondary, danger, ghost',
+      },
+      {
+        type: 'improvement',
+        text: '17 fichiers mis à jour pour utiliser le thème centralisé (suppression des styles ad hoc)',
+      },
+    ],
+  },
+  {
+    version: '1.1.0',
+    name: 'Transitions de statut et filtres',
+    date: 'Décembre 2024',
+    entries: [
+      {
+        type: 'improvement',
+        text: 'Transitions de statut v2 : l\'admin peut ré-ouvrir un BT terminé positivement avec raison obligatoire',
+      },
+      {
+        type: 'improvement',
+        text: 'L\'admin peut ré-ouvrir un bon de travail terminé négativement',
+      },
+      {
+        type: 'improvement',
+        text: 'Le technicien peut gérer ses propres transitions : Réparti → En route → Début travaux → Fin',
+      },
+      {
+        type: 'new',
+        text: 'Système de filtres avancés sur la liste des BT : statut, type, technicien, date de/à, priorité, recherche texte',
+      },
+      {
+        type: 'new',
+        text: 'Badge compteur de filtres actifs pour indiquer les critères appliqués',
+      },
+      {
+        type: 'new',
+        text: 'Template d\'impression A4 complet : en-tête, client, technicien, notes, zone terrain et signatures',
+      },
+      {
+        type: 'fix',
+        text: 'Correction du calendrier — extraction et affichage des données retournées par l\'API',
+      },
+    ],
+  },
+  {
+    version: '1.0.0',
+    name: 'Fondation — Sprint initial',
+    date: 'Novembre 2024',
+    entries: [
+      {
+        type: 'infra',
+        text: 'Scaffolding complet : NestJS backend + React frontend + Docker Compose multi-services',
+      },
+      {
+        type: 'new',
+        text: 'Authentification JWT avec access tokens et refresh tokens',
+      },
+      {
+        type: 'new',
+        text: 'Gestion des utilisateurs avec rôles (Admin, Technicien)',
+      },
+      {
+        type: 'new',
+        text: 'CRUD des clients : création temporaire et recherche dans une base de données externe',
+      },
+      {
+        type: 'new',
+        text: 'CRUD des bons de travail avec machine d\'états (Créé → Assigné → Réparti → Début travaux → Fin positive/négative)',
+      },
+      {
+        type: 'new',
+        text: 'Module pièces jointes avec stockage objet MinIO',
+      },
+      {
+        type: 'new',
+        text: 'Calendrier avec vues jour / 3 jours / semaine / mois',
+      },
+      {
+        type: 'new',
+        text: 'Dashboard avec statistiques dédiées admin et technicien',
+      },
+      {
+        type: 'new',
+        text: 'Interface mobile PWA pour les techniciens (responsive, installable)',
+      },
+      {
+        type: 'new',
+        text: 'Mode offline basique pour les techniciens (IndexedDB + Service Worker)',
+      },
+      {
+        type: 'infra',
+        text: 'Docker Compose avec ports non-standard : 5433 (PG), 9010 (MinIO), 3800/3801 (app), 8088 (proxy)',
+      },
+      {
+        type: 'infra',
+        text: 'Configuration Nginx en reverse proxy pour le routage des services',
+      },
+    ],
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUB-COMPONENT — Summary badge in card header
+// ─────────────────────────────────────────────────────────────────────────────
+
+function SummaryBadge({ count, type }: { count: number; type: EntryType }) {
+  const meta = ENTRY_META[type];
+  return (
+    <span style={{ ...meta.style, fontSize: theme.font.sizeXs }}>
+      {meta.icon} {count}
+    </span>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUB-COMPONENT — Collapsible version card
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface VersionCardProps {
+  version: ReleaseVersion;
+  isOpen: boolean;
+  onToggle: () => void;
+}
+
+function VersionCard({ version, isOpen, onToggle }: VersionCardProps) {
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+
+  const counts = useMemo(() => {
+    const c: Partial<Record<EntryType, number>> = {};
+    for (const e of version.entries) {
+      c[e.type] = (c[e.type] ?? 0) + 1;
+    }
+    return c;
+  }, [version.entries]);
+
+  return (
+    <div style={cardStyles.card}>
+      {/* ── Clickable header ───────────────────────────────────────────────── */}
+      <button
+        onClick={onToggle}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          width: '100%',
+          padding: '1rem 1.25rem',
+          background: isOpen ? theme.colors.primaryLight : theme.colors.background,
+          border: 'none',
+          borderBottom: isOpen ? theme.borders.default : 'none',
+          cursor: 'pointer',
+          transition: 'background 0.2s ease',
+          textAlign: 'left' as CSSProperties['textAlign'],
+          gap: '0.75rem',
+        }}
+      >
+        {/* Left — version badge + title + date */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', overflow: 'hidden' }}>
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '0.2rem 0.7rem',
+              background: theme.colors.primary,
+              color: '#ffffff',
+              borderRadius: theme.radius.full,
+              fontSize: theme.font.sizeSm,
+              fontWeight: theme.font.weightBold,
+              letterSpacing: '0.02em',
+              flexShrink: 0,
+              whiteSpace: 'nowrap' as CSSProperties['whiteSpace'],
+            }}
+          >
+            v{version.version}
+          </span>
+
+          <div style={{ overflow: 'hidden' }}>
+            <span
+              style={{
+                fontSize: theme.font.sizeMd,
+                fontWeight: theme.font.weightSemibold,
+                color: theme.colors.text,
+              }}
+            >
+              {version.name}
+            </span>
+            <span
+              style={{
+                marginLeft: '0.75rem',
+                fontSize: theme.font.sizeSm,
+                color: theme.colors.textMuted,
+                fontWeight: theme.font.weightNormal,
+              }}
+            >
+              — {version.date}
+            </span>
+          </div>
+        </div>
+
+        {/* Right — entry-type summary badges + chevron */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.375rem',
+            flexShrink: 0,
+          }}
+        >
+          {(counts.new ?? 0) > 0 && (
+            <SummaryBadge count={counts.new!} type="new" />
+          )}
+          {(counts.improvement ?? 0) > 0 && (
+            <SummaryBadge count={counts.improvement!} type="improvement" />
+          )}
+          {(counts.fix ?? 0) > 0 && (
+            <SummaryBadge count={counts.fix!} type="fix" />
+          )}
+          {(counts.infra ?? 0) > 0 && (
+            <SummaryBadge count={counts.infra!} type="infra" />
+          )}
+          {(counts.security ?? 0) > 0 && (
+            <SummaryBadge count={counts.security!} type="security" />
+          )}
+          <span
+            style={{
+              fontSize: '0.75rem',
+              color: theme.colors.textMuted,
+              marginLeft: '0.375rem',
+              display: 'inline-block',
+              transform: isOpen ? 'rotate(180deg)' : 'none',
+              transition: 'transform 0.2s ease',
+              lineHeight: 1,
+            }}
+          >
+            ▼
+          </span>
+        </div>
+      </button>
+
+      {/* ── Collapsible body ────────────────────────────────────────────────── */}
+      {isOpen && (
+        <div style={{ padding: '0.5rem 1.25rem 1.25rem' }}>
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+            {version.entries.map((entry, idx) => {
+              const isLast = idx === version.entries.length - 1;
+              const isHovered = hoveredIdx === idx;
+              return (
+                <li
+                  key={idx}
+                  onMouseEnter={() => setHoveredIdx(idx)}
+                  onMouseLeave={() => setHoveredIdx(null)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '0.75rem',
+                    padding: '0.625rem 0.5rem',
+                    borderBottom: isLast ? 'none' : `1px solid ${theme.colors.borderLight}`,
+                    borderRadius: theme.radius.sm,
+                    background: isHovered ? theme.colors.background : 'transparent',
+                    transition: 'background 0.12s ease',
+                  }}
+                >
+                  {/* Type badge */}
+                  <span
+                    style={{
+                      ...ENTRY_META[entry.type].style,
+                      flexShrink: 0,
+                      marginTop: '0.05rem',
+                      whiteSpace: 'nowrap' as CSSProperties['whiteSpace'],
+                    }}
+                  >
+                    {ENTRY_META[entry.type].icon} {ENTRY_META[entry.type].label}
+                  </span>
+
+                  {/* Entry text */}
+                  <span
+                    style={{
+                      fontSize: theme.font.sizeSm,
+                      color: theme.colors.text,
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    {entry.text}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN PAGE COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
+
+export default function ReleaseNotesPage() {
+  const { t: tNav } = useTranslation('nav');
+  // Most recent version open by default
+  const [openVersions, setOpenVersions] = useState<Set<string>>(
+    new Set([VERSIONS[0].version]),
+  );
+  const [filterVersion, setFilterVersion] = useState<string>('all');
+
+  function toggleVersion(version: string) {
+    setOpenVersions((prev) => {
+      const next = new Set(prev);
+      if (next.has(version)) {
+        next.delete(version);
+      } else {
+        next.add(version);
+      }
+      return next;
+    });
+  }
+
+  // Expand / collapse all helpers
+  function expandAll() {
+    setOpenVersions(new Set(VERSIONS.map((v) => v.version)));
+  }
+
+  function collapseAll() {
+    setOpenVersions(new Set());
+  }
+
+  const filteredVersions = useMemo(() => {
+    if (filterVersion === 'all') return VERSIONS;
+    return VERSIONS.filter((v) => v.version === filterVersion);
+  }, [filterVersion]);
+
+  // Total entry counts for the stat line
+  const totalCounts = useMemo(() => {
+    const c: Partial<Record<EntryType, number>> = {};
+    for (const v of VERSIONS) {
+      for (const e of v.entries) {
+        c[e.type] = (c[e.type] ?? 0) + 1;
+      }
+    }
+    return c;
+  }, []);
+
+  return (
+    <div style={layoutStyles.page}>
+      {/* ── Page header ─────────────────────────────────────────────────────── */}
+      <div style={layoutStyles.pageHeader}>
+        <div>
+          <h1 style={layoutStyles.pageTitle}>📋 {tNav('releaseNotes')}</h1>
+          <p style={layoutStyles.pageSubtitle}>
+            Historique complet des évolutions de TaskMgr —{' '}
+            <strong>{VERSIONS.length}</strong> versions,{' '}
+            <strong>{VERSIONS.reduce((acc, v) => acc + v.entries.length, 0)}</strong> entrées
+          </p>
+        </div>
+
+        {/* Filter + expand/collapse controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', flexWrap: 'wrap' as CSSProperties['flexWrap'] }}>
+          {/* Expand / collapse all */}
+          <button
+            onClick={expandAll}
+            style={{
+              padding: '0.35rem 0.75rem',
+              fontSize: theme.font.sizeXs,
+              borderRadius: theme.radius.md,
+              border: theme.borders.default,
+              background: theme.colors.surface,
+              color: theme.colors.textSecondary,
+              cursor: 'pointer',
+              transition: 'background 0.15s ease',
+            }}
+          >
+            Tout déplier
+          </button>
+          <button
+            onClick={collapseAll}
+            style={{
+              padding: '0.35rem 0.75rem',
+              fontSize: theme.font.sizeXs,
+              borderRadius: theme.radius.md,
+              border: theme.borders.default,
+              background: theme.colors.surface,
+              color: theme.colors.textSecondary,
+              cursor: 'pointer',
+              transition: 'background 0.15s ease',
+            }}
+          >
+            Tout replier
+          </button>
+
+          {/* Version filter dropdown */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+            <label
+              style={{
+                fontSize: theme.font.sizeSm,
+                color: theme.colors.textSecondary,
+                whiteSpace: 'nowrap' as CSSProperties['whiteSpace'],
+              }}
+            >
+              Filtrer :
+            </label>
+            <select
+              value={filterVersion}
+              onChange={(e) => setFilterVersion(e.target.value)}
+              style={{
+                padding: '0.4rem 0.75rem',
+                fontSize: theme.font.sizeSm,
+                borderRadius: theme.radius.md,
+                border: theme.borders.default,
+                background: theme.colors.surface,
+                color: theme.colors.text,
+                cursor: 'pointer',
+                outline: 'none',
+              }}
+            >
+              <option value="all">Toutes les versions</option>
+              {VERSIONS.map((v) => (
+                <option key={v.version} value={v.version}>
+                  v{v.version} — {v.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Legend + global stats ────────────────────────────────────────────── */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          marginBottom: '1.25rem',
+          flexWrap: 'wrap' as CSSProperties['flexWrap'],
+          padding: '0.75rem 1rem',
+          background: theme.colors.surface,
+          border: theme.borders.light,
+          borderRadius: theme.radius.md,
+          boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+        }}
+      >
+        <span style={{ fontSize: theme.font.sizeXs, color: theme.colors.textMuted, marginRight: '0.25rem' }}>
+          Légende :
+        </span>
+        {(Object.entries(ENTRY_META) as [EntryType, (typeof ENTRY_META)[EntryType]][]).map(
+          ([type, meta]) => (
+            <span key={type} style={{ ...meta.style, fontSize: theme.font.sizeXs }}>
+              {meta.icon} {meta.label}
+              {totalCounts[type] ? (
+                <span style={{ marginLeft: '0.3rem', opacity: 0.7 }}>({totalCounts[type]})</span>
+              ) : null}
+            </span>
+          ),
+        )}
+      </div>
+
+      {/* ── Version cards ────────────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+        {filteredVersions.map((v) => (
+          <VersionCard
+            key={v.version}
+            version={v}
+            isOpen={openVersions.has(v.version)}
+            onToggle={() => toggleVersion(v.version)}
+          />
+        ))}
+      </div>
+
+      {/* ── Footer note ─────────────────────────────────────────────────────── */}
+      <div
+        style={{
+          marginTop: '2rem',
+          textAlign: 'center' as CSSProperties['textAlign'],
+          fontSize: theme.font.sizeXs,
+          color: theme.colors.textLight,
+        }}
+      >
+        TaskMgr — Application de répartition de bons de travail
+      </div>
+    </div>
+  );
+}

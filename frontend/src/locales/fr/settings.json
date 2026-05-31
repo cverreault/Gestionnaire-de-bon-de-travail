@@ -1,0 +1,50 @@
+{
+  "title": "Paramètres",
+  "tabs": {
+    "taskTypes": "Types de tâches",
+    "clientTypes": "Types de clients",
+    "addressTypes": "Types d'emplacements",
+    "templates": "Modèles de formulaires",
+    "processes": "Processus"
+  },
+  "taskType": {
+    "title": "Types de tâches",
+    "create": "+ Nouveau type de tâche",
+    "editTitle": "Modifier le type de tâche",
+    "createTitle": "Nouveau type de tâche",
+    "prefixHint": "Préfixe unique pour les numéros de référence (ex: PLB, ELC, MNT) — lettres et chiffres seulement.",
+    "prefixError": "Lettres et chiffres uniquement (pas de tirets ni espaces)",
+    "template": "Modèle de formulaire",
+    "templateNone": "— Aucun —",
+    "templateHint": "Si défini, ses sections et champs apparaissent automatiquement à la création/édition d'un BT de ce type.",
+    "process": "Processus de workflow",
+    "processNone": "— Processus par défaut —",
+    "processHint": "Les BT créés pour ce type suivront les étapes de ce processus. Laisser vide pour utiliser le processus par défaut.",
+    "manageTemplates": "Gérer les modèles →",
+    "manageProcesses": "Gérer les processus →"
+  },
+  "clientType": {
+    "title": "Types de clients",
+    "create": "+ Nouveau type de client",
+    "editTitle": "Modifier le type de client",
+    "createTitle": "Nouveau type de client"
+  },
+  "addressType": {
+    "title": "Types d'emplacements",
+    "create": "+ Nouveau type d'emplacement",
+    "customFields": "🔧 Champs personnalisés",
+    "fieldsTitle": "Champs personnalisés",
+    "predominantField": "Champ prédominant",
+    "predominantHint": "Le champ marqué prédominant s'affiche en gros dans les listes et le détail des BT."
+  },
+  "templates": {
+    "title": "Modèles de formulaires",
+    "create": "+ Nouveau modèle",
+    "editTitle": "Modifier le modèle"
+  },
+  "processes": {
+    "title": "Processus",
+    "create": "+ Nouveau processus",
+    "default": "(défaut)"
+  }
+}

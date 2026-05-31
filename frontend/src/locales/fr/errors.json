@@ -1,0 +1,11 @@
+{
+  "generic": "Une erreur est survenue. Veuillez réessayer.",
+  "networkError": "Erreur réseau. Vérifiez votre connexion.",
+  "unauthorized": "Non autorisé. Veuillez vous reconnecter.",
+  "forbidden": "Accès refusé.",
+  "notFound": "Ressource introuvable.",
+  "conflict": "Conflit de données.",
+  "validation": "Données invalides.",
+  "offline": "Mode hors-ligne — les changements seront synchronisés à la reconnexion.",
+  "offlineFallback": "Données en cache local · Modifications synchronisées à la reconnexion."
+}

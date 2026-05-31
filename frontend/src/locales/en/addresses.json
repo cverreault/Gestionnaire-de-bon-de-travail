@@ -1,0 +1,39 @@
+{
+  "title": "Addresses",
+  "titleSingular": "Address",
+  "create": "+ New address",
+  "edit": "Edit address",
+  "fields": {
+    "streetNumber": "Civic no.",
+    "street": "Street",
+    "apartment": "Apt / Unit",
+    "city": "City",
+    "postalCode": "Postal code",
+    "province": "Province",
+    "country": "Country",
+    "addressType": "Type",
+    "label": "Label",
+    "isDefault": "Default address",
+    "noClientOption": "No client (standalone address)",
+    "noClientHint": "This address will not be attached to any client. It can be linked to a client later.",
+    "customFieldsTitle": "Type-specific fields"
+  },
+  "types": {
+    "OFFICE": "Office",
+    "WAREHOUSE": "Warehouse",
+    "RESIDENCE": "Residence",
+    "WORKSITE": "Worksite",
+    "CAMP": "Camping"
+  },
+  "messages": {
+    "empty": "No addresses recorded yet.",
+    "noMatch": "No address matches your filters.",
+    "searchPlaceholder": "Search (street, city, postal code, client, phone, etc.)",
+    "selectClient": "Select an existing client, create a new one, or check \"No client\".",
+    "createNewClient": "+ Create a new client",
+    "selectExisting": "↩ Pick an existing client instead",
+    "noClient": "— No client —",
+    "changeClient": "Change",
+    "deleteConfirm": "Delete this address?"
+  }
+}

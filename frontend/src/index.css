@@ -1,0 +1,194 @@
+/* ── Theme variables (light = default, dark via [data-theme="dark"]) ─────── */
+:root {
+  /* Primary */
+  --c-primary:       #1e40af;
+  --c-primaryHover:  #1e3a8a;
+  --c-primaryLight:  #dbeafe;
+
+  /* Surface */
+  --c-background:    #f1f5f9;
+  --c-surface:       #ffffff;
+  --c-surfaceAlt:    #f8fafc;
+
+  /* Borders */
+  --c-border:        #cbd5e1;
+  --c-borderLight:   #e2e8f0;
+  --c-borderDark:    #94a3b8;
+
+  /* Text */
+  --c-text:          #1e293b;
+  --c-textSecondary: #475569;
+  --c-textMuted:     #64748b;
+  --c-textLight:     #94a3b8;
+
+  /* Status */
+  --c-success:       #10b981;
+  --c-successLight:  #d1fae5;
+  --c-warning:       #f59e0b;
+  --c-warningLight:  #fef3c7;
+  --c-danger:        #ef4444;
+  --c-dangerLight:   #fee2e2;
+  --c-info:          #3b82f6;
+  --c-infoLight:     #dbeafe;
+
+  /* Sidebar (kept dark in both themes by design — already navy in light mode) */
+  --c-sidebarBg:     #1e293b;
+  --c-sidebarText:   #e2e8f0;
+  --c-sidebarActive: #334155;
+  --c-sidebarHover:  #293548;
+  --c-sidebarBorder: #334155;
+
+  /* Interactivity */
+  --c-rowHover:      #e2e8f0;
+  --c-focusRing:     #93c5fd;
+
+  /* Badge text + border (dark on light bg in light mode) */
+  --c-successBadgeText:   #065f46;
+  --c-successBadgeBorder: #6ee7b7;
+  --c-warningBadgeText:   #92400e;
+  --c-warningBadgeBorder: #fcd34d;
+  --c-dangerBadgeText:    #991b1b;
+  --c-dangerBadgeBorder:  #fca5a5;
+  --c-infoBadgeText:      #1e40af;
+  --c-infoBadgeBorder:    #93c5fd;
+
+  /* Destructive button hover */
+  --c-dangerHover: #dc2626;
+}
+
+[data-theme="dark"] {
+  /* Primary — lighter & more saturated for contrast on dark surfaces */
+  --c-primary:       #3b82f6;
+  --c-primaryHover:  #60a5fa;
+  --c-primaryLight:  #1e3a8a;   /* "light" variant on dark = a deep tint of primary */
+
+  /* Surface — slate spectrum, sidebar-like base */
+  --c-background:    #0f172a;
+  --c-surface:       #1e293b;
+  --c-surfaceAlt:    #273549;
+
+  /* Borders */
+  --c-border:        #334155;
+  --c-borderLight:   #1e293b;
+  --c-borderDark:    #475569;
+
+  /* Text — inverted */
+  --c-text:          #f1f5f9;
+  --c-textSecondary: #cbd5e1;
+  --c-textMuted:     #94a3b8;
+  --c-textLight:     #64748b;
+
+  /* Status — same hues, lighter "Light" variants are deep tints */
+  --c-success:       #10b981;
+  --c-successLight:  #064e3b;
+  --c-warning:       #f59e0b;
+  --c-warningLight:  #78350f;
+  --c-danger:        #ef4444;
+  --c-dangerLight:   #7f1d1d;
+  --c-info:          #3b82f6;
+  --c-infoLight:     #1e3a8a;
+
+  /* Sidebar — slightly darker so it stays differentiated from main surface */
+  --c-sidebarBg:     #0b1220;
+  --c-sidebarText:   #e2e8f0;
+  --c-sidebarActive: #1e293b;
+  --c-sidebarHover:  #18243a;
+  --c-sidebarBorder: #1e293b;
+
+  /* Interactivity */
+  --c-rowHover:      #273549;
+  --c-focusRing:     #60a5fa;
+
+  /* Badge text + border (light on deep-tint bg in dark mode) */
+  --c-successBadgeText:   #6ee7b7;
+  --c-successBadgeBorder: #047857;
+  --c-warningBadgeText:   #fcd34d;
+  --c-warningBadgeBorder: #b45309;
+  --c-dangerBadgeText:    #fca5a5;
+  --c-dangerBadgeBorder:  #b91c1c;
+  --c-infoBadgeText:      #93c5fd;
+  --c-infoBadgeBorder:    #2563eb;
+
+  /* Destructive button hover */
+  --c-dangerHover: #b91c1c;
+}
+
+/* ── Reset & base ────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  color: var(--c-text);
+  background-color: var(--c-background);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Typography ──────────────────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  line-height: 1.25;
+  font-weight: 600;
+}
+
+a {
+  color: var(--c-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* ── Scrollbar ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--c-borderLight);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--c-borderDark);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--c-textMuted);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-borderDark) var(--c-borderLight);
+}
+
+/* ── Focus visible accessible ────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 2px;
+}
+
+/* ── Sélection de texte ──────────────────────────────────────────────────── */
+::selection {
+  background-color: var(--c-primaryLight);
+  color: var(--c-text);
+}

@@ -1,0 +1,18 @@
+{
+  "dashboard": "Dashboard",
+  "workOrders": "Work orders",
+  "myWorkOrders": "My work orders",
+  "calendar": "Calendar",
+  "clients": "Clients",
+  "addresses": "Addresses",
+  "users": "Users",
+  "settings": "Settings",
+  "templates": "Templates",
+  "processes": "Processes",
+  "backup": "Backup",
+  "profile": "My profile",
+  "logout": "Log out",
+  "releaseNotes": "Release notes",
+  "admin": "Administration",
+  "techniciansDragHint": "Technicians — drag a work order"
+}

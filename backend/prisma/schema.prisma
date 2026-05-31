@@ -1,0 +1,501 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  DISPATCHER
+  TECHNICIAN
+}
+
+enum WorkOrderStatus {
+  CREATED
+  ASSIGNED
+  DISPATCHED
+  EN_ROUTE
+  IN_PROGRESS
+  COMPLETED_POSITIVE
+  COMPLETED_NEGATIVE
+}
+
+enum WorkOrderType {
+  INSTALLATION
+  REPAIR
+  MAINTENANCE
+  INSPECTION
+  OTHER
+}
+
+enum ClientType {
+  RESIDENTIAL
+  COMMERCIAL
+  INDUSTRIAL
+  INSTITUTIONAL
+}
+
+enum AddressType {
+  OFFICE
+  WAREHOUSE
+  RESIDENCE
+  WORKSITE
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id        String  @id @default(uuid())
+  email     String  @unique
+  password  String
+  firstName String  @map("first_name")
+  lastName  String  @map("last_name")
+  role      Role    @default(TECHNICIAN)
+  isActive  Boolean @default(true) @map("is_active")
+  phone     String?
+
+  // Per-user UI preferences (column layouts, hidden filters, etc.) as free-form JSON.
+  preferences Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  assignedWorkOrders   WorkOrder[]   @relation("AssignedTechnician")
+  createdWorkOrders    WorkOrder[]   @relation("CreatedBy")
+  notes                Note[]
+  appointments         Appointment[] @relation("TechnicianAppointments")
+
+  @@map("users")
+}
+
+model TemporaryClient {
+  id         String  @id @default(uuid())
+  firstName  String  @map("first_name")
+  lastName   String  @map("last_name")
+  email      String?
+  phone      String?
+  address    String?
+  city       String?
+  postalCode String? @map("postal_code")
+  notes      String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  workOrders WorkOrder[]
+
+  @@map("temporary_clients")
+}
+
+model Client {
+  id          String     @id @default(uuid())
+  firstName   String     @map("first_name")
+  lastName    String     @map("last_name")
+  companyName String?    @map("company_name")
+  email       String?
+  phone       String?
+  clientType  ClientType @default(RESIDENTIAL) @map("client_type")
+  notes       String?
+  isActive    Boolean    @default(true) @map("is_active")
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+
+  addresses  ClientAddress[]
+  workOrders WorkOrder[]
+
+  @@index([clientType], map: "idx_clients_type")
+  @@index([isActive], map: "idx_clients_is_active")
+  @@map("clients")
+}
+
+model ClientAddress {
+  id          String      @id @default(uuid())
+  // Optional: a "standalone" address (e.g. site/location library) has no client.
+  // It can be linked later via PATCH or used as-is for reference data.
+  clientId     String?    @map("client_id")
+  client       Client?    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  streetNumber String?    @map("street_number")
+  street       String
+  apartment    String?
+  city        String
+  postalCode  String      @map("postal_code")
+  province    String      @default("Québec")
+  country     String      @default("Canada")
+  // Free-form code matching AddressTypeConfig.code. Was previously a strict
+  // enum (OFFICE/WAREHOUSE/RESIDENCE/WORKSITE) but is now configurable.
+  addressType String @default("RESIDENCE") @map("address_type")
+  label       String?
+  isDefault   Boolean     @default(false) @map("is_default")
+  latitude    Float?
+  longitude   Float?
+  // Free-form values for the custom fields defined on the matching AddressTypeConfig
+  // (keyed by AddressTypeField.id). Mirrors WorkOrder.templateData on the templates side.
+  typeData    Json?       @map("type_data")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  workOrders WorkOrder[]
+
+  @@index([clientId], map: "idx_client_addresses_client_id")
+  @@map("client_addresses")
+}
+
+model TaskType {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  prefix      String   @unique
+  description String?
+  color       String?
+  icon        String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // ── Process Engine ──
+  processDefinitionId String?            @map("process_definition_id")
+  processDefinition   ProcessDefinition? @relation(fields: [processDefinitionId], references: [id])
+
+  // ── Form Template ──
+  templateId String?            @map("template_id")
+  template   WorkOrderTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  workOrders WorkOrder[]
+
+  @@index([isActive], map: "idx_task_types_is_active")
+  @@map("task_types")
+}
+
+enum TemplateFieldType {
+  // ── Texte ──
+  TEXT
+  TEXTAREA
+  EMAIL
+  URL
+
+  // ── Numérique ──
+  NUMBER          // legacy: kept as a generic alias for FLOAT
+  INTEGER
+  FLOAT
+  CURRENCY
+  PERCENTAGE
+
+  // ── Sélection ──
+  CHECKBOX
+  SELECT
+  MULTISELECT
+  RADIO
+
+  // ── Date / heure ──
+  DATE
+  TIME
+  DATETIME
+
+  // ── Téléphone / code postal ──
+  PHONE
+  PHONE_NA
+  POSTAL_CODE_CA
+
+  // ── Géolocalisation ──
+  GPS
+}
+
+model WorkOrderTemplate {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  sections  TemplateSection[]
+  taskTypes TaskType[]
+
+  @@index([isActive], map: "idx_work_order_templates_is_active")
+  @@map("work_order_templates")
+}
+
+model TemplateSection {
+  id         String   @id @default(uuid())
+  templateId String   @map("template_id")
+  template   WorkOrderTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  name       String
+  sortOrder  Int      @default(0) @map("sort_order")
+  viewRoles  Role[]   @default([ADMIN, DISPATCHER, TECHNICIAN]) @map("view_roles")
+  editRoles  Role[]   @default([ADMIN, DISPATCHER, TECHNICIAN]) @map("edit_roles")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  fields TemplateField[]
+
+  @@index([templateId], map: "idx_template_sections_template_id")
+  @@map("template_sections")
+}
+
+model TemplateField {
+  id            String            @id @default(uuid())
+  sectionId     String            @map("section_id")
+  section       TemplateSection   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  label         String
+  fieldType     TemplateFieldType @default(TEXT) @map("field_type")
+  placeholder   String?
+  helpText      String?           @map("help_text")
+  options       Json?
+  sortOrder     Int               @default(0) @map("sort_order")
+  viewRoles     Role[]            @default([ADMIN, DISPATCHER, TECHNICIAN]) @map("view_roles")
+  editRoles     Role[]            @default([ADMIN, DISPATCHER, TECHNICIAN]) @map("edit_roles")
+  requiredRoles Role[]            @default([])                              @map("required_roles")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  @@index([sectionId], map: "idx_template_fields_section_id")
+  @@map("template_fields")
+}
+
+model ClientTypeConfig {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  code        String   @unique
+  description String?
+  color       String?  @default("#3b82f6")
+  icon        String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive], map: "idx_client_type_configs_is_active")
+  @@map("client_type_configs")
+}
+
+model AddressTypeConfig {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  code        String   @unique
+  description String?
+  color       String?  @default("#3b82f6")
+  icon        String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  // ID of the AddressTypeField designated as "predominant" — its value is shown
+  // in large type when an address of this type is displayed (e.g. lot # for camping).
+  predominantFieldId String? @map("predominant_field_id")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  fields AddressTypeField[]
+
+  @@index([isActive], map: "idx_address_type_configs_is_active")
+  @@map("address_type_configs")
+}
+
+model AddressTypeField {
+  id                  String            @id @default(uuid())
+  addressTypeConfigId String            @map("address_type_config_id")
+  addressTypeConfig   AddressTypeConfig @relation(fields: [addressTypeConfigId], references: [id], onDelete: Cascade)
+  label               String
+  // Reuses the TemplateFieldType enum from the form-template feature.
+  fieldType           TemplateFieldType @default(TEXT) @map("field_type")
+  required            Boolean           @default(false)
+  options             Json?
+  sortOrder           Int               @default(0) @map("sort_order")
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @updatedAt @map("updated_at")
+
+  @@index([addressTypeConfigId], map: "idx_address_type_fields_config_id")
+  @@map("address_type_fields")
+}
+
+model WorkOrder {
+  id              String          @id @default(uuid())
+  referenceNumber String          @unique @map("reference_number")
+  status          WorkOrderStatus @default(CREATED)
+  type            WorkOrderType   @default(OTHER)
+  title           String
+  description     String?
+  priority        Int             @default(0)
+
+  // Client — either a temporary local client or a reference to external DB
+  temporaryClientId  String?          @map("temporary_client_id")
+  temporaryClient    TemporaryClient? @relation(fields: [temporaryClientId], references: [id])
+  externalClientId   String?          @map("external_client_id")
+  externalClientName String?          @map("external_client_name")
+  clientAddress      String?          @map("client_address")
+
+  // Nouveaux FK V3
+  taskTypeId        String?        @map("task_type_id")
+  taskType          TaskType?      @relation(fields: [taskTypeId], references: [id])
+  clientId          String?        @map("client_id")
+  client            Client?        @relation(fields: [clientId], references: [id])
+  clientAddressId   String?        @map("client_address_id")
+  clientAddress_rel ClientAddress? @relation(fields: [clientAddressId], references: [id])
+
+  // ── Process Engine (double-colonne pendant transition) ──
+  processDefinitionId String?            @map("process_definition_id")
+  processDefinition   ProcessDefinition? @relation(fields: [processDefinitionId], references: [id])
+  currentStepId       String?            @map("current_step_id")
+  currentStep         ProcessStatus?     @relation(fields: [currentStepId], references: [id])
+
+  // Assignation
+  assignedToId String? @map("assigned_to_id")
+  assignedTo   User?   @relation("AssignedTechnician", fields: [assignedToId], references: [id])
+  createdById  String  @map("created_by_id")
+  createdBy    User    @relation("CreatedBy", fields: [createdById], references: [id])
+
+  // Scheduling
+  scheduledDate      DateTime? @map("scheduled_date")
+  scheduledStartTime DateTime? @map("scheduled_start_time")
+  scheduledEndTime   DateTime? @map("scheduled_end_time")
+  actualStartTime    DateTime? @map("actual_start_time")
+  actualEndTime      DateTime? @map("actual_end_time")
+
+  // Completion
+  completionNotes String? @map("completion_notes")
+  negativeReason  String? @map("negative_reason")
+
+  // Form Template values — stored as { fieldId: value, ... }
+  templateData Json? @map("template_data")
+
+  dispatchedAt DateTime? @map("dispatched_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  notes        Note[]
+  attachments  Attachment[]
+  appointments Appointment[]
+
+  @@index([status])
+  @@index([assignedToId])
+  @@index([scheduledDate])
+  @@index([referenceNumber])
+  @@index([clientId], map: "idx_work_orders_client_id")
+  @@index([taskTypeId], map: "idx_work_orders_task_type_id")
+  @@index([processDefinitionId], map: "idx_work_orders_process_definition_id")
+  @@index([currentStepId],       map: "idx_work_orders_current_step_id")
+  @@map("work_orders")
+}
+
+model Note {
+  id          String    @id @default(uuid())
+  content     String
+  workOrderId String    @map("work_order_id")
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  authorId    String    @map("author_id")
+  author      User      @relation(fields: [authorId], references: [id])
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@map("notes")
+}
+
+model Attachment {
+  id          String    @id @default(uuid())
+  fileName    String    @map("file_name")
+  fileSize    Int       @map("file_size")
+  mimeType    String    @map("mime_type")
+  storageKey  String    @map("storage_key")
+  workOrderId String    @map("work_order_id")
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  uploadedAt  DateTime  @default(now()) @map("uploaded_at")
+
+  @@map("attachments")
+}
+
+model Appointment {
+  id           String     @id @default(uuid())
+  title        String
+  description  String?
+  startTime    DateTime   @map("start_time")
+  endTime      DateTime   @map("end_time")
+  technicianId String?    @map("technician_id")
+  technician   User?      @relation("TechnicianAppointments", fields: [technicianId], references: [id])
+  workOrderId  String?    @map("work_order_id")
+  workOrder    WorkOrder? @relation(fields: [workOrderId], references: [id])
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  @@index([startTime, endTime])
+  @@index([technicianId])
+  @@map("appointments")
+}
+
+// ─── Process Engine ───────────────────────────────────────────────────────────
+
+model ProcessDefinition {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  description String?
+  version     Int     @default(1)
+  isDefault   Boolean @default(false) @map("is_default")
+  isActive    Boolean @default(true)  @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  statuses    ProcessStatus[]
+  transitions ProcessTransition[]
+  taskTypes   TaskType[]
+  workOrders  WorkOrder[]
+
+  @@index([isDefault], map: "idx_process_definitions_is_default")
+  @@index([isActive],  map: "idx_process_definitions_is_active")
+  @@map("process_definitions")
+}
+
+model ProcessStatus {
+  id                  String            @id @default(uuid())
+  processDefinitionId String            @map("process_definition_id")
+  processDefinition   ProcessDefinition @relation(fields: [processDefinitionId], references: [id], onDelete: Cascade)
+
+  code     Int
+  name     String
+  color    String @default("#6b7280")
+  position Int
+
+  isInitial          Boolean @default(false) @map("is_initial")
+  isDispatch         Boolean @default(false) @map("is_dispatch")
+  isStart            Boolean @default(false) @map("is_start")
+  isTerminalPositive Boolean @default(false) @map("is_terminal_positive")
+  isTerminalNegative Boolean @default(false) @map("is_terminal_negative")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  transitionsFrom ProcessTransition[] @relation("FromStatus")
+  transitionsTo   ProcessTransition[] @relation("ToStatus")
+  workOrders      WorkOrder[]
+
+  @@unique([processDefinitionId, code], map: "uq_process_status_definition_code")
+  @@index([processDefinitionId], map: "idx_process_statuses_definition_id")
+  @@index([position],            map: "idx_process_statuses_position")
+  @@map("process_statuses")
+}
+
+model ProcessTransition {
+  id                  String            @id @default(uuid())
+  processDefinitionId String            @map("process_definition_id")
+  processDefinition   ProcessDefinition @relation(fields: [processDefinitionId], references: [id], onDelete: Cascade)
+
+  fromStatusId String        @map("from_status_id")
+  fromStatus   ProcessStatus @relation("FromStatus", fields: [fromStatusId], references: [id])
+
+  toStatusId String        @map("to_status_id")
+  toStatus   ProcessStatus @relation("ToStatus", fields: [toStatusId], references: [id])
+
+  label          String
+  allowedRoles   Role[]
+  requiredFields String[]
+  sortOrder      Int      @default(0) @map("sort_order")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  @@unique([processDefinitionId, fromStatusId, toStatusId], map: "uq_process_transition_unique")
+  @@index([processDefinitionId], map: "idx_process_transitions_definition_id")
+  @@index([fromStatusId],        map: "idx_process_transitions_from_status_id")
+  @@map("process_transitions")
+}

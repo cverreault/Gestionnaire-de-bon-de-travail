@@ -1,0 +1,18 @@
+-- Extend TemplateFieldType with 14 new values.
+-- ALTER TYPE ... ADD VALUE IF NOT EXISTS is transaction-safe on PostgreSQL 12+.
+-- Existing rows are untouched; new field types simply become selectable.
+
+ALTER TYPE "TemplateFieldType" ADD VALUE IF NOT EXISTS 'INTEGER';
+ALTER TYPE "TemplateFieldType" ADD VALUE IF NOT EXISTS 'FLOAT';
+ALTER TYPE "TemplateFieldType" ADD VALUE IF NOT EXISTS 'EMAIL';
+ALTER TYPE "TemplateFieldType" ADD VALUE IF NOT EXISTS 'URL';
+ALTER TYPE "TemplateFieldType" ADD VALUE IF NOT EXISTS 'PHONE';
+ALTER TYPE "TemplateFieldType" ADD VALUE IF NOT EXISTS 'PHONE_NA';
+ALTER TYPE "TemplateFieldType" ADD VALUE IF NOT EXISTS 'POSTAL_CODE_CA';
+ALTER TYPE "TemplateFieldType" ADD VALUE IF NOT EXISTS 'TIME';
+ALTER TYPE "TemplateFieldType" ADD VALUE IF NOT EXISTS 'DATETIME';
+ALTER TYPE "TemplateFieldType" ADD VALUE IF NOT EXISTS 'MULTISELECT';
+ALTER TYPE "TemplateFieldType" ADD VALUE IF NOT EXISTS 'RADIO';
+ALTER TYPE "TemplateFieldType" ADD VALUE IF NOT EXISTS 'CURRENCY';
+ALTER TYPE "TemplateFieldType" ADD VALUE IF NOT EXISTS 'PERCENTAGE';
+ALTER TYPE "TemplateFieldType" ADD VALUE IF NOT EXISTS 'GPS';

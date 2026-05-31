@@ -1,0 +1,11 @@
+{
+  "generic": "An error occurred. Please try again.",
+  "networkError": "Network error. Check your connection.",
+  "unauthorized": "Unauthorized. Please sign in again.",
+  "forbidden": "Access denied.",
+  "notFound": "Resource not found.",
+  "conflict": "Data conflict.",
+  "validation": "Invalid data.",
+  "offline": "Offline mode — changes will sync when reconnected.",
+  "offlineFallback": "Local cache data · changes synced on reconnect."
+}

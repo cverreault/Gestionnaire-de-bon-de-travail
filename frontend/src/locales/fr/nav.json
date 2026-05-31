@@ -1,0 +1,18 @@
+{
+  "dashboard": "Tableau de bord",
+  "workOrders": "Bons de travail",
+  "myWorkOrders": "Mes bons de travail",
+  "calendar": "Calendrier",
+  "clients": "Clients",
+  "addresses": "Adresses",
+  "users": "Utilisateurs",
+  "settings": "Paramètres",
+  "templates": "Modèles",
+  "processes": "Processus",
+  "backup": "Sauvegarde",
+  "profile": "Mon profil",
+  "logout": "Déconnexion",
+  "releaseNotes": "Notes de version",
+  "admin": "Administration",
+  "techniciansDragHint": "Techniciens — glisser un BT"
+}

@@ -1,0 +1,39 @@
+{
+  "title": "Adresses",
+  "titleSingular": "Adresse",
+  "create": "+ Nouvelle adresse",
+  "edit": "Modifier l'adresse",
+  "fields": {
+    "streetNumber": "N° civique",
+    "street": "Rue",
+    "apartment": "Appartement / Unité",
+    "city": "Ville",
+    "postalCode": "Code postal",
+    "province": "Province",
+    "country": "Pays",
+    "addressType": "Type",
+    "label": "Étiquette",
+    "isDefault": "Adresse par défaut",
+    "noClientOption": "Aucun client (adresse autonome)",
+    "noClientHint": "Cette adresse ne sera rattachée à aucun client. Elle pourra être liée à un client plus tard.",
+    "customFieldsTitle": "Champs spécifiques au type"
+  },
+  "types": {
+    "OFFICE": "Bureau",
+    "WAREHOUSE": "Entrepôt",
+    "RESIDENCE": "Résidence",
+    "WORKSITE": "Chantier",
+    "CAMP": "Camping"
+  },
+  "messages": {
+    "empty": "Aucune adresse enregistrée pour l'instant.",
+    "noMatch": "Aucune adresse ne correspond à vos filtres.",
+    "searchPlaceholder": "Rechercher (rue, ville, code postal, client, téléphone, etc.)",
+    "selectClient": "Sélectionnez un client existant, créez-en un, ou cochez « Aucun client ».",
+    "createNewClient": "+ Créer un nouveau client",
+    "selectExisting": "↩ Choisir plutôt un client existant",
+    "noClient": "— Aucun client —",
+    "changeClient": "Changer",
+    "deleteConfirm": "Supprimer cette adresse ?"
+  }
+}

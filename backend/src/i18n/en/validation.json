@@ -1,0 +1,16 @@
+{
+  "NOT_EMPTY": "Required field",
+  "IS_STRING": "Must be a string",
+  "IS_BOOLEAN": "Must be a boolean",
+  "IS_NUMBER": "Must be a number",
+  "IS_EMAIL": "Invalid email address",
+  "IS_ENUM": "Value not allowed",
+  "IS_UUID": "Invalid identifier",
+  "MAX_LENGTH": "Maximum {{constraints.0}} characters",
+  "MIN_LENGTH": "Minimum {{constraints.0}} characters",
+  "MIN": "Must be at least {{constraints.0}}",
+  "MAX": "Must be at most {{constraints.0}}",
+  "ALPHANUM_ONLY": "Letters and digits only (no dashes or spaces)",
+  "PREFIX_REQUIRED": "Prefix is required",
+  "NAME_REQUIRED": "Name is required"
+}

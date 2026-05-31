@@ -1,0 +1,21 @@
+{
+  "GENERIC": "Une erreur est survenue.",
+  "NOT_FOUND": "Ressource introuvable.",
+  "UNAUTHORIZED": "Email ou mot de passe invalide",
+  "FORBIDDEN": "Accès refusé.",
+  "VALIDATION": "Données invalides.",
+  "PREFIX_TAKEN": "Le préfixe « {prefix} » est déjà utilisé.",
+  "NAME_TAKEN": "Le nom « {name} » est déjà utilisé.",
+  "EMAIL_TAKEN": "Cet e-mail est déjà utilisé.",
+  "CODE_TAKEN": "Le code « {code} » est déjà utilisé.",
+  "CLIENT_NOT_FOUND": "Client #{id} introuvable",
+  "ADDRESS_NOT_FOUND": "Adresse #{id} introuvable",
+  "WORK_ORDER_NOT_FOUND": "Bon de travail #{id} introuvable",
+  "TASK_TYPE_NOT_FOUND": "Type de tâche #{id} introuvable",
+  "USER_NOT_FOUND": "Utilisateur #{id} introuvable",
+  "PROCESS_NOT_FOUND": "Processus #{id} introuvable",
+  "CANNOT_DELETE_LAST_ADDRESS": "Impossible de supprimer la dernière adresse d'un client.",
+  "ACTIVE_WORK_ORDERS_LINKED": "Impossible : {count} bon(s) de travail actif(s) y sont liés.",
+  "DEFAULT_PROCESS_EXISTS": "Un processus par défaut existe déjà. Désactivez-le ou retirez son flag isDefault avant de le transférer.",
+  "TOKEN_EXPIRED": "Access token invalide ou expiré"
+}

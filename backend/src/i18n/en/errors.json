@@ -1,0 +1,21 @@
+{
+  "GENERIC": "An error occurred.",
+  "NOT_FOUND": "Resource not found.",
+  "UNAUTHORIZED": "Invalid email or password",
+  "FORBIDDEN": "Access denied.",
+  "VALIDATION": "Invalid data.",
+  "PREFIX_TAKEN": "Prefix \"{prefix}\" is already in use.",
+  "NAME_TAKEN": "Name \"{name}\" is already in use.",
+  "EMAIL_TAKEN": "This email is already in use.",
+  "CODE_TAKEN": "Code \"{code}\" is already in use.",
+  "CLIENT_NOT_FOUND": "Client #{id} not found",
+  "ADDRESS_NOT_FOUND": "Address #{id} not found",
+  "WORK_ORDER_NOT_FOUND": "Work order #{id} not found",
+  "TASK_TYPE_NOT_FOUND": "Task type #{id} not found",
+  "USER_NOT_FOUND": "User #{id} not found",
+  "PROCESS_NOT_FOUND": "Process #{id} not found",
+  "CANNOT_DELETE_LAST_ADDRESS": "Cannot delete a client's last address.",
+  "ACTIVE_WORK_ORDERS_LINKED": "Cannot proceed: {count} active work order(s) are linked.",
+  "DEFAULT_PROCESS_EXISTS": "A default process already exists. Deactivate it or remove its isDefault flag before transferring.",
+  "TOKEN_EXPIRED": "Invalid or expired access token"
+}

@@ -1,0 +1,31 @@
+{
+  "title": "Clients",
+  "titleSingular": "Client",
+  "create": "+ Nouveau client",
+  "edit": "Modifier le client",
+  "detail": "Détail du client",
+  "fields": {
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "companyName": "Nom d'entreprise",
+    "email": "Email",
+    "phone": "Téléphone",
+    "clientType": "Type de client",
+    "notes": "Notes",
+    "addresses": "Adresses"
+  },
+  "types": {
+    "RESIDENTIAL": "Résidentiel",
+    "COMMERCIAL": "Commercial",
+    "INDUSTRIAL": "Industriel",
+    "INSTITUTIONAL": "Institutionnel",
+    "Standard": "Standard"
+  },
+  "messages": {
+    "empty": "Aucun client",
+    "searchPlaceholder": "Rechercher (nom, email, téléphone, etc.)",
+    "addressAdd": "+ Ajouter une adresse",
+    "noAddress": "Aucune adresse",
+    "noCompany": "(optionnel)"
+  }
+}

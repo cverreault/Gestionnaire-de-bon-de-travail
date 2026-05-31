@@ -1,0 +1,45 @@
+# ─── Dépendances & builds ─────────────────────────────────────────────────────
+node_modules
+dist
+build
+
+# ─── Git ──────────────────────────────────────────────────────────────────────
+.git
+.gitignore
+.gitattributes
+
+# ─── Variables d'environnement ────────────────────────────────────────────────
+.env.local
+.env.*.local
+# Ne pas exclure .env.example (documentation)
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# ─── Tests ────────────────────────────────────────────────────────────────────
+coverage
+**/*.test.ts
+**/*.spec.ts
+**/*.test.tsx
+**/*.spec.tsx
+vitest*
+
+# ─── Outillage & config IDE ───────────────────────────────────────────────────
+.eslintrc*
+.prettierrc*
+.editorconfig
+*.tsbuildinfo
+.vscode
+.idea
+
+# ─── Documentation ────────────────────────────────────────────────────────────
+*.md
+docs
+
+# ─── Docker ───────────────────────────────────────────────────────────────────
+Dockerfile
+.dockerignore
+docker-compose*
