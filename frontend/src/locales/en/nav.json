@@ -10,6 +10,7 @@
   "templates": "Templates",
   "processes": "Processes",
   "backup": "Backup",
+  "audit": "Audit",
   "profile": "My profile",
   "logout": "Log out",
   "releaseNotes": "Release notes",

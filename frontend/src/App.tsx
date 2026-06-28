@@ -29,6 +29,7 @@ import SettingsPage from './pages/SettingsPage';
 import ProcessSettingsPage from './pages/ProcessSettingsPage';
 import TemplatesSettingsPage from './pages/TemplatesSettingsPage';
 import BackupPage from './pages/BackupPage';
+import AuditPage from './pages/AuditPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ReleaseNotesPage from './pages/ReleaseNotesPage';
 
@@ -146,6 +147,7 @@ export default function App() {
             <Route path="/parametres/processus" element={<ProcessSettingsPage />} />
             <Route path="/parametres/templates" element={<TemplatesSettingsPage />} />
             <Route path="/sauvegarde" element={<BackupPage />} />
+            <Route path="/audit" element={<AuditPage />} />
           </Route>
 
         </Route>

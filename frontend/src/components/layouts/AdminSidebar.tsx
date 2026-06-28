@@ -94,6 +94,7 @@ export default function AdminSidebar() {
   const adminOnlyNavItems = [
     { to: '/utilisateurs', label: `👥 ${t('nav:users')}` },
     { to: '/parametres',   label: `⚙️ ${t('nav:settings')}` },
+    { to: '/audit',        label: `📜 ${t('nav:audit', { defaultValue: 'Audit' })}` },
     { to: '/sauvegarde',   label: `💾 ${t('nav:backup')}` },
   ];
 

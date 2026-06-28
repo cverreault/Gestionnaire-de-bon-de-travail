@@ -152,8 +152,26 @@ export class AuditService {
       this.prisma.auditLog.count({ where }),
     ]);
 
+    // Hydrate actors in one batch query — same pattern as findRecentForAggregate.
+    // We touch `users` directly (read-only projection) rather than depending
+    // on UsersService, which keeps the audit module side-effect-free
+    // per ADR-001 §3.
+    const actorIds = Array.from(
+      new Set(items.map((r) => r.actorUserId).filter((id): id is string => !!id)),
+    );
+    const actors = actorIds.length
+      ? await this.prisma.user.findMany({
+          where: { id: { in: actorIds } },
+          select: { id: true, firstName: true, lastName: true, email: true, role: true },
+        })
+      : [];
+    const actorById = new Map(actors.map((u) => [u.id, u]));
+
     return {
-      data: items,
+      data: items.map((r) => ({
+        ...r,
+        actor: r.actorUserId ? actorById.get(r.actorUserId) ?? null : null,
+      })),
       meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }
