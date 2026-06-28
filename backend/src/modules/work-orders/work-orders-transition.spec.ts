@@ -23,7 +23,13 @@ function makeMockPrisma(overrides: Partial<{
   assignedToId: string | null;
   actualStartTime: Date | null;
 }> = {}) {
-  const wo = {
+  const wo: {
+    id: string;
+    status: WorkOrderStatus;
+    assignedToId: string | null;
+    actualStartTime: Date | null;
+    referenceNumber: string;
+  } = {
     id: 'wo-1',
     status: WorkOrderStatus.DISPATCHED,
     assignedToId: 'tech-1',

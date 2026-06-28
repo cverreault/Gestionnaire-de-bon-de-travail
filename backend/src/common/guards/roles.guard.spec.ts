@@ -19,7 +19,7 @@ function buildContext(opts: {
   method?: string;
   url?: string;
 }) {
-  const handler = () => undefined;
+  const handler = (): undefined => undefined;
   const cls = class {};
   if (opts.metadata !== undefined) {
     Reflect.defineMetadata(ROLES_KEY, opts.metadata, handler);

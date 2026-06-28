@@ -102,14 +102,14 @@ function buildProcess(): CachedProcess {
 }
 
 function makeMockPrisma(woOverrides: Record<string, any> = {}) {
-  const wo = {
+  const wo: Record<string, unknown> = {
     id: 'wo-1',
     status: WorkOrderStatus.EN_ROUTE,
     currentStepId: STATUS_EN_ROUTE.id,
     processDefinitionId: 'proc-1',
-    taskTypeId: null,
+    taskTypeId: null as string | null,
     assignedToId: 'tech-1',
-    actualStartTime: null,
+    actualStartTime: null as Date | null,
     updatedAt: new Date('2026-05-01T10:00:00.000Z'),
     ...woOverrides,
   };

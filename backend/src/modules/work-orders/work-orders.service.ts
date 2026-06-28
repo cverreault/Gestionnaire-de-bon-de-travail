@@ -1236,7 +1236,7 @@ export class WorkOrdersService {
 
     return {
       workOrderId: workOrder.id,
-      currentStepId: null,
+      currentStepId: null as string | null,
       adminBypass: currentUser.role === Role.ADMIN,
       transitions: transitions.map((t, i) => ({
         id: `legacy-${workOrder.status}-${t.targetStatus}`,
