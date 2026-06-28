@@ -57,20 +57,60 @@ de valeur — pas d'introduire de nouveau scope.
 | **C13** | `e73f446` | 4 tests sur `RolesGuard` : allow / deny+log / anonyme+log / no-metadata bypass. |
 | **cleanup** | `4a89a9f` | 8 tests pré-existants ressuscités (constructor BT manquant, prefix TaskType devenu requis, BUG-04 sortOrder fix verification). |
 
+### Module audit user-facing complet (post-sprint follow-up)
+
+| # | Commit | Description |
+|---|---|---|
+| **B2 admin page** | `a8e7bf3` | Page `/audit` paginée + filtrable (eventName, aggregateId, plage occurredAt) + lien drill-down depuis la timeline d'un BT |
+| **B2 CSV export** | `337962f` | `GET /audit/export.csv` (ADMIN, cap 5000 lignes) + bouton sur la page |
+| **B2 drill-down + actor filter** | `e3bd974` | Sur la timeline d'un BT (ADMIN), lien « 🔍 Voir dans l'audit complet → » → `/audit?aggregateId=…` ; dropdown « Acteur » sur la page (populé via `/users`) |
+| **B2 spec backend** | `9bee48c` | 16 cases sur `AuditService` (record idempotence, RBAC objet, filtres pagination, exportCsv BOM/cap 5000) |
+
+### Documentation + tooling
+
+| # | Commit | Description |
+|---|---|---|
+| **Docs modules** | `dc5ddaf` | Specs `audit.md`, `auth.md`, `search.md` sous `docs/modules/` |
+| **C12 step 1** | `6b116b3` | Backend `noImplicitAny: true` — 5 erreurs fixées (toutes en fixtures) |
+| **C12 step 2** | `7abd8a1` | Backend `strictBindCallApply: true` — 0 erreurs |
+| **C12 step 3** | `8ff8381` | Backend `strictNullChecks: true` — 0 erreurs |
+| **C5 Playwright** | `270f222` | Setup `@playwright/test` + 2 specs (smoke nav + lifecycle complet) + README |
+
 ---
 
 ## État de la suite Jest
 
 | Métrique | Avant sprint | Après sprint |
 |---|---|---|
-| Suites passantes | 6 / 8 | **9 / 9** |
-| Tests passants | 192 / 200 | **226 / 226** |
+| Suites passantes | 6 / 8 | **11 / 11** |
+| Tests passants | 192 / 200 | **244 / 244** |
 | Violations dependency-cruiser | 0 | 0 |
 
 Toutes les nouvelles couches (auth, RBAC, audit, throttler) sont
-couvertes par des unit tests. Reste à ajouter les tests d'intégration
-object-level (un TECHNICIEN tente de lire un BT pas le sien → 403)
-qui nécessitent une DB de tests dédiée — décision infra reportée.
+couvertes par des unit tests. La matrice de permissions verrouille
+43 décorateurs `@Roles` (Sprint-0 IDOR fix sur `GET /clients/:id` y
+compris). Reste à ajouter les tests d'intégration object-level (un
+TECHNICIEN tente de lire un BT pas le sien → 403) qui nécessitent
+une DB de tests dédiée — décision infra reportée.
+
+E2E Playwright (C5) : 2 specs (smoke nav admin, lifecycle complet
+admin → tech). Skip propre sans `E2E_*` env vars ; instructions dans
+`frontend/e2e/README.md`.
+
+## TypeScript strict (C12)
+
+Sur le backend, trois flags strict famille activés sans aucune
+régression :
+
+| Flag | Avant | Après | Erreurs surfacées |
+|---|---|---|---|
+| `noImplicitAny` | off | on | 5 (toutes en fixtures de test) |
+| `strictBindCallApply` | off | on | 0 |
+| `strictNullChecks` | off | on | 0 |
+
+Restent à traiter : `strictPropertyInitialization` (~40 fichiers
+Nest avec injection de dépendances) et `useUnknownInCatchVariables`.
+Le frontend est en `strict: true` depuis la baseline.
 
 ---
 

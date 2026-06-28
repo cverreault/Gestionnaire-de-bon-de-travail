@@ -32,6 +32,7 @@ import { UsersController } from '../../modules/users/users.controller';
 import { CalendarController } from '../../modules/calendar/calendar.controller';
 import { AuditController } from '../../modules/audit/api/audit.controller';
 import { BackupController } from '../../modules/backup/backup.controller';
+import { SearchController } from '../../modules/search/api/search.controller';
 
 // ─── Matrix rows ─────────────────────────────────────────────────────────────
 
@@ -96,9 +97,15 @@ const CALENDAR_MATRIX: MatrixRow[] = [
 
 const AUDIT_MATRIX: MatrixRow[] = [
   { controller: AuditController, method: 'findAll',         expectedRoles: [Role.ADMIN], note: 'GET /audit — admin only' },
+  // CSV export shares the same gate as the JSON list — admin compliance only.
+  { controller: AuditController, method: 'exportCsv',       expectedRoles: [Role.ADMIN], note: 'GET /audit/export.csv — admin only' },
   // A6 — TECHNICIAN allowed at the route level; service enforces object-level RBAC
   // (technicians can only read the timeline of BTs they are assigned to).
   { controller: AuditController, method: 'findForAggregate', expectedRoles: 'ANY',       note: 'GET /audit/aggregate/:id — A6, object-level RBAC in service' },
+];
+
+const SEARCH_MATRIX: MatrixRow[] = [
+  { controller: SearchController, method: 'search', expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'GET /search — dispatcher top-bar (TECH not exposed)' },
 ];
 
 const BACKUP_MATRIX: MatrixRow[] = [
@@ -115,6 +122,7 @@ const ALL_ROWS: { name: string; rows: MatrixRow[] }[] = [
   { name: 'CalendarController',   rows: CALENDAR_MATRIX },
   { name: 'AuditController',      rows: AUDIT_MATRIX },
   { name: 'BackupController',     rows: BACKUP_MATRIX },
+  { name: 'SearchController',     rows: SEARCH_MATRIX },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

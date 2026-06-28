@@ -59,6 +59,41 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.1.1',
+    name: 'Sprint 1 — Page audit + qualité',
+    date: 'Juin 2026',
+    entries: [
+      {
+        type: 'new',
+        text: 'Nouvelle page « 📜 Audit » (ADMIN) : timeline complète avec filtres par type d\'événement, agrégat, acteur, et plage de dates. Payload JSON dépliable. Lien cliquable depuis chaque ID d\'agrégat vers le BT concerné',
+      },
+      {
+        type: 'new',
+        text: 'Export CSV de l\'audit (ADMIN) — exporte la sélection filtrée dans un fichier prêt pour les exports compliance Loi 25 / PIPEDA',
+      },
+      {
+        type: 'new',
+        text: 'Lien « 🔍 Voir dans l\'audit complet → » sur la timeline d\'un BT (ADMIN) — pivot direct vers la page audit pré-filtrée pour analyser le contexte complet de l\'événement',
+      },
+      {
+        type: 'improvement',
+        text: 'Filtre « Acteur » sur la page audit — dropdown de tous les utilisateurs pour ne voir que les actions d\'une personne donnée',
+      },
+      {
+        type: 'infra',
+        text: 'TypeScript strict côté backend renforcé : trois flags (noImplicitAny, strictBindCallApply, strictNullChecks) activés sans aucune régression. Filet anti-bug type-safety',
+      },
+      {
+        type: 'infra',
+        text: 'Tests E2E (Playwright) introduits côté frontend — deux scénarios automatisables couvrant la navigation admin et le cycle complet création → assignation → terminaison par un technicien',
+      },
+      {
+        type: 'infra',
+        text: 'Suite Jest passe de 226 à 244 tests verts ; documentation de spécification ajoutée pour les modules audit, auth et recherche globale',
+      },
+    ],
+  },
+  {
     version: '2.1.0',
     name: 'Sprint 1 — Quick wins, sécurité auth et observabilité',
     date: 'Juin 2026',
