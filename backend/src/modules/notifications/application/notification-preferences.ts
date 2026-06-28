@@ -13,11 +13,12 @@
  *   3. Update the listener(s) that need to consult the preference.
  */
 
-export type NotificationChannel = 'inApp' | 'email';
+export type NotificationChannel = 'inApp' | 'email' | 'push';
 
 export interface PerEventPrefs {
   inApp: boolean;
   email: boolean;
+  push: boolean;
 }
 
 export type NotificationPreferences = Partial<Record<string, PerEventPrefs>>;
@@ -37,8 +38,8 @@ export type NotifiableEvent = (typeof NOTIFIABLE_EVENTS)[number];
  * (the actor knows they completed it).
  */
 export const DEFAULT_PREFERENCES: Record<NotifiableEvent, PerEventPrefs> = {
-  'workOrder.assigned':  { inApp: true, email: true },
-  'workOrder.completed': { inApp: true, email: false },
+  'workOrder.assigned':  { inApp: true, email: true,  push: true  },
+  'workOrder.completed': { inApp: true, email: false, push: false },
 };
 
 /**

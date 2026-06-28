@@ -3,12 +3,15 @@ import {
   Get,
   Patch,
   Put,
+  Post,
+  Delete,
   Param,
   Body,
   Query,
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -19,9 +22,11 @@ import {
 } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { NotificationsService } from '../application/notifications.service';
+import { PushChannelService } from '../infrastructure/channels/push-channel.service';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { FindNotificationsQueryDto } from './dto/find-notifications-query.dto';
 import { UpdateNotificationPreferencesDto } from './dto/update-preferences.dto';
+import { PushSubscribeDto, PushUnsubscribeDto } from './dto/push-subscribe.dto';
 import { NOTIFIABLE_EVENTS } from '../application/notification-preferences';
 
 interface JwtUser {
@@ -40,7 +45,10 @@ interface JwtUser {
 @ApiBearerAuth('access-token')
 @Controller('me/notifications')
 export class NotificationsController {
-  constructor(private readonly notifications: NotificationsService) {}
+  constructor(
+    private readonly notifications: NotificationsService,
+    private readonly push: PushChannelService,
+  ) {}
 
   @Get()
   @ApiOperation({
@@ -109,5 +117,52 @@ export class NotificationsController {
       body as Record<string, { inApp?: boolean; email?: boolean }>,
     );
     return { preferences };
+  }
+
+  // ── Web Push (B1.3) ──────────────────────────────────────────────────────
+
+  @Get('push/vapid-public-key')
+  @ApiOperation({
+    summary: 'VAPID public key for PushManager.subscribe()',
+    description: '404 si VAPID n\'est pas configuré côté serveur — le service worker doit alors abandonner la souscription.',
+  })
+  @ApiResponse({ status: 200, description: '{ publicKey }' })
+  @ApiResponse({ status: 404, description: 'Push pas configuré sur ce déploiement' })
+  getVapidPublicKey() {
+    const publicKey = this.push.getPublicKey();
+    if (!publicKey) {
+      throw new NotFoundException('Push notifications are not configured on this deployment');
+    }
+    return { publicKey };
+  }
+
+  @Post('push/subscribe')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Enregistrer une souscription PushManager pour mon utilisateur',
+    description: 'Le body suit exactement la forme PushSubscriptionJSON. Upsert par endpoint.',
+  })
+  async subscribePush(
+    @Body() body: PushSubscribeDto,
+    @CurrentUser() user: JwtUser,
+  ) {
+    const row = await this.push.subscribe({
+      userId: user.id,
+      endpoint: body.endpoint,
+      p256dh: body.keys.p256dh,
+      auth: body.keys.auth,
+      userAgent: body.userAgent,
+    });
+    return { id: row.id };
+  }
+
+  @Delete('push/subscribe')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Retirer une souscription Push de mon utilisateur' })
+  unsubscribePush(
+    @Body() body: PushUnsubscribeDto,
+    @CurrentUser() user: JwtUser,
+  ) {
+    return this.push.unsubscribe(user.id, body.endpoint);
   }
 }

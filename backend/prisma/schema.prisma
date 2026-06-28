@@ -627,3 +627,36 @@ model Notification {
   @@index([status, createdAt],                     map: "idx_notifications_status")
   @@map("notifications")
 }
+
+/// Web Push subscriptions (B1.3).
+///
+/// One row per (user, browser/device). The endpoint is unique — the same
+/// browser re-subscribing replaces the previous row via upsert in the
+/// service.
+///
+/// p256dh + auth are the encryption keys the browser handed us during
+/// PushManager.subscribe(); they're per-subscription, not per-user.
+model PushSubscription {
+  id        String   @id @default(uuid())
+
+  /// Owner.
+  userId    String   @map("user_id")
+
+  /// Endpoint URL returned by the browser PushManager. Unique per
+  /// device — used to dedupe re-subscriptions.
+  endpoint  String   @unique
+
+  /// Browser-provided encryption keys.
+  p256dh    String
+  auth      String
+
+  /// Optional UA so we can show "Chrome on Linux" in a future UI.
+  userAgent String?  @map("user_agent")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  /// Last time we attempted to send via this subscription.
+  lastUsedAt DateTime? @map("last_used_at")
+
+  @@index([userId], map: "idx_push_subscriptions_user")
+  @@map("push_subscriptions")
+}

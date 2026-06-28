@@ -118,6 +118,9 @@ const NOTIFICATIONS_MATRIX: MatrixRow[] = [
   { controller: NotificationsController, method: 'markAllRead',        expectedRoles: 'ANY', note: 'PATCH /me/notifications/read-all' },
   { controller: NotificationsController, method: 'getMyPreferences',   expectedRoles: 'ANY', note: 'GET /me/notifications/preferences' },
   { controller: NotificationsController, method: 'updateMyPreferences',expectedRoles: 'ANY', note: 'PUT /me/notifications/preferences' },
+  { controller: NotificationsController, method: 'getVapidPublicKey',  expectedRoles: 'ANY', note: 'GET /me/notifications/push/vapid-public-key' },
+  { controller: NotificationsController, method: 'subscribePush',      expectedRoles: 'ANY', note: 'POST /me/notifications/push/subscribe' },
+  { controller: NotificationsController, method: 'unsubscribePush',    expectedRoles: 'ANY', note: 'DELETE /me/notifications/push/subscribe' },
 ];
 
 const BACKUP_MATRIX: MatrixRow[] = [

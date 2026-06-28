@@ -259,8 +259,8 @@ describe('NotificationsService', () => {
 
     const prefs = await svc.getPreferences('u-1');
 
-    expect(prefs['workOrder.assigned']).toEqual({ inApp: true, email: true });
-    expect(prefs['workOrder.completed']).toEqual({ inApp: true, email: false });
+    expect(prefs['workOrder.assigned']).toEqual({ inApp: true, email: true, push: true });
+    expect(prefs['workOrder.completed']).toEqual({ inApp: true, email: false, push: false });
   });
 
   it('getPreferences() merges stored overrides on top of defaults', async () => {
@@ -279,8 +279,9 @@ describe('NotificationsService', () => {
 
     const prefs = await svc.getPreferences('u-1');
 
-    expect(prefs['workOrder.assigned']).toEqual({ inApp: true, email: false });
-    expect(prefs['workOrder.completed']).toEqual({ inApp: true, email: false });
+    // assigned default has push: true; only email was overridden.
+    expect(prefs['workOrder.assigned']).toEqual({ inApp: true, email: false, push: true });
+    expect(prefs['workOrder.completed']).toEqual({ inApp: true, email: false, push: false });
   });
 
   it('updatePreferences() shallow-merges and preserves unrelated preferences keys', async () => {
@@ -293,9 +294,9 @@ describe('NotificationsService', () => {
       'workOrder.assigned': { email: false },
     });
 
-    // Returned value reflects the merged result.
-    expect(merged['workOrder.assigned']).toEqual({ inApp: true, email: false });
-    expect(merged['workOrder.completed']).toEqual({ inApp: true, email: false });
+    // Returned value reflects the merged result — push stays default true.
+    expect(merged['workOrder.assigned']).toEqual({ inApp: true, email: false, push: true });
+    expect(merged['workOrder.completed']).toEqual({ inApp: true, email: false, push: false });
 
     // Persisted user row keeps unrelated keys and stores the sparse patch.
     const stored = prisma._users[0].preferences as any;

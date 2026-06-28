@@ -4,6 +4,7 @@ import type { IDomainEvent } from '../../../common/contracts/domain-event.interf
 import { PrismaService } from '../../../common/prisma/prisma.service';
 import { NotificationsService } from './notifications.service';
 import { EmailChannelService } from '../infrastructure/channels/email-channel.service';
+import { PushChannelService } from '../infrastructure/channels/push-channel.service';
 import type { NotifiableEvent } from './notification-preferences';
 
 /**
@@ -39,6 +40,7 @@ export class NotificationsListener {
   constructor(
     private readonly notifications: NotificationsService,
     private readonly email: EmailChannelService,
+    private readonly push: PushChannelService,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -74,6 +76,15 @@ export class NotificationsListener {
       if (eventPrefs.email) {
         const ok = await this.deliverEmail(data.technicianId);
         if (ok) channels.push('email');
+      }
+      if (eventPrefs.push) {
+        const ok = await this.push.send({
+          userId: data.technicianId,
+          title: 'Nouveau BT assigné',
+          body: 'Un bon de travail vient de vous être assigné.',
+          url: `/bons-de-travail/${event.aggregateId}`,
+        });
+        if (ok) channels.push('push');
       }
 
       await this.notifications.markSent(row.id, channels);

@@ -16,6 +16,11 @@ class PerEventPrefsDto {
   @IsOptional()
   @IsBoolean()
   email?: boolean;
+
+  @ApiProperty({ required: false, description: 'Web Push delivery (requires VAPID keys on the backend + a registered subscription)' })
+  @IsOptional()
+  @IsBoolean()
+  push?: boolean;
 }
 
 /**
