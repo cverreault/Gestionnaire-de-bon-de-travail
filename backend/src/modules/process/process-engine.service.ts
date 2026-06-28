@@ -6,9 +6,17 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma, Role, WorkOrderStatus } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { WORK_ORDER_DETAIL_INCLUDE } from '../work-orders/work-order-includes';
+import {
+  WO_EVENT_NAMES,
+  workOrderAssigned,
+  workOrderDispatched,
+  workOrderStatusChanged,
+  workOrderCompleted,
+} from '../work-orders/domain/events/work-order-events';
 import { ProcessCacheService } from './process-cache.service';
 import {
   AvailableTransition,
@@ -51,6 +59,7 @@ export class ProcessEngineService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly processCache: ProcessCacheService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   // ── A. executeTransition ──────────────────────────────────────────────────
@@ -198,6 +207,52 @@ export class ProcessEngineService {
         `(legacy: ${workOrder.status} → ${data.status ?? 'unchanged'}) ` +
         `by ${currentUser.id} [${currentUser.role}]`,
     );
+
+    // ── 13. Publish domain events ────────────────────────────────────────────
+    // Order matters : statusChanged always, then specialized events.
+    const fromStatus = fromStepId ? process.statuses.get(fromStepId) ?? null : null;
+    this.eventEmitter.emit(
+      WO_EVENT_NAMES.STATUS_CHANGED,
+      workOrderStatusChanged(workOrderId, currentUser.id, {
+        fromStatusId: fromStatus?.id ?? null,
+        toStatusId: targetStatus.id,
+        fromStatusCode: fromStatus?.code ?? null,
+        toStatusCode: targetStatus.code,
+      }),
+    );
+
+    // Assigned-specific event when assignedToId changed during the transition.
+    if (payload.assignedToId && payload.assignedToId !== workOrder.assignedToId) {
+      this.eventEmitter.emit(
+        WO_EVENT_NAMES.ASSIGNED,
+        workOrderAssigned(workOrderId, currentUser.id, {
+          technicianId: payload.assignedToId,
+          previousTechnicianId: workOrder.assignedToId,
+        }),
+      );
+    }
+
+    // Dispatched-specific event when the new status is the dispatch step.
+    if (targetStatus.isDispatch && updated.assignedToId) {
+      this.eventEmitter.emit(
+        WO_EVENT_NAMES.DISPATCHED,
+        workOrderDispatched(workOrderId, currentUser.id, {
+          technicianId: updated.assignedToId,
+          dispatchedStatusId: targetStatus.id,
+        }),
+      );
+    }
+
+    // Completed-specific event when reaching a terminal state.
+    if (targetStatus.isTerminalPositive || targetStatus.isTerminalNegative) {
+      this.eventEmitter.emit(
+        WO_EVENT_NAMES.COMPLETED,
+        workOrderCompleted(workOrderId, currentUser.id, {
+          outcome: targetStatus.isTerminalPositive ? 'positive' : 'negative',
+          completedStatusId: targetStatus.id,
+        }),
+      );
+    }
 
     return updated;
   }

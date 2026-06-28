@@ -1,12 +1,14 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { I18nModule, AcceptLanguageResolver, QueryResolver, HeaderResolver } from 'nestjs-i18n';
 import * as path from 'path';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { EventLoggerListener } from './common/listeners/event-logger.listener';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { HealthModule } from './modules/health/health.module';
@@ -26,6 +28,17 @@ import { TemplatesModule } from './modules/templates/templates.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env.local', '.env'],
+    }),
+
+    // ── Domain events bus ─────────────────────────────────────────────────
+    // Voir ADR-001 §3a et ADR-003 §6.
+    // Wildcard activé pour permettre @OnEvent('workOrders.*') côté listeners.
+    EventEmitterModule.forRoot({
+      wildcard: true,
+      delimiter: '.',
+      maxListeners: 10,
+      verboseMemoryLeak: false,
+      ignoreErrors: false,
     }),
 
     // ── Rate limiting ──────────────────────────────────────────────────────
@@ -90,6 +103,11 @@ import { TemplatesModule } from './modules/templates/templates.module';
       provide: APP_GUARD,
       useClass: RolesGuard,
     },
+
+    // ── Domain event listeners (cross-cutting) ─────────────────────────────
+    // Démo / smoke test : logue chaque event publié. Sera remplacé par le
+    // module `audit` (B2) qui persistera les events en DB.
+    EventLoggerListener,
   ],
 })
 export class AppModule {}

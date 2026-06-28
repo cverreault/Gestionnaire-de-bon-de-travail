@@ -6,6 +6,7 @@ import {
   ConflictException,
   Logger,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma, Role, WorkOrderStatus } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { ProcessEngineService } from '../process/process-engine.service';
@@ -19,6 +20,14 @@ import { WorkOrderFilterDto } from './dto/work-order-filter.dto';
 import { CreateNoteDto } from './dto/create-note.dto';
 import { AssignAndDispatchDto } from './dto/assign-and-dispatch.dto';
 import { isValidTransition } from './types/status-transitions';
+import {
+  WO_EVENT_NAMES,
+  workOrderCreated,
+  workOrderAssigned,
+  workOrderDispatched,
+  workOrderStatusChanged,
+  workOrderCompleted,
+} from './domain/events/work-order-events';
 
 /** Shape of the authenticated user passed from the controller */
 export interface CurrentUserRef {
@@ -58,6 +67,7 @@ export class WorkOrdersService {
     private readonly prisma: PrismaService,
     private readonly processEngine: ProcessEngineService,
     private readonly processCache: ProcessCacheService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -316,6 +326,28 @@ export class WorkOrdersService {
     });
 
     this.logger.log(`WorkOrder created: ${workOrder.referenceNumber} by user ${currentUser.id}`);
+
+    // ── Domain events ────────────────────────────────────────────────────
+    const created = workOrderCreated(workOrder.id, currentUser.id, {
+      referenceNumber: workOrder.referenceNumber,
+      taskTypeId: workOrder.taskTypeId,
+      clientId: workOrder.clientId,
+      assignedToId: workOrder.assignedToId,
+      processDefinitionId: workOrder.processDefinitionId,
+      initialStatusId: workOrder.currentStepId,
+    });
+    this.eventEmitter.emit(WO_EVENT_NAMES.CREATED, created);
+
+    // Si le BT démarre déjà sur le statut "Assigné" (shortcut createWithAssignment),
+    // on émet aussi l'event assigned pour ne pas le rater côté consommateurs.
+    if (workOrder.assignedToId) {
+      const assigned = workOrderAssigned(workOrder.id, currentUser.id, {
+        technicianId: workOrder.assignedToId,
+        previousTechnicianId: null,
+      });
+      this.eventEmitter.emit(WO_EVENT_NAMES.ASSIGNED, assigned);
+    }
+
     return workOrder;
   }
 
