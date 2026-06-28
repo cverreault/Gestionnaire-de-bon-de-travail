@@ -26,6 +26,7 @@ import { ProcessModule } from './modules/process/process.module';
 import { TemplatesModule } from './modules/templates/templates.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { SearchModule } from './modules/search/search.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -107,6 +108,7 @@ import { SearchModule } from './modules/search/search.module';
     TemplatesModule,
     AuditModule,
     SearchModule,
+    NotificationsModule,
   ],
   providers: [
     // ── Guards globaux ─────────────────────────────────────────────────────

@@ -567,3 +567,63 @@ model RefreshToken {
   @@index([expiresAt], map: "idx_refresh_tokens_expires")
   @@map("refresh_tokens")
 }
+
+/// User notifications (B1).
+///
+/// Persisted per-user record produced by event listeners. The DB row is
+/// the source of truth — channels (email, web push, in-app) are
+/// delivery side-effects.
+///
+/// Statut lifecycle :
+///   PENDING   → emitted, not yet attempted
+///   SENT      → at least one channel succeeded
+///   FAILED    → all attempted channels errored (kept for retry / debug)
+///   READ      → user opened it in-app (only set by user action)
+///
+/// Channels are tracked as a JSON array on `channelsSent` so we can show
+/// "Email + Push" badges in the UI without a side table.
+model Notification {
+  id          String   @id @default(uuid())
+
+  /// Recipient — no cascade : a deactivated user keeps their history.
+  userId      String   @map("user_id")
+
+  /// Categorical type — drives template + default channel selection.
+  /// ex: "workOrder.assigned", "workOrder.completed", "auth.passwordReset"
+  type        String
+
+  /// Free-form title shown in the badge/dropdown.
+  title       String
+
+  /// Optional body — kept short for the in-app dropdown; emails get a
+  /// fuller render via templates.
+  body        String?
+
+  /// Aggregate the notification refers to (workOrderId, etc.) so the UI
+  /// can deep-link.
+  aggregateId String?  @map("aggregate_id")
+
+  /// Original event payload (kept for re-render / debug).
+  data        Json?
+
+  /// PENDING / SENT / FAILED / READ (see model docstring).
+  status      String   @default("PENDING")
+
+  /// JSON array of channels that succeeded — ex: ["email", "push"].
+  channelsSent Json?   @map("channels_sent")
+
+  /// Set on the first delivery (any channel).
+  sentAt      DateTime? @map("sent_at")
+
+  /// Set when the user opens the notification in-app.
+  readAt      DateTime? @map("read_at")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt      @map("updated_at")
+
+  /// Inbox queries are by user + unread first.
+  @@index([userId, readAt, createdAt(sort: Desc)], map: "idx_notifications_inbox")
+  /// Background retries scan PENDING/FAILED.
+  @@index([status, createdAt],                     map: "idx_notifications_status")
+  @@map("notifications")
+}

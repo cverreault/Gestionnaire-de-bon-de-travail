@@ -33,6 +33,7 @@ import { CalendarController } from '../../modules/calendar/calendar.controller';
 import { AuditController } from '../../modules/audit/api/audit.controller';
 import { BackupController } from '../../modules/backup/backup.controller';
 import { SearchController } from '../../modules/search/api/search.controller';
+import { NotificationsController } from '../../modules/notifications/api/notifications.controller';
 
 // ─── Matrix rows ─────────────────────────────────────────────────────────────
 
@@ -109,6 +110,14 @@ const SEARCH_MATRIX: MatrixRow[] = [
   { controller: SearchController, method: 'search', expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'GET /search — dispatcher top-bar (TECH not exposed)' },
 ];
 
+const NOTIFICATIONS_MATRIX: MatrixRow[] = [
+  // Inbox endpoints are self-service for the current user — no @Roles().
+  // Object-level RBAC happens in the service (userId from JWT vs row.userId).
+  { controller: NotificationsController, method: 'findMine',    expectedRoles: 'ANY', note: 'GET /me/notifications' },
+  { controller: NotificationsController, method: 'markRead',    expectedRoles: 'ANY', note: 'PATCH /me/notifications/:id/read' },
+  { controller: NotificationsController, method: 'markAllRead', expectedRoles: 'ANY', note: 'PATCH /me/notifications/read-all' },
+];
+
 const BACKUP_MATRIX: MatrixRow[] = [
   // Backup controller has class-level @Roles(ADMIN) — every method inherits.
   { controller: BackupController, method: 'info',    expectedRoles: [Role.ADMIN], note: 'GET /backup/info' },
@@ -124,6 +133,7 @@ const ALL_ROWS: { name: string; rows: MatrixRow[] }[] = [
   { name: 'AuditController',      rows: AUDIT_MATRIX },
   { name: 'BackupController',     rows: BACKUP_MATRIX },
   { name: 'SearchController',     rows: SEARCH_MATRIX },
+  { name: 'NotificationsController', rows: NOTIFICATIONS_MATRIX },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
