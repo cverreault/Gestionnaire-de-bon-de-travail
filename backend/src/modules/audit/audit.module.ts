@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AuditController } from './api/audit.controller';
 import { AuditListener } from './application/audit.listener';
 import { AuditService } from './application/services/audit.service';
+import { AuditCleanupService } from './application/audit-cleanup.service';
 
 /**
  * Audit module — capture immuable des domain events.
@@ -10,6 +11,6 @@ import { AuditService } from './application/services/audit.service';
  */
 @Module({
   controllers: [AuditController],
-  providers: [AuditService, AuditListener],
+  providers: [AuditService, AuditListener, AuditCleanupService],
 })
 export class AuditModule {}
