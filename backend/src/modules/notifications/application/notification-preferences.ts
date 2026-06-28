@@ -27,6 +27,7 @@ export type NotificationPreferences = Partial<Record<string, PerEventPrefs>>;
 export const NOTIFIABLE_EVENTS = [
   'workOrder.assigned',
   'workOrder.completed',
+  'workOrder.slaBreached',
 ] as const;
 
 export type NotifiableEvent = (typeof NOTIFIABLE_EVENTS)[number];
@@ -38,8 +39,12 @@ export type NotifiableEvent = (typeof NOTIFIABLE_EVENTS)[number];
  * (the actor knows they completed it).
  */
 export const DEFAULT_PREFERENCES: Record<NotifiableEvent, PerEventPrefs> = {
-  'workOrder.assigned':  { inApp: true, email: true,  push: true  },
-  'workOrder.completed': { inApp: true, email: false, push: false },
+  'workOrder.assigned':    { inApp: true, email: true,  push: true  },
+  'workOrder.completed':   { inApp: true, email: false, push: false },
+  // SLA breaches matter — push them everywhere by default. Users can opt
+  // out per channel but it's the kind of "we're about to disappoint a
+  // client" event that warrants noise.
+  'workOrder.slaBreached': { inApp: true, email: true,  push: true  },
 };
 
 /**

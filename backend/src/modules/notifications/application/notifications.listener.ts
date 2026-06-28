@@ -33,6 +33,17 @@ interface WorkOrderEvent extends IDomainEvent {
   data: WorkOrderAssignedData;
 }
 
+interface WorkOrderSlaBreachedData {
+  slaTargetAt: string;
+  detectedAt: string;
+  slaHours: number | null;
+  assignedToId: string | null;
+}
+
+interface WorkOrderSlaBreachedEvent extends IDomainEvent {
+  data: WorkOrderSlaBreachedData;
+}
+
 @Injectable()
 export class NotificationsListener {
   private readonly logger = new Logger(NotificationsListener.name);
@@ -48,46 +59,24 @@ export class NotificationsListener {
   async onWorkOrderAssigned(event: WorkOrderEvent) {
     try {
       const data = event.data;
-      const eventType: NotifiableEvent = 'workOrder.assigned';
-
-      // Resolve the recipient's preferences once for this dispatch.
-      // Defaults to in-app + email when no prefs have been written.
-      const prefs = await this.notifications.getPreferences(data.technicianId);
-      const eventPrefs = prefs[eventType];
-
-      // If the user opted out of in-app too, we still create the row —
-      // dropping it would lose audit. But channelsSent will reflect
-      // what was actually delivered.
-      const row = await this.notifications.create({
-        userId: data.technicianId,
-        type: eventType,
-        title: 'Nouveau bon de travail assigné',
-        body: 'Un bon de travail vient de vous être assigné.',
-        aggregateId: event.aggregateId,
-        data: {
-          workOrderId: event.aggregateId,
-          previousTechnicianId: data.previousTechnicianId,
+      await this.dispatchOne(
+        data.technicianId,
+        'workOrder.assigned',
+        {
+          title: 'Nouveau bon de travail assigné',
+          body: 'Un bon de travail vient de vous être assigné.',
+          aggregateId: event.aggregateId,
+          data: {
+            workOrderId: event.aggregateId,
+            previousTechnicianId: data.previousTechnicianId,
+          },
         },
-      });
-
-      const channels: string[] = [];
-      // In-app is satisfied by the row's existence.
-      if (eventPrefs.inApp) channels.push('in-app');
-      if (eventPrefs.email) {
-        const ok = await this.deliverEmail(data.technicianId);
-        if (ok) channels.push('email');
-      }
-      if (eventPrefs.push) {
-        const ok = await this.push.send({
-          userId: data.technicianId,
-          title: 'Nouveau BT assigné',
+        {
+          subject: 'Nouveau BT assigné',
           body: 'Un bon de travail vient de vous être assigné.',
           url: `/bons-de-travail/${event.aggregateId}`,
-        });
-        if (ok) channels.push('push');
-      }
-
-      await this.notifications.markSent(row.id, channels);
+        },
+      );
     } catch (err) {
       this.logger.error(
         `Failed to handle assigned event ${event.eventId}: ${
@@ -97,8 +86,101 @@ export class NotificationsListener {
     }
   }
 
+  /**
+   * SLA breach (B4.c) — notify the assigned tech AND every admin /
+   * dispatcher so the team can react. The breach is also persisted in
+   * the audit log automatically by the wildcard listener.
+   */
+  @OnEvent('workOrders.workOrder.slaBreached', { async: true, promisify: true })
+  async onWorkOrderSlaBreached(event: WorkOrderSlaBreachedEvent) {
+    try {
+      const recipients = await this.resolveSlaRecipients(event.data.assignedToId);
+      if (recipients.length === 0) {
+        this.logger.warn(`SLA breach on BT ${event.aggregateId}: no recipients to notify`);
+        return;
+      }
+
+      const title = '⚠️ SLA dépassé sur un bon de travail';
+      const body  =
+        `Le BT vient de dépasser son délai prévu` +
+        (event.data.slaHours ? ` (${event.data.slaHours}h après création)` : '') +
+        '. Action requise.';
+
+      for (const recipient of recipients) {
+        await this.dispatchOne(
+          recipient.id,
+          'workOrder.slaBreached',
+          { title, body, aggregateId: event.aggregateId, data: event.data },
+          { subject: title, body, url: `/bons-de-travail/${event.aggregateId}` },
+        );
+      }
+    } catch (err) {
+      this.logger.error(
+        `Failed to handle slaBreached event ${event.eventId}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+  }
+
+  /**
+   * SLA fan-out target list: the assigned tech (if any) + every ADMIN
+   * and DISPATCHER. Deduped on id.
+   */
+  private async resolveSlaRecipients(assignedToId: string | null): Promise<Array<{ id: string }>> {
+    const supervisors = await this.prisma.user.findMany({
+      where: { role: { in: ['ADMIN', 'DISPATCHER'] }, isActive: true },
+      select: { id: true },
+    });
+    const set = new Set<string>(supervisors.map((u) => u.id));
+    if (assignedToId) set.add(assignedToId);
+    return Array.from(set).map((id) => ({ id }));
+  }
+
+  /**
+   * Shared dispatch helper used by both the assigned and slaBreached
+   * paths. Resolves the recipient's prefs, persists the in-app row,
+   * fans out to enabled channels, marks sent.
+   */
+  private async dispatchOne(
+    userId: string,
+    eventType: 'workOrder.assigned' | 'workOrder.slaBreached',
+    notification: { title: string; body?: string; aggregateId?: string; data?: unknown },
+    emailAndPush: { subject: string; body?: string; url?: string },
+  ): Promise<void> {
+    const prefs = await this.notifications.getPreferences(userId);
+    const eventPrefs = prefs[eventType];
+
+    const row = await this.notifications.create({
+      userId,
+      type: eventType,
+      title: notification.title,
+      body: notification.body,
+      aggregateId: notification.aggregateId,
+      data: notification.data,
+    });
+
+    const channels: string[] = [];
+    if (eventPrefs.inApp) channels.push('in-app');
+    if (eventPrefs.email) {
+      const ok = await this.deliverEmail(userId, emailAndPush.subject, emailAndPush.body);
+      if (ok) channels.push('email');
+    }
+    if (eventPrefs.push) {
+      const ok = await this.push.send({
+        userId,
+        title: emailAndPush.subject,
+        body: emailAndPush.body,
+        url: emailAndPush.url,
+      });
+      if (ok) channels.push('push');
+    }
+
+    await this.notifications.markSent(row.id, channels);
+  }
+
   /** Resolve recipient email + send. Returns true on success. */
-  private async deliverEmail(userId: string): Promise<boolean> {
+  private async deliverEmail(userId: string, subject?: string, body?: string): Promise<boolean> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { email: true, firstName: true, lastName: true },
@@ -110,11 +192,11 @@ export class NotificationsListener {
 
     return this.email.send({
       to: user.email,
-      subject: 'Nouveau bon de travail assigné',
+      subject: subject ?? 'Nouveau bon de travail assigné',
       text:
         `Bonjour ${user.firstName ?? ''},\n\n` +
-        `Un nouveau bon de travail vient de vous être assigné. Connectez-vous à TaskMgr pour le consulter.\n\n` +
-        `— TaskMgr`,
+        (body ?? 'Un nouveau bon de travail vient de vous être assigné. Connectez-vous à TaskMgr pour le consulter.') +
+        `\n\n— TaskMgr`,
     });
   }
 }

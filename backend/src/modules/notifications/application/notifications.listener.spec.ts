@@ -32,8 +32,9 @@ function buildListener(opts: {
 
   const notifications = {
     getPreferences: jest.fn().mockResolvedValue({
-      'workOrder.assigned':  eventPrefs,
-      'workOrder.completed': { inApp: true, email: false, push: false },
+      'workOrder.assigned':    eventPrefs,
+      'workOrder.completed':   { inApp: true, email: false, push: false },
+      'workOrder.slaBreached': eventPrefs,
     }),
     create:   jest.fn().mockResolvedValue({ id: 'n-1', userId: 'tech-1' }),
     markSent: jest.fn().mockResolvedValue({ id: 'n-1' }),
@@ -54,6 +55,10 @@ function buildListener(opts: {
           ? { email: null, firstName: 'T', lastName: 'Ech' }
           : { email: 'tech@x.io', firstName: 'T', lastName: 'Ech' },
       ),
+      findMany: jest.fn().mockResolvedValue([
+        { id: 'admin-1' },
+        { id: 'disp-1' },
+      ]),
     },
   } as unknown as PrismaService;
 
@@ -158,6 +163,97 @@ describe('NotificationsListener.onWorkOrderAssigned', () => {
     notifications.create.mockRejectedValueOnce(new Error('DB down'));
 
     await expect(listener.onWorkOrderAssigned(ASSIGNED_EVENT as any))
+      .resolves.toBeUndefined();
+  });
+});
+
+// ─── SLA breached (B4.c) ─────────────────────────────────────────────────────
+
+const SLA_BREACHED_EVENT = {
+  name: 'workOrders.workOrder.slaBreached' as const,
+  eventId: 'evt-sla-1',
+  aggregateId: 'wo-99',
+  occurredAt: new Date('2026-06-15T10:00:00Z'),
+  actorUserId: null,
+  data: {
+    slaTargetAt: '2026-06-15T08:00:00Z',
+    detectedAt:  '2026-06-15T10:00:00Z',
+    slaHours: 48,
+    assignedToId: 'tech-1',
+  },
+};
+
+describe('NotificationsListener.onWorkOrderSlaBreached', () => {
+  it('notifies the assigned tech + every admin/dispatcher (deduped)', async () => {
+    const { listener, notifications, prisma } = buildListener({});
+
+    await listener.onWorkOrderSlaBreached(SLA_BREACHED_EVENT as any);
+
+    // findMany call asks for ADMIN + DISPATCHER active users.
+    expect(prisma.user.findMany).toHaveBeenCalledWith({
+      where: { role: { in: ['ADMIN', 'DISPATCHER'] }, isActive: true },
+      select: { id: true },
+    });
+
+    // 3 recipients total: tech-1 + admin-1 + disp-1 (no dup).
+    expect(notifications.create).toHaveBeenCalledTimes(3);
+    const recipients = notifications.create.mock.calls.map((c: any) => c[0].userId).sort();
+    expect(recipients).toEqual(['admin-1', 'disp-1', 'tech-1']);
+  });
+
+  it('falls back to admin+dispatcher when the BT has no assignee', async () => {
+    const { listener, notifications } = buildListener({});
+    const event = { ...SLA_BREACHED_EVENT, data: { ...SLA_BREACHED_EVENT.data, assignedToId: null } };
+
+    await listener.onWorkOrderSlaBreached(event as any);
+
+    expect(notifications.create).toHaveBeenCalledTimes(2);
+    const recipients = notifications.create.mock.calls.map((c: any) => c[0].userId).sort();
+    expect(recipients).toEqual(['admin-1', 'disp-1']);
+  });
+
+  it('dedupes if the assignee is also an admin/dispatcher', async () => {
+    const { listener, notifications, prisma } = buildListener({});
+    // The tech happens to also appear in the admins list.
+    (prisma.user.findMany as jest.Mock).mockResolvedValueOnce([
+      { id: 'tech-1' },
+      { id: 'disp-1' },
+    ]);
+    await listener.onWorkOrderSlaBreached(SLA_BREACHED_EVENT as any);
+
+    expect(notifications.create).toHaveBeenCalledTimes(2);
+  });
+
+  it('honours each recipient\'s individual preferences', async () => {
+    const { listener, notifications } = buildListener({
+      prefs: { email: false, push: false },
+    });
+
+    await listener.onWorkOrderSlaBreached(SLA_BREACHED_EVENT as any);
+
+    // Every recipient gets channelsSent=['in-app'] because email+push were off.
+    const calls = notifications.markSent.mock.calls;
+    expect(calls).toHaveLength(3);
+    for (const [, channels] of calls) {
+      expect(channels).toEqual(['in-app']);
+    }
+  });
+
+  it('logs but does not throw when no recipients exist', async () => {
+    const { listener, prisma, notifications } = buildListener({});
+    (prisma.user.findMany as jest.Mock).mockResolvedValueOnce([]);
+    const event = { ...SLA_BREACHED_EVENT, data: { ...SLA_BREACHED_EVENT.data, assignedToId: null } };
+
+    await expect(listener.onWorkOrderSlaBreached(event as any))
+      .resolves.toBeUndefined();
+    expect(notifications.create).not.toHaveBeenCalled();
+  });
+
+  it('never throws when an unexpected error occurs', async () => {
+    const { listener, notifications } = buildListener({});
+    notifications.create.mockRejectedValueOnce(new Error('DB down'));
+
+    await expect(listener.onWorkOrderSlaBreached(SLA_BREACHED_EVENT as any))
       .resolves.toBeUndefined();
   });
 });

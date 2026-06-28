@@ -41,4 +41,11 @@ export class UpdateNotificationPreferencesDto {
   @ValidateNested()
   @Type(() => PerEventPrefsDto)
   'workOrder.completed'?: PerEventPrefsDto;
+
+  @ApiProperty({ type: PerEventPrefsDto, required: false, description: 'Notification on workOrder.slaBreached (B4)' })
+  @IsOptional()
+  @IsObject()
+  @ValidateNested()
+  @Type(() => PerEventPrefsDto)
+  'workOrder.slaBreached'?: PerEventPrefsDto;
 }
