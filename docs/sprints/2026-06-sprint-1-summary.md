@@ -76,6 +76,29 @@ de valeur — pas d'introduire de nouveau scope.
 | **C12 step 3** | `8ff8381` | Backend `strictNullChecks: true` — 0 erreurs |
 | **C5 Playwright** | `270f222` | Setup `@playwright/test` + 2 specs (smoke nav + lifecycle complet) + README |
 
+### B1 — Notifications multi-canaux (post-Sprint 1 extension)
+
+Premier vrai consommateur cross-module non-`audit`. Valide l'archi événementielle de bout en bout : un module isolé reçoit `workOrders.workOrder.assigned`, persiste une row, dispatche sur trois canaux selon les préférences user, sans toucher au module publisher.
+
+| # | Commit | Description |
+|---|---|---|
+| **B1.1.a** | (foundation) | Module backend complet : Prisma `Notification` + migration, service avec RBAC objet, listener sur `workOrder.assigned`, controller `/me/notifications` (list / mark read / mark all read), 9 tests |
+| **B1.1.b** | (frontend) | `NotificationsBell` (badge + dropdown 360px) intégré dans `AppLayout` admin et tech (floating bell pour la vue mobile) ; React Query poll 30s |
+| **B1.1.c** | `c682259` | Canal **email** via nodemailer ; opt-in `SMTP_HOST` ; fallback CONSOLE mode qui log la payload dans Pino |
+| **B1.2** | (preferences) | Modèle typé `NotificationPreferences`, defaults par event+canal, endpoints `/me/notifications/preferences` (GET/PUT), section UI sur `/profil` (matrice événement × canal), listener consulte avant chaque canal |
+| **B1.3** | (web push) | Canal **push** via web-push + VAPID ; modèle `PushSubscription` + migration ; service worker `src/sw.ts` (push handler + notificationclick + workbox precache + API NetworkFirst) ; bouton « Activer » sur `/profil` ; 3 endpoints (`vapid-public-key`, `subscribe`, `unsubscribe`) |
+| **Docs** | (polish) | `docs/modules/notifications.md`, lien drill-down actor sur timeline BT, release notes v2.1.3 |
+
+Stack technique :
+- `nodemailer` 9.x pour SMTP
+- `web-push` 3.x + `@types/web-push`
+- `workbox-precaching/routing/strategies/expiration` 7.x pour le SW custom (passage de `generateSW` à `injectManifest`)
+
+Posture symétrique sur les deux canaux opt-in (email + push) :
+- Variables d'env absentes → mode **CONSOLE** (warn au boot + log de la payload, jamais d'erreur)
+- Variables présentes → canal actif, échecs (4xx, 410, etc.) gérés par retry simple côté nodemailer ou cleanup automatique côté push (subscription gone)
+- `channelsSent` JSONB reflète exactement ce qui a réussi, lisible dans la page admin `/audit`
+
 ---
 
 ## État de la suite Jest
