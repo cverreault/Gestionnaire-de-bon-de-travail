@@ -9,7 +9,9 @@ import {
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import {
   ApiTags,
   ApiBearerAuth,
@@ -56,6 +58,32 @@ export class WorkOrdersController {
     @CurrentUser() currentUser: JwtUser,
   ) {
     return this.workOrdersService.findAll(filters, currentUser);
+  }
+
+  // ── CSV export ──────────────────────────────────────────────────────────────
+  // IMPORTANT : déclaré AVANT GET /:id pour ne pas être avalé par le wildcard.
+
+  @Get('export.csv')
+  @Roles(Role.ADMIN, Role.DISPATCHER)
+  @ApiOperation({
+    summary: 'Exporter la liste filtrée des BT au format CSV',
+    description:
+      'Reprend exactement les mêmes filtres que GET /work-orders (status, type, technicien, période, etc.) ' +
+      'mais ignore la pagination. Cap à 5000 lignes.',
+  })
+  @ApiResponse({ status: 200, description: 'Fichier CSV (UTF-8 + BOM)' })
+  @ApiResponse({ status: 403, description: 'Accès réservé aux administrateurs et dispatchers' })
+  async exportCsv(
+    @Query() filters: WorkOrderFilterDto,
+    @CurrentUser() currentUser: JwtUser,
+    @Res() res: Response,
+  ): Promise<void> {
+    const csv = await this.workOrdersService.exportCsv(filters, currentUser);
+    const filename = `work-orders-${new Date().toISOString().slice(0, 10)}.csv`;
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    res.send(csv);
   }
 
   // ── Detail ──────────────────────────────────────────────────────────────────

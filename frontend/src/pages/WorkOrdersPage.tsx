@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useWorkOrders } from '../hooks/useWorkOrders';
+import workOrdersService from '../services/work-orders.service';
 import { WorkOrderStatus, WorkOrderType } from '../types';
 import type { WorkOrderFilters, WorkOrder } from '../types';
 import WorkOrderStatusBadge from '../components/WorkOrderStatusBadge';
@@ -232,6 +233,9 @@ export default function WorkOrdersPage() {
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
 
+  // CSV export in flight
+  const [isExporting, setIsExporting] = useState(false);
+
   // Load technicians for the dropdown
   const { data: technicians = [] } = useQuery({
     queryKey: ['technicians'],
@@ -318,6 +322,22 @@ export default function WorkOrdersPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  async function handleExportCsv() {
+    if (isExporting) return;
+    setIsExporting(true);
+    try {
+      const exportFilters = { ...filters };
+      delete (exportFilters as { page?: number }).page;
+      delete (exportFilters as { limit?: number }).limit;
+      await workOrdersService.exportCsv(exportFilters);
+    } catch (err) {
+      console.error('[work-orders] CSV export failed', err);
+      window.alert(t('list.exportFailed', { defaultValue: 'Export CSV impossible. Réessayez.' }));
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
   function toggleHideCompleted() {
     setHideCompleted((prev) => {
       const next = !prev;
@@ -389,6 +409,32 @@ export default function WorkOrdersPage() {
                 {hiddenCompletedCount}
               </span>
             )}
+          </button>
+
+          <button
+            onClick={handleExportCsv}
+            disabled={isExporting}
+            title={t('list.exportTooltip', { defaultValue: 'Exporter la liste filtrée (CSV)' })}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              padding: '0.45rem 0.875rem',
+              borderRadius: theme.radius.md,
+              border: theme.borders.default,
+              background: theme.colors.surface,
+              color: theme.colors.textSecondary,
+              fontWeight: theme.font.weightMedium,
+              fontSize: theme.font.sizeSm,
+              cursor: isExporting ? 'wait' : 'pointer',
+              opacity: isExporting ? 0.6 : 1,
+              whiteSpace: 'nowrap',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            {isExporting
+              ? `⏳ ${t('list.exporting', { defaultValue: 'Export…' })}`
+              : `⬇ ${t('list.exportCsv', { defaultValue: 'Exporter CSV' })}`}
           </button>
 
           <Link

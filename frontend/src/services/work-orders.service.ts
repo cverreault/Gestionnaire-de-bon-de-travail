@@ -116,6 +116,34 @@ const workOrdersService = {
     );
     return data.data;
   },
+
+  /**
+   * Export the current filtered list as a CSV file (ADMIN + DISPATCHER only).
+   * Streams the response as a blob and triggers a browser download.
+   */
+  async exportCsv(filters?: WorkOrderFilters): Promise<{ filename: string; size: number }> {
+    const response = await api.get('/work-orders/export.csv', {
+      params: filters,
+      responseType: 'blob',
+    });
+
+    const cd = response.headers['content-disposition'] as string | undefined;
+    const fallback = `work-orders-${new Date().toISOString().slice(0, 10)}.csv`;
+    const match = cd ? /filename="?([^"]+)"?/i.exec(cd) : null;
+    const filename = match?.[1] ?? fallback;
+
+    const blob = response.data as Blob;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    return { filename, size: blob.size };
+  },
 };
 
 export default workOrdersService;

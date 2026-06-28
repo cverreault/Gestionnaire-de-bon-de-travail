@@ -28,6 +28,7 @@ import {
   workOrderStatusChanged,
   workOrderCompleted,
 } from './domain/events/work-order-events';
+import { toCsv } from '../../common/utils/csv.util';
 
 /** Shape of the authenticated user passed from the controller */
 export interface CurrentUserRef {
@@ -224,6 +225,118 @@ export class WorkOrdersService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  /**
+   * Build the same Prisma `where` as findAll, minus pagination.
+   * Reused for CSV export so users see exactly what the list shows.
+   */
+  private buildWorkOrderWhere(
+    filters: WorkOrderFilterDto,
+    currentUser: CurrentUserRef,
+  ): Prisma.WorkOrderWhereInput {
+    const where: Prisma.WorkOrderWhereInput = {};
+
+    if (currentUser.role === Role.TECHNICIAN) {
+      where.assignedToId = currentUser.id;
+    } else if (filters.assignedToId) {
+      where.assignedToId = filters.assignedToId;
+    }
+
+    if (filters.status) {
+      where.status = filters.status;
+    } else if (filters.excludeCompleted) {
+      where.status = {
+        notIn: [WorkOrderStatus.COMPLETED_POSITIVE, WorkOrderStatus.COMPLETED_NEGATIVE],
+      };
+    }
+    if (filters.type) where.type = filters.type;
+    if (filters.clientId) where.clientId = filters.clientId;
+    if (filters.taskTypeId) where.taskTypeId = filters.taskTypeId;
+
+    if (filters.scheduledDateFrom || filters.scheduledDateTo) {
+      where.scheduledDate = {
+        ...(filters.scheduledDateFrom ? { gte: new Date(filters.scheduledDateFrom) } : {}),
+        ...(filters.scheduledDateTo ? { lte: new Date(filters.scheduledDateTo) } : {}),
+      };
+    }
+
+    if (filters.priorityMin !== undefined) {
+      where.priority = { gte: filters.priorityMin };
+    }
+
+    if (filters.search) {
+      where.OR = [
+        { title: { contains: filters.search, mode: 'insensitive' } },
+        { referenceNumber: { contains: filters.search, mode: 'insensitive' } },
+        { externalClientName: { contains: filters.search, mode: 'insensitive' } },
+        { clientAddress: { contains: filters.search, mode: 'insensitive' } },
+        {
+          temporaryClient: {
+            OR: [
+              { firstName: { contains: filters.search, mode: 'insensitive' } },
+              { lastName: { contains: filters.search, mode: 'insensitive' } },
+            ],
+          },
+        },
+      ];
+    }
+
+    return where;
+  }
+
+  /**
+   * Export the same list the user sees (with active filters) as a CSV string.
+   * Capped at 5000 rows to avoid OOM on a runaway query.
+   */
+  async exportCsv(
+    filters: WorkOrderFilterDto,
+    currentUser: CurrentUserRef,
+  ): Promise<string> {
+    const MAX_ROWS = 5000;
+    const where = this.buildWorkOrderWhere(filters, currentUser);
+
+    const rows = await this.prisma.workOrder.findMany({
+      where,
+      take: MAX_ROWS,
+      orderBy: [
+        { priority: 'desc' },
+        { scheduledDate: 'asc' },
+        { createdAt: 'desc' },
+      ],
+      include: this.listInclude,
+    });
+
+    return toCsv(rows as Array<Record<string, unknown>>, [
+      { header: 'Référence',     pick: (r: any) => r.referenceNumber },
+      { header: 'Titre',         pick: (r: any) => r.title },
+      { header: 'Statut',        pick: (r: any) => r.currentStep?.name ?? r.status },
+      { header: 'Type',          pick: (r: any) => r.type },
+      { header: 'Priorité',      pick: (r: any) => r.priority },
+      { header: 'Client',        pick: (r: any) =>
+          r.client?.name
+          ?? (r.temporaryClient
+              ? `${r.temporaryClient.firstName ?? ''} ${r.temporaryClient.lastName ?? ''}`.trim()
+              : r.externalClientName ?? ''),
+      },
+      { header: 'Adresse',       pick: (r: any) =>
+          r.clientAddress_rel
+            ? [r.clientAddress_rel.street, r.clientAddress_rel.city, r.clientAddress_rel.postalCode]
+                .filter(Boolean).join(', ')
+            : r.clientAddress ?? '',
+      },
+      { header: 'Technicien',    pick: (r: any) => r.assignedTo
+          ? `${r.assignedTo.firstName ?? ''} ${r.assignedTo.lastName ?? ''}`.trim()
+          : '' },
+      { header: 'Créé par',      pick: (r: any) => r.createdBy
+          ? `${r.createdBy.firstName ?? ''} ${r.createdBy.lastName ?? ''}`.trim()
+          : '' },
+      { header: 'Date planifiée',pick: (r: any) => r.scheduledDate ?? '' },
+      { header: 'Créé le',       pick: (r: any) => r.createdAt },
+      { header: 'Complété le',   pick: (r: any) => r.completedAt ?? '' },
+      { header: 'Notes complétion', pick: (r: any) => r.completionNotes ?? '' },
+      { header: 'Raison négative',  pick: (r: any) => r.negativeReason ?? '' },
+    ]);
   }
 
   async findOne(id: string, currentUser?: CurrentUserRef) {
