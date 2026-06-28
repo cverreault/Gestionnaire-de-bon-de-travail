@@ -24,4 +24,14 @@ export class AuditListener {
   async onWorkOrderEvent(event: IDomainEvent & { data?: unknown }) {
     await this.auditService.record(event);
   }
+
+  /**
+   * Cross-cutting security events emitted from `common/` (RolesGuard, future
+   * JWT/throttler hooks). Same persistence path as the business events so
+   * the admin sees everything in one timeline.
+   */
+  @OnEvent('security.**', { async: true, promisify: true })
+  async onSecurityEvent(event: IDomainEvent & { data?: unknown }) {
+    await this.auditService.record(event);
+  }
 }
