@@ -1,8 +1,11 @@
-import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 import { useAuditList } from '../hooks/useAudit';
 import { exportAuditCsv, type AuditListParams } from '../services/audit.service';
+import api from '../services/api';
+import type { User, ApiResponse } from '../types';
 import { theme, tableStyles, layoutStyles, formStyles } from '../theme';
 import { formatDateTime } from '../utils/dateFormat';
 
@@ -34,10 +37,12 @@ function shortenId(id: string): string {
 
 export default function AuditPage() {
   const { t } = useTranslation('common');
+  const [searchParams] = useSearchParams();
 
   // Filter state — all optional, applied to the React Query key.
   const [eventName, setEventName] = useState('');
   const [aggregateId, setAggregateId] = useState('');
+  const [actorUserId, setActorUserId] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [page, setPage] = useState(1);
@@ -45,14 +50,37 @@ export default function AuditPage() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [isExporting, setIsExporting] = useState(false);
 
+  // Drill-down from the per-BT timeline: WorkOrderAuditTimeline links to
+  // /audit?aggregateId=<id>. We apply the param once on mount; further user
+  // edits are local state from that point on.
+  useEffect(() => {
+    const fromUrl = searchParams.get('aggregateId');
+    if (fromUrl && !aggregateId) {
+      setAggregateId(fromUrl);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Lookup of all users for the actor filter dropdown. ADMIN-only endpoint
+  // and the page itself is ADMIN-only, so role check is implicit.
+  const { data: users = [] } = useQuery({
+    queryKey: ['users', 'all', 'for-audit-filter'],
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<User[]>>('/users');
+      return data.data;
+    },
+    staleTime: 5 * 60_000,
+  });
+
   const params = useMemo<AuditListParams>(() => ({
     page,
     limit,
     ...(eventName.trim() ? { eventName: eventName.trim() } : {}),
     ...(aggregateId.trim() ? { aggregateId: aggregateId.trim() } : {}),
+    ...(actorUserId ? { actorUserId } : {}),
     ...(from ? { from: new Date(from).toISOString() } : {}),
     ...(to ? { to: new Date(to).toISOString() } : {}),
-  }), [page, eventName, aggregateId, from, to]);
+  }), [page, eventName, aggregateId, actorUserId, from, to]);
 
   const { data, isLoading, isError } = useAuditList(params);
   const rows = data?.data ?? [];
@@ -61,6 +89,7 @@ export default function AuditPage() {
   function resetFilters() {
     setEventName('');
     setAggregateId('');
+    setActorUserId('');
     setFrom('');
     setTo('');
     setPage(1);
@@ -80,7 +109,7 @@ export default function AuditPage() {
   }
 
   const activeFilters =
-    (eventName ? 1 : 0) + (aggregateId ? 1 : 0) + (from ? 1 : 0) + (to ? 1 : 0);
+    (eventName ? 1 : 0) + (aggregateId ? 1 : 0) + (actorUserId ? 1 : 0) + (from ? 1 : 0) + (to ? 1 : 0);
 
   return (
     <div style={{ ...layoutStyles.page }}>
@@ -157,6 +186,24 @@ export default function AuditPage() {
             placeholder="ex: workOrderId"
             style={{ ...formStyles.input }}
           />
+        </div>
+
+        <div style={{ flex: '0 1 220px', minWidth: '180px' }}>
+          <label style={{ display: 'block', fontSize: theme.font.sizeXs, color: theme.colors.textMuted, marginBottom: '0.25rem' }}>
+            Acteur
+          </label>
+          <select
+            value={actorUserId}
+            onChange={(e) => { setActorUserId(e.target.value); setPage(1); }}
+            style={{ ...formStyles.select }}
+          >
+            <option value="">— Tous —</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.firstName} {u.lastName} ({u.role})
+              </option>
+            ))}
+          </select>
         </div>
 
         <div style={{ flex: '0 1 170px', minWidth: '140px' }}>

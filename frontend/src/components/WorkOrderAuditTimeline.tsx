@@ -1,8 +1,11 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useWorkOrderAudit } from '../hooks/useAudit';
 import type { AuditLogEntry } from '../services/audit.service';
 import { formatDateTime } from '../utils/dateFormat';
+import { useAuthStore } from '../context/auth.store';
+import { Role } from '../types';
 import { theme } from '../theme';
 
 interface Props {
@@ -21,6 +24,8 @@ export default function WorkOrderAuditTimeline({ workOrderId, enabled }: Props) 
   const { t } = useTranslation('workOrders');
   const { t: tCommon } = useTranslation('common');
   const [expanded, setExpanded] = useState(false);
+  const role = useAuthStore((s) => s.user?.role);
+  const canDrillDown = role === Role.ADMIN;
 
   const { data, isLoading, isError } = useWorkOrderAudit(workOrderId, enabled);
 
@@ -90,6 +95,22 @@ export default function WorkOrderAuditTimeline({ workOrderId, enabled }: Props) 
                 <TimelineRow key={e.id} entry={e} />
               ))}
             </ol>
+          )}
+
+          {/* Admin drill-down → page audit globale pré-filtrée sur ce BT. */}
+          {canDrillDown && !isLoading && !isError && count > 0 && (
+            <div style={{ marginTop: '0.75rem', textAlign: 'right' }}>
+              <Link
+                to={`/audit?aggregateId=${workOrderId}`}
+                style={{
+                  fontSize: theme.font.sizeXs,
+                  color: theme.colors.primary,
+                  textDecoration: 'none',
+                }}
+              >
+                🔍 {t('audit.seeFull', { defaultValue: 'Voir dans l\'audit complet →' })}
+              </Link>
+            </div>
           )}
         </div>
       )}
