@@ -1,11 +1,13 @@
 import {
   Injectable,
+  Logger,
   UnauthorizedException,
   ConflictException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -24,13 +26,17 @@ const USER_SELECT = {
   updatedAt: true,
 } as const;
 
+/** Refresh token lifetime — 7 jours (en ms pour calculer expiresAt) */
+const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Hash SHA-256 hex d'un JWT — pour la persistance, le brut ne quitte jamais le client */
+function hashToken(rawToken: string): string {
+  return crypto.createHash('sha256').update(rawToken).digest('hex');
+}
+
 @Injectable()
 export class AuthService {
-  /**
-   * Store MVP en mémoire : Map<refreshToken, userId>.
-   * Sera remplacé par une table DB (RefreshToken) en V2.
-   */
-  private readonly refreshTokenStore = new Map<string, string>();
+  private readonly logger = new Logger(AuthService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -56,7 +62,9 @@ export class AuthService {
       throw new UnauthorizedException('Email ou mot de passe invalide');
     }
 
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
+    // Nouvelle famille à chaque login.
+    const family = crypto.randomUUID();
+    const tokens = await this.generateTokens(user.id, user.email, user.role, family);
     const { password: _pw, ...safeUser } = user;
 
     return {
@@ -72,12 +80,8 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token manquant');
     }
 
-    const userId = this.refreshTokenStore.get(refreshToken);
-    if (!userId) {
-      throw new UnauthorizedException('Refresh token invalide ou expiré');
-    }
-
-    // Vérifier la signature JWT du refresh token
+    // Vérifier la signature avant de toucher à la DB — évite un round-trip
+    // sur les tokens manifestement bogus.
     try {
       this.jwtService.verify(refreshToken, {
         secret: this.configService.get<string>(
@@ -86,28 +90,74 @@ export class AuthService {
         ),
       });
     } catch {
-      this.refreshTokenStore.delete(refreshToken);
       throw new UnauthorizedException('Refresh token invalide ou expiré');
     }
 
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const tokenHash = hashToken(refreshToken);
+    const row = await this.prisma.refreshToken.findUnique({
+      where: { tokenHash },
+    });
+
+    if (!row) {
+      // Token jamais émis (ou déjà supprimé par une purge) — rejet simple.
+      throw new UnauthorizedException('Refresh token invalide ou expiré');
+    }
+
+    // ── Détection de replay attack ──
+    // Si le client rejoue un token déjà révoqué, c'est qu'un attaquant l'a volé
+    // ET que le client légitime s'en est déjà servi (ou inversement). Dans le
+    // doute, on tue toute la famille pour forcer la réauthentification.
+    if (row.revokedAt) {
+      this.logger.warn(
+        `🚨 Replay de refresh token révoqué (userId=${row.userId}, family=${row.family}) — révocation de toute la famille`,
+      );
+      await this.prisma.refreshToken.updateMany({
+        where: { family: row.family, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+      throw new UnauthorizedException('Refresh token invalide ou expiré');
+    }
+
+    if (row.expiresAt.getTime() < Date.now()) {
+      throw new UnauthorizedException('Refresh token invalide ou expiré');
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: row.userId } });
     if (!user || !user.isActive) {
-      this.refreshTokenStore.delete(refreshToken);
+      // Marquer le token comme révoqué pour éviter qu'il traîne.
+      await this.prisma.refreshToken.update({
+        where: { id: row.id },
+        data: { revokedAt: new Date() },
+      });
       throw new UnauthorizedException('Utilisateur introuvable ou désactivé');
     }
 
-    // Rotation : on invalide l'ancien refresh token avant d'en émettre un nouveau
-    this.refreshTokenStore.delete(refreshToken);
+    // Rotation : on révoque l'ancien token et on émet un nouveau dans la même
+    // famille — atomique pour éviter une fenêtre de race où l'ancien serait
+    // exécutable deux fois.
+    await this.prisma.refreshToken.update({
+      where: { id: row.id },
+      data: { revokedAt: new Date() },
+    });
 
-    return this.generateTokens(user.id, user.email, user.role);
+    return this.generateTokens(user.id, user.email, user.role, row.family);
   }
 
   // ── Logout ─────────────────────────────────────────────────────────────────
 
   async logout(refreshToken: string): Promise<void> {
-    if (refreshToken) {
-      this.refreshTokenStore.delete(refreshToken);
-    }
+    if (!refreshToken) return;
+
+    const tokenHash = hashToken(refreshToken);
+    // Best-effort : si le token n'existe pas ou est déjà révoqué, on ignore.
+    await this.prisma.refreshToken
+      .updateMany({
+        where: { tokenHash, revokedAt: null },
+        data: { revokedAt: new Date() },
+      })
+      .catch((err) => {
+        this.logger.warn(`logout : impossible de révoquer le token — ${err}`);
+      });
   }
 
   // ── Register (Admin only — appelé depuis UsersModule) ──────────────────────
@@ -139,7 +189,12 @@ export class AuthService {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
-  private async generateTokens(userId: string, email: string, role: string) {
+  private async generateTokens(
+    userId: string,
+    email: string,
+    role: string,
+    family: string,
+  ) {
     const payload: JwtPayload = { sub: userId, email, role };
 
     const accessToken = this.jwtService.sign(payload);
@@ -152,7 +207,15 @@ export class AuthService {
       expiresIn: '7d',
     });
 
-    this.refreshTokenStore.set(refreshToken, userId);
+    // Persister la rangée DB pour pouvoir révoquer.
+    await this.prisma.refreshToken.create({
+      data: {
+        tokenHash: hashToken(refreshToken),
+        userId,
+        family,
+        expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
+      },
+    });
 
     return { accessToken, refreshToken };
   }
