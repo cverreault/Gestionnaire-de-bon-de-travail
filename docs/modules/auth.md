@@ -68,11 +68,18 @@ Aucun.
 |---|---|---|
 | `users` | partage de modèle | `User` est utilisé par toute la plateforme — `AuthService` est le seul endroit qui écrit dessus avec un bcrypt hash |
 | `common/guards` | hard | `JwtAuthGuard`, `RolesGuard`, `UserScopedThrottlerGuard` sont chargés en APP_GUARD au boot |
+| `common/events/security-events.ts` | hard | `RolesGuard` émet `security.access.denied` sur refus — consommé par le module `audit` |
+
+## Jobs nocturnes
+
+| Service | Cron | Action |
+|---|---|---|
+| `RefreshTokenCleanupService` | `0 3 * * *` (3h00 locale) | Purge des `refresh_tokens` dont `revokedAt` OU `expiresAt` est plus vieux que 30 jours. La fenêtre courte minimise la surface si la DB fuite, sans empêcher la détection de replay |
 
 ## Tests
 
-- **Unit** : `auth.service.spec.ts` — 12 tests sur login (succès, email inconnu, mauvais mdp, user disabled), refresh (rotation, replay → kill famille, expiry, user disabled, missing token, JWT invalide), logout (révocation, no-op).
-- **Guards** : `roles.guard.spec.ts` (4 tests), `roles-matrix.spec.ts` (41 assertions de matrice).
+- **Unit** : `auth.service.spec.ts` (12 tests : login + refresh + logout) ; `refresh-token-cleanup.service.spec.ts` (4 tests : purge selon âge + résistance aux erreurs DB).
+- **Guards** : `roles.guard.spec.ts` (5 tests : allow / deny + log + emit event / anonyme / no-emitter) ; `roles-matrix.spec.ts` (44 assertions de matrice).
 
 ## Open questions
 

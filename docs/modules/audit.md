@@ -40,6 +40,7 @@ Pas d'update, pas de delete : table append-only avec UPSERT silencieux sur confl
 |---|---|---|---|
 | `GET` | `/api/audit` | ADMIN | Liste paginée filtrable (page, limit, eventName, aggregateId, actorUserId, from, to) |
 | `GET` | `/api/audit/export.csv` | ADMIN | Export CSV de la slice filtrée (cap 5000 lignes) |
+| `GET` | `/api/audit/stats` | ADMIN | Rollup pour dashboard : count/jour sur N jours (défaut 30, max 180) + top 10 event types |
 | `GET` | `/api/audit/aggregate/:id` | ADMIN, DISPATCHER, TECHNICIAN (sur ses BT) | Timeline d'un agrégat — 50 events récents |
 
 RBAC objet sur `/aggregate/:id` : si le caller est TECHNICIAN, le service vérifie `workOrder.assignedToId === currentUser.id` avant de lire la moindre entrée d'audit (sinon 403 ou 404).
@@ -53,8 +54,15 @@ Aucun pour l'instant. Le module est exclusivement **consommateur**. (Évolution 
 | Event source | Action |
 |---|---|
 | `workOrders.**` (wildcard) | `record()` — persiste l'event en base |
+| `security.**` (wildcard) | `record()` — événements sécurité cross-cutting (RBAC denials, depuis [`common/events/security-events.ts`](../../backend/src/common/events/security-events.ts)) |
 
-Le listener vit dans `application/audit.listener.ts` avec `@OnEvent('workOrders.**', { async: true, promisify: true })`. **Important** : tout throw du listener est avalé — l'audit ne doit jamais bloquer le flux métier d'origine.
+Les listeners vivent dans `application/audit.listener.ts` avec `@OnEvent('workOrders.**')` + `@OnEvent('security.**')`, tous deux `{ async: true, promisify: true }`. **Important** : tout throw du listener est avalé — l'audit ne doit jamais bloquer le flux métier d'origine.
+
+## Jobs nocturnes
+
+| Service | Cron | Action |
+|---|---|---|
+| `AuditCleanupService` | `30 3 * * *` (3h30 locale) | Purge des `audit_logs` plus vieux que `AUDIT_RETENTION_DAYS` (défaut 365, clamp [30, 3650]) pour conformité Loi 25 / PIPEDA |
 
 ## Données possédées
 

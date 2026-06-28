@@ -59,6 +59,33 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.1.2',
+    name: 'Sprint 1 — Observabilité + compliance',
+    date: 'Juin 2026',
+    entries: [
+      {
+        type: 'new',
+        text: 'Tableau de bord admin enrichi d\'un graphique d\'activité d\'audit sur 30 jours (barres par jour + top 5 types d\'évènements cliquables qui pré-filtrent la page Audit)',
+      },
+      {
+        type: 'security',
+        text: 'Les refus de permission (RBAC) sont maintenant persistés dans le journal d\'audit en plus du log structuré — l\'admin retrouve tous les 403 dans la même timeline qu\'il filtre déjà',
+      },
+      {
+        type: 'infra',
+        text: 'Tâche nocturne (3h00) qui purge les refresh tokens révoqués ou expirés depuis plus de 30 jours — la table reste compacte sans compromettre la détection de replay',
+      },
+      {
+        type: 'infra',
+        text: 'Tâche nocturne (3h30) qui purge les entrées d\'audit plus vieilles que la fenêtre de rétention configurée (défaut 365 jours, ajustable via AUDIT_RETENTION_DAYS) — conformité Loi 25 / PIPEDA',
+      },
+      {
+        type: 'infra',
+        text: 'Intégration Sentry câblée mais optionnelle : sans DSN, aucune télémétrie n\'est envoyée. Coller un DSN dans .env (SENTRY_DSN=…) active la remontée automatique des erreurs 5xx',
+      },
+    ],
+  },
+  {
     version: '2.1.1',
     name: 'Sprint 1 — Page audit + qualité',
     date: 'Juin 2026',
