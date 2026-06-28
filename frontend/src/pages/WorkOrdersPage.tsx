@@ -22,6 +22,38 @@ const COMPLETED_STATUSES = new Set([
 ]);
 
 const LS_HIDE_COMPLETED_KEY = 'wo-hide-completed';
+const LS_FILTER_PRESETS_KEY = 'wo-filter-presets';
+
+// ─── Saved filter presets ─────────────────────────────────────────────────────
+
+interface FilterPreset {
+  search?: string;
+  status?: WorkOrderStatus;
+  type?: WorkOrderType;
+  assignedToId?: string;
+  scheduledDateFrom?: string;
+  scheduledDateTo?: string;
+  priorityMin?: number;
+}
+
+function loadPresets(): Record<string, FilterPreset> {
+  try {
+    const raw = localStorage.getItem(LS_FILTER_PRESETS_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? (parsed as Record<string, FilterPreset>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function persistPresets(presets: Record<string, FilterPreset>): void {
+  try {
+    localStorage.setItem(LS_FILTER_PRESETS_KEY, JSON.stringify(presets));
+  } catch {
+    // localStorage full / private mode — silently degrade
+  }
+}
 
 // ─── Label maps ───────────────────────────────────────────────────────────────
 
@@ -236,6 +268,10 @@ export default function WorkOrdersPage() {
   // CSV export in flight
   const [isExporting, setIsExporting] = useState(false);
 
+  // Saved filter presets (per-browser via localStorage)
+  const [presets, setPresets] = useState<Record<string, FilterPreset>>(() => loadPresets());
+  const [activePreset, setActivePreset] = useState<string>('');
+
   // Load technicians for the dropdown
   const { data: technicians = [] } = useQuery({
     queryKey: ['technicians'],
@@ -315,11 +351,75 @@ export default function WorkOrdersPage() {
     setScheduledDateTo('');
     setPriorityMin(undefined);
     setPage(1);
+    setActivePreset('');
   }
 
   function handlePageChange(next: number) {
     setPage(next);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function applyPreset(name: string) {
+    if (!name) {
+      setActivePreset('');
+      return;
+    }
+    const p = presets[name];
+    if (!p) return;
+    setSearch(p.search ?? '');
+    setStatus(p.status);
+    setType(p.type);
+    setAssignedToId(p.assignedToId);
+    setScheduledDateFrom(p.scheduledDateFrom ?? '');
+    setScheduledDateTo(p.scheduledDateTo ?? '');
+    setPriorityMin(p.priorityMin);
+    setPage(1);
+    setActivePreset(name);
+  }
+
+  function handleSavePreset() {
+    const name = window.prompt(
+      t('list.presets.namePrompt', { defaultValue: 'Nom du filtre (ex: "Mes BT en cours") :' })
+    )?.trim();
+    if (!name) return;
+
+    if (presets[name] && !window.confirm(
+      t('list.presets.overwriteConfirm', {
+        defaultValue: 'Un filtre porte déjà ce nom. L\'écraser ?',
+      })
+    )) {
+      return;
+    }
+
+    const payload: FilterPreset = {
+      ...(search.trim() ? { search: search.trim() } : {}),
+      ...(status ? { status } : {}),
+      ...(type ? { type } : {}),
+      ...(assignedToId ? { assignedToId } : {}),
+      ...(scheduledDateFrom ? { scheduledDateFrom } : {}),
+      ...(scheduledDateTo ? { scheduledDateTo } : {}),
+      ...(priorityMin !== undefined && priorityMin > 0 ? { priorityMin } : {}),
+    };
+
+    const next = { ...presets, [name]: payload };
+    setPresets(next);
+    persistPresets(next);
+    setActivePreset(name);
+  }
+
+  function handleDeletePreset() {
+    if (!activePreset) return;
+    if (!window.confirm(
+      t('list.presets.deleteConfirm', {
+        defaultValue: 'Supprimer le filtre « {{name}} » ?',
+        name: activePreset,
+      })
+    )) return;
+    const next = { ...presets };
+    delete next[activePreset];
+    setPresets(next);
+    persistPresets(next);
+    setActivePreset('');
   }
 
   async function handleExportCsv() {
@@ -457,6 +557,83 @@ export default function WorkOrdersPage() {
           boxShadow: theme.shadows.sm,
         }}
       >
+        {/* Row 0 — saved filter presets */}
+        <div
+          style={{
+            display: 'flex',
+            gap: '0.5rem',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            marginBottom: '0.75rem',
+            paddingBottom: '0.75rem',
+            borderBottom: theme.borders.light,
+          }}
+        >
+          <span
+            style={{
+              fontSize: theme.font.sizeXs,
+              color: theme.colors.textMuted,
+              fontWeight: theme.font.weightMedium,
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+            }}
+          >
+            ⭐ {t('list.presets.title', { defaultValue: 'Filtres enregistrés' })}
+          </span>
+          <select
+            value={activePreset}
+            onChange={(e) => applyPreset(e.target.value)}
+            style={{ ...formStyles.select, flex: '0 1 240px', minWidth: '180px' }}
+          >
+            <option value="">
+              {t('list.presets.none', { defaultValue: '— Aucun —' })}
+            </option>
+            {Object.keys(presets).sort().map((name) => (
+              <option key={name} value={name}>{name}</option>
+            ))}
+          </select>
+          <button
+            onClick={handleSavePreset}
+            disabled={activeCount === 0}
+            title={activeCount === 0
+              ? t('list.presets.saveTooltipEmpty', { defaultValue: 'Aucun filtre actif à enregistrer' })
+              : t('list.presets.saveTooltip', { defaultValue: 'Enregistrer les filtres courants sous un nom' })}
+            style={{
+              padding: '0.4rem 0.75rem',
+              borderRadius: theme.radius.md,
+              border: theme.borders.default,
+              background: activeCount === 0 ? theme.colors.surfaceAlt : theme.colors.surface,
+              color: activeCount === 0 ? theme.colors.textLight : theme.colors.textSecondary,
+              fontWeight: theme.font.weightMedium,
+              fontSize: theme.font.sizeSm,
+              cursor: activeCount === 0 ? 'not-allowed' : 'pointer',
+              opacity: activeCount === 0 ? 0.6 : 1,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            💾 {t('list.presets.save', { defaultValue: 'Enregistrer' })}
+          </button>
+          {activePreset && (
+            <button
+              onClick={handleDeletePreset}
+              title={t('list.presets.deleteTooltip', { defaultValue: 'Supprimer ce filtre enregistré' })}
+              style={{
+                padding: '0.4rem 0.75rem',
+                borderRadius: theme.radius.md,
+                border: '1px solid var(--c-dangerBadgeBorder)',
+                background: theme.colors.dangerLight,
+                color: theme.colors.danger,
+                fontWeight: theme.font.weightMedium,
+                fontSize: theme.font.sizeSm,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              🗑 {t('list.presets.delete', { defaultValue: 'Supprimer' })}
+            </button>
+          )}
+        </div>
+
         {/* Row 1 — always visible */}
         <div
           style={{
