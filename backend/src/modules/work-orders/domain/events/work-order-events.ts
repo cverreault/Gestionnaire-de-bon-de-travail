@@ -16,6 +16,9 @@ export const WO_EVENT_NAMES = {
   DISPATCHED:      'workOrders.workOrder.dispatched',
   STATUS_CHANGED:  'workOrders.workOrder.statusChanged',
   COMPLETED:       'workOrders.workOrder.completed',
+  /// Emitted by SlaCheckService when an active BT crosses its slaTargetAt
+  /// without being completed. Consumed by notifications (B4.c) and audit.
+  SLA_BREACHED:    'workOrders.workOrder.slaBreached',
 } as const;
 
 export type WoEventName = typeof WO_EVENT_NAMES[keyof typeof WO_EVENT_NAMES];
@@ -148,6 +151,32 @@ export function workOrderCompleted(
   return makeEvent({ name: WO_EVENT_NAMES.COMPLETED, workOrderId, actorUserId, data });
 }
 
+// ── SLA breached (B4) ──────────────────────────────────────────────────────
+
+export interface WorkOrderSlaBreachedData {
+  /** ISO 8601 — the target the BT crossed without being completed. */
+  slaTargetAt: string;
+  /** ISO 8601 — when the breach was detected (= now-ish). */
+  detectedAt: string;
+  /** Hours of SLA originally configured on the task type at create time. */
+  slaHours: number | null;
+  /** Carry-over so consumers can route the notification (tech, dispatcher). */
+  assignedToId: string | null;
+}
+
+export type WorkOrderSlaBreachedEvent = IDomainEvent & {
+  name: typeof WO_EVENT_NAMES.SLA_BREACHED;
+  data: WorkOrderSlaBreachedData;
+};
+
+export function workOrderSlaBreached(
+  workOrderId: string,
+  data: WorkOrderSlaBreachedData,
+): WorkOrderSlaBreachedEvent {
+  // No actor — system event, emitted by the cron.
+  return makeEvent({ name: WO_EVENT_NAMES.SLA_BREACHED, workOrderId, actorUserId: null, data });
+}
+
 // ── Union utile pour les listeners qui veulent tout traiter ────────────────
 
 export type AnyWorkOrderEvent =
@@ -155,4 +184,5 @@ export type AnyWorkOrderEvent =
   | WorkOrderAssignedEvent
   | WorkOrderDispatchedEvent
   | WorkOrderStatusChangedEvent
-  | WorkOrderCompletedEvent;
+  | WorkOrderCompletedEvent
+  | WorkOrderSlaBreachedEvent;
