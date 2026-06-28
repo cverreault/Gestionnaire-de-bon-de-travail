@@ -2,6 +2,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useWorkOrder, useUpdateWorkOrder, useUpdateWorkOrderStatus, useAddNote, useUploadAttachment } from '../hooks/useWorkOrders';
+import workOrdersService from '../services/work-orders.service';
 import { useSearchUnifiedClients, useCreateTemporaryClient, useV3Client } from '../hooks/useClients';
 import { useAddressTypes } from '../hooks/useSettings';
 import { useTemplate } from '../hooks/useTemplates';
@@ -47,6 +48,8 @@ export default function WorkOrderDetailPage() {
   const isAdmin = currentUser?.role === Role.ADMIN;
   const canSeeAuditTimeline =
     currentUser?.role === Role.ADMIN || currentUser?.role === Role.DISPATCHER;
+  const canDuplicate = canSeeAuditTimeline; // ADMIN + DISPATCHER
+  const [isDuplicating, setIsDuplicating] = useState(false);
 
   const [noteContent, setNoteContent] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -375,6 +378,35 @@ export default function WorkOrderDetailPage() {
                 }}
               >
                 ✏️ Éditer
+              </button>
+            )}
+            {canDuplicate && wo && (
+              <button
+                onClick={async () => {
+                  if (isDuplicating) return;
+                  setIsDuplicating(true);
+                  try {
+                    const clone = await workOrdersService.duplicate(wo.id);
+                    navigate(`/bons-de-travail/${clone.id}`);
+                  } catch (err) {
+                    console.error('[work-orders] duplicate failed', err);
+                    window.alert(t('actions.duplicateFailed', { defaultValue: 'Duplication impossible. Réessayez.' }));
+                  } finally {
+                    setIsDuplicating(false);
+                  }
+                }}
+                disabled={isDuplicating}
+                title={t('actions.duplicate', { defaultValue: 'Dupliquer ce BT en un nouveau (CREATED, sans technicien ni dates)' })}
+                style={{
+                  ...buttonStyles.secondary,
+                  fontSize: theme.font.sizeSm,
+                  opacity: isDuplicating ? 0.6 : 1,
+                  cursor: isDuplicating ? 'wait' : 'pointer',
+                }}
+              >
+                {isDuplicating
+                  ? `⏳ ${t('actions.duplicating', { defaultValue: 'Duplication…' })}`
+                  : `🗐 ${t('actions.duplicateShort', { defaultValue: 'Dupliquer' })}`}
               </button>
             )}
             <button

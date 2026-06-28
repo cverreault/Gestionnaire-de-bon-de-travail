@@ -70,6 +70,12 @@ const workOrdersService = {
     return data.data;
   },
 
+  /** POST /work-orders/:id/duplicate — clone an existing work order (ADMIN + DISPATCHER) */
+  async duplicate(id: string): Promise<WorkOrder> {
+    const { data } = await api.post<ApiResponse<WorkOrder>>(`/work-orders/${id}/duplicate`);
+    return data.data;
+  },
+
   async addNote(workOrderId: string, content: string): Promise<Note> {
     const { data } = await api.post<ApiResponse<Note>>(`/work-orders/${workOrderId}/notes`, {
       content,

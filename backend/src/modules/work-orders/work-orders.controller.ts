@@ -139,6 +139,29 @@ export class WorkOrdersController {
     return this.workOrdersService.create(dto, currentUser);
   }
 
+  // ── Duplicate ──────────────────────────────────────────────────────────────
+
+  @Post(':id/duplicate')
+  @Roles(Role.ADMIN, Role.DISPATCHER)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Dupliquer un bon de travail',
+    description:
+      'Clone le BT source dans un nouveau BT en statut CREATED. ' +
+      'Recopie titre, description, type, priorité, client, adresse, templateData. ' +
+      'Ne recopie PAS : technicien assigné, dates planifiées, notes, pièces jointes.',
+  })
+  @ApiParam({ name: 'id', description: 'UUID du BT à dupliquer' })
+  @ApiResponse({ status: 201, description: 'Nouveau BT créé' })
+  @ApiResponse({ status: 403, description: 'Accès réservé aux administrateurs et dispatchers' })
+  @ApiResponse({ status: 404, description: 'Bon de travail source introuvable' })
+  duplicate(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() currentUser: JwtUser,
+  ) {
+    return this.workOrdersService.duplicate(id, currentUser);
+  }
+
   // ── Update ──────────────────────────────────────────────────────────────────
 
   @Patch(':id')

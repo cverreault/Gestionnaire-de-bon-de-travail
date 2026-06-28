@@ -464,6 +464,65 @@ export class WorkOrdersService {
     return workOrder;
   }
 
+  /**
+   * Clone an existing work order into a brand-new one.
+   *
+   * Carries over: title, description, type, priority, client/address relations
+   * (or temporary/external fallbacks), task type, and templateData.
+   *
+   * Does NOT carry over: assignedToId, scheduledDate(/Start/End), notes,
+   * attachments, completionNotes, negativeReason, completedAt, history.
+   *
+   * The new BT gets a fresh reference number, status CREATED, and the
+   * current user becomes the creator. ADMIN + DISPATCHER only at the
+   * controller level.
+   */
+  async duplicate(id: string, currentUser: CurrentUserRef) {
+    const source = await this.prisma.workOrder.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        type: true,
+        priority: true,
+        temporaryClientId: true,
+        externalClientId: true,
+        externalClientName: true,
+        clientAddress: true,
+        clientId: true,
+        clientAddressId: true,
+        taskTypeId: true,
+        templateData: true,
+      },
+    });
+
+    if (!source) {
+      throw new NotFoundException(`Bon de travail #${id} introuvable`);
+    }
+
+    const dto: CreateWorkOrderDto = {
+      title: source.title,
+      description: source.description ?? undefined,
+      type: source.type,
+      priority: source.priority ?? 0,
+      temporaryClientId: source.temporaryClientId ?? undefined,
+      externalClientId: source.externalClientId ?? undefined,
+      externalClientName: source.externalClientName ?? undefined,
+      clientAddress: source.clientAddress ?? undefined,
+      clientId: source.clientId ?? undefined,
+      clientAddressId: source.clientAddressId ?? undefined,
+      taskTypeId: source.taskTypeId ?? undefined,
+      templateData: (source.templateData as Record<string, unknown> | null) ?? undefined,
+    };
+
+    const clone = await this.create(dto, currentUser);
+    this.logger.log(
+      `WorkOrder duplicated: source=${source.id} → new=${clone.id} (${clone.referenceNumber}) by user ${currentUser.id}`,
+    );
+    return clone;
+  }
+
   async update(id: string, dto: UpdateWorkOrderDto, currentUser: CurrentUserRef) {
     // Ensure the work order exists — pass currentUser to enforce the IDOR check for technicians
     const existingWo = await this.findOne(id, currentUser);
