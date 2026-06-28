@@ -10,6 +10,7 @@ import * as path from 'path';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { UserScopedThrottlerGuard } from './common/guards/user-scoped-throttler.guard';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { HealthModule } from './modules/health/health.module';
@@ -104,7 +105,9 @@ import { SearchModule } from './modules/search/search.module';
   providers: [
     // ── Guards globaux ─────────────────────────────────────────────────────
     // Ordre important : JwtAuthGuard d'abord (authentification),
-    // puis RolesGuard (autorisation). Le guard JWT bypass les routes @Public().
+    // puis RolesGuard (autorisation), puis Throttler (rate limiting).
+    // Le guard JWT bypass les routes @Public(). Le throttler scope par userId
+    // si l'auth a réussi, sinon par IP (cas login/refresh anonymes).
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
@@ -113,7 +116,10 @@ import { SearchModule } from './modules/search/search.module';
       provide: APP_GUARD,
       useClass: RolesGuard,
     },
-
+    {
+      provide: APP_GUARD,
+      useClass: UserScopedThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}

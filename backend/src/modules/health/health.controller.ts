@@ -6,6 +6,7 @@ import {
   DiskHealthIndicator,
   HealthCheckResult,
 } from '@nestjs/terminus';
+import { SkipThrottle } from '@nestjs/throttler';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
 import { DatabaseHealthIndicator } from './indicators/database.health';
@@ -43,6 +44,7 @@ export class HealthController {
 
   // ── Liveness probe — léger, Docker compatible ──────────────────────────
   @Public()
+  @SkipThrottle({ short: true, medium: true, long: true })
   @Get()
   @ApiOperation({
     summary: 'Liveness probe (léger)',
@@ -73,6 +75,7 @@ export class HealthController {
 
   // ── Readiness probe — vérification complète ────────────────────────────
   @Public()
+  @SkipThrottle({ short: true, medium: true, long: true })
   @Get('detailed')
   @HealthCheck()
   @ApiOperation({
