@@ -1,3 +1,7 @@
+// Sentry MUST be the first import so its auto-instrumentation can patch
+// Node modules (http, pg, etc.) before they're require()d elsewhere.
+import * as Sentry from '@sentry/node';
+
 import { NestFactory } from '@nestjs/core';
 import { I18nValidationPipe, I18nValidationExceptionFilter } from 'nestjs-i18n';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -10,6 +14,34 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { DatabaseHealthIndicator } from './modules/health/indicators/database.health';
 import { MinioHealthIndicator } from './modules/health/indicators/minio.health';
+
+/**
+ * Sentry init (C10).
+ *
+ * Disabled by default: we ship a fully working backend without a Sentry
+ * account. Set SENTRY_DSN in the env to opt in. SENTRY_ENVIRONMENT and
+ * SENTRY_RELEASE annotate the events for filtering in the Sentry UI.
+ *
+ * tracesSampleRate=0.1 — 10% of HTTP requests get a perf trace. Plenty
+ * to spot slow paths without blowing up the quota on a small instance.
+ * Override with SENTRY_TRACES_SAMPLE_RATE if needed.
+ */
+function initSentry(): void {
+  const dsn = process.env.SENTRY_DSN;
+  if (!dsn) return;
+  Sentry.init({
+    dsn,
+    environment: process.env.SENTRY_ENVIRONMENT ?? process.env.NODE_ENV ?? 'development',
+    release: process.env.SENTRY_RELEASE,
+    tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE ?? 0.1),
+    // Don't capture health endpoint pings.
+    beforeSend(event) {
+      if (event.request?.url?.endsWith('/api/health')) return null;
+      return event;
+    },
+  });
+}
+initSentry();
 
 /**
  * Boot-time smoke test (C11).

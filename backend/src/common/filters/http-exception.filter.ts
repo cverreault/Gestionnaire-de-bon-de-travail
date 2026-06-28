@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import * as Sentry from '@sentry/node';
 
 export interface ErrorResponse {
   statusCode: number;
@@ -52,6 +53,14 @@ export class HttpExceptionFilter implements ExceptionFilter {
         `${request.method} ${request.url} → ${status}`,
         exception.stack,
       );
+      // Forward 5xx to Sentry when SENTRY_DSN is configured. No-op
+      // otherwise — captureException is a safe no-op without init().
+      Sentry.captureException(exception, {
+        extra: {
+          method: request.method,
+          url: request.url,
+        },
+      });
     } else {
       this.logger.warn(`${request.method} ${request.url} → ${status}: ${JSON.stringify(message)}`);
     }
