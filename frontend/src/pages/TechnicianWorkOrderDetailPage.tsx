@@ -12,6 +12,7 @@ import { formatStreet } from '../utils/addressFormat';
 import WorkOrderStatusBadge from '../components/WorkOrderStatusBadge';
 import TransitionActionBar from '../components/transitions/TransitionActionBar';
 import WorkOrderAuditTimeline from '../components/WorkOrderAuditTimeline';
+import EnRouteTimer from '../components/EnRouteTimer';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { WorkOrderStatus, ClientType, AddressType } from '../types';
 import type { WorkOrder } from '../types';
@@ -361,11 +362,16 @@ export default function TechnicianWorkOrderDetailPage() {
           }`,
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem', gap: '0.5rem', flexWrap: 'wrap' }}>
           <p style={{ margin: 0, fontSize: theme.font.sizeXs, fontFamily: 'monospace', color: theme.colors.textLight }}>
             {wo.referenceNumber}
           </p>
-          <WorkOrderStatusBadge step={wo.currentStep} status={wo.status} size="sm" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {wo.status === WorkOrderStatus.EN_ROUTE && (
+              <EnRouteTimer workOrderId={wo.id} />
+            )}
+            <WorkOrderStatusBadge step={wo.currentStep} status={wo.status} size="sm" />
+          </div>
         </div>
         <h1 style={{ margin: '0 0 0.5rem', fontSize: theme.font.sizeXl, color: theme.colors.text, fontWeight: theme.font.weightBold }}>
           {wo.title}

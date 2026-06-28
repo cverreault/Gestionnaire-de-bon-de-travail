@@ -5,8 +5,9 @@ export const AUDIT_KEY = 'audit';
 
 /**
  * Timeline d'audit d'un agrégat (typiquement un work-order).
- * Disponible aux ADMIN et DISPATCHER côté backend ; les TECHNICIAN
- * reçoivent un 403 — on désactive simplement la query pour eux côté UI.
+ * ADMIN + DISPATCHER voient tous les BT ; le TECHNICIAN voit la timeline
+ * uniquement des BT qui lui sont assignés (RBAC objet enforced côté
+ * service, cf. A6).
  */
 export function useWorkOrderAudit(workOrderId: string, enabled = true) {
   return useQuery({
