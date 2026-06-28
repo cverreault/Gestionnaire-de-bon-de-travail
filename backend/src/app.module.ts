@@ -3,6 +3,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { I18nModule, AcceptLanguageResolver, QueryResolver, HeaderResolver } from 'nestjs-i18n';
 import { LoggerModule } from 'nestjs-pino';
 import { loggerConfig } from './common/logger/logger.config';
@@ -49,6 +50,11 @@ import { SearchModule } from './modules/search/search.module';
       verboseMemoryLeak: false,
       ignoreErrors: false,
     }),
+
+    // ── Cron / scheduled jobs ─────────────────────────────────────────────
+    // Active @Cron decorators dans les services (cleanup nocturne refresh
+    // tokens, futurs jobs SLA, etc.). Voir doc/sprints/2026-06-... §C9.
+    ScheduleModule.forRoot(),
 
     // ── Rate limiting ──────────────────────────────────────────────────────
     ThrottlerModule.forRoot([
