@@ -1,7 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
+import { Injectable, Logger, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Role, type Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
 import type { IDomainEvent } from '../../../../common/contracts';
+
+interface CurrentUserRef {
+  id: string;
+  role: Role;
+}
 
 /**
  * Service applicatif du module audit.
@@ -55,7 +60,35 @@ export class AuditService {
 
   // ── Read APIs (pour /api/audit, admin) ──────────────────────────────
 
-  async findRecentForAggregate(aggregateId: string, limit = 50) {
+  /**
+   * Timeline d'un agrégat (ex: un workOrder).
+   *
+   * Object-level RBAC : si l'appelant est TECHNICIEN, on vérifie qu'il est
+   * bien assigné au workOrder référencé (l'aggregateId correspond aujourd'hui
+   * toujours à un workOrderId). Les ADMIN et DISPATCHER bypass.
+   *
+   * 404 si le BT n'existe pas / 403 si le tech n'en est pas le titulaire.
+   */
+  async findRecentForAggregate(
+    aggregateId: string,
+    currentUser: CurrentUserRef,
+    limit = 50,
+  ) {
+    if (currentUser.role === Role.TECHNICIAN) {
+      const wo = await this.prisma.workOrder.findUnique({
+        where: { id: aggregateId },
+        select: { assignedToId: true },
+      });
+      if (!wo) {
+        throw new NotFoundException(`Agrégat #${aggregateId} introuvable`);
+      }
+      if (wo.assignedToId !== currentUser.id) {
+        throw new ForbiddenException(
+          "Vous ne pouvez consulter que l'historique de vos propres bons de travail",
+        );
+      }
+    }
+
     // 1. Charger les events.
     const rows = await this.prisma.auditLog.findMany({
       where: { aggregateId },

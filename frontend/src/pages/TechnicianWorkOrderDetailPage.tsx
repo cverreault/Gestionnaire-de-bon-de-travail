@@ -11,6 +11,7 @@ import { getPredominantDisplay } from '../utils/addressPredominant';
 import { formatStreet } from '../utils/addressFormat';
 import WorkOrderStatusBadge from '../components/WorkOrderStatusBadge';
 import TransitionActionBar from '../components/transitions/TransitionActionBar';
+import WorkOrderAuditTimeline from '../components/WorkOrderAuditTimeline';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { WorkOrderStatus, ClientType, AddressType } from '../types';
 import type { WorkOrder } from '../types';
@@ -548,6 +549,9 @@ export default function TechnicianWorkOrderDetailPage() {
           </button>
         </div>
       </div>
+
+      {/* ── Historique du BT ───────────────────────────────────────────── */}
+      <WorkOrderAuditTimeline workOrderId={id!} enabled />
 
       {/* Toast */}
       {toast && (

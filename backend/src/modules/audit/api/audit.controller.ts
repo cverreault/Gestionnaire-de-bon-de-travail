@@ -2,8 +2,14 @@ import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { Roles } from '../../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { AuditService } from '../application/services/audit.service';
 import { FindAuditQueryDto } from './dto/find-audit-query.dto';
+
+interface JwtUser {
+  id: string;
+  role: Role;
+}
 
 /**
  * Endpoints de consultation de l'audit log.
@@ -40,17 +46,21 @@ export class AuditController {
    * Retourne les 50 events les plus récents.
    */
   @Get('aggregate/:id')
-  @Roles(Role.ADMIN, Role.DISPATCHER)
   @ApiOperation({
-    summary: 'Timeline d\'un agrégat (admin + dispatcher)',
+    summary: 'Timeline d\'un agrégat (tous les rôles, RBAC sur l\'objet)',
     description:
       'Pour un workOrderId donné, retourne les 50 events les plus récents ' +
-      'qui le concernent. Utile pour la vue "historique" d\'un BT côté ' +
-      'frontend. ADMIN+DISPATCHER autorisés (le dispatcher gère les BT) ; ' +
-      'le TECHNICIAN reste exclu volontairement.',
+      'qui le concernent. ADMIN+DISPATCHER voient tous les BT ; ' +
+      'le TECHNICIAN voit uniquement la timeline de ses propres BT.',
   })
   @ApiParam({ name: 'id', type: 'string', description: 'UUID de l\'agrégat (ex: workOrderId)' })
-  findForAggregate(@Param('id', ParseUUIDPipe) id: string) {
-    return this.auditService.findRecentForAggregate(id);
+  @ApiResponse({ status: 200, description: 'Timeline (50 events max, plus récents en tête)' })
+  @ApiResponse({ status: 403, description: 'Un TECHNICIEN tente de lire un BT qui n\'est pas le sien' })
+  @ApiResponse({ status: 404, description: 'Agrégat introuvable' })
+  findForAggregate(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() currentUser: JwtUser,
+  ) {
+    return this.auditService.findRecentForAggregate(id, currentUser);
   }
 }
