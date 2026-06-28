@@ -59,6 +59,74 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.1.0',
+    name: 'Sprint 1 — Quick wins, sécurité auth et observabilité',
+    date: 'Juin 2026',
+    entries: [
+      // ── Sécurité (priorité affichage) ────────────────────────────────────
+      {
+        type: 'security',
+        text: 'Rotation des refresh tokens en base — chaque login démarre une « famille » de tokens. À chaque refresh l\'ancien est révoqué et un nouveau est émis. Si un token déjà révoqué est rejoué, toute la famille est invalidée immédiatement (détection de vol)',
+      },
+      {
+        type: 'security',
+        text: 'Rate limiting maintenant réellement appliqué (avant : les headers étaient présents mais aucune limite n\'était imposée). Limite scopée par utilisateur authentifié au lieu de l\'adresse IP, pour ne pas pénaliser les bureaux derrière un même NAT',
+      },
+      {
+        type: 'security',
+        text: 'Chaque refus de permission émet maintenant un log structuré « security.access.denied » avec utilisateur, rôle, route et rôles requis — détection de scans IDOR par lecture de logs',
+      },
+      {
+        type: 'security',
+        text: 'Faille IDOR colmatée sur GET /clients/:id et GET /calendar/appointments/:id (un compte technicien pouvait lire n\'importe quelle fiche client) — accès maintenant limité à ADMIN + DISPATCHER, verrouillé par 41 assertions de matrice de permissions',
+      },
+
+      // ── UX Dispatcher ────────────────────────────────────────────────────
+      {
+        type: 'new',
+        text: 'Export CSV de la liste des bons de travail — respecte les filtres actifs, ouvert proprement dans Excel (UTF-8 + BOM) (ADMIN + DISPATCHER, bouton ⬇ Exporter CSV)',
+      },
+      {
+        type: 'new',
+        text: 'Filtres BT enregistrés — sauvegardez vos combinaisons de filtres usuels (« Mes BT en cours », « Urgents cette semaine », etc.) et rappelez-les en un clic. Persistance navigateur',
+      },
+      {
+        type: 'new',
+        text: 'Bouton « 🗐 Dupliquer » sur la page détail d\'un BT — recopie titre, type, client, adresse, données de formulaire, sans le technicien ni les dates. Pratique pour les BT récurrents',
+      },
+
+      // ── UX Technicien ────────────────────────────────────────────────────
+      {
+        type: 'new',
+        text: 'Chip « 🚗 En route depuis MM:SS » au-dessus du BT du technicien — le temps de déplacement défile chaque seconde dès le passage en EN_ROUTE',
+      },
+      {
+        type: 'new',
+        text: 'Le technicien peut maintenant consulter l\'historique de transitions (timeline) de ses propres BT, comme les admins/dispatchers',
+      },
+
+      // ── UX commun ────────────────────────────────────────────────────────
+      {
+        type: 'improvement',
+        text: 'Boutons de transition de statut indiquent maintenant 📝 + tooltip quand une modale va demander des champs supplémentaires (technicien, notes, raison) — fini le clic-erreur-relire',
+      },
+      {
+        type: 'improvement',
+        text: 'Fiche imprimée du BT enrichie : affiche maintenant le client V3 (relations modernes), les valeurs du formulaire personnalisé section par section, et une section « Complétion » avec heures effectives + notes + résultat quand le BT est terminé',
+      },
+
+      // ── Infra / prod-readiness ──────────────────────────────────────────
+      {
+        type: 'infra',
+        text: 'Test de fumée au démarrage : DB et MinIO sont sondés avant que l\'application accepte du trafic. Si une dépendance est rouge, le démarrage échoue avec un message clair — un déploiement cassé est attrapé tout de suite au lieu de produire des 5xx en monitoring',
+      },
+      {
+        type: 'infra',
+        text: 'Suite de tests passée de 192 / 200 à 226 / 226 (toutes les anciennes assertions périmées remises à jour, nouvelle couverture sur les flux d\'authentification et les permissions par rôle)',
+      },
+    ],
+  },
+  {
     version: '2.0.0',
     name: 'Templates de formulaires et RBAC granulaire',
     date: 'Mai 2026',
