@@ -14,6 +14,7 @@ Ce dossier contient les décisions architecturales structurantes du projet TaskM
 | [004](ADR-004-authentication-authorization.md) | Accepted | Authentification et autorisation (JWT + rôles) |
 | [005](ADR-005-i18n-bilingual-app.md) | Accepted | Internationalisation bilingue FR/EN |
 | [006](ADR-006-theme-css-variables.md) | Accepted | Thème clair/sombre via CSS variables |
+| [007](ADR-007-extension-points-and-contracts.md) | Accepted | Extension points et contrats de module (IDomainEvent, IWorkOrderHook, IModuleRegistration) |
 
 ## Comment écrire une nouvelle ADR
 

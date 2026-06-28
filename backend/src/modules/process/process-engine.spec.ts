@@ -144,7 +144,13 @@ function makeMockCache(process: CachedProcess = buildProcess()) {
 }
 
 function buildService(prisma: any, cache?: any): ProcessEngineService {
-  return new ProcessEngineService(prisma as any, (cache ?? makeMockCache()) as any);
+  // EventEmitter2 mock — emit() is a no-op for tests.
+  const emitterMock = { emit: jest.fn(), emitAsync: jest.fn() };
+  return new ProcessEngineService(
+    prisma as any,
+    (cache ?? makeMockCache()) as any,
+    emitterMock as any,
+  );
 }
 
 // ─── executeTransition tests ──────────────────────────────────────────────────
