@@ -1,11 +1,22 @@
 import { Injectable, Logger, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Role, type Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
+import { toCsv } from '../../../../common/utils/csv.util';
 import type { IDomainEvent } from '../../../../common/contracts';
 
 interface CurrentUserRef {
   id: string;
   role: Role;
+}
+
+export interface AuditListOpts {
+  page?: number;
+  limit?: number;
+  eventName?: string;
+  aggregateId?: string;
+  actorUserId?: string;
+  from?: Date;
+  to?: Date;
 }
 
 /**
@@ -117,18 +128,9 @@ export class AuditService {
     }));
   }
 
-  async findAllPaginated(opts: {
-    page?: number;
-    limit?: number;
-    eventName?: string;
-    aggregateId?: string;
-    actorUserId?: string;
-    from?: Date;
-    to?: Date;
-  }) {
-    const page = Math.max(1, opts.page ?? 1);
-    const limit = Math.min(200, Math.max(1, opts.limit ?? 50));
-    const where: Prisma.AuditLogWhereInput = {
+  /** Shared between findAllPaginated and exportCsv — keep filters in one place. */
+  private buildListWhere(opts: AuditListOpts): Prisma.AuditLogWhereInput {
+    return {
       ...(opts.eventName && { eventName: opts.eventName }),
       ...(opts.aggregateId && { aggregateId: opts.aggregateId }),
       ...(opts.actorUserId && { actorUserId: opts.actorUserId }),
@@ -141,6 +143,12 @@ export class AuditService {
           }
         : {}),
     };
+  }
+
+  async findAllPaginated(opts: AuditListOpts) {
+    const page = Math.max(1, opts.page ?? 1);
+    const limit = Math.min(200, Math.max(1, opts.limit ?? 50));
+    const where = this.buildListWhere(opts);
 
     const [items, total] = await this.prisma.$transaction([
       this.prisma.auditLog.findMany({
@@ -174,5 +182,58 @@ export class AuditService {
       })),
       meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
+  }
+
+  /**
+   * Export the same filtered slice the admin sees in /audit, capped at
+   * 5000 rows. UTF-8 CSV with a BOM (Excel-friendly). The `data` payload
+   * is serialised as compact JSON so a single column captures it without
+   * exploding the row structure when payload schemas evolve.
+   */
+  async exportCsv(opts: AuditListOpts): Promise<string> {
+    const MAX_ROWS = 5000;
+    const where = this.buildListWhere(opts);
+
+    const rows = await this.prisma.auditLog.findMany({
+      where,
+      orderBy: { occurredAt: 'desc' },
+      take: MAX_ROWS,
+    });
+
+    const actorIds = Array.from(
+      new Set(rows.map((r) => r.actorUserId).filter((id): id is string => !!id)),
+    );
+    const actors = actorIds.length
+      ? await this.prisma.user.findMany({
+          where: { id: { in: actorIds } },
+          select: { id: true, firstName: true, lastName: true, email: true, role: true },
+        })
+      : [];
+    const actorById = new Map(actors.map((u) => [u.id, u]));
+
+    type Row = (typeof rows)[number];
+    return toCsv(rows as unknown as Array<Record<string, unknown>>, [
+      { header: 'Quand',         pick: (r: any) => (r as Row).occurredAt },
+      { header: 'Événement',     pick: (r: any) => (r as Row).eventName },
+      { header: 'Agrégat',       pick: (r: any) => (r as Row).aggregateId },
+      { header: 'Acteur',        pick: (r: any) => {
+          const r2 = r as Row;
+          const a = r2.actorUserId ? actorById.get(r2.actorUserId) : null;
+          return a ? `${a.firstName} ${a.lastName}` : 'Système';
+        } },
+      { header: 'Acteur email',  pick: (r: any) => {
+          const r2 = r as Row;
+          return r2.actorUserId ? actorById.get(r2.actorUserId)?.email ?? '' : '';
+        } },
+      { header: 'Acteur rôle',   pick: (r: any) => {
+          const r2 = r as Row;
+          return r2.actorUserId ? actorById.get(r2.actorUserId)?.role ?? '' : '';
+        } },
+      { header: 'Payload',       pick: (r: any) => {
+          const r2 = r as Row;
+          return r2.data ? JSON.stringify(r2.data) : '';
+        } },
+      { header: 'Enregistré le', pick: (r: any) => (r as Row).createdAt },
+    ]);
   }
 }

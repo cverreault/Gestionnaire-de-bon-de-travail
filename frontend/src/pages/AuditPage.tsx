@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuditList } from '../hooks/useAudit';
-import type { AuditListParams } from '../services/audit.service';
+import { exportAuditCsv, type AuditListParams } from '../services/audit.service';
 import { theme, tableStyles, layoutStyles, formStyles } from '../theme';
 import { formatDateTime } from '../utils/dateFormat';
 
@@ -43,6 +43,7 @@ export default function AuditPage() {
   const [page, setPage] = useState(1);
   const limit = 50;
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [isExporting, setIsExporting] = useState(false);
 
   const params = useMemo<AuditListParams>(() => ({
     page,
@@ -65,6 +66,19 @@ export default function AuditPage() {
     setPage(1);
   }
 
+  async function handleExportCsv() {
+    if (isExporting) return;
+    setIsExporting(true);
+    try {
+      await exportAuditCsv(params);
+    } catch (err) {
+      console.error('[audit] CSV export failed', err);
+      window.alert('Export CSV impossible. Réessayez.');
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
   const activeFilters =
     (eventName ? 1 : 0) + (aggregateId ? 1 : 0) + (from ? 1 : 0) + (to ? 1 : 0);
 
@@ -76,6 +90,28 @@ export default function AuditPage() {
           <span style={{ fontSize: theme.font.sizeSm, color: theme.colors.textMuted }}>
             {meta ? `${meta.total} entrées` : '—'}
           </span>
+          <button
+            onClick={handleExportCsv}
+            disabled={isExporting || !meta || meta.total === 0}
+            title="Exporter la slice filtrée au format CSV (max 5000 lignes)"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              padding: '0.45rem 0.875rem',
+              borderRadius: theme.radius.md,
+              border: theme.borders.default,
+              background: theme.colors.surface,
+              color: theme.colors.textSecondary,
+              fontWeight: theme.font.weightMedium,
+              fontSize: theme.font.sizeSm,
+              cursor: isExporting || !meta || meta.total === 0 ? 'not-allowed' : 'pointer',
+              opacity: isExporting || !meta || meta.total === 0 ? 0.6 : 1,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {isExporting ? '⏳ Export…' : '⬇ Exporter CSV'}
+          </button>
         </div>
       </div>
 

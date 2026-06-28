@@ -1,4 +1,5 @@
-import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, Query, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { Roles } from '../../../common/decorators/roles.decorator';
@@ -39,6 +40,35 @@ export class AuditController {
   @ApiResponse({ status: 403, description: 'Réservé aux ADMIN' })
   findAll(@Query() query: FindAuditQueryDto) {
     return this.auditService.findAllPaginated(query);
+  }
+
+  /**
+   * Export CSV de l'audit log filtré (admin) — pour exports compliance
+   * (Loi 25, PIPEDA). Cap à 5000 lignes, UTF-8 avec BOM.
+   * Doit être déclaré AVANT @Get('aggregate/:id') pour éviter d'être
+   * absorbé par le wildcard de routing.
+   */
+  @Get('export.csv')
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary: 'Exporter l\'audit log filtré au format CSV',
+    description:
+      'Reprend exactement les mêmes filtres que GET /audit (eventName, ' +
+      'aggregateId, actorUserId, plage occurredAt) mais ignore la pagination. ' +
+      'Cap à 5000 lignes. UTF-8 + BOM pour Excel.',
+  })
+  @ApiResponse({ status: 200, description: 'Fichier CSV' })
+  @ApiResponse({ status: 403, description: 'Réservé aux ADMIN' })
+  async exportCsv(
+    @Query() query: FindAuditQueryDto,
+    @Res() res: Response,
+  ): Promise<void> {
+    const csv = await this.auditService.exportCsv(query);
+    const filename = `audit-${new Date().toISOString().slice(0, 10)}.csv`;
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    res.send(csv);
   }
 
   /**

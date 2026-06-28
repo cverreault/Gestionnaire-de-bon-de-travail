@@ -58,3 +58,36 @@ export interface AuditListResponse {
 /** Liste paginée filtrable — ADMIN seulement. */
 export const getAuditList = (params: AuditListParams = {}) =>
   api.get('/audit', { params });
+
+/**
+ * Exporte la slice filtrée de l'audit en CSV (ADMIN). Stream le blob et
+ * déclenche le téléchargement navigateur. Reprend les mêmes filtres que
+ * getAuditList mais ignore la pagination (cap 5000 lignes côté backend).
+ */
+export async function exportAuditCsv(params: AuditListParams = {}): Promise<{ filename: string; size: number }> {
+  const exportParams = { ...params };
+  delete (exportParams as { page?: number }).page;
+  delete (exportParams as { limit?: number }).limit;
+
+  const response = await api.get('/audit/export.csv', {
+    params: exportParams,
+    responseType: 'blob',
+  });
+
+  const cd = response.headers['content-disposition'] as string | undefined;
+  const fallback = `audit-${new Date().toISOString().slice(0, 10)}.csv`;
+  const match = cd ? /filename="?([^"]+)"?/i.exec(cd) : null;
+  const filename = match?.[1] ?? fallback;
+
+  const blob = response.data as Blob;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+
+  return { filename, size: blob.size };
+}
