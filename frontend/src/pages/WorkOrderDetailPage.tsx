@@ -11,6 +11,7 @@ import TemplateFormRenderer from '../components/TemplateFormRenderer';
 import TemplateValuesView from '../components/TemplateValuesView';
 import WorkOrderStatusBadge from '../components/WorkOrderStatusBadge';
 import TransitionActionBar from '../components/transitions/TransitionActionBar';
+import WorkOrderAuditTimeline from '../components/WorkOrderAuditTimeline';
 import PrintWorkOrder from '../components/PrintWorkOrder';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useState, useRef, useEffect } from 'react';
@@ -44,6 +45,8 @@ export default function WorkOrderDetailPage() {
   const uploadAttachment = useUploadAttachment(id!);
   const currentUser = useAuthStore((s) => s.user);
   const isAdmin = currentUser?.role === Role.ADMIN;
+  const canSeeAuditTimeline =
+    currentUser?.role === Role.ADMIN || currentUser?.role === Role.DISPATCHER;
 
   const [noteContent, setNoteContent] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -657,6 +660,11 @@ export default function WorkOrderDetailPage() {
           </label>
         </div>
       </div>
+
+      {/* Audit timeline — qui a fait quoi, quand. Visible ADMIN + DISPATCHER. */}
+      {id && (
+        <WorkOrderAuditTimeline workOrderId={id} enabled={canSeeAuditTimeline} />
+      )}
 
       {/* Assign modal: select a technician before sending the ASSIGNED transition */}
       {showAssignModal && (

@@ -51,6 +51,17 @@
     "COMPLETED_POSITIVE": "Terminé (positif)",
     "COMPLETED_NEGATIVE": "Terminé (négatif)"
   },
+  "audit": {
+    "systemActor": "Système",
+    "events": {
+      "created": "Bon de travail créé",
+      "assigned": "Assigné à un technicien",
+      "dispatched": "Réparti",
+      "statusChanged": "Changement de statut",
+      "completedPositive": "Terminé (positif)",
+      "completedNegative": "Terminé (négatif)"
+    }
+  },
   "sections": {
     "info": "Informations",
     "client": "Client",
@@ -62,7 +73,7 @@
     "photosAttachments": "Photos & Pièces jointes",
     "fieldNotes": "Notes terrain",
     "actions": "Actions",
-    "history": "Historique"
+    "history": "Historique d'événements"
   },
   "actions": {
     "addNote": "Ajouter une note",
@@ -79,6 +90,7 @@
   "messages": {
     "noActive": "Aucun BT en attente",
     "noResult": "Aucun bon de travail",
+    "noHistory": "Aucun événement enregistré pour l'instant.",
     "noNote": "Aucune note",
     "noAttachment": "Aucune pièce jointe",
     "noPhoto": "Aucune photo",

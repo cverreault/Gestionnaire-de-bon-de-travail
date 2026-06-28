@@ -51,6 +51,17 @@
     "COMPLETED_POSITIVE": "Completed (positive)",
     "COMPLETED_NEGATIVE": "Completed (negative)"
   },
+  "audit": {
+    "systemActor": "System",
+    "events": {
+      "created": "Work order created",
+      "assigned": "Assigned to a technician",
+      "dispatched": "Dispatched",
+      "statusChanged": "Status changed",
+      "completedPositive": "Completed (positive)",
+      "completedNegative": "Completed (negative)"
+    }
+  },
   "sections": {
     "info": "Information",
     "client": "Client",
@@ -62,7 +73,7 @@
     "photosAttachments": "Photos & Attachments",
     "fieldNotes": "Field notes",
     "actions": "Actions",
-    "history": "History"
+    "history": "Event history"
   },
   "actions": {
     "addNote": "Add note",
@@ -79,6 +90,7 @@
   "messages": {
     "noActive": "No active work orders",
     "noResult": "No work orders",
+    "noHistory": "No events recorded yet.",
     "noNote": "No notes",
     "noAttachment": "No attachments",
     "noPhoto": "No photos",

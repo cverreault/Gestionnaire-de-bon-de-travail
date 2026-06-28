@@ -40,12 +40,14 @@ export class AuditController {
    * Retourne les 50 events les plus récents.
    */
   @Get('aggregate/:id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.DISPATCHER)
   @ApiOperation({
-    summary: 'Timeline d\'un agrégat (admin)',
+    summary: 'Timeline d\'un agrégat (admin + dispatcher)',
     description:
       'Pour un workOrderId donné, retourne les 50 events les plus récents ' +
-      'qui le concernent. Utile pour la vue "historique" d\'un BT.',
+      'qui le concernent. Utile pour la vue "historique" d\'un BT côté ' +
+      'frontend. ADMIN+DISPATCHER autorisés (le dispatcher gère les BT) ; ' +
+      'le TECHNICIAN reste exclu volontairement.',
   })
   @ApiParam({ name: 'id', type: 'string', description: 'UUID de l\'agrégat (ex: workOrderId)' })
   findForAggregate(@Param('id', ParseUUIDPipe) id: string) {

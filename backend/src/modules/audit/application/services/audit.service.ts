@@ -56,11 +56,32 @@ export class AuditService {
   // ── Read APIs (pour /api/audit, admin) ──────────────────────────────
 
   async findRecentForAggregate(aggregateId: string, limit = 50) {
-    return this.prisma.auditLog.findMany({
+    // 1. Charger les events.
+    const rows = await this.prisma.auditLog.findMany({
       where: { aggregateId },
       orderBy: { occurredAt: 'desc' },
       take: limit,
     });
+
+    // 2. Charger en lot les utilisateurs concernés (un seul roundtrip).
+    //    Le `users` est dans le schéma partagé — pas de violation ADR-001
+    //    puisqu'on n'importe pas le service du module users.
+    const actorIds = Array.from(
+      new Set(rows.map((r) => r.actorUserId).filter((id): id is string => !!id)),
+    );
+    const actors = actorIds.length
+      ? await this.prisma.user.findMany({
+          where: { id: { in: actorIds } },
+          select: { id: true, firstName: true, lastName: true, email: true, role: true },
+        })
+      : [];
+    const actorById = new Map(actors.map((u) => [u.id, u]));
+
+    // 3. Hydrater chaque row avec l'acteur.
+    return rows.map((r) => ({
+      ...r,
+      actor: r.actorUserId ? actorById.get(r.actorUserId) ?? null : null,
+    }));
   }
 
   async findAllPaginated(opts: {
