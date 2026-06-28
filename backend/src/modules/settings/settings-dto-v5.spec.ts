@@ -7,7 +7,7 @@
  *  - CreateAddressTypeDto: same validation as ClientType
  *  - UpdateTaskTypeDto: all optional, isActive boolean
  *  - UpdateClientTypeDto / UpdateAddressTypeDto: same as Update pattern
- *  - BUG-04: sortOrder missing @IsInt() → no type validation (documents gap)
+ *  - BUG-04 (fixed): sortOrder has @IsInt() — non-numeric values are rejected
  *  - Color max length constraint (7 chars for #RRGGBB)
  *  - Code pattern: uppercase alphanumeric + underscore only
  */
@@ -32,14 +32,19 @@ async function getErrors(DtoClass: new () => object, plain: object): Promise<str
 // ─── CreateTaskTypeDto ────────────────────────────────────────────────────────
 
 describe('CreateTaskTypeDto', () => {
-  it('passes with only name', async () => {
-    const errors = await getErrors(CreateTaskTypeDto, { name: 'Plomberie' });
+  // prefix is now required (alphanumeric, max 10 chars) — it's used to build
+  // BT reference numbers like "PLB-20260514-0001". Tests supply a valid one.
+  const PREFIX = 'PLB';
+
+  it('passes with name + prefix', async () => {
+    const errors = await getErrors(CreateTaskTypeDto, { name: 'Plomberie', prefix: PREFIX });
     expect(errors).toHaveLength(0);
   });
 
   it('passes with all fields', async () => {
     const errors = await getErrors(CreateTaskTypeDto, {
       name: 'Électricité',
+      prefix: 'ELEC',
       description: 'Travaux électriques',
       color: '#FF5733',
       icon: '⚡',
@@ -48,29 +53,47 @@ describe('CreateTaskTypeDto', () => {
   });
 
   it('fails when name is missing', async () => {
-    const errors = await getErrors(CreateTaskTypeDto, {});
+    const errors = await getErrors(CreateTaskTypeDto, { prefix: PREFIX });
     expect(errors.length).toBeGreaterThan(0);
     expect(errors.some((e) => e.toLowerCase().includes('name') || e.toLowerCase().includes('nom') || e.toLowerCase().includes('obligatoire') || e.toLowerCase().includes('empty'))).toBe(true);
   });
 
+  it('fails when prefix is missing', async () => {
+    const errors = await getErrors(CreateTaskTypeDto, { name: 'Test' });
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors.some((e) => e.toLowerCase().includes('prefix'))).toBe(true);
+  });
+
+  it('fails when prefix contains a hyphen', async () => {
+    const errors = await getErrors(CreateTaskTypeDto, { name: 'Test', prefix: 'PL-B' });
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors.some((e) => e.toLowerCase().includes('alphanum'))).toBe(true);
+  });
+
+  it('fails when prefix exceeds 10 characters', async () => {
+    const errors = await getErrors(CreateTaskTypeDto, { name: 'Test', prefix: 'A'.repeat(11) });
+    expect(errors.length).toBeGreaterThan(0);
+  });
+
   it('fails when name is empty string', async () => {
-    const errors = await getErrors(CreateTaskTypeDto, { name: '' });
+    const errors = await getErrors(CreateTaskTypeDto, { name: '', prefix: PREFIX });
     expect(errors.length).toBeGreaterThan(0);
   });
 
   it('fails when name exceeds 100 characters', async () => {
-    const errors = await getErrors(CreateTaskTypeDto, { name: 'A'.repeat(101) });
+    const errors = await getErrors(CreateTaskTypeDto, { name: 'A'.repeat(101), prefix: PREFIX });
     expect(errors.length).toBeGreaterThan(0);
   });
 
   it('passes when name is exactly 100 characters', async () => {
-    const errors = await getErrors(CreateTaskTypeDto, { name: 'A'.repeat(100) });
+    const errors = await getErrors(CreateTaskTypeDto, { name: 'A'.repeat(100), prefix: PREFIX });
     expect(errors).toHaveLength(0);
   });
 
   it('fails when description exceeds 500 characters', async () => {
     const errors = await getErrors(CreateTaskTypeDto, {
       name: 'Test',
+      prefix: PREFIX,
       description: 'D'.repeat(501),
     });
     expect(errors.length).toBeGreaterThan(0);
@@ -79,6 +102,7 @@ describe('CreateTaskTypeDto', () => {
   it('passes when description is exactly 500 characters', async () => {
     const errors = await getErrors(CreateTaskTypeDto, {
       name: 'Test',
+      prefix: PREFIX,
       description: 'D'.repeat(500),
     });
     expect(errors).toHaveLength(0);
@@ -87,6 +111,7 @@ describe('CreateTaskTypeDto', () => {
   it('fails when color exceeds 7 characters', async () => {
     const errors = await getErrors(CreateTaskTypeDto, {
       name: 'Test',
+      prefix: PREFIX,
       color: '#FF57331', // 9 chars
     });
     expect(errors.length).toBeGreaterThan(0);
@@ -95,6 +120,7 @@ describe('CreateTaskTypeDto', () => {
   it('passes when color is exactly 7 characters (#RRGGBB)', async () => {
     const errors = await getErrors(CreateTaskTypeDto, {
       name: 'Test',
+      prefix: PREFIX,
       color: '#FF5733',
     });
     expect(errors).toHaveLength(0);
@@ -103,13 +129,14 @@ describe('CreateTaskTypeDto', () => {
   it('fails when icon exceeds 50 characters', async () => {
     const errors = await getErrors(CreateTaskTypeDto, {
       name: 'Test',
+      prefix: PREFIX,
       icon: 'I'.repeat(51),
     });
     expect(errors.length).toBeGreaterThan(0);
   });
 
   it('description is optional — omitting it is valid', async () => {
-    const errors = await getErrors(CreateTaskTypeDto, { name: 'Test' });
+    const errors = await getErrors(CreateTaskTypeDto, { name: 'Test', prefix: PREFIX });
     expect(errors).toHaveLength(0);
   });
 });
@@ -241,31 +268,16 @@ describe('CreateClientTypeDto', () => {
     expect(errors.length).toBeGreaterThan(0);
   });
 
-  /**
-   * BUG-04: sortOrder has no @IsInt() or @IsNumber() decorator.
-   * When a non-numeric value is sent, class-validator does NOT reject it.
-   * The request reaches Prisma which throws a 500 DB error instead of a 400.
-   *
-   * This test documents the gap: class-validator SHOULD reject non-numeric sortOrder.
-   */
-  it('BUG-04 — sortOrder: string "abc" should fail validation (currently PASSES — missing @IsInt)', async () => {
+  // BUG-04 (fixed): sortOrder now carries @IsInt(). class-validator
+  // rejects non-numeric values at the DTO layer instead of letting the
+  // request reach Prisma and produce a 500.
+  it('sortOrder rejects a non-numeric string (BUG-04 fix verification)', async () => {
     const errors = await getErrors(CreateClientTypeDto, {
       name: 'Test',
       code: 'TEST',
-      sortOrder: 'abc', // Invalid: should be a number
+      sortOrder: 'abc',
     });
-    // EXPECTED BEHAVIOR (after fix): errors.length > 0
-    // CURRENT BEHAVIOR (bug): errors.length === 0 because @IsInt/@IsNumber is missing
-    // This test PASSES currently (no validation error), documenting the missing validator
-    expect(errors).toHaveLength(0); // Confirms the bug: no validation error for string 'abc'
-  });
-
-  it('BUG-04 — after fix: @IsInt() should reject sortOrder: "abc"', () => {
-    // This test describes what SHOULD happen after the fix is applied.
-    // Currently sortOrder has no type validator, so class-validator accepts any value.
-    // Fix: add @IsInt() @IsOptional() to sortOrder in CreateClientTypeDto and CreateAddressTypeDto
-    const missingDecorator = true; // Documents that @IsInt is missing
-    expect(missingDecorator).toBe(true);
+    expect(errors.length).toBeGreaterThan(0);
   });
 });
 
@@ -332,13 +344,13 @@ describe('CreateAddressTypeDto', () => {
     expect(errors).toHaveLength(0);
   });
 
-  it('BUG-04 — sortOrder accepts non-numeric value (missing @IsInt, same as ClientType)', async () => {
+  it('sortOrder rejects a non-numeric string (BUG-04 fix verification, mirrors ClientType)', async () => {
     const errors = await getErrors(CreateAddressTypeDto, {
       name: 'Test',
       code: 'TEST',
-      sortOrder: 'not-a-number', // Should fail but doesn't — missing @IsInt
+      sortOrder: 'not-a-number',
     });
-    expect(errors).toHaveLength(0); // Confirms the bug
+    expect(errors.length).toBeGreaterThan(0);
   });
 });
 

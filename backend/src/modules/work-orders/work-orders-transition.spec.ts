@@ -53,7 +53,10 @@ function buildService(prisma: any): WorkOrdersService {
   // configured on the mock workOrder), so these stubs are never called.
   const mockProcessEngine = {} as any;
   const mockProcessCache = {} as any;
-  return new WorkOrdersService(prisma as any, mockProcessEngine, mockProcessCache);
+  // EventEmitter2 stub — domain events are fire-and-forget; we ignore them
+  // in these unit tests since the assertions live on Prisma calls.
+  const mockEventEmitter = { emit: jest.fn(), emitAsync: jest.fn() } as any;
+  return new WorkOrdersService(prisma as any, mockProcessEngine, mockProcessCache, mockEventEmitter);
 }
 
 // ─── Admin bypass tests ───────────────────────────────────────────────────────
