@@ -41,6 +41,11 @@ CLAUDE.md.local
 coverage/
 .nyc_output/
 
+# ── Playwright (E2E artefacts) ───────────────────────────────────────────────
+frontend/test-results/
+frontend/playwright-report/
+frontend/.playwright/
+
 # ── Docker / local volumes ────────────────────────────────────────────────────
 .docker-data/
 data/
