@@ -96,9 +96,10 @@ const CALENDAR_MATRIX: MatrixRow[] = [
 ];
 
 const AUDIT_MATRIX: MatrixRow[] = [
-  { controller: AuditController, method: 'findAll',         expectedRoles: [Role.ADMIN], note: 'GET /audit — admin only' },
+  { controller: AuditController, method: 'findAll',           expectedRoles: [Role.ADMIN], note: 'GET /audit — admin only' },
   // CSV export shares the same gate as the JSON list — admin compliance only.
-  { controller: AuditController, method: 'exportCsv',       expectedRoles: [Role.ADMIN], note: 'GET /audit/export.csv — admin only' },
+  { controller: AuditController, method: 'exportCsv',         expectedRoles: [Role.ADMIN], note: 'GET /audit/export.csv — admin only' },
+  { controller: AuditController, method: 'getActivityStats', expectedRoles: [Role.ADMIN], note: 'GET /audit/stats — dashboard rollup' },
   // A6 — TECHNICIAN allowed at the route level; service enforces object-level RBAC
   // (technicians can only read the timeline of BTs they are assigned to).
   { controller: AuditController, method: 'findForAggregate', expectedRoles: 'ANY',       note: 'GET /audit/aggregate/:id — A6, object-level RBAC in service' },

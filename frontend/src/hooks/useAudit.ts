@@ -2,9 +2,11 @@ import { useQuery } from '@tanstack/react-query';
 import {
   getAuditForAggregate,
   getAuditList,
+  getAuditActivityStats,
   type AuditLogEntry,
   type AuditListParams,
   type AuditListResponse,
+  type AuditActivityStats,
 } from '../services/audit.service';
 
 export const AUDIT_KEY = 'audit';
@@ -45,5 +47,22 @@ export function useAuditList(params: AuditListParams, enabled = true) {
     staleTime: 15_000,
     // Keep previous data while paging so the table doesn't flash empty.
     placeholderData: (prev) => prev,
+  });
+}
+
+/**
+ * Activity stats for the admin dashboard — ADMIN only.
+ * 5 min stale time since the rollup recomputes every refresh and we
+ * don't need to flicker the dashboard chart on every nav.
+ */
+export function useAuditActivityStats(days = 30, enabled = true) {
+  return useQuery({
+    queryKey: [AUDIT_KEY, 'stats', days],
+    queryFn: async () => {
+      const res = await getAuditActivityStats(days);
+      return (res.data?.data ?? res.data) as AuditActivityStats;
+    },
+    enabled,
+    staleTime: 5 * 60_000,
   });
 }

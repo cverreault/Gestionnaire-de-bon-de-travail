@@ -236,4 +236,58 @@ export class AuditService {
       { header: 'Enregistré le', pick: (r: any) => (r as Row).createdAt },
     ]);
   }
+
+  /**
+   * Activity rollup for the admin dashboard.
+   *
+   * Returns the count of audit events per local-day for the last N days
+   * (default 30) and the top event types over the same window. Computed
+   * via a single raw SQL query against Postgres' date_trunc — far cheaper
+   * than loading everything and reducing in Node.
+   */
+  async getActivityStats(days = 30): Promise<{
+    range: { from: string; to: string; days: number };
+    perDay: Array<{ date: string; count: number }>;
+    topEvents: Array<{ eventName: string; count: number }>;
+    total: number;
+  }> {
+    const safeDays = Math.min(180, Math.max(1, Math.floor(days)));
+    const from = new Date(Date.now() - safeDays * 24 * 60 * 60 * 1000);
+
+    // Postgres-native rollups. occurred_at is TIMESTAMPTZ, date_trunc('day')
+    // returns the start-of-day in UTC; the frontend renders in user locale.
+    const perDayRows = await this.prisma.$queryRaw<Array<{ day: Date; count: bigint }>>`
+      SELECT date_trunc('day', occurred_at) AS day,
+             COUNT(*)::bigint              AS count
+      FROM audit_logs
+      WHERE occurred_at >= ${from}
+      GROUP BY day
+      ORDER BY day ASC
+    `;
+
+    const topEventsRows = await this.prisma.$queryRaw<Array<{ event_name: string; count: bigint }>>`
+      SELECT event_name,
+             COUNT(*)::bigint AS count
+      FROM audit_logs
+      WHERE occurred_at >= ${from}
+      GROUP BY event_name
+      ORDER BY count DESC
+      LIMIT 10
+    `;
+
+    const total = perDayRows.reduce((acc, r) => acc + Number(r.count), 0);
+
+    return {
+      range: { from: from.toISOString(), to: new Date().toISOString(), days: safeDays },
+      perDay: perDayRows.map((r) => ({
+        date: r.day.toISOString().slice(0, 10),
+        count: Number(r.count),
+      })),
+      topEvents: topEventsRows.map((r) => ({
+        eventName: r.event_name,
+        count: Number(r.count),
+      })),
+      total,
+    };
+  }
 }

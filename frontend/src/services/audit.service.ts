@@ -59,6 +59,19 @@ export interface AuditListResponse {
 export const getAuditList = (params: AuditListParams = {}) =>
   api.get('/audit', { params });
 
+// ── Admin dashboard rollup ───────────────────────────────────────────────────
+
+export interface AuditActivityStats {
+  range: { from: string; to: string; days: number };
+  perDay: Array<{ date: string; count: number }>;
+  topEvents: Array<{ eventName: string; count: number }>;
+  total: number;
+}
+
+/** Activity rollup for the admin dashboard — ADMIN only. */
+export const getAuditActivityStats = (days = 30) =>
+  api.get('/audit/stats', { params: { days } });
+
 /**
  * Exporte la slice filtrée de l'audit en CSV (ADMIN). Stream le blob et
  * déclenche le téléchargement navigateur. Reprend les mêmes filtres que

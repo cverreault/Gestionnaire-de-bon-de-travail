@@ -72,6 +72,23 @@ export class AuditController {
   }
 
   /**
+   * Statistiques d'activité pour le dashboard admin : nb d'events/jour
+   * + top event types sur les N derniers jours. Doit être déclaré AVANT
+   * /aggregate/:id pour ne pas être absorbé par le wildcard.
+   */
+  @Get('stats')
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary: 'Rollup d\'activité audit pour le dashboard',
+    description: 'Compte agrégé par jour + top 10 event types sur la fenêtre `days` (défaut 30, max 180).',
+  })
+  @ApiResponse({ status: 200, description: 'Stats {range, perDay[], topEvents[], total}' })
+  getActivityStats(@Query('days') days?: string) {
+    const n = days ? parseInt(days, 10) : 30;
+    return this.auditService.getActivityStats(Number.isFinite(n) ? n : 30);
+  }
+
+  /**
    * Timeline d'un agrégat précis (ex: tous les events d'un BT).
    * Retourne les 50 events les plus récents.
    */

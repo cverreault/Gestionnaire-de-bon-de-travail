@@ -8,6 +8,7 @@ import { useAuthStore } from '../context/auth.store';
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import WorkOrderStatusBadge from '../components/WorkOrderStatusBadge';
+import AuditActivityChart from '../components/AuditActivityChart';
 import type { ApiResponse, AdminStats, TechnicianStats, WorkOrder } from '../types';
 import { Role, WorkOrderStatus } from '../types';
 import { theme, tableStyles, cardStyles, layoutStyles, getRowStyle } from '../theme';
@@ -110,6 +111,8 @@ function RecentWORow({ wo, index, isHovered, onEnter, onLeave }: {
 function AdminDashboard() {
   const { t: tNav } = useTranslation('nav');
   const { t: tCommon } = useTranslation('common');
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === Role.ADMIN;
   const [hoveredTechRow, setHoveredTechRow] = useState<number | null>(null);
   const [hoveredRecentRow, setHoveredRecentRow] = useState<number | null>(null);
 
@@ -361,6 +364,9 @@ function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* ── Audit activity (ADMIN only) ──────────────────────────────────── */}
+      {isAdmin && <AuditActivityChart days={30} />}
     </div>
   );
 }
