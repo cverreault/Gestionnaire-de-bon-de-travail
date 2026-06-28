@@ -1,4 +1,4 @@
-import type { WorkOrder } from '../types';
+import type { WorkOrder, TemplateSection, TemplateField, WorkOrderTemplate } from '../types';
 import { WorkOrderStatus, WorkOrderType } from '../types';
 
 // ─── Label maps ───────────────────────────────────────────────────────────────
@@ -143,12 +143,26 @@ interface Props {
 }
 
 export default function PrintWorkOrder({ wo }: Props) {
-  // Build client display strings
+  // Build client display strings. Resolution priority matches the screen view:
+  //   1) V3 Client + ClientAddress relations (modern flow)
+  //   2) Temporary client (in-form one-off)
+  //   3) External client name + free-text address (legacy)
   let clientName = '—';
   let clientPhone = '—';
   let clientAddress = '—';
 
-  if (wo.temporaryClient) {
+  if (wo.client) {
+    const c = wo.client;
+    clientName = `${c.firstName ?? ''} ${c.lastName ?? ''}`.trim() || '—';
+    clientPhone = c.phone ?? '—';
+    if (wo.clientAddress_rel) {
+      const a = wo.clientAddress_rel;
+      const parts = [a.street, a.city, a.postalCode].filter(Boolean);
+      clientAddress = parts.length > 0 ? parts.join(', ') : '—';
+    } else if (wo.clientAddress) {
+      clientAddress = wo.clientAddress;
+    }
+  } else if (wo.temporaryClient) {
     const tc = wo.temporaryClient;
     clientName = `${tc.firstName} ${tc.lastName}`;
     clientPhone = tc.phone ?? '—';
@@ -158,6 +172,31 @@ export default function PrintWorkOrder({ wo }: Props) {
     clientName = wo.externalClientName;
     clientAddress = wo.clientAddress ?? '—';
   }
+
+  // Completion data — only render if the BT actually has any.
+  const isCompleted =
+    wo.status === WorkOrderStatus.COMPLETED_POSITIVE ||
+    wo.status === WorkOrderStatus.COMPLETED_NEGATIVE;
+  const hasCompletionData =
+    isCompleted ||
+    !!wo.completionNotes ||
+    !!wo.actualStartTime ||
+    !!wo.actualEndTime;
+
+  // Template + filled values — task types can carry a custom form whose
+  // section/field structure lives on taskType.template and the answers
+  // on wo.templateData (JSONB, typed-loosely at the API edge). The detail
+  // include() ships the full sections/fields tree, but TaskType.template
+  // is typed as the lightweight {id, name} projection on the screen-facing
+  // type. Assert to the full WorkOrderTemplate here.
+  const template = wo.taskType?.template as WorkOrderTemplate | undefined;
+  const templateData =
+    (wo as { templateData?: Record<string, unknown> | null }).templateData ?? null;
+  const hasTemplateValues =
+    !!template &&
+    Array.isArray(template.sections) &&
+    !!templateData &&
+    Object.keys(templateData).length > 0;
 
   // Technician
   const techName = wo.assignedTo
@@ -238,6 +277,54 @@ export default function PrintWorkOrder({ wo }: Props) {
             {wo.description ?? '—'}
           </div>
 
+          {/* ── Template values (custom form answers) ───────────────────── */}
+          {hasTemplateValues && (
+            <>
+              <hr style={hr} />
+              <div style={sectionTitle}>Détails du formulaire</div>
+              {template!.sections.map((section: TemplateSection) => {
+                const fieldsWithValues = section.fields
+                  .map((f: TemplateField) => ({
+                    field: f,
+                    value: (templateData as Record<string, unknown>)[f.id],
+                  }))
+                  .filter(
+                    ({ value }: { value: unknown }) =>
+                      value !== undefined && value !== '' && value !== null,
+                  );
+                if (fieldsWithValues.length === 0) return null;
+                return (
+                  <div key={section.id} style={{ marginBottom: '3pt' }}>
+                    <div style={{
+                      fontSize: '7.5pt',
+                      fontWeight: 700,
+                      color: '#444',
+                      marginBottom: '1pt',
+                    }}>
+                      {section.name}
+                    </div>
+                    <div style={row}>
+                      {fieldsWithValues.map(
+                        ({ field: f, value }: { field: TemplateField; value: unknown }) => (
+                          <div key={f.id} style={field}>
+                            <span style={labelPrint}>{f.label}</span>
+                            <span style={valuePrint}>
+                              {Array.isArray(value)
+                                ? value.map(String).join(', ')
+                                : typeof value === 'boolean'
+                                  ? value ? '✓ Oui' : '✗ Non'
+                                  : String(value)}
+                            </span>
+                          </div>
+                        ),
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </>
+          )}
+
           <hr style={hr} />
 
           {/* ── Client + Technicien (côte à côte) ─────────────────────────── */}
@@ -317,6 +404,50 @@ export default function PrintWorkOrder({ wo }: Props) {
               <span style={labelPrint}>Raison de la clôture négative</span>
               <span style={{ ...valuePrint, fontSize: '8.5pt' }}>{wo.negativeReason}</span>
             </div>
+          )}
+
+          {/* ── Completion (rendered when the BT has any real-world timing) ─── */}
+          {hasCompletionData && (
+            <>
+              <hr style={hr} />
+              <div style={sectionTitle}>Complétion</div>
+              <div style={row}>
+                <div style={field}>
+                  <span style={labelPrint}>Début effectif</span>
+                  <span style={valuePrint}>
+                    {wo.actualStartTime
+                      ? `${fmtDate(wo.actualStartTime)} ${fmtTime(wo.actualStartTime)}`
+                      : '—'}
+                  </span>
+                </div>
+                <div style={field}>
+                  <span style={labelPrint}>Fin effective</span>
+                  <span style={valuePrint}>
+                    {wo.actualEndTime
+                      ? `${fmtDate(wo.actualEndTime)} ${fmtTime(wo.actualEndTime)}`
+                      : '—'}
+                  </span>
+                </div>
+                <div style={field}>
+                  <span style={labelPrint}>Résultat</span>
+                  <span style={{ ...valuePrint, fontWeight: 700 }}>
+                    {wo.status === WorkOrderStatus.COMPLETED_POSITIVE
+                      ? 'Positif'
+                      : wo.status === WorkOrderStatus.COMPLETED_NEGATIVE
+                        ? 'Négatif'
+                        : 'En cours'}
+                  </span>
+                </div>
+              </div>
+              {wo.completionNotes && (
+                <div style={{ marginTop: '1pt' }}>
+                  <span style={labelPrint}>Notes de complétion</span>
+                  <span style={{ ...valuePrint, whiteSpace: 'pre-wrap' }}>
+                    {wo.completionNotes}
+                  </span>
+                </div>
+              )}
+            </>
           )}
 
           <hr style={hr} />
