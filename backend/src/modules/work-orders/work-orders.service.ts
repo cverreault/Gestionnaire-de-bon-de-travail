@@ -408,6 +408,22 @@ export class WorkOrdersService {
       ? WorkOrderStatus.ASSIGNED
       : (engineLegacyStatus ?? WorkOrderStatus.CREATED);
 
+    // ── SLA target (B4) ─────────────────────────────────────────────────────
+    // Computed once at create time from the resolved task type's slaHours.
+    // Null if no task type or the type has no SLA configured. Immutable
+    // after creation — re-classifying a BT to a different type doesn't
+    // shift the deadline.
+    let slaTargetAt: Date | null = null;
+    if (dto.taskTypeId) {
+      const taskType = await this.prisma.taskType.findUnique({
+        where: { id: dto.taskTypeId },
+        select: { slaHours: true },
+      });
+      if (taskType?.slaHours) {
+        slaTargetAt = new Date(Date.now() + taskType.slaHours * 60 * 60 * 1000);
+      }
+    }
+
     const workOrder = await this.prisma.workOrder.create({
       data: {
         referenceNumber,
@@ -416,6 +432,7 @@ export class WorkOrdersService {
         description: dto.description,
         type: dto.type,
         priority: dto.priority ?? 0,
+        slaTargetAt,
         temporaryClientId: dto.temporaryClientId ?? null,
         externalClientId: dto.externalClientId ?? null,
         externalClientName: dto.externalClientName ?? null,

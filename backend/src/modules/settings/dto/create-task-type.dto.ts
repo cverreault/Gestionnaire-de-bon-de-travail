@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, MaxLength, Matches } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, MaxLength, Matches, IsInt, Min, Max } from 'class-validator';
+import { Type } from 'class-transformer';
 import { i18nValidationMessage } from 'nestjs-i18n';
 
 export class CreateTaskTypeDto {
@@ -61,4 +62,17 @@ export class CreateTaskTypeDto {
   @IsOptional()
   @IsString()
   processDefinitionId?: string | null;
+
+  @ApiPropertyOptional({
+    description:
+      'SLA en heures — chaque BT de ce type doit être complété dans ce délai ' +
+      'après création. Null = pas de SLA suivi. Clamp [1, 4380] = 1h à 6 mois.',
+    example: 48,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(4380)
+  slaHours?: number | null;
 }

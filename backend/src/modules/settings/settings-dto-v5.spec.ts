@@ -135,6 +135,26 @@ describe('CreateTaskTypeDto', () => {
     expect(errors.length).toBeGreaterThan(0);
   });
 
+  it('slaHours accepts a positive integer (B4)', async () => {
+    const errors = await getErrors(CreateTaskTypeDto, { name: 'Test', prefix: PREFIX, slaHours: 48 });
+    expect(errors).toHaveLength(0);
+  });
+
+  it('slaHours rejects 0 and below (B4)', async () => {
+    const errors = await getErrors(CreateTaskTypeDto, { name: 'Test', prefix: PREFIX, slaHours: 0 });
+    expect(errors.length).toBeGreaterThan(0);
+  });
+
+  it('slaHours rejects values above 4380 (= 6 months, B4)', async () => {
+    const errors = await getErrors(CreateTaskTypeDto, { name: 'Test', prefix: PREFIX, slaHours: 5000 });
+    expect(errors.length).toBeGreaterThan(0);
+  });
+
+  it('slaHours rejects non-integer (B4)', async () => {
+    const errors = await getErrors(CreateTaskTypeDto, { name: 'Test', prefix: PREFIX, slaHours: 'abc' });
+    expect(errors.length).toBeGreaterThan(0);
+  });
+
   it('description is optional — omitting it is valid', async () => {
     const errors = await getErrors(CreateTaskTypeDto, { name: 'Test', prefix: PREFIX });
     expect(errors).toHaveLength(0);

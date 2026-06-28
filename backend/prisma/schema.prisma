@@ -154,6 +154,12 @@ model TaskType {
   color       String?
   icon        String?
   isActive    Boolean  @default(true) @map("is_active")
+
+  /// SLA in hours — if set, every BT of this type is expected to be
+  /// completed within slaHours after creation. Null = no SLA tracked.
+  /// Range [1, 4380] = 1 hour to 6 months (clamped at the DTO layer).
+  slaHours    Int?     @map("sla_hours")
+
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -365,6 +371,12 @@ model WorkOrder {
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
+  // SLA (B4) — slaTargetAt is computed at create from taskType.slaHours
+  // and stays immutable; slaBreachedAt is set by SlaCheckService when
+  // the BT is still active past the target.
+  slaTargetAt   DateTime? @map("sla_target_at")
+  slaBreachedAt DateTime? @map("sla_breached_at")
+
   notes        Note[]
   attachments  Attachment[]
   appointments Appointment[]
@@ -376,6 +388,10 @@ model WorkOrder {
   @@index([clientId], map: "idx_work_orders_client_id")
   @@index([taskTypeId], map: "idx_work_orders_task_type_id")
   @@index([processDefinitionId], map: "idx_work_orders_process_definition_id")
+  /// Scan for un-breached BTs whose target has passed — partial index
+  /// would be ideal but Prisma doesn't expose it; the cron filters on
+  /// status anyway so this is fine.
+  @@index([slaTargetAt, slaBreachedAt], map: "idx_work_orders_sla_pending")
   @@index([currentStepId],       map: "idx_work_orders_current_step_id")
   @@map("work_orders")
 }
