@@ -2,7 +2,9 @@ import {
   Controller,
   Get,
   Patch,
+  Put,
   Param,
+  Body,
   Query,
   ParseUUIDPipe,
   HttpCode,
@@ -19,6 +21,8 @@ import { Role } from '@prisma/client';
 import { NotificationsService } from '../application/notifications.service';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { FindNotificationsQueryDto } from './dto/find-notifications-query.dto';
+import { UpdateNotificationPreferencesDto } from './dto/update-preferences.dto';
+import { NOTIFIABLE_EVENTS } from '../application/notification-preferences';
 
 interface JwtUser {
   id: string;
@@ -73,5 +77,37 @@ export class NotificationsController {
   @ApiResponse({ status: 200, description: '{ marked: N }' })
   markAllRead(@CurrentUser() user: JwtUser) {
     return this.notifications.markAllRead(user.id);
+  }
+
+  // ── Preferences (B1.2) ───────────────────────────────────────────────────
+
+  @Get('preferences')
+  @ApiOperation({
+    summary: 'Mes préférences de notifications (avec defaults appliqués)',
+    description:
+      'Retourne `{ preferences: {...}, events: [...] }` où `preferences` est ' +
+      'l\'objet typé fully-populated (defaults + overrides) et `events` énumère ' +
+      'les types reconnus côté backend (utile au front pour rendre les cases).',
+  })
+  async getMyPreferences(@CurrentUser() user: JwtUser) {
+    const preferences = await this.notifications.getPreferences(user.id);
+    return { preferences, events: NOTIFIABLE_EVENTS };
+  }
+
+  @Put('preferences')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Mettre à jour mes préférences de notifications (sparse patch)',
+    description: 'Le body est merged avec les préférences existantes — envoyer uniquement les clés modifiées.',
+  })
+  async updateMyPreferences(
+    @Body() body: UpdateNotificationPreferencesDto,
+    @CurrentUser() user: JwtUser,
+  ) {
+    const preferences = await this.notifications.updatePreferences(
+      user.id,
+      body as Record<string, { inApp?: boolean; email?: boolean }>,
+    );
+    return { preferences };
   }
 }

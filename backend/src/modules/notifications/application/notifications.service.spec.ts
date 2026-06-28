@@ -24,11 +24,28 @@ interface NotificationRow {
 
 let counter = 0;
 
-function makeMockPrisma(seed: NotificationRow[] = []) {
+interface MockUserRow {
+  id: string;
+  preferences: Record<string, unknown> | null;
+}
+
+function makeMockPrisma(seed: NotificationRow[] = [], users: MockUserRow[] = []) {
   const rows: NotificationRow[] = [...seed];
 
   return {
     _rows: rows,
+    _users: users,
+    user: {
+      findUnique: jest.fn(({ where, select: _s }: { where: { id: string }; select: unknown }) =>
+        Promise.resolve(users.find((u) => u.id === where.id) ?? null),
+      ),
+      update: jest.fn(({ where, data }: { where: { id: string }; data: Partial<MockUserRow> }) => {
+        const u = users.find((x) => x.id === where.id);
+        if (!u) return Promise.reject(new Error('not found'));
+        if (data.preferences !== undefined) u.preferences = data.preferences as Record<string, unknown>;
+        return Promise.resolve(u);
+      }),
+    },
     notification: {
       create: jest.fn(({ data }: { data: Partial<NotificationRow> }) => {
         counter++;
@@ -232,5 +249,81 @@ describe('NotificationsService', () => {
 
     expect(prisma._rows.filter((r) => r.userId === 'u-1' && r.readAt !== null)).toHaveLength(2);
     expect(prisma._rows.filter((r) => r.userId === 'u-2' && r.readAt !== null)).toHaveLength(0);
+  });
+
+  // ── Preferences (B1.2) ────────────────────────────────────────────────────
+
+  it('getPreferences() returns defaults when nothing is stored', async () => {
+    const prisma = makeMockPrisma([], [{ id: 'u-1', preferences: null }]);
+    const svc = buildSvc(prisma);
+
+    const prefs = await svc.getPreferences('u-1');
+
+    expect(prefs['workOrder.assigned']).toEqual({ inApp: true, email: true });
+    expect(prefs['workOrder.completed']).toEqual({ inApp: true, email: false });
+  });
+
+  it('getPreferences() merges stored overrides on top of defaults', async () => {
+    const prisma = makeMockPrisma([], [
+      {
+        id: 'u-1',
+        preferences: {
+          theme: 'dark', // unrelated preference, must be ignored
+          notifications: {
+            'workOrder.assigned': { email: false }, // partial override
+          },
+        },
+      },
+    ]);
+    const svc = buildSvc(prisma);
+
+    const prefs = await svc.getPreferences('u-1');
+
+    expect(prefs['workOrder.assigned']).toEqual({ inApp: true, email: false });
+    expect(prefs['workOrder.completed']).toEqual({ inApp: true, email: false });
+  });
+
+  it('updatePreferences() shallow-merges and preserves unrelated preferences keys', async () => {
+    const prisma = makeMockPrisma([], [
+      { id: 'u-1', preferences: { theme: 'dark' } },
+    ]);
+    const svc = buildSvc(prisma);
+
+    const merged = await svc.updatePreferences('u-1', {
+      'workOrder.assigned': { email: false },
+    });
+
+    // Returned value reflects the merged result.
+    expect(merged['workOrder.assigned']).toEqual({ inApp: true, email: false });
+    expect(merged['workOrder.completed']).toEqual({ inApp: true, email: false });
+
+    // Persisted user row keeps unrelated keys and stores the sparse patch.
+    const stored = prisma._users[0].preferences as any;
+    expect(stored.theme).toBe('dark');
+    expect(stored.notifications).toEqual({
+      'workOrder.assigned': { email: false },
+    });
+  });
+
+  it('updatePreferences() merges with existing notification entries', async () => {
+    const prisma = makeMockPrisma([], [
+      {
+        id: 'u-1',
+        preferences: {
+          notifications: {
+            'workOrder.assigned': { email: false },
+          },
+        },
+      },
+    ]);
+    const svc = buildSvc(prisma);
+
+    await svc.updatePreferences('u-1', {
+      'workOrder.assigned': { inApp: false },
+    });
+
+    const stored = prisma._users[0].preferences as any;
+    // Both keys preserved on the same event.
+    expect(stored.notifications['workOrder.assigned']).toEqual({ inApp: false, email: false });
   });
 });

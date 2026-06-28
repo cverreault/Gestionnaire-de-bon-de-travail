@@ -5,6 +5,12 @@ import {
   NOTIFICATION_EVENT_NAMES,
   notificationSent,
 } from '../domain/events/notification-events';
+import {
+  mergedPreferences,
+  type NotificationPreferences,
+  type NotifiableEvent,
+  type PerEventPrefs,
+} from './notification-preferences';
 
 /**
  * Domain service for the notifications module.
@@ -132,5 +138,56 @@ export class NotificationsService {
       data: { readAt: new Date() },
     });
     return { marked: result.count };
+  }
+
+  // ── Notification preferences ──────────────────────────────────────────────
+  //
+  // Stored under User.preferences.notifications. Direct Prisma read on
+  // users is the same exception documented in audit.md / search.md —
+  // importing UsersService would create a hard cross-module dependency
+  // just to pull a JSONB field.
+
+  async getPreferences(userId: string): Promise<Record<NotifiableEvent, PerEventPrefs>> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { preferences: true },
+    });
+    const all = (user?.preferences as Record<string, unknown> | null) ?? {};
+    const notif = (all.notifications as NotificationPreferences | undefined) ?? undefined;
+    return mergedPreferences(notif);
+  }
+
+  /**
+   * Shallow-merges the incoming patch with existing notification prefs.
+   * Persists the full `User.preferences` JSON back (untouched outside
+   * the `notifications` sub-key).
+   *
+   * Patch shape is intentionally loose (Partial<PerEventPrefs> per
+   * event) so the API can accept e.g. `{ "workOrder.assigned": { email:
+   * false } }` without forcing the client to repeat the unchanged
+   * `inApp` flag.
+   */
+  async updatePreferences(
+    userId: string,
+    patch: Record<string, Partial<PerEventPrefs>>,
+  ): Promise<Record<NotifiableEvent, PerEventPrefs>> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { preferences: true },
+    });
+    const all = (user?.preferences as Record<string, unknown> | null) ?? {};
+    const existing = (all.notifications as NotificationPreferences | undefined) ?? {};
+    const merged: NotificationPreferences = { ...existing };
+    for (const evt of Object.keys(patch)) {
+      const existingEvt = (existing[evt] ?? {}) as Partial<PerEventPrefs>;
+      merged[evt] = { ...existingEvt, ...patch[evt] } as PerEventPrefs;
+    }
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        preferences: { ...all, notifications: merged } as object,
+      },
+    });
+    return mergedPreferences(merged);
   }
 }

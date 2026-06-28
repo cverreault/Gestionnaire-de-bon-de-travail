@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../context/auth.store';
 import { useUiStore, type ThemeMode, type Locale } from '../context/ui.store';
 import { useUpdateMyProfile, useChangeMyPassword } from '../hooks/useUsers';
+import { useNotificationPreferences, useUpdateNotificationPreferences } from '../hooks/useNotifications';
+import type { NotifiableEventName, PerEventPrefs } from '../services/notifications.service';
 import { theme, cardStyles, formStyles, buttonStyles, layoutStyles } from '../theme';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -362,6 +364,9 @@ export default function ProfilePage() {
       {/* ── Section : Apparence (thème) ── */}
       <AppearanceSection />
 
+      {/* ── Section : Préférences de notifications ── */}
+      <NotificationPreferencesSection />
+
       {/* ── Section 2 : Change password ── */}
       <div style={{ ...cardStyles.card }}>
         <div style={{ ...cardStyles.cardHeader }}>
@@ -544,6 +549,102 @@ function AppearanceSection() {
             );
           })}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Notification preferences (B1.2) ─────────────────────────────────────────
+
+const EVENT_LABELS: Record<string, string> = {
+  'workOrder.assigned':  'Un BT m\'est assigné',
+  'workOrder.completed': 'Un BT est terminé',
+};
+
+function NotificationPreferencesSection() {
+  const { data, isLoading, isError } = useNotificationPreferences();
+  const mutation = useUpdateNotificationPreferences();
+
+  function toggle(event: NotifiableEventName, channel: keyof PerEventPrefs, next: boolean) {
+    mutation.mutate({ [event]: { [channel]: next } } as Partial<Record<NotifiableEventName, Partial<PerEventPrefs>>>);
+  }
+
+  return (
+    <div style={{ ...cardStyles.card }}>
+      <div style={{ ...cardStyles.cardHeader }}>
+        <h2 style={{ ...cardStyles.cardTitle }}>🔔 Préférences de notifications</h2>
+      </div>
+      <div style={{ ...cardStyles.cardBody }}>
+        {isLoading && (
+          <p style={{ color: theme.colors.textMuted, margin: 0 }}>Chargement…</p>
+        )}
+        {isError && (
+          <p style={{ color: theme.colors.danger, margin: 0 }}>
+            Impossible de charger les préférences. Réessayez plus tard.
+          </p>
+        )}
+        {data && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <p style={{
+              margin: 0,
+              fontSize: theme.font.sizeSm,
+              color: theme.colors.textMuted,
+            }}>
+              L'option « En-app » contrôle la cloche en haut à droite. L'email
+              dépend de la configuration SMTP du serveur.
+            </p>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: theme.font.sizeSm }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: 'left', padding: '0.5rem', color: theme.colors.textMuted, fontWeight: theme.font.weightMedium, borderBottom: theme.borders.light }}>
+                    Événement
+                  </th>
+                  <th style={{ width: '100px', textAlign: 'center', padding: '0.5rem', color: theme.colors.textMuted, fontWeight: theme.font.weightMedium, borderBottom: theme.borders.light }}>
+                    🔔 En-app
+                  </th>
+                  <th style={{ width: '100px', textAlign: 'center', padding: '0.5rem', color: theme.colors.textMuted, fontWeight: theme.font.weightMedium, borderBottom: theme.borders.light }}>
+                    ✉️ Email
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.events.map((evt) => {
+                  const prefs = data.preferences[evt];
+                  return (
+                    <tr key={evt} style={{ borderBottom: theme.borders.light }}>
+                      <td style={{ padding: '0.5rem', color: theme.colors.text }}>
+                        {EVENT_LABELS[evt] ?? evt}
+                      </td>
+                      <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={prefs.inApp}
+                          disabled={mutation.isPending}
+                          onChange={(e) => toggle(evt, 'inApp', e.target.checked)}
+                          aria-label={`En-app pour ${EVENT_LABELS[evt] ?? evt}`}
+                        />
+                      </td>
+                      <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={prefs.email}
+                          disabled={mutation.isPending}
+                          onChange={(e) => toggle(evt, 'email', e.target.checked)}
+                          aria-label={`Email pour ${EVENT_LABELS[evt] ?? evt}`}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {mutation.isError && (
+              <p style={{ color: theme.colors.danger, fontSize: theme.font.sizeSm, margin: 0 }}>
+                Échec de la mise à jour — la case est revenue à son ancien état.
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

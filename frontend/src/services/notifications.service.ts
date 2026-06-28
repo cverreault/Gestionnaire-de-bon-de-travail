@@ -34,3 +34,24 @@ export const markNotificationRead = (id: string) =>
 
 export const markAllNotificationsRead = () =>
   api.patch('/me/notifications/read-all');
+
+// ── Preferences (B1.2) ───────────────────────────────────────────────────────
+
+export interface PerEventPrefs {
+  inApp: boolean;
+  email: boolean;
+}
+
+export type NotifiableEventName = 'workOrder.assigned' | 'workOrder.completed';
+
+export interface NotificationPreferencesResponse {
+  preferences: Record<NotifiableEventName, PerEventPrefs>;
+  events: NotifiableEventName[];
+}
+
+export const getMyNotificationPreferences = () =>
+  api.get('/me/notifications/preferences');
+
+export const updateMyNotificationPreferences = (
+  patch: Partial<Record<NotifiableEventName, Partial<PerEventPrefs>>>,
+) => api.put('/me/notifications/preferences', patch);

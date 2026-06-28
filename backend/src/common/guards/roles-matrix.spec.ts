@@ -113,9 +113,11 @@ const SEARCH_MATRIX: MatrixRow[] = [
 const NOTIFICATIONS_MATRIX: MatrixRow[] = [
   // Inbox endpoints are self-service for the current user — no @Roles().
   // Object-level RBAC happens in the service (userId from JWT vs row.userId).
-  { controller: NotificationsController, method: 'findMine',    expectedRoles: 'ANY', note: 'GET /me/notifications' },
-  { controller: NotificationsController, method: 'markRead',    expectedRoles: 'ANY', note: 'PATCH /me/notifications/:id/read' },
-  { controller: NotificationsController, method: 'markAllRead', expectedRoles: 'ANY', note: 'PATCH /me/notifications/read-all' },
+  { controller: NotificationsController, method: 'findMine',           expectedRoles: 'ANY', note: 'GET /me/notifications' },
+  { controller: NotificationsController, method: 'markRead',           expectedRoles: 'ANY', note: 'PATCH /me/notifications/:id/read' },
+  { controller: NotificationsController, method: 'markAllRead',        expectedRoles: 'ANY', note: 'PATCH /me/notifications/read-all' },
+  { controller: NotificationsController, method: 'getMyPreferences',   expectedRoles: 'ANY', note: 'GET /me/notifications/preferences' },
+  { controller: NotificationsController, method: 'updateMyPreferences',expectedRoles: 'ANY', note: 'PUT /me/notifications/preferences' },
 ];
 
 const BACKUP_MATRIX: MatrixRow[] = [

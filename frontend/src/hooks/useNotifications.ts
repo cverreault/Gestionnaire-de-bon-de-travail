@@ -3,7 +3,12 @@ import {
   listMyNotifications,
   markNotificationRead,
   markAllNotificationsRead,
+  getMyNotificationPreferences,
+  updateMyNotificationPreferences,
   type NotificationsListResponse,
+  type NotificationPreferencesResponse,
+  type NotifiableEventName,
+  type PerEventPrefs,
 } from '../services/notifications.service';
 
 export const NOTIFICATIONS_KEY = 'notifications';
@@ -39,5 +44,27 @@ export function useMarkAllRead() {
   return useMutation({
     mutationFn: () => markAllNotificationsRead(),
     onSuccess: () => qc.invalidateQueries({ queryKey: [NOTIFICATIONS_KEY] }),
+  });
+}
+
+// ── Preferences (B1.2) ───────────────────────────────────────────────────────
+
+export function useNotificationPreferences() {
+  return useQuery({
+    queryKey: [NOTIFICATIONS_KEY, 'preferences'],
+    queryFn: async () => {
+      const res = await getMyNotificationPreferences();
+      return (res.data?.data ?? res.data) as NotificationPreferencesResponse;
+    },
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useUpdateNotificationPreferences() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (patch: Partial<Record<NotifiableEventName, Partial<PerEventPrefs>>>) =>
+      updateMyNotificationPreferences(patch),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [NOTIFICATIONS_KEY, 'preferences'] }),
   });
 }
