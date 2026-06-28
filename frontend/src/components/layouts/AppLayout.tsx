@@ -7,6 +7,7 @@ import AdminSidebar from './AdminSidebar';
 import TechnicianNav from './TechnicianNav';
 import OfflineBanner from '../OfflineBanner';
 import GlobalSearchBar from '../GlobalSearchBar';
+import NotificationsBell from '../NotificationsBell';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { offlineStore } from '../../services/offline-store';
 import { theme } from '../../theme';
@@ -60,17 +61,19 @@ export default function AppLayout() {
           <>
             <AdminSidebar />
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              {/* Top bar — global search (Ctrl+K). Visible aux ADMIN + DISPATCHER. */}
+              {/* Top bar — global search (Ctrl+K) + notifications bell. */}
               <header style={{
                 display: 'flex',
                 justifyContent: 'flex-end',
                 alignItems: 'center',
+                gap: '0.75rem',
                 padding: '0.75rem 1.5rem',
                 borderBottom: theme.borders.light,
                 background: theme.colors.surface,
                 flexShrink: 0,
               }}>
                 <GlobalSearchBar />
+                <NotificationsBell />
               </header>
               <main
                 style={{
@@ -87,6 +90,20 @@ export default function AppLayout() {
           </>
         ) : (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            {/* Floating bell — fixed top-right for the tech UI which has no header. */}
+            <div
+              style={{
+                position: 'fixed',
+                top: isOnline ? '0.75rem' : '3rem',
+                right: '0.75rem',
+                zIndex: theme.zIndex.dropdown ?? 1000,
+                background: theme.colors.surface,
+                borderRadius: '999px',
+                boxShadow: theme.shadows.sm,
+              }}
+            >
+              <NotificationsBell />
+            </div>
             <main
               style={{
                 flex: 1,
