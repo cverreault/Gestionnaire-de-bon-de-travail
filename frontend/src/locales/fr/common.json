@@ -82,6 +82,16 @@
     "tooLong": "Trop long",
     "invalid": "Valeur invalide"
   },
+  "search": {
+    "placeholder": "Rechercher BT, client, adresse…  (Ctrl+K)",
+    "searching": "Recherche…",
+    "noResults": "Aucun résultat.",
+    "types": {
+      "workOrder": "Bons de travail",
+      "client": "Clients",
+      "address": "Adresses"
+    }
+  },
   "date": {
     "today": "Aujourd'hui",
     "yesterday": "Hier",

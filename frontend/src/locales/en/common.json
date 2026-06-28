@@ -82,6 +82,16 @@
     "tooLong": "Too long",
     "invalid": "Invalid value"
   },
+  "search": {
+    "placeholder": "Search work orders, clients, addresses…  (Ctrl+K)",
+    "searching": "Searching…",
+    "noResults": "No results.",
+    "types": {
+      "workOrder": "Work orders",
+      "client": "Clients",
+      "address": "Addresses"
+    }
+  },
   "date": {
     "today": "Today",
     "yesterday": "Yesterday",

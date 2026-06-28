@@ -23,6 +23,7 @@ import { BackupModule } from './modules/backup/backup.module';
 import { ProcessModule } from './modules/process/process.module';
 import { TemplatesModule } from './modules/templates/templates.module';
 import { AuditModule } from './modules/audit/audit.module';
+import { SearchModule } from './modules/search/search.module';
 
 @Module({
   imports: [
@@ -98,6 +99,7 @@ import { AuditModule } from './modules/audit/audit.module';
     ProcessModule,
     TemplatesModule,
     AuditModule,
+    SearchModule,
   ],
   providers: [
     // ── Guards globaux ─────────────────────────────────────────────────────

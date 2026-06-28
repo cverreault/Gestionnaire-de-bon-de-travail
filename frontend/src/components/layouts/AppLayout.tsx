@@ -6,6 +6,7 @@ import { Role } from '../../types';
 import AdminSidebar from './AdminSidebar';
 import TechnicianNav from './TechnicianNav';
 import OfflineBanner from '../OfflineBanner';
+import GlobalSearchBar from '../GlobalSearchBar';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { offlineStore } from '../../services/offline-store';
 import { theme } from '../../theme';
@@ -58,17 +59,31 @@ export default function AppLayout() {
         {isAdmin ? (
           <>
             <AdminSidebar />
-            <main
-              style={{
-                flex: 1,
-                padding: '1.5rem',
-                overflow: 'auto',
-                background: theme.colors.background,
-                transition: 'background 0.15s ease',
-              }}
-            >
-              <Outlet />
-            </main>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              {/* Top bar — global search (Ctrl+K). Visible aux ADMIN + DISPATCHER. */}
+              <header style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+                padding: '0.75rem 1.5rem',
+                borderBottom: theme.borders.light,
+                background: theme.colors.surface,
+                flexShrink: 0,
+              }}>
+                <GlobalSearchBar />
+              </header>
+              <main
+                style={{
+                  flex: 1,
+                  padding: '1.5rem',
+                  overflow: 'auto',
+                  background: theme.colors.background,
+                  transition: 'background 0.15s ease',
+                }}
+              >
+                <Outlet />
+              </main>
+            </div>
           </>
         ) : (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
