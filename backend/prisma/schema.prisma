@@ -499,3 +499,38 @@ model ProcessTransition {
   @@index([fromStatusId],        map: "idx_process_transitions_from_status_id")
   @@map("process_transitions")
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODULE: Audit
+// Voir : docs/adrs/ADR-007, plan §B2
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Trace immuable de chaque domain event passé dans le système.
+///
+/// Insertion uniquement — jamais d'UPDATE/DELETE (sauf purge Loi 25 manuelle).
+/// Le module `audit` écoute tous les events `workOrders.*` (et autres futurs)
+/// via @OnEvent et persiste un row par event.
+///
+/// Convention : un seul row = un seul event. L'analyse cross-event se fait
+/// en SQL (filter par aggregate_id, ORDER BY occurred_at).
+model AuditLog {
+  // Identité de l'event
+  id          String   @id @default(uuid())               // = IDomainEvent.eventId
+  eventName   String   @map("event_name")                  // ex: "workOrders.workOrder.assigned"
+  aggregateId String   @map("aggregate_id")                // ex: workOrderId
+  occurredAt  DateTime @map("occurred_at")                 // = IDomainEvent.occurredAt
+
+  // Acteur
+  actorUserId String?  @map("actor_user_id")               // null pour events système
+
+  // Payload de l'event (variable selon eventName)
+  data        Json?                                        // = IDomainEvent.data
+
+  // Timestamp serveur (peut différer de occurredAt si traitement async)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([aggregateId, occurredAt(sort: Desc)], map: "idx_audit_logs_aggregate_recent")
+  @@index([eventName, occurredAt(sort: Desc)],   map: "idx_audit_logs_event_recent")
+  @@index([actorUserId, occurredAt(sort: Desc)], map: "idx_audit_logs_actor_recent")
+  @@map("audit_logs")
+}

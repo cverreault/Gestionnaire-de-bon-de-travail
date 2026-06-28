@@ -10,7 +10,6 @@ import * as path from 'path';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
-import { EventLoggerListener } from './common/listeners/event-logger.listener';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { HealthModule } from './modules/health/health.module';
@@ -23,6 +22,7 @@ import { SettingsModule } from './modules/settings/settings.module';
 import { BackupModule } from './modules/backup/backup.module';
 import { ProcessModule } from './modules/process/process.module';
 import { TemplatesModule } from './modules/templates/templates.module';
+import { AuditModule } from './modules/audit/audit.module';
 
 @Module({
   imports: [
@@ -97,6 +97,7 @@ import { TemplatesModule } from './modules/templates/templates.module';
     BackupModule,
     ProcessModule,
     TemplatesModule,
+    AuditModule,
   ],
   providers: [
     // ── Guards globaux ─────────────────────────────────────────────────────
@@ -111,10 +112,6 @@ import { TemplatesModule } from './modules/templates/templates.module';
       useClass: RolesGuard,
     },
 
-    // ── Domain event listeners (cross-cutting) ─────────────────────────────
-    // Démo / smoke test : logue chaque event publié. Sera remplacé par le
-    // module `audit` (B2) qui persistera les events en DB.
-    EventLoggerListener,
   ],
 })
 export class AppModule {}
