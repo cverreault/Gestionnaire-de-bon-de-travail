@@ -40,6 +40,7 @@ export const markAllNotificationsRead = () =>
 export interface PerEventPrefs {
   inApp: boolean;
   email: boolean;
+  push: boolean;
 }
 
 export type NotifiableEventName = 'workOrder.assigned' | 'workOrder.completed';
@@ -55,3 +56,21 @@ export const getMyNotificationPreferences = () =>
 export const updateMyNotificationPreferences = (
   patch: Partial<Record<NotifiableEventName, Partial<PerEventPrefs>>>,
 ) => api.put('/me/notifications/preferences', patch);
+
+// ── Web Push (B1.3) ──────────────────────────────────────────────────────────
+
+/** Fetches the server's VAPID public key. 404 if push isn't configured. */
+export const getVapidPublicKey = () =>
+  api.get('/me/notifications/push/vapid-public-key');
+
+export interface PushSubscribePayload {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+  userAgent?: string;
+}
+
+export const subscribePush = (payload: PushSubscribePayload) =>
+  api.post('/me/notifications/push/subscribe', payload);
+
+export const unsubscribePush = (endpoint: string) =>
+  api.delete('/me/notifications/push/subscribe', { data: { endpoint } });

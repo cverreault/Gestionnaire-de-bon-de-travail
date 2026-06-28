@@ -51,13 +51,14 @@ export default function AuditPage() {
   const [isExporting, setIsExporting] = useState(false);
 
   // Drill-down from the per-BT timeline: WorkOrderAuditTimeline links to
-  // /audit?aggregateId=<id>. We apply the param once on mount; further user
+  // /audit?aggregateId=<id> for the aggregate pivot or /audit?actorUserId=<id>
+  // for the actor pivot. We apply the params once on mount; further user
   // edits are local state from that point on.
   useEffect(() => {
-    const fromUrl = searchParams.get('aggregateId');
-    if (fromUrl && !aggregateId) {
-      setAggregateId(fromUrl);
-    }
+    const fromAggregate = searchParams.get('aggregateId');
+    if (fromAggregate && !aggregateId) setAggregateId(fromAggregate);
+    const fromActor = searchParams.get('actorUserId');
+    if (fromActor && !actorUserId) setActorUserId(fromActor);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

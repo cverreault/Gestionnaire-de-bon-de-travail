@@ -92,7 +92,7 @@ export default function WorkOrderAuditTimeline({ workOrderId, enabled }: Props) 
           {!isLoading && !isError && count > 0 && (
             <ol style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {(data ?? []).map((e) => (
-                <TimelineRow key={e.id} entry={e} />
+                <TimelineRow key={e.id} entry={e} canDrillDown={canDrillDown} />
               ))}
             </ol>
           )}
@@ -120,13 +120,26 @@ export default function WorkOrderAuditTimeline({ workOrderId, enabled }: Props) 
 
 // ── Single row ─────────────────────────────────────────────────────────────
 
-function TimelineRow({ entry }: { entry: AuditLogEntry }) {
+function TimelineRow({ entry, canDrillDown }: { entry: AuditLogEntry; canDrillDown: boolean }) {
   const { t } = useTranslation('workOrders');
   const meta = describeEvent(entry, t);
 
   const actorName = entry.actor
     ? `${entry.actor.firstName} ${entry.actor.lastName}`
     : t('audit.systemActor', { defaultValue: 'Système' });
+
+  // ADMIN can drill down on the actor: link to /audit?actorUserId=<id>
+  // surfaces every action that user has taken across all aggregates.
+  // System events have no actor — render plain text.
+  const actorNode = canDrillDown && entry.actor ? (
+    <Link
+      to={`/audit?actorUserId=${entry.actor.id}`}
+      title={`Voir toutes les actions de ${actorName} dans l'audit`}
+      style={{ color: theme.colors.primary, textDecoration: 'none' }}
+    >
+      {actorName}
+    </Link>
+  ) : actorName;
 
   return (
     <li style={{
@@ -144,7 +157,7 @@ function TimelineRow({ entry }: { entry: AuditLogEntry }) {
           {meta.label}
         </p>
         <p style={{ margin: '0.125rem 0 0', fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>
-          {actorName} · {formatDateTime(entry.occurredAt)}
+          {actorNode} · {formatDateTime(entry.occurredAt)}
         </p>
       </div>
     </li>

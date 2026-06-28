@@ -7,7 +7,16 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      // injectManifest lets us own src/sw.ts so we can handle Web Push
+      // events alongside Workbox's offline caching. The plugin injects
+      // the precache manifest into our file at build time.
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       registerType: 'autoUpdate',
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+      },
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
         name: 'TaskMgr — Bons de Travail',
@@ -38,23 +47,9 @@ export default defineConfig({
           },
         ],
       },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^\/api\//,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24, // 24h
-              },
-              networkTimeoutSeconds: 10,
-            },
-          },
-        ],
-      },
+      // Note: when strategies === 'injectManifest', the `workbox` block
+      // is ignored. The /api/ NetworkFirst rule is replicated inside
+      // src/sw.ts using workbox-routing + workbox-strategies directly.
     }),
   ],
   resolve: {

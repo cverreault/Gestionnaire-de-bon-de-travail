@@ -1,10 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../context/auth.store';
 import { useUiStore, type ThemeMode, type Locale } from '../context/ui.store';
 import { useUpdateMyProfile, useChangeMyPassword } from '../hooks/useUsers';
 import { useNotificationPreferences, useUpdateNotificationPreferences } from '../hooks/useNotifications';
 import type { NotifiableEventName, PerEventPrefs } from '../services/notifications.service';
+import {
+  enablePush,
+  disablePush,
+  getPushState,
+  isPushSupported,
+  type PushState,
+} from '../utils/pushRegistration';
 import { theme, cardStyles, formStyles, buttonStyles, layoutStyles } from '../theme';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -565,6 +572,47 @@ function NotificationPreferencesSection() {
   const { data, isLoading, isError } = useNotificationPreferences();
   const mutation = useUpdateNotificationPreferences();
 
+  // ── Push registration state (browser-side) ───────────────────────────────
+  const [pushState, setPushState] = useState<PushState | null>(null);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushError, setPushError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isPushSupported()) { setPushState('unsupported'); return; }
+    getPushState().then(setPushState).catch(() => setPushState('unsupported'));
+  }, []);
+
+  async function handleEnablePush() {
+    setPushBusy(true);
+    setPushError(null);
+    try {
+      await enablePush();
+      setPushState('granted');
+    } catch (err) {
+      const msg = (err as Error).message;
+      if (msg === 'permission-denied') setPushError("Permission refusée par le navigateur — autorisez les notifications puis réessayez.");
+      else if (msg === 'server-disabled') setPushError("Le serveur n'a pas de clés VAPID configurées — contactez l'administrateur.");
+      else if (msg === 'unsupported') setPushError("Ce navigateur ne supporte pas les notifications push.");
+      else setPushError("Impossible d'activer les notifications push.");
+      setPushState(await getPushState().catch(() => 'unsupported' as PushState));
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
+  async function handleDisablePush() {
+    setPushBusy(true);
+    setPushError(null);
+    try {
+      await disablePush();
+      setPushState('unsubscribed');
+    } catch {
+      setPushError("Impossible de désactiver les notifications push.");
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
   function toggle(event: NotifiableEventName, channel: keyof PerEventPrefs, next: boolean) {
     mutation.mutate({ [event]: { [channel]: next } } as Partial<Record<NotifiableEventName, Partial<PerEventPrefs>>>);
   }
@@ -591,19 +639,78 @@ function NotificationPreferencesSection() {
               color: theme.colors.textMuted,
             }}>
               L'option « En-app » contrôle la cloche en haut à droite. L'email
-              dépend de la configuration SMTP du serveur.
+              dépend de la configuration SMTP du serveur. Le canal « Push »
+              nécessite que vous activiez les notifications push ci-dessous.
             </p>
+
+            {/* ── Push activation toggle ───────────────────────────────── */}
+            <div style={{
+              padding: '0.75rem 1rem',
+              background: theme.colors.surfaceAlt,
+              border: theme.borders.light,
+              borderRadius: theme.radius.md,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '1rem',
+              flexWrap: 'wrap',
+            }}>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: theme.font.sizeSm, fontWeight: theme.font.weightSemibold, color: theme.colors.text }}>
+                  📲 Notifications push (navigateur)
+                </p>
+                <p style={{ margin: '0.2rem 0 0', fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>
+                  {pushState === null && 'Vérification…'}
+                  {pushState === 'unsupported' && 'Non supporté sur ce navigateur.'}
+                  {pushState === 'denied' && 'Bloqué par le navigateur — autorisez les notifications dans les paramètres du site.'}
+                  {pushState === 'default' && "Pas encore activé. Cliquez sur « Activer » pour recevoir des notifications même quand l'onglet est fermé."}
+                  {pushState === 'unsubscribed' && 'Permission accordée mais pas activé. Cliquez sur « Activer ».'}
+                  {pushState === 'granted' && '✅ Actif sur ce navigateur.'}
+                </p>
+                {pushError && (
+                  <p style={{ margin: '0.3rem 0 0', fontSize: theme.font.sizeXs, color: theme.colors.danger }}>
+                    {pushError}
+                  </p>
+                )}
+              </div>
+              <div style={{ flexShrink: 0 }}>
+                {(pushState === 'default' || pushState === 'unsubscribed') && (
+                  <button
+                    type="button"
+                    onClick={handleEnablePush}
+                    disabled={pushBusy}
+                    style={{ ...buttonStyles.primary, fontSize: theme.font.sizeSm }}
+                  >
+                    {pushBusy ? 'Activation…' : 'Activer'}
+                  </button>
+                )}
+                {pushState === 'granted' && (
+                  <button
+                    type="button"
+                    onClick={handleDisablePush}
+                    disabled={pushBusy}
+                    style={{ ...buttonStyles.secondary, fontSize: theme.font.sizeSm }}
+                  >
+                    {pushBusy ? 'Désactivation…' : 'Désactiver'}
+                  </button>
+                )}
+              </div>
+            </div>
+
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: theme.font.sizeSm }}>
               <thead>
                 <tr>
                   <th style={{ textAlign: 'left', padding: '0.5rem', color: theme.colors.textMuted, fontWeight: theme.font.weightMedium, borderBottom: theme.borders.light }}>
                     Événement
                   </th>
-                  <th style={{ width: '100px', textAlign: 'center', padding: '0.5rem', color: theme.colors.textMuted, fontWeight: theme.font.weightMedium, borderBottom: theme.borders.light }}>
+                  <th style={{ width: '90px', textAlign: 'center', padding: '0.5rem', color: theme.colors.textMuted, fontWeight: theme.font.weightMedium, borderBottom: theme.borders.light }}>
                     🔔 En-app
                   </th>
-                  <th style={{ width: '100px', textAlign: 'center', padding: '0.5rem', color: theme.colors.textMuted, fontWeight: theme.font.weightMedium, borderBottom: theme.borders.light }}>
+                  <th style={{ width: '90px', textAlign: 'center', padding: '0.5rem', color: theme.colors.textMuted, fontWeight: theme.font.weightMedium, borderBottom: theme.borders.light }}>
                     ✉️ Email
+                  </th>
+                  <th style={{ width: '90px', textAlign: 'center', padding: '0.5rem', color: theme.colors.textMuted, fontWeight: theme.font.weightMedium, borderBottom: theme.borders.light }}>
+                    📲 Push
                   </th>
                 </tr>
               </thead>
@@ -631,6 +738,16 @@ function NotificationPreferencesSection() {
                           disabled={mutation.isPending}
                           onChange={(e) => toggle(evt, 'email', e.target.checked)}
                           aria-label={`Email pour ${EVENT_LABELS[evt] ?? evt}`}
+                        />
+                      </td>
+                      <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={prefs.push}
+                          disabled={mutation.isPending || pushState !== 'granted'}
+                          onChange={(e) => toggle(evt, 'push', e.target.checked)}
+                          aria-label={`Push pour ${EVENT_LABELS[evt] ?? evt}`}
+                          title={pushState !== 'granted' ? 'Activez les notifications push ci-dessus pour utiliser ce canal' : undefined}
                         />
                       </td>
                     </tr>

@@ -59,6 +59,45 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.1.3',
+    name: 'Notifications multi-canaux (B1)',
+    date: 'Juin 2026',
+    entries: [
+      {
+        type: 'new',
+        text: 'Cloche de notifications en haut à droite avec badge du nombre non lus — actualisation automatique toutes les 30 secondes',
+      },
+      {
+        type: 'new',
+        text: 'Dropdown des 20 dernières notifications, non-lues en tête. Clic sur une notification : ouverture du bon de travail concerné et marquage comme lue',
+      },
+      {
+        type: 'new',
+        text: 'Notification automatique au technicien dès qu\'un bon de travail lui est assigné (plus besoin de rafraîchir la liste)',
+      },
+      {
+        type: 'new',
+        text: 'Section « 🔔 Préférences de notifications » sur le profil — matrice événement × canal (en-app / email / push) avec activation instantanée',
+      },
+      {
+        type: 'new',
+        text: 'Canal email opt-in : envoi automatique au technicien quand on lui assigne un BT (nécessite la configuration SMTP côté serveur)',
+      },
+      {
+        type: 'new',
+        text: 'Canal Web Push opt-in : notifications système même quand l\'onglet TaskMgr est fermé. Bouton « Activer » dans le profil + permission navigateur',
+      },
+      {
+        type: 'infra',
+        text: 'Service worker enrichi pour gérer les notifications push et le clic (ouverture du BT dans l\'onglet existant ou un nouveau)',
+      },
+      {
+        type: 'infra',
+        text: 'Toutes les notifications envoyées sont enregistrées dans le journal d\'audit (timeline de delivery) avec les canaux qui ont effectivement réussi',
+      },
+    ],
+  },
+  {
     version: '2.1.2',
     name: 'Sprint 1 — Observabilité + compliance',
     date: 'Juin 2026',
