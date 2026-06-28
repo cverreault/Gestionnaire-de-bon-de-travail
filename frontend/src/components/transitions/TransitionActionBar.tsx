@@ -13,6 +13,19 @@ interface Props {
   variant?: 'buttons' | 'dropdown';
 }
 
+const REQUIRED_FIELD_LABELS: Record<string, string> = {
+  assignedToId: 'Technicien assigné',
+  negativeReason: 'Raison de fin négative',
+  completionNotes: 'Notes de complétion',
+  reopenReason: 'Raison de la ré-ouverture',
+};
+
+function buildRequiredFieldsHint(t: AvailableTransition): string {
+  if (!t.requiredFields?.length) return '';
+  const labels = t.requiredFields.map((f) => REQUIRED_FIELD_LABELS[f] ?? f);
+  return `Champs requis : ${labels.join(', ')}`;
+}
+
 export default function TransitionActionBar({ workOrderId, onTransitionComplete, variant = 'buttons' }: Props) {
   const { data, isLoading, isError } = useAvailableTransitions(workOrderId);
   const executeTransition = useExecuteTransition(workOrderId);
@@ -175,39 +188,51 @@ export default function TransitionActionBar({ workOrderId, onTransitionComplete,
                 overflowY: 'auto',
               }}
             >
-              {transitions.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => { setDropdownOpen(false); handleClick(t); }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.6rem',
-                    width: '100%',
-                    padding: '0.6rem 0.875rem',
-                    background: 'none',
-                    border: 'none',
-                    borderBottom: theme.borders.light,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    fontSize: theme.font.sizeSm,
-                    color: theme.colors.text,
-                  }}
-                >
-                  <span
+              {transitions.map((t) => {
+                const hint = buildRequiredFieldsHint(t);
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => { setDropdownOpen(false); handleClick(t); }}
+                    title={hint || undefined}
                     style={{
-                      display: 'inline-block',
-                      width: '0.7rem',
-                      height: '0.7rem',
-                      borderRadius: '50%',
-                      background: t.toStatusColor || theme.colors.primary,
-                      flexShrink: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.6rem',
+                      width: '100%',
+                      padding: '0.6rem 0.875rem',
+                      background: 'none',
+                      border: 'none',
+                      borderBottom: theme.borders.light,
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      fontSize: theme.font.sizeSm,
+                      color: theme.colors.text,
                     }}
-                  />
-                  <span>{t.label}</span>
-                </button>
-              ))}
+                  >
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        width: '0.7rem',
+                        height: '0.7rem',
+                        borderRadius: '50%',
+                        background: t.toStatusColor || theme.colors.primary,
+                        flexShrink: 0,
+                      }}
+                    />
+                    <span style={{ flex: 1 }}>{t.label}</span>
+                    {hint && (
+                      <span
+                        aria-hidden="true"
+                        style={{ fontSize: '0.75rem', color: theme.colors.textMuted, flexShrink: 0 }}
+                      >
+                        📝
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
@@ -218,28 +243,40 @@ export default function TransitionActionBar({ workOrderId, onTransitionComplete,
               Aucune action disponible pour ce statut.
             </span>
           ) : (
-            transitions.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => handleClick(t)}
-                disabled={executeTransition.isPending}
-                style={{
-                  padding: '0.5rem 1rem',
-                  background: t.toStatusColor || theme.colors.primary,
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: theme.radius.md,
-                  cursor: executeTransition.isPending ? 'not-allowed' : 'pointer',
-                  fontWeight: theme.font.weightSemibold,
-                  fontSize: theme.font.sizeSm,
-                  opacity: executeTransition.isPending ? 0.6 : 1,
-                  transition: 'opacity 0.15s ease',
-                  boxShadow: theme.shadows.sm,
-                }}
-              >
-                {t.label}
-              </button>
-            ))
+            transitions.map((t) => {
+              const hint = buildRequiredFieldsHint(t);
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => handleClick(t)}
+                  disabled={executeTransition.isPending}
+                  title={hint || undefined}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    padding: '0.5rem 1rem',
+                    background: t.toStatusColor || theme.colors.primary,
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: theme.radius.md,
+                    cursor: executeTransition.isPending ? 'not-allowed' : 'pointer',
+                    fontWeight: theme.font.weightSemibold,
+                    fontSize: theme.font.sizeSm,
+                    opacity: executeTransition.isPending ? 0.6 : 1,
+                    transition: 'opacity 0.15s ease',
+                    boxShadow: theme.shadows.sm,
+                  }}
+                >
+                  <span>{t.label}</span>
+                  {hint && (
+                    <span aria-hidden="true" style={{ fontSize: '0.75rem', opacity: 0.85 }}>
+                      📝
+                    </span>
+                  )}
+                </button>
+              );
+            })
           )}
 
           {executeTransition.isPending && (
