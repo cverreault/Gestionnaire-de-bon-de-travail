@@ -4,6 +4,8 @@ import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { I18nModule, AcceptLanguageResolver, QueryResolver, HeaderResolver } from 'nestjs-i18n';
+import { LoggerModule } from 'nestjs-pino';
+import { loggerConfig } from './common/logger/logger.config';
 import * as path from 'path';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -29,6 +31,11 @@ import { TemplatesModule } from './modules/templates/templates.module';
       isGlobal: true,
       envFilePath: ['.env.local', '.env'],
     }),
+
+    // ── Logger structuré Pino (ADR-007 / C1) ──────────────────────────────
+    // JSON brut en prod (parsable Loki/Datadog), pretty-print en dev.
+    // Request ID propagé via x-request-id. Redaction auto des secrets.
+    LoggerModule.forRoot(loggerConfig),
 
     // ── Domain events bus ─────────────────────────────────────────────────
     // Voir ADR-001 §3a et ADR-003 §6.

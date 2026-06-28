@@ -1,16 +1,24 @@
 import { NestFactory } from '@nestjs/core';
-import { Logger } from '@nestjs/common';
 import { I18nValidationPipe, I18nValidationExceptionFilter } from 'nestjs-i18n';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import compression from 'compression';
 import helmet from 'helmet';
+import { Logger as PinoLogger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
-  const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create(AppModule);
+  // Booter avec bufferLogs pour que les premiers logs (avant que Pino
+  // soit prêt) soient stockés et flushés via Pino une fois disponible.
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+
+  // Remplacer le Logger NestJS par notre instance Pino. Tous les `Logger`
+  // existants dans le code (via `new Logger(name)`) héritent du provider
+  // racine, donc continuent de fonctionner — mais transitent maintenant
+  // par Pino.
+  app.useLogger(app.get(PinoLogger));
+  const logger = app.get(PinoLogger);
 
   // ── Security ──────────────────────────────────────────────────────────────
   app.use(helmet());
