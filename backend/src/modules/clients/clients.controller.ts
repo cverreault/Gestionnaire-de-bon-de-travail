@@ -160,10 +160,12 @@ export class ClientsController {
    * Détail complet d'un client (adresses + compteur de BT).
    */
   @Get(':id')
+  @Roles(Role.ADMIN, Role.DISPATCHER)
   @ApiOperation({ summary: 'Détail d\'un client' })
   @ApiParam({ name: 'id', type: 'string', description: 'UUID du client' })
   @ApiResponse({ status: 200, description: 'Client trouvé avec ses adresses' })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Réservé aux ADMIN/DISPATCHER — un TECHNICIAN n\'accède pas aux fiches client directement' })
   @ApiResponse({ status: 404, description: 'Client introuvable' })
   findOne(@Param('id') id: string) {
     return this.clientsService.findOne(id);

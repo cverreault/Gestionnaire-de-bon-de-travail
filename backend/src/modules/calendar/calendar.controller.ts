@@ -53,9 +53,11 @@ export class CalendarController {
   // ── Appointments — detail ──────────────────────────────────────────────────
 
   @Get('appointments/:id')
+  @Roles(Role.ADMIN, Role.DISPATCHER)
   @ApiOperation({ summary: 'Détail d\'un rendez-vous' })
   @ApiParam({ name: 'id', description: 'UUID du rendez-vous' })
   @ApiResponse({ status: 200, description: 'Rendez-vous trouvé' })
+  @ApiResponse({ status: 403, description: 'Réservé aux ADMIN/DISPATCHER' })
   @ApiResponse({ status: 404, description: 'Rendez-vous introuvable' })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.calendarService.findOneAppointment(id);
