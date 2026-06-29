@@ -40,7 +40,10 @@ Owns the `Tenant` entity and the cross-cutting plumbing that makes TaskMgr serve
 | `GET`  | `/api/super-admin/tenants` | SUPER_ADMIN | Liste paginée |
 | `GET`  | `/api/super-admin/tenants/:id` | SUPER_ADMIN | Détails |
 | `PATCH`| `/api/super-admin/tenants/:id` | SUPER_ADMIN | Rename / plan / quota / activate |
-| `POST` | `/api/super-admin/impersonate` | SUPER_ADMIN | Access token pour un user cible (debug) |
+| `POST` | `/api/super-admin/impersonate` | SUPER_ADMIN | Access token cible — accepte `{userId}` OU `{tenantId}` (B7 : auto-pick 1er ADMIN) |
+| `GET`  | `/api/super-admin/stats` | SUPER_ADMIN | Snapshot cross-tenant (B7) : counts tenants / users / BTs / storage |
+| `GET`  | `/api/super-admin/audit?from&to&tenantSlug&actor&eventName&page&limit` | SUPER_ADMIN | Recherche dans les audit_logs cross-tenant (B7) |
+| `GET`  | `/api/super-admin/users?email=<prefix>` | SUPER_ADMIN | Recherche user par email cross-tenant — max 50 (B7) |
 | `GET`  | `/api/tenant/configs` | ADMIN | List capabilities |
 | `PUT`  | `/api/tenant/configs/:key` | ADMIN | Upsert override TENANT |
 | `DELETE` | `/api/tenant/configs/:key` | ADMIN | Drop l'override TENANT |

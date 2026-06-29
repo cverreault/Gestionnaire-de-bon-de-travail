@@ -59,6 +59,49 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.3.0',
+    name: 'Portail SuperAdmin enrichi + impersonation cross-tenant (B7)',
+    date: 'Juin 2026',
+    entries: [
+      {
+        type: 'new',
+        text: 'Le SUPER_ADMIN dispose maintenant de 5 entrées dans son menu Plateforme : 👑 Configuration, 🌍 Tenants, 📊 Stats globales, 📜 Audit cross-tenant, 🔍 Recherche utilisateur',
+      },
+      {
+        type: 'new',
+        text: 'Page « 🌍 Tenants » : liste paginée de tous les espaces de travail. Édition inline (nom, plan, activer/suspendre, ajuster les quotas). Bouton « Entrer 🎭 » pour basculer dans un tenant en tant que son 1er ADMIN',
+      },
+      {
+        type: 'new',
+        text: 'Page « 📊 Stats globales » : snapshot cross-tenant rafraîchi toutes les 30s. 4 cartes : Tenants (total / actifs / nouveaux ce mois), Utilisateurs, Bons de travail ce mois (créés / complétés), Stockage total',
+      },
+      {
+        type: 'new',
+        text: 'Page « 📜 Audit cross-tenant » : recherche dans les audit_logs à travers tous les tenants. Filtres : date range, tenant slug, actor uuid, event name. Idéal pour répondre à « qu\'est-ce qui s\'est passé chez ce client mardi à 15h »',
+      },
+      {
+        type: 'new',
+        text: 'Page « 🔍 Recherche utilisateur » : champ email-prefix → liste les comptes (avec tenant) dans tous les espaces de travail. Bouton « Entrer 🎭 » sur chaque ligne pour rejoindre directement le tenant correspondant',
+      },
+      {
+        type: 'new',
+        text: 'Bandeau persistant orange en haut de l\'écran pendant toute la session impersonation, avec bouton « Sortir » qui restaure votre session SUPER_ADMIN',
+      },
+      {
+        type: 'security',
+        text: 'L\'impersonation reste un access token 15 minutes — aucun refresh émis. Si vous restez actif au-delà, la prochaine requête force un retour à votre session SA originale',
+      },
+      {
+        type: 'security',
+        text: 'Vous ne pouvez pas imiter un autre SUPER_ADMIN (anti-escalation), vous-même, ou un compte désactivé. Si un tenant n\'a aucun ADMIN actif, l\'entrée est refusée avec un message clair',
+      },
+      {
+        type: 'security',
+        text: 'Chaque impersonation est journalisée dans l\'audit (« 🎭 SA impersonate ... ») pour traçabilité totale',
+      },
+    ],
+  },
+  {
     version: '2.2.0',
     name: 'Multi-tenancy SaaS (B6)',
     date: 'Juin 2026',

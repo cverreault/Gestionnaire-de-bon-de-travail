@@ -213,6 +213,29 @@ Pivot architectural majeur : TaskMgr passe de single-tenant self-hosted à share
 
 ---
 
+### B7 — SuperAdmin Cross-Tenant Portal (post-Sprint 1 extension #7)
+
+Suite de B6 : le SUPER_ADMIN dispose maintenant d'un portail réel pour observer et agir sur l'écosystème SaaS, avec une fonction d'impersonation pour entrer dans n'importe quel tenant en tant que son 1er ADMIN.
+
+| # | Commit | Quoi |
+|---|---|---|
+| **B7.1** | backend | Impersonate v2 (mode `tenantId` en plus de `userId`) + 3 endpoints SA cross-tenant : `GET /super-admin/stats`, `GET /super-admin/audit?...`, `GET /super-admin/users?email=...`. 9 tests impersonate + 4 rows roles-matrix |
+| **B7.2** | frontend | Services typés + 4 pages SA (Tenants / Stats / Audit / Users) + routes + sidebar (5 entrées Plateforme) + i18n FR/EN |
+| **B7.3** | impersonation flow | Bandeau persistant + user object swap + bug fix layout (SA tombait sur le layout tech). Pas encore de handoff cross-subdomain — l'in-place swap fonctionne en dev mono-host. À étendre quand les vrais sub-domains prod sont configurés |
+| **B7.4** | docs | Release notes v2.3.0 + cette section sprint + extension `docs/modules/tenants.md` |
+
+**Bandeau impersonation** : sticky orange #F59E0B en haut de l'écran pendant toute la session. Affiche `email + tenant.name (slug)`. Bouton « Sortir » restaure la session SA et redirige vers `/super-admin/tenants`.
+
+**Sécurité du flow** :
+- Impersonation = access token 15 min, jamais de refresh token.
+- 3 garde-fous : pas de self, pas d'autre SA (anti-escalation), pas de target inactif.
+- Mode `tenantId` rejette le tenant si aucun ADMIN actif n'existe.
+- Audit journalise chaque impersonation (`🎭 SA impersonate ...`).
+
+**Différé** : page `/impersonation-handoff` qui lit un token depuis le fragment d'URL — nécessaire seulement quand les vrais sous-domaines prod sont en place (en dev mono-host, le swap localStorage suffit).
+
+---
+
 ## État de la suite Jest
 
 | Métrique | Avant sprint | Après sprint |
