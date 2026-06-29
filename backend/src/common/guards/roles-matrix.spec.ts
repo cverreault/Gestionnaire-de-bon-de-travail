@@ -38,6 +38,9 @@ import { SuperAdminController } from '../../modules/system-configs/api/super-adm
 import { TenantConfigsController } from '../../modules/system-configs/api/tenant-configs.controller';
 import { SuperAdminTenantsController } from '../../modules/tenants/api/super-admin-tenants.controller';
 import { ImpersonateController } from '../../modules/tenants/api/impersonate.controller';
+import { SuperAdminStatsController } from '../../modules/tenants/api/super-admin-stats.controller';
+import { SuperAdminAuditController } from '../../modules/tenants/api/super-admin-audit.controller';
+import { SuperAdminUsersController } from '../../modules/tenants/api/super-admin-users.controller';
 import { LocationsController } from '../../modules/locations/api/locations.controller';
 
 // ─── Matrix rows ─────────────────────────────────────────────────────────────
@@ -183,6 +186,24 @@ const ALL_ROWS: { name: string; rows: MatrixRow[] }[] = [
     name: 'ImpersonateController',
     rows: [
       { controller: ImpersonateController, method: 'impersonate', expectedRoles: [Role.SUPER_ADMIN], note: 'POST /super-admin/impersonate' },
+    ],
+  },
+  {
+    name: 'SuperAdminStatsController',
+    rows: [
+      { controller: SuperAdminStatsController, method: 'snapshot', expectedRoles: [Role.SUPER_ADMIN], note: 'GET /super-admin/stats' },
+    ],
+  },
+  {
+    name: 'SuperAdminAuditController',
+    rows: [
+      { controller: SuperAdminAuditController, method: 'search', expectedRoles: [Role.SUPER_ADMIN], note: 'GET /super-admin/audit' },
+    ],
+  },
+  {
+    name: 'SuperAdminUsersController',
+    rows: [
+      { controller: SuperAdminUsersController, method: 'search', expectedRoles: [Role.SUPER_ADMIN], note: 'GET /super-admin/users' },
     ],
   },
 ];

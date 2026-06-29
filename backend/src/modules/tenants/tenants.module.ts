@@ -9,6 +9,9 @@ import { TenantBootstrapService } from './application/tenant-bootstrap.service';
 import { SignupController } from './api/signup.controller';
 import { SuperAdminTenantsController } from './api/super-admin-tenants.controller';
 import { ImpersonateController } from './api/impersonate.controller';
+import { SuperAdminStatsController } from './api/super-admin-stats.controller';
+import { SuperAdminAuditController } from './api/super-admin-audit.controller';
+import { SuperAdminUsersController } from './api/super-admin-users.controller';
 import { QUOTA_SERVICE } from '../../common/contracts/quota.contract';
 
 /**
@@ -38,7 +41,14 @@ import { QUOTA_SERVICE } from '../../common/contracts/quota.contract';
       inject: [ConfigService],
     }),
   ],
-  controllers: [SignupController, SuperAdminTenantsController, ImpersonateController],
+  controllers: [
+    SignupController,
+    SuperAdminTenantsController,
+    ImpersonateController,
+    SuperAdminStatsController,
+    SuperAdminAuditController,
+    SuperAdminUsersController,
+  ],
   providers: [
     QuotaService,
     QuotaResetService,
