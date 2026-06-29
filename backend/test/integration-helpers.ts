@@ -100,6 +100,8 @@ export async function bootIntegrationApp(): Promise<IntegrationContext> {
  * Order matters — FK dependencies first.
  */
 export async function resetDb(prisma: PrismaClient): Promise<void> {
+  // B6 — tenants table now lives at the root of the FK chain. The
+  // CASCADE clause + the order below covers every business table.
   await prisma.$executeRawUnsafe(`
     TRUNCATE TABLE
       audit_logs,
@@ -114,9 +116,49 @@ export async function resetDb(prisma: PrismaClient): Promise<void> {
       clients,
       temporary_clients,
       users,
-      system_configs
+      system_configs,
+      tenants
     RESTART IDENTITY CASCADE
   `);
+  // Re-seed the DEFAULT tenant — every business table has a
+  // @default tenantId pointing at it, and a few startup hooks
+  // (process seed, audit seed) rely on it existing.
+  await prisma.$executeRawUnsafe(`
+    INSERT INTO tenants (id, slug, name, is_active, plan, updated_at)
+    VALUES (
+      '00000000-0000-0000-0000-000000000001',
+      'default',
+      'Default tenant (test)',
+      true,
+      'ENTERPRISE',
+      CURRENT_TIMESTAMP
+    )
+    ON CONFLICT (id) DO NOTHING
+  `);
+}
+
+/**
+ * Creates a tenant + returns it. Use as a fixture in cross-tenant
+ * isolation specs. Generates a UUID-suffixed slug so parallel runs
+ * don't collide on the @@unique constraint.
+ */
+export async function createTestTenant(
+  prisma: PrismaClient,
+  opts: Partial<{ slug: string; name: string }> = {},
+): Promise<{ id: string; slug: string; name: string }> {
+  const slug = opts.slug ?? `t-${randomUUID().slice(0, 8)}`;
+  const tenant = await prisma.tenant.create({
+    data: {
+      slug,
+      name: opts.name ?? `Test tenant ${slug}`,
+      plan: 'ENTERPRISE',
+      maxUsers: 10000,
+      maxWorkOrdersPerMonth: 10000,
+      maxStorageMb: 10000,
+      maxClients: 10000,
+    },
+  });
+  return { id: tenant.id, slug: tenant.slug, name: tenant.name };
 }
 
 export interface CreatedUser {
@@ -133,7 +175,15 @@ export interface CreatedUser {
  */
 export async function createTestUser(
   prisma: PrismaClient,
-  opts: Partial<{ email: string; password: string; role: Role; firstName: string; lastName: string }>,
+  opts: Partial<{
+    email: string;
+    password: string;
+    role: Role;
+    firstName: string;
+    lastName: string;
+    /** B6 — optional explicit tenant. Defaults to DEFAULT for back-compat. */
+    tenantId: string;
+  }>,
 ): Promise<CreatedUser> {
   const password = opts.password ?? 'P@ssw0rd123!';
   const email =
@@ -148,6 +198,9 @@ export async function createTestUser(
       lastName: opts.lastName ?? 'User',
       role: opts.role ?? Role.TECHNICIAN,
       isActive: true,
+      // B6 — explicit tenant when provided, otherwise the schema's
+      // default @default("00000000-…-001") points the user at DEFAULT.
+      ...(opts.tenantId ? { tenantId: opts.tenantId } : {}),
     },
   });
 
