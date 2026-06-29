@@ -272,8 +272,8 @@ model TaskType {
   id          String  @id @default(uuid())
   tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
   tenant      Tenant  @relation(fields: [tenantId], references: [id])
-  name        String  @unique
-  prefix      String  @unique
+  name        String
+  prefix      String
   description String?
   color       String?
   icon        String?
@@ -297,6 +297,8 @@ model TaskType {
 
   workOrders WorkOrder[]
 
+  @@unique([tenantId, name], map: "idx_task_types_tenant_name")
+  @@unique([tenantId, prefix], map: "idx_task_types_tenant_prefix")
   @@index([isActive], map: "idx_task_types_is_active")
   @@index([tenantId], map: "idx_task_types_tenant_id")
   @@map("task_types")
@@ -340,7 +342,7 @@ model WorkOrderTemplate {
   id          String   @id @default(uuid())
   tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
-  name        String   @unique
+  name        String
   description String?
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
@@ -349,6 +351,7 @@ model WorkOrderTemplate {
   sections  TemplateSection[]
   taskTypes TaskType[]
 
+  @@unique([tenantId, name], map: "idx_work_order_templates_tenant_name")
   @@index([isActive], map: "idx_work_order_templates_is_active")
   @@index([tenantId], map: "idx_work_order_templates_tenant_id")
   @@map("work_order_templates")
@@ -401,8 +404,8 @@ model ClientTypeConfig {
   id          String   @id @default(uuid())
   tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
-  name        String   @unique
-  code        String   @unique
+  name        String
+  code        String
   description String?
   color       String?  @default("#3b82f6")
   icon        String?
@@ -411,6 +414,8 @@ model ClientTypeConfig {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@unique([tenantId, name], map: "idx_client_type_configs_tenant_name")
+  @@unique([tenantId, code], map: "idx_client_type_configs_tenant_code")
   @@index([isActive], map: "idx_client_type_configs_is_active")
   @@index([tenantId], map: "idx_client_type_configs_tenant_id")
   @@map("client_type_configs")
@@ -420,8 +425,8 @@ model AddressTypeConfig {
   id                 String   @id @default(uuid())
   tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
   tenant             Tenant   @relation(fields: [tenantId], references: [id])
-  name               String   @unique
-  code               String   @unique
+  name               String
+  code               String
   description        String?
   color              String?  @default("#3b82f6")
   icon               String?
@@ -435,6 +440,8 @@ model AddressTypeConfig {
 
   fields AddressTypeField[]
 
+  @@unique([tenantId, name], map: "idx_address_type_configs_tenant_name")
+  @@unique([tenantId, code], map: "idx_address_type_configs_tenant_code")
   @@index([isActive], map: "idx_address_type_configs_is_active")
   @@index([tenantId], map: "idx_address_type_configs_tenant_id")
   @@map("address_type_configs")
@@ -464,7 +471,7 @@ model WorkOrder {
   id              String          @id @default(uuid())
   tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
   tenant          Tenant          @relation(fields: [tenantId], references: [id])
-  referenceNumber String          @unique @map("reference_number")
+  referenceNumber String          @map("reference_number")
   status          WorkOrderStatus @default(CREATED)
   type            WorkOrderType   @default(OTHER)
   title           String
@@ -529,6 +536,7 @@ model WorkOrder {
   @@index([status])
   @@index([assignedToId])
   @@index([scheduledDate])
+  @@unique([tenantId, referenceNumber], map: "idx_work_orders_tenant_reference")
   @@index([referenceNumber])
   @@index([clientId], map: "idx_work_orders_client_id")
   @@index([taskTypeId], map: "idx_work_orders_task_type_id")
@@ -600,7 +608,7 @@ model ProcessDefinition {
   id          String  @id @default(uuid())
   tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
   tenant      Tenant  @relation(fields: [tenantId], references: [id])
-  name        String  @unique
+  name        String
   description String?
   version     Int     @default(1)
   isDefault   Boolean @default(false) @map("is_default")
@@ -614,6 +622,7 @@ model ProcessDefinition {
   taskTypes   TaskType[]
   workOrders  WorkOrder[]
 
+  @@unique([tenantId, name], map: "idx_process_definitions_tenant_name")
   @@index([isDefault], map: "idx_process_definitions_is_default")
   @@index([isActive], map: "idx_process_definitions_is_active")
   @@index([tenantId], map: "idx_process_definitions_tenant_id")

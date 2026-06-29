@@ -121,8 +121,10 @@ export class ProcessService {
   }
 
   async create(dto: CreateProcessDefinitionDto) {
-    // Friendly check for unique name (otherwise the unique constraint fires a 500)
-    const existingByName = await this.prisma.processDefinition.findUnique({
+    // Friendly check for unique name (otherwise the unique constraint fires a 500).
+    // B6.7 — name is (tenantId, name) composite. findFirst lets the
+    // tenant-scope middleware (B6.4) inject the tenant filter.
+    const existingByName = await this.prisma.processDefinition.findFirst({
       where: { name: dto.name },
       select: { id: true },
     });

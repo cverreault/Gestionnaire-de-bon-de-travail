@@ -2,6 +2,9 @@ import { Global, Module } from '@nestjs/common';
 import { PrismaModule } from '../../common/prisma/prisma.module';
 import { QuotaService } from './application/quota.service';
 import { QuotaResetService } from './application/quota-reset.service';
+import { SignupService } from './application/signup.service';
+import { TenantBootstrapService } from './application/tenant-bootstrap.service';
+import { SignupController } from './api/signup.controller';
 import { QUOTA_SERVICE } from '../../common/contracts/quota.contract';
 
 /**
@@ -18,9 +21,12 @@ import { QUOTA_SERVICE } from '../../common/contracts/quota.contract';
 @Global()
 @Module({
   imports: [PrismaModule],
+  controllers: [SignupController],
   providers: [
     QuotaService,
     QuotaResetService,
+    SignupService,
+    TenantBootstrapService,
     { provide: QUOTA_SERVICE, useExisting: QuotaService },
   ],
   exports: [QuotaService, QUOTA_SERVICE],

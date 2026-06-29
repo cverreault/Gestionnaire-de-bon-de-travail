@@ -48,7 +48,9 @@ export class TemplatesService {
   }
 
   async create(dto: CreateTemplateDto) {
-    const existing = await this.prisma.workOrderTemplate.findUnique({
+    // B6.7 — name is now (tenantId, name) composite. findFirst lets
+    // the tenant-scope middleware (B6.4) inject the tenant filter.
+    const existing = await this.prisma.workOrderTemplate.findFirst({
       where: { name: dto.name },
       select: { id: true },
     });
