@@ -36,6 +36,7 @@ import { SearchController } from '../../modules/search/api/search.controller';
 import { NotificationsController } from '../../modules/notifications/api/notifications.controller';
 import { SuperAdminController } from '../../modules/system-configs/api/super-admin.controller';
 import { TenantConfigsController } from '../../modules/system-configs/api/tenant-configs.controller';
+import { SuperAdminTenantsController } from '../../modules/tenants/api/super-admin-tenants.controller';
 import { LocationsController } from '../../modules/locations/api/locations.controller';
 
 // ─── Matrix rows ─────────────────────────────────────────────────────────────
@@ -124,6 +125,13 @@ const SUPER_ADMIN_MATRIX: MatrixRow[] = [
   { controller: SuperAdminController, method: 'remove',  expectedRoles: [Role.SUPER_ADMIN], note: 'DELETE /super-admin/configs/:key' },
 ];
 
+const SUPER_ADMIN_TENANTS_MATRIX: MatrixRow[] = [
+  // B6.10 — class-level @Roles(SUPER_ADMIN). SA reaches across tenants.
+  { controller: SuperAdminTenantsController, method: 'list',   expectedRoles: [Role.SUPER_ADMIN], note: 'GET /super-admin/tenants' },
+  { controller: SuperAdminTenantsController, method: 'getOne', expectedRoles: [Role.SUPER_ADMIN], note: 'GET /super-admin/tenants/:id' },
+  { controller: SuperAdminTenantsController, method: 'update', expectedRoles: [Role.SUPER_ADMIN], note: 'PATCH /super-admin/tenants/:id' },
+];
+
 const TENANT_CONFIGS_MATRIX: MatrixRow[] = [
   // B6.9 — class-level @Roles(ADMIN). Tenant ADMIN manages TENANT-scoped
   // overrides only ; the GLOBAL surface stays on /super-admin/configs.
@@ -169,6 +177,7 @@ const ALL_ROWS: { name: string; rows: MatrixRow[] }[] = [
   { name: 'SuperAdminController',    rows: SUPER_ADMIN_MATRIX },
   { name: 'LocationsController',     rows: LOCATIONS_MATRIX },
   { name: 'TenantConfigsController', rows: TENANT_CONFIGS_MATRIX },
+  { name: 'SuperAdminTenantsController', rows: SUPER_ADMIN_TENANTS_MATRIX },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

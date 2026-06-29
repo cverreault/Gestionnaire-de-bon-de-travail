@@ -5,6 +5,7 @@ import { QuotaResetService } from './application/quota-reset.service';
 import { SignupService } from './application/signup.service';
 import { TenantBootstrapService } from './application/tenant-bootstrap.service';
 import { SignupController } from './api/signup.controller';
+import { SuperAdminTenantsController } from './api/super-admin-tenants.controller';
 import { QUOTA_SERVICE } from '../../common/contracts/quota.contract';
 
 /**
@@ -21,7 +22,7 @@ import { QUOTA_SERVICE } from '../../common/contracts/quota.contract';
 @Global()
 @Module({
   imports: [PrismaModule],
-  controllers: [SignupController],
+  controllers: [SignupController, SuperAdminTenantsController],
   providers: [
     QuotaService,
     QuotaResetService,
