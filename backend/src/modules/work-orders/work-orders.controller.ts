@@ -19,6 +19,7 @@ import {
   ApiResponse,
   ApiParam,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { Role } from '@prisma/client';
 
 import { WorkOrdersService } from './work-orders.service';
@@ -213,6 +214,10 @@ export class WorkOrdersController {
 
   @Post(':id/transition')
   @HttpCode(HttpStatus.OK)
+  // Tight rate limit (C7bis) — a legitimate tech transitions at most once
+  // every few seconds. 20 per minute leaves room for retries on flaky
+  // network without enabling brute-forcing of valid transition payloads.
+  @Throttle({ short: { ttl: 60000, limit: 20 } })
   @ApiOperation({
     summary: 'Changer le statut d\'un bon de travail',
     description:

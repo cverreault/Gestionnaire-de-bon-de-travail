@@ -18,6 +18,7 @@ import {
   ApiQuery,
   ApiResponse,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { Role } from '@prisma/client';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -106,6 +107,9 @@ export class UsersController {
 
   // ── PATCH /api/users/me/preferences ───────────────────────────────────────
   @Patch('me/preferences')
+  // Tight rate limit (C7bis) — 30 updates per minute is well above any
+  // legitimate UI use and well below what a flood/scan would generate.
+  @Throttle({ short: { ttl: 60000, limit: 30 } })
   @ApiOperation({ summary: 'Mettre à jour (merge) les préférences UI de l\'utilisateur courant' })
   @ApiResponse({ status: 200, description: 'Préférences mises à jour' })
   updateMyPreferences(
