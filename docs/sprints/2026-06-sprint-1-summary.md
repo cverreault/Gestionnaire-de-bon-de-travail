@@ -176,6 +176,43 @@ Voir [ADR-008](../adrs/ADR-008-gps-tracking-privacy.md) pour le rationale comple
 
 ---
 
+### B6 — Multi-tenancy SaaS (post-Sprint 1 extension #6)
+
+Pivot architectural majeur : TaskMgr passe de single-tenant self-hosted à shared-DB multi-tenant. Tous les détails dans [ADR-009](../adrs/ADR-009-multi-tenancy.md) et [docs/modules/tenants.md](../modules/tenants.md).
+
+| # | Commit | Quoi |
+|---|---|---|
+| **B6.1** | foundation | Tenant model + 23 tables avec `tenant_id` FK + Genesis migration (DEFAULT tenant pour self-hosted) + system_configs dual-scope ready |
+| **B6.2** | resolver | TenantResolverMiddleware : Host → slug → tenant, cache in-process |
+| **B6.3** | JWT + email | JWT claim tenantId + AsyncLocalStorage propagation + email per-tenant unique |
+| **B6.4** | auto-filter | Prisma `$use` middleware qui injecte tenantId dans toutes les queries des 23 modèles scopés |
+| **B6.5** | RLS | Postgres policies sur les 23 tables + helper `withTenantScope` |
+| **B6.6** | quotas | QuotaService atomic check-and-consume + cron reset mensuel + enforcement sur /users |
+| **B6.7** | signup | POST /signup public + bootstrap catalog (process / task types / client types / address types) en transaction. Per-tenant uniques sur task_types/client_types/etc. |
+| **B6.8** | email verify | Soft enforcement : POST /auth/verify-email + table email_verifications. Bandeau frontend en follow-up |
+| **B6.9** | dual-scope | SystemConfigService.resolve : TENANT > GLOBAL > env. ADMIN endpoint /tenant/configs pour overrides locaux |
+| **B6.10** | SA CRUD | GET/PATCH /super-admin/tenants (list / get / update). Delete non exposé (one-click ends a SaaS) |
+| **B6.11** | impersonate | POST /super-admin/impersonate (access-only token 15 min) |
+| **B6.12** | frontend | Page /signup. Bandeau email + header tenant en follow-up |
+| **B6.13** | tests | `tenants-isolation.integration-spec.ts` — 4 cas prouvant l'isolation cross-tenant end-to-end |
+
+**Posture sécurité** :
+- Double défense : auto-filter applicatif (B6.4) primaire + RLS Postgres (B6.5) backstop
+- JWT spoofing bloqué : sub-domain + claim tenantId doivent matcher
+- Anti-enumeration : slug inconnu → 404, même shape qu'un tenant désactivé
+- SA impersonate sans refresh token : max 15 min
+
+**Posture opérationnelle** :
+- Self-hosted préservé (DEFAULT tenant existe depuis Genesis)
+- Onboarding self-service via /signup (3 req/min/IP)
+- Quotas tunables par tenant par le SA sans changement de code
+- Catalog bootstrap par tenant (5 task types + 1 process + 2 client types + 3 address types)
+- Reset mensuel automatique des compteurs
+
+**Différé** : FORCE RLS (besoin d'un rôle app non-owner), tenant deletion endpoint (one-click risk), email verification trigger depuis signup (via event), auth.taskmgr.com login UX, billing (Stripe).
+
+---
+
 ## État de la suite Jest
 
 | Métrique | Avant sprint | Après sprint |

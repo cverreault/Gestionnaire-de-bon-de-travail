@@ -59,6 +59,53 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.2.0',
+    name: 'Multi-tenancy SaaS (B6)',
+    date: 'Juin 2026',
+    entries: [
+      {
+        type: 'new',
+        text: 'Page /signup publique : n\'importe qui peut créer un nouvel espace de travail TaskMgr en 30 secondes (gratuit pour commencer). Le bootstrap génère automatiquement les types de tâche, le processus de défaut, les types de clients et d\'adresses',
+      },
+      {
+        type: 'new',
+        text: 'Chaque espace est accessible via son sous-domaine (ex: monentreprise.taskmgr.com). Le sous-domaine décide automatiquement quel tenant connecter — plus de friction au login',
+      },
+      {
+        type: 'new',
+        text: 'Le SUPER_ADMIN dispose désormais d\'une liste paginée des tenants + d\'un endpoint d\'impersonation pour debugger un problème client sans demander son mot de passe',
+      },
+      {
+        type: 'new',
+        text: 'Quotas par tenant (utilisateurs / BT par mois / stockage / clients) avec ceilings réglables par le SA et reset mensuel automatique au premier du mois',
+      },
+      {
+        type: 'new',
+        text: 'Configurations dual-scope : un client peut maintenant configurer son propre SMTP, ses propres clés VAPID, sans toucher aux défauts de l\'opérateur. L\'override TENANT a priorité sur le GLOBAL',
+      },
+      {
+        type: 'security',
+        text: 'Double défense d\'isolation : middleware Prisma applicatif (couche 1) + Row Level Security Postgres (couche 2). Un bug dans l\'un n\'est pas suffisant pour fuiter les données entre tenants',
+      },
+      {
+        type: 'security',
+        text: 'Anti-spoofing JWT : le token doit correspondre au sous-domaine. Un token volé du tenant A renvoyé sur l\'URL du tenant B est rejeté avant même d\'atteindre la logique métier',
+      },
+      {
+        type: 'security',
+        text: 'Email per-tenant unique : Jean@gmail.com peut désormais avoir un compte chez deux clients différents sans conflit. Le sous-domaine identifie chez qui il se connecte',
+      },
+      {
+        type: 'infra',
+        text: 'Le déploiement self-hosted existant continue de fonctionner inchangé (tenant DEFAULT créé par la migration Genesis). Aucune migration de données nécessaire pour les déploiements actuels',
+      },
+      {
+        type: 'infra',
+        text: 'Nouvelle ADR-009 documentant les choix d\'architecture, la posture sécurité et les compromis (notamment : pas de FORCE RLS, pas de delete tenant exposé)',
+      },
+    ],
+  },
+  {
     version: '2.1.7',
     name: 'Suivi GPS des techniciens (B5)',
     date: 'Juin 2026',
