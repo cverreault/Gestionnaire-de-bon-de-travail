@@ -6,7 +6,14 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { Role } from '@prisma/client';
+import { Inject } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import {
+  IQuotaService,
+  QUOTA_SERVICE,
+  QuotaType,
+} from '../../common/contracts/quota.contract';
+import { RequestContextService } from '../../common/context/request-context.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -27,7 +34,12 @@ const USER_SELECT = {
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(QUOTA_SERVICE)
+    private readonly quotas: IQuotaService,
+    private readonly context: RequestContextService,
+  ) {}
 
   // ── Queries ────────────────────────────────────────────────────────────────
 
@@ -70,6 +82,13 @@ export class UsersService {
     });
     if (existing) {
       throw new ConflictException('Un utilisateur avec cet email existe déjà');
+    }
+
+    // Quota check (B6.6) — atomic increment of tenant.current_users.
+    // ForbiddenException with French message when the ceiling is hit.
+    const tenantId = this.context.current()?.tenantId;
+    if (tenantId) {
+      await this.quotas.checkAndConsume(QuotaType.USERS, tenantId);
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);

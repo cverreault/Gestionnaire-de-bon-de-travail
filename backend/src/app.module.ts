@@ -32,6 +32,7 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { LocationsModule } from './modules/locations/locations.module';
 import { TenantResolverMiddleware } from './common/middleware/tenant-resolver.middleware';
 import { RequestContextModule } from './common/context/request-context.module';
+import { TenantsModule } from './modules/tenants/tenants.module';
 
 @Module({
   imports: [
@@ -97,6 +98,7 @@ import { RequestContextModule } from './common/context/request-context.module';
     // ── Core ───────────────────────────────────────────────────────────────
     PrismaModule,
     RequestContextModule,
+    TenantsModule,
 
     // ── Feature modules ────────────────────────────────────────────────────
     HealthModule,
