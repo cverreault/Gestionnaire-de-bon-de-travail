@@ -53,10 +53,85 @@ enum AddressType {
   WORKSITE
 }
 
+enum TenantPlan {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum SystemConfigScope {
+  GLOBAL
+  TENANT
+}
+
 // ─── Models ───────────────────────────────────────────────────────────────────
+
+/// Multi-tenancy root entity (B6).
+///
+/// One row per logical customer. Self-hosted deployments have a single
+/// DEFAULT tenant (id `00000000-0000-0000-0000-000000000001`).
+///
+/// Quotas live here too — `max_*` are the ceilings, `current_*` are the
+/// running counters maintained by QuotaService (B6.6). The monthly
+/// reset cron flips `current_work_orders_this_month` back to 0 on the
+/// 1st of each month.
+model Tenant {
+  id       String     @id @default(uuid())
+  slug     String     @unique
+  name     String
+  isActive Boolean    @default(true) @map("is_active")
+  plan     TenantPlan @default(FREE)
+
+  // Quotas (B6.6)
+  maxUsers              Int @default(3) @map("max_users")
+  maxWorkOrdersPerMonth Int @default(50) @map("max_work_orders_per_month")
+  maxStorageMb          Int @default(100) @map("max_storage_mb")
+  maxClients            Int @default(50) @map("max_clients")
+
+  currentUsers               Int       @default(0) @map("current_users")
+  currentWorkOrdersThisMonth Int       @default(0) @map("current_work_orders_this_month")
+  currentStorageBytes        BigInt    @default(0) @map("current_storage_bytes")
+  currentClients             Int       @default(0) @map("current_clients")
+  workOrdersResetAt          DateTime? @map("work_orders_reset_at")
+
+  ownerEmail String? @map("owner_email")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users               User[]
+  technicianLocations TechnicianLocation[]
+  temporaryClients    TemporaryClient[]
+  clients             Client[]
+  clientAddresses     ClientAddress[]
+  taskTypes           TaskType[]
+  workOrderTemplates  WorkOrderTemplate[]
+  templateSections    TemplateSection[]
+  templateFields      TemplateField[]
+  clientTypeConfigs   ClientTypeConfig[]
+  addressTypeConfigs  AddressTypeConfig[]
+  addressTypeFields   AddressTypeField[]
+  workOrders          WorkOrder[]
+  notes               Note[]
+  attachments         Attachment[]
+  appointments        Appointment[]
+  processDefinitions  ProcessDefinition[]
+  processStatuses     ProcessStatus[]
+  processTransitions  ProcessTransition[]
+  auditLogs           AuditLog[]
+  refreshTokens       RefreshToken[]
+  notifications       Notification[]
+  pushSubscriptions   PushSubscription[]
+  systemConfigs       SystemConfig[]
+
+  @@index([isActive], map: "idx_tenants_is_active")
+  @@map("tenants")
+}
 
 model User {
   id        String  @id @default(uuid())
+  tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant    Tenant  @relation(fields: [tenantId], references: [id])
   email     String  @unique
   password  String
   firstName String  @map("first_name")
@@ -71,12 +146,13 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  assignedWorkOrders   WorkOrder[]   @relation("AssignedTechnician")
-  createdWorkOrders    WorkOrder[]   @relation("CreatedBy")
-  notes                Note[]
-  appointments         Appointment[] @relation("TechnicianAppointments")
-  locations            TechnicianLocation[]
+  assignedWorkOrders WorkOrder[]          @relation("AssignedTechnician")
+  createdWorkOrders  WorkOrder[]          @relation("CreatedBy")
+  notes              Note[]
+  appointments       Appointment[]        @relation("TechnicianAppointments")
+  locations          TechnicianLocation[]
 
+  @@index([tenantId], map: "idx_users_tenant_id")
   @@map("users")
 }
 
@@ -92,6 +168,8 @@ model User {
 /// dispatcher dashboard polls this every few seconds.
 model TechnicianLocation {
   id           String   @id @default(uuid())
+  tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
   technicianId String   @map("technician_id")
   technician   User     @relation(fields: [technicianId], references: [id], onDelete: Cascade)
   latitude     Float
@@ -103,11 +181,14 @@ model TechnicianLocation {
 
   @@index([technicianId, recordedAt(sort: Desc)], map: "idx_technician_locations_tech_recorded")
   @@index([recordedAt], map: "idx_technician_locations_recorded_at")
+  @@index([tenantId], map: "idx_technician_locations_tenant_id")
   @@map("technician_locations")
 }
 
 model TemporaryClient {
   id         String  @id @default(uuid())
+  tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant     Tenant  @relation(fields: [tenantId], references: [id])
   firstName  String  @map("first_name")
   lastName   String  @map("last_name")
   email      String?
@@ -122,11 +203,14 @@ model TemporaryClient {
 
   workOrders WorkOrder[]
 
+  @@index([tenantId], map: "idx_temporary_clients_tenant_id")
   @@map("temporary_clients")
 }
 
 model Client {
   id          String     @id @default(uuid())
+  tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant      Tenant     @relation(fields: [tenantId], references: [id])
   firstName   String     @map("first_name")
   lastName    String     @map("last_name")
   companyName String?    @map("company_name")
@@ -135,65 +219,71 @@ model Client {
   clientType  ClientType @default(RESIDENTIAL) @map("client_type")
   notes       String?
   isActive    Boolean    @default(true) @map("is_active")
-  createdAt  DateTime   @default(now()) @map("created_at")
-  updatedAt  DateTime   @updatedAt @map("updated_at")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
 
   addresses  ClientAddress[]
   workOrders WorkOrder[]
 
   @@index([clientType], map: "idx_clients_type")
   @@index([isActive], map: "idx_clients_is_active")
+  @@index([tenantId], map: "idx_clients_tenant_id")
   @@map("clients")
 }
 
 model ClientAddress {
-  id          String      @id @default(uuid())
+  id           String   @id @default(uuid())
+  tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
   // Optional: a "standalone" address (e.g. site/location library) has no client.
   // It can be linked later via PATCH or used as-is for reference data.
-  clientId     String?    @map("client_id")
-  client       Client?    @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  streetNumber String?    @map("street_number")
+  clientId     String?  @map("client_id")
+  client       Client?  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  streetNumber String?  @map("street_number")
   street       String
   apartment    String?
-  city        String
-  postalCode  String      @map("postal_code")
-  province    String      @default("Québec")
-  country     String      @default("Canada")
+  city         String
+  postalCode   String   @map("postal_code")
+  province     String   @default("Québec")
+  country      String   @default("Canada")
   // Free-form code matching AddressTypeConfig.code. Was previously a strict
   // enum (OFFICE/WAREHOUSE/RESIDENCE/WORKSITE) but is now configurable.
-  addressType String @default("RESIDENCE") @map("address_type")
-  label       String?
-  isDefault   Boolean     @default(false) @map("is_default")
-  latitude    Float?
-  longitude   Float?
+  addressType  String   @default("RESIDENCE") @map("address_type")
+  label        String?
+  isDefault    Boolean  @default(false) @map("is_default")
+  latitude     Float?
+  longitude    Float?
   // Free-form values for the custom fields defined on the matching AddressTypeConfig
   // (keyed by AddressTypeField.id). Mirrors WorkOrder.templateData on the templates side.
-  typeData    Json?       @map("type_data")
-  createdAt   DateTime    @default(now()) @map("created_at")
-  updatedAt   DateTime    @updatedAt @map("updated_at")
+  typeData     Json?    @map("type_data")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   workOrders WorkOrder[]
 
   @@index([clientId], map: "idx_client_addresses_client_id")
+  @@index([tenantId], map: "idx_client_addresses_tenant_id")
   @@map("client_addresses")
 }
 
 model TaskType {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  prefix      String   @unique
+  id          String  @id @default(uuid())
+  tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant      Tenant  @relation(fields: [tenantId], references: [id])
+  name        String  @unique
+  prefix      String  @unique
   description String?
   color       String?
   icon        String?
-  isActive    Boolean  @default(true) @map("is_active")
+  isActive    Boolean @default(true) @map("is_active")
 
   /// SLA in hours — if set, every BT of this type is expected to be
   /// completed within slaHours after creation. Null = no SLA tracked.
   /// Range [1, 4380] = 1 hour to 6 months (clamped at the DTO layer).
-  slaHours    Int?     @map("sla_hours")
+  slaHours Int? @map("sla_hours")
 
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // ── Process Engine ──
   processDefinitionId String?            @map("process_definition_id")
@@ -206,6 +296,7 @@ model TaskType {
   workOrders WorkOrder[]
 
   @@index([isActive], map: "idx_task_types_is_active")
+  @@index([tenantId], map: "idx_task_types_tenant_id")
   @@map("task_types")
 }
 
@@ -217,7 +308,7 @@ enum TemplateFieldType {
   URL
 
   // ── Numérique ──
-  NUMBER          // legacy: kept as a generic alias for FLOAT
+  NUMBER // legacy: kept as a generic alias for FLOAT
   INTEGER
   FLOAT
   CURRENCY
@@ -245,6 +336,8 @@ enum TemplateFieldType {
 
 model WorkOrderTemplate {
   id          String   @id @default(uuid())
+  tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
   name        String   @unique
   description String?
   isActive    Boolean  @default(true) @map("is_active")
@@ -255,28 +348,34 @@ model WorkOrderTemplate {
   taskTypes TaskType[]
 
   @@index([isActive], map: "idx_work_order_templates_is_active")
+  @@index([tenantId], map: "idx_work_order_templates_tenant_id")
   @@map("work_order_templates")
 }
 
 model TemplateSection {
-  id         String   @id @default(uuid())
-  templateId String   @map("template_id")
+  id         String            @id @default(uuid())
+  tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant     Tenant            @relation(fields: [tenantId], references: [id])
+  templateId String            @map("template_id")
   template   WorkOrderTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
   name       String
-  sortOrder  Int      @default(0) @map("sort_order")
-  viewRoles  Role[]   @default([ADMIN, DISPATCHER, TECHNICIAN]) @map("view_roles")
-  editRoles  Role[]   @default([ADMIN, DISPATCHER, TECHNICIAN]) @map("edit_roles")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  sortOrder  Int               @default(0) @map("sort_order")
+  viewRoles  Role[]            @default([ADMIN, DISPATCHER, TECHNICIAN]) @map("view_roles")
+  editRoles  Role[]            @default([ADMIN, DISPATCHER, TECHNICIAN]) @map("edit_roles")
+  createdAt  DateTime          @default(now()) @map("created_at")
+  updatedAt  DateTime          @updatedAt @map("updated_at")
 
   fields TemplateField[]
 
   @@index([templateId], map: "idx_template_sections_template_id")
+  @@index([tenantId], map: "idx_template_sections_tenant_id")
   @@map("template_sections")
 }
 
 model TemplateField {
   id            String            @id @default(uuid())
+  tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant        Tenant            @relation(fields: [tenantId], references: [id])
   sectionId     String            @map("section_id")
   section       TemplateSection   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   label         String
@@ -287,16 +386,19 @@ model TemplateField {
   sortOrder     Int               @default(0) @map("sort_order")
   viewRoles     Role[]            @default([ADMIN, DISPATCHER, TECHNICIAN]) @map("view_roles")
   editRoles     Role[]            @default([ADMIN, DISPATCHER, TECHNICIAN]) @map("edit_roles")
-  requiredRoles Role[]            @default([])                              @map("required_roles")
+  requiredRoles Role[]            @default([]) @map("required_roles")
   createdAt     DateTime          @default(now()) @map("created_at")
   updatedAt     DateTime          @updatedAt @map("updated_at")
 
   @@index([sectionId], map: "idx_template_fields_section_id")
+  @@index([tenantId], map: "idx_template_fields_tenant_id")
   @@map("template_fields")
 }
 
 model ClientTypeConfig {
   id          String   @id @default(uuid())
+  tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
   name        String   @unique
   code        String   @unique
   description String?
@@ -308,32 +410,38 @@ model ClientTypeConfig {
   updatedAt   DateTime @updatedAt
 
   @@index([isActive], map: "idx_client_type_configs_is_active")
+  @@index([tenantId], map: "idx_client_type_configs_tenant_id")
   @@map("client_type_configs")
 }
 
 model AddressTypeConfig {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  code        String   @unique
-  description String?
-  color       String?  @default("#3b82f6")
-  icon        String?
-  isActive    Boolean  @default(true)
-  sortOrder   Int      @default(0)
+  id                 String   @id @default(uuid())
+  tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant             Tenant   @relation(fields: [tenantId], references: [id])
+  name               String   @unique
+  code               String   @unique
+  description        String?
+  color              String?  @default("#3b82f6")
+  icon               String?
+  isActive           Boolean  @default(true)
+  sortOrder          Int      @default(0)
   // ID of the AddressTypeField designated as "predominant" — its value is shown
   // in large type when an address of this type is displayed (e.g. lot # for camping).
-  predominantFieldId String? @map("predominant_field_id")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  predominantFieldId String?  @map("predominant_field_id")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   fields AddressTypeField[]
 
   @@index([isActive], map: "idx_address_type_configs_is_active")
+  @@index([tenantId], map: "idx_address_type_configs_tenant_id")
   @@map("address_type_configs")
 }
 
 model AddressTypeField {
   id                  String            @id @default(uuid())
+  tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant              Tenant            @relation(fields: [tenantId], references: [id])
   addressTypeConfigId String            @map("address_type_config_id")
   addressTypeConfig   AddressTypeConfig @relation(fields: [addressTypeConfigId], references: [id], onDelete: Cascade)
   label               String
@@ -346,11 +454,14 @@ model AddressTypeField {
   updatedAt           DateTime          @updatedAt @map("updated_at")
 
   @@index([addressTypeConfigId], map: "idx_address_type_fields_config_id")
+  @@index([tenantId], map: "idx_address_type_fields_tenant_id")
   @@map("address_type_fields")
 }
 
 model WorkOrder {
   id              String          @id @default(uuid())
+  tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant          Tenant          @relation(fields: [tenantId], references: [id])
   referenceNumber String          @unique @map("reference_number")
   status          WorkOrderStatus @default(CREATED)
   type            WorkOrderType   @default(OTHER)
@@ -424,12 +535,15 @@ model WorkOrder {
   /// would be ideal but Prisma doesn't expose it; the cron filters on
   /// status anyway so this is fine.
   @@index([slaTargetAt, slaBreachedAt], map: "idx_work_orders_sla_pending")
-  @@index([currentStepId],       map: "idx_work_orders_current_step_id")
+  @@index([currentStepId], map: "idx_work_orders_current_step_id")
+  @@index([tenantId], map: "idx_work_orders_tenant_id")
   @@map("work_orders")
 }
 
 model Note {
   id          String    @id @default(uuid())
+  tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
   content     String
   workOrderId String    @map("work_order_id")
   workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
@@ -437,11 +551,14 @@ model Note {
   author      User      @relation(fields: [authorId], references: [id])
   createdAt   DateTime  @default(now()) @map("created_at")
 
+  @@index([tenantId], map: "idx_notes_tenant_id")
   @@map("notes")
 }
 
 model Attachment {
   id          String    @id @default(uuid())
+  tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
   fileName    String    @map("file_name")
   fileSize    Int       @map("file_size")
   mimeType    String    @map("mime_type")
@@ -450,11 +567,14 @@ model Attachment {
   workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
   uploadedAt  DateTime  @default(now()) @map("uploaded_at")
 
+  @@index([tenantId], map: "idx_attachments_tenant_id")
   @@map("attachments")
 }
 
 model Appointment {
   id           String     @id @default(uuid())
+  tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant       Tenant     @relation(fields: [tenantId], references: [id])
   title        String
   description  String?
   startTime    DateTime   @map("start_time")
@@ -468,6 +588,7 @@ model Appointment {
 
   @@index([startTime, endTime])
   @@index([technicianId])
+  @@index([tenantId], map: "idx_appointments_tenant_id")
   @@map("appointments")
 }
 
@@ -475,14 +596,16 @@ model Appointment {
 
 model ProcessDefinition {
   id          String  @id @default(uuid())
+  tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant      Tenant  @relation(fields: [tenantId], references: [id])
   name        String  @unique
   description String?
   version     Int     @default(1)
   isDefault   Boolean @default(false) @map("is_default")
-  isActive    Boolean @default(true)  @map("is_active")
+  isActive    Boolean @default(true) @map("is_active")
 
   createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt      @map("updated_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   statuses    ProcessStatus[]
   transitions ProcessTransition[]
@@ -490,12 +613,15 @@ model ProcessDefinition {
   workOrders  WorkOrder[]
 
   @@index([isDefault], map: "idx_process_definitions_is_default")
-  @@index([isActive],  map: "idx_process_definitions_is_active")
+  @@index([isActive], map: "idx_process_definitions_is_active")
+  @@index([tenantId], map: "idx_process_definitions_tenant_id")
   @@map("process_definitions")
 }
 
 model ProcessStatus {
   id                  String            @id @default(uuid())
+  tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant              Tenant            @relation(fields: [tenantId], references: [id])
   processDefinitionId String            @map("process_definition_id")
   processDefinition   ProcessDefinition @relation(fields: [processDefinitionId], references: [id], onDelete: Cascade)
 
@@ -511,7 +637,7 @@ model ProcessStatus {
   isTerminalNegative Boolean @default(false) @map("is_terminal_negative")
 
   createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt      @map("updated_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   transitionsFrom ProcessTransition[] @relation("FromStatus")
   transitionsTo   ProcessTransition[] @relation("ToStatus")
@@ -519,12 +645,15 @@ model ProcessStatus {
 
   @@unique([processDefinitionId, code], map: "uq_process_status_definition_code")
   @@index([processDefinitionId], map: "idx_process_statuses_definition_id")
-  @@index([position],            map: "idx_process_statuses_position")
+  @@index([position], map: "idx_process_statuses_position")
+  @@index([tenantId], map: "idx_process_statuses_tenant_id")
   @@map("process_statuses")
 }
 
 model ProcessTransition {
   id                  String            @id @default(uuid())
+  tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant              Tenant            @relation(fields: [tenantId], references: [id])
   processDefinitionId String            @map("process_definition_id")
   processDefinition   ProcessDefinition @relation(fields: [processDefinitionId], references: [id], onDelete: Cascade)
 
@@ -540,11 +669,12 @@ model ProcessTransition {
   sortOrder      Int      @default(0) @map("sort_order")
 
   createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt      @map("updated_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@unique([processDefinitionId, fromStatusId, toStatusId], map: "uq_process_transition_unique")
   @@index([processDefinitionId], map: "idx_process_transitions_definition_id")
-  @@index([fromStatusId],        map: "idx_process_transitions_from_status_id")
+  @@index([fromStatusId], map: "idx_process_transitions_from_status_id")
+  @@index([tenantId], map: "idx_process_transitions_tenant_id")
   @@map("process_transitions")
 }
 
@@ -563,23 +693,26 @@ model ProcessTransition {
 /// en SQL (filter par aggregate_id, ORDER BY occurred_at).
 model AuditLog {
   // Identité de l'event
-  id          String   @id @default(uuid())               // = IDomainEvent.eventId
-  eventName   String   @map("event_name")                  // ex: "workOrders.workOrder.assigned"
-  aggregateId String   @map("aggregate_id")                // ex: workOrderId
-  occurredAt  DateTime @map("occurred_at")                 // = IDomainEvent.occurredAt
+  id          String   @id @default(uuid()) // = IDomainEvent.eventId
+  tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  eventName   String   @map("event_name") // ex: "workOrders.workOrder.assigned"
+  aggregateId String   @map("aggregate_id") // ex: workOrderId
+  occurredAt  DateTime @map("occurred_at") // = IDomainEvent.occurredAt
 
   // Acteur
-  actorUserId String?  @map("actor_user_id")               // null pour events système
+  actorUserId String? @map("actor_user_id") // null pour events système
 
   // Payload de l'event (variable selon eventName)
-  data        Json?                                        // = IDomainEvent.data
+  data Json? // = IDomainEvent.data
 
   // Timestamp serveur (peut différer de occurredAt si traitement async)
-  createdAt   DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
   @@index([aggregateId, occurredAt(sort: Desc)], map: "idx_audit_logs_aggregate_recent")
-  @@index([eventName, occurredAt(sort: Desc)],   map: "idx_audit_logs_event_recent")
+  @@index([eventName, occurredAt(sort: Desc)], map: "idx_audit_logs_event_recent")
   @@index([actorUserId, occurredAt(sort: Desc)], map: "idx_audit_logs_actor_recent")
+  @@index([tenantId], map: "idx_audit_logs_tenant_id")
   @@map("audit_logs")
 }
 
@@ -593,16 +726,23 @@ model AuditLog {
 /// with a master key sourced from CONFIG_MASTER_KEY (env). The `encrypted`
 /// flag tells the service whether to decrypt on read.
 ///
-/// Multi-tenancy (B6) deferred: every row is GLOBAL for now. When B6
-/// lands, add a tenant_id column + composite uniqueness.
+/// Multi-tenancy (B6): scope is either GLOBAL (operator-set defaults
+/// like a SaaS-wide SMTP) or TENANT (per-customer overrides). Resolution
+/// order: TENANT row > GLOBAL row > env > undefined.
 model SystemConfig {
-  key       String   @id                              // "smtp.host", "vapid.public-key", …
-  value     String   @db.Text                          // ciphertext if `encrypted`, else raw UTF-8
-  encrypted Boolean  @default(false)
-  updatedBy String?  @map("updated_by")                // userId who last wrote
-  updatedAt DateTime @updatedAt @map("updated_at")
-  createdAt DateTime @default(now()) @map("created_at")
+  id        String            @id @default(uuid())
+  scope     SystemConfigScope @default(GLOBAL)
+  tenantId  String?           @map("tenant_id") // NULL when scope=GLOBAL
+  tenant    Tenant?           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  key       String // "smtp.host", "vapid.public-key", …
+  value     String            @db.Text // ciphertext if `encrypted`, else raw UTF-8
+  encrypted Boolean           @default(false)
+  updatedBy String?           @map("updated_by") // userId who last wrote
+  updatedAt DateTime          @updatedAt @map("updated_at")
+  createdAt DateTime          @default(now()) @map("created_at")
 
+  @@unique([tenantId, key], map: "idx_system_configs_tenant_key")
+  @@index([tenantId], map: "idx_system_configs_tenant_id")
   @@map("system_configs")
 }
 
@@ -614,28 +754,31 @@ model SystemConfig {
 ///
 /// Le token brut n'est jamais stocké — seulement son SHA-256.
 model RefreshToken {
-  id          String    @id @default(uuid())
+  id       String @id @default(uuid())
+  tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
 
   /// SHA-256 hex du JWT, pas le JWT lui-même (defense in depth).
-  tokenHash   String    @unique @map("token_hash")
+  tokenHash String @unique @map("token_hash")
 
   /// Propriétaire — pas de FK cascade, on garde l'historique sur soft-delete user.
-  userId      String    @map("user_id")
+  userId String @map("user_id")
 
   /// UUID partagé par tous les tokens issus du même login (rotation chain).
   /// Si un token révoqué est rejoué, on révoque toute la famille.
-  family      String
+  family String
 
-  createdAt   DateTime  @default(now()) @map("created_at")
-  expiresAt   DateTime  @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  expiresAt DateTime @map("expires_at")
 
   /// Set quand : rotation (refresh consomme l'ancien), logout, ou kill-switch
   /// (détection de replay → revoke toute la famille).
-  revokedAt   DateTime? @map("revoked_at")
+  revokedAt DateTime? @map("revoked_at")
 
-  @@index([userId],   map: "idx_refresh_tokens_user")
-  @@index([family],   map: "idx_refresh_tokens_family")
+  @@index([userId], map: "idx_refresh_tokens_user")
+  @@index([family], map: "idx_refresh_tokens_family")
   @@index([expiresAt], map: "idx_refresh_tokens_expires")
+  @@index([tenantId], map: "idx_refresh_tokens_tenant_id")
   @@map("refresh_tokens")
 }
 
@@ -654,48 +797,51 @@ model RefreshToken {
 /// Channels are tracked as a JSON array on `channelsSent` so we can show
 /// "Email + Push" badges in the UI without a side table.
 model Notification {
-  id          String   @id @default(uuid())
+  id       String @id @default(uuid())
+  tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
 
   /// Recipient — no cascade : a deactivated user keeps their history.
-  userId      String   @map("user_id")
+  userId String @map("user_id")
 
   /// Categorical type — drives template + default channel selection.
   /// ex: "workOrder.assigned", "workOrder.completed", "auth.passwordReset"
-  type        String
+  type String
 
   /// Free-form title shown in the badge/dropdown.
-  title       String
+  title String
 
   /// Optional body — kept short for the in-app dropdown; emails get a
   /// fuller render via templates.
-  body        String?
+  body String?
 
   /// Aggregate the notification refers to (workOrderId, etc.) so the UI
   /// can deep-link.
-  aggregateId String?  @map("aggregate_id")
+  aggregateId String? @map("aggregate_id")
 
   /// Original event payload (kept for re-render / debug).
-  data        Json?
+  data Json?
 
   /// PENDING / SENT / FAILED / READ (see model docstring).
-  status      String   @default("PENDING")
+  status String @default("PENDING")
 
   /// JSON array of channels that succeeded — ex: ["email", "push"].
-  channelsSent Json?   @map("channels_sent")
+  channelsSent Json? @map("channels_sent")
 
   /// Set on the first delivery (any channel).
-  sentAt      DateTime? @map("sent_at")
+  sentAt DateTime? @map("sent_at")
 
   /// Set when the user opens the notification in-app.
-  readAt      DateTime? @map("read_at")
+  readAt DateTime? @map("read_at")
 
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt      @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   /// Inbox queries are by user + unread first.
   @@index([userId, readAt, createdAt(sort: Desc)], map: "idx_notifications_inbox")
   /// Background retries scan PENDING/FAILED.
-  @@index([status, createdAt],                     map: "idx_notifications_status")
+  @@index([status, createdAt], map: "idx_notifications_status")
+  @@index([tenantId], map: "idx_notifications_tenant_id")
   @@map("notifications")
 }
 
@@ -708,26 +854,29 @@ model Notification {
 /// p256dh + auth are the encryption keys the browser handed us during
 /// PushManager.subscribe(); they're per-subscription, not per-user.
 model PushSubscription {
-  id        String   @id @default(uuid())
+  id       String @id @default(uuid())
+  tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
 
   /// Owner.
-  userId    String   @map("user_id")
+  userId String @map("user_id")
 
   /// Endpoint URL returned by the browser PushManager. Unique per
   /// device — used to dedupe re-subscriptions.
-  endpoint  String   @unique
+  endpoint String @unique
 
   /// Browser-provided encryption keys.
-  p256dh    String
-  auth      String
+  p256dh String
+  auth   String
 
   /// Optional UA so we can show "Chrome on Linux" in a future UI.
-  userAgent String?  @map("user_agent")
+  userAgent String? @map("user_agent")
 
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
   /// Last time we attempted to send via this subscription.
   lastUsedAt DateTime? @map("last_used_at")
 
   @@index([userId], map: "idx_push_subscriptions_user")
+  @@index([tenantId], map: "idx_push_subscriptions_tenant_id")
   @@map("push_subscriptions")
 }

@@ -18,14 +18,18 @@ function makeMockPrisma(seed: ConfigRow[] = []) {
   return {
     _rows: rows,
     systemConfig: {
-      findUnique: jest.fn(({ where }: any) =>
+      findFirst: jest.fn(({ where }: any) =>
         Promise.resolve(rows.find((r) => r.key === where.key) ?? null),
       ),
       findMany: jest.fn(() =>
         Promise.resolve([...rows].sort((a, b) => a.key.localeCompare(b.key))),
       ),
       upsert: jest.fn(({ where, create, update }: any) => {
-        const existing = rows.find((r) => r.key === where.key);
+        // B6 — `where` uses the composite (tenantId, key) shape. The
+        // existing spec previously read `where.key` directly; now it
+        // pulls the key out of `where.tenantId_key.key`.
+        const key = where?.tenantId_key?.key ?? where?.key;
+        const existing = rows.find((r) => r.key === key);
         if (existing) {
           Object.assign(existing, update, { updatedAt: new Date() });
           return Promise.resolve(existing);

@@ -75,9 +75,16 @@ export class SystemConfigService implements OnModuleInit {
     return fromEnv ?? undefined;
   }
 
-  /** DB-only read. Decrypts if needed. Returns undefined if absent. */
+  /**
+   * DB-only read. Decrypts if needed. Returns undefined if absent.
+   *
+   * B6.1 — every config is still GLOBAL (tenantId = null). B6.9 will
+   * switch to per-tenant override via the request context.
+   */
   async get(key: string): Promise<string | undefined> {
-    const row = await this.prisma.systemConfig.findUnique({ where: { key } });
+    const row = await this.prisma.systemConfig.findFirst({
+      where: { key, tenantId: null },
+    });
     if (!row) return undefined;
 
     if (!row.encrypted) return row.value;
@@ -112,8 +119,9 @@ export class SystemConfigService implements OnModuleInit {
 
     const stored = encrypted ? encrypt(value, this.masterKey!) : value;
 
+    // B6.1 — still operating on GLOBAL configs only. tenantId stays null.
     await this.prisma.systemConfig.upsert({
-      where: { key },
+      where: { tenantId_key: { tenantId: null as unknown as string, key } },
       create: { key, value: stored, encrypted, updatedBy: opts.updatedBy ?? null },
       update: { value: stored, encrypted, updatedBy: opts.updatedBy ?? null },
     });
@@ -121,7 +129,9 @@ export class SystemConfigService implements OnModuleInit {
 
   /** Remove a config entry. The hierarchical resolver will fall back to env. */
   async delete(key: string): Promise<void> {
-    await this.prisma.systemConfig.deleteMany({ where: { key } });
+    await this.prisma.systemConfig.deleteMany({
+      where: { key, tenantId: null },
+    });
   }
 
   /**
