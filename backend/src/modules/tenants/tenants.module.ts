@@ -1,4 +1,6 @@
 import { Global, Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PrismaModule } from '../../common/prisma/prisma.module';
 import { QuotaService } from './application/quota.service';
 import { QuotaResetService } from './application/quota-reset.service';
@@ -6,6 +8,7 @@ import { SignupService } from './application/signup.service';
 import { TenantBootstrapService } from './application/tenant-bootstrap.service';
 import { SignupController } from './api/signup.controller';
 import { SuperAdminTenantsController } from './api/super-admin-tenants.controller';
+import { ImpersonateController } from './api/impersonate.controller';
 import { QUOTA_SERVICE } from '../../common/contracts/quota.contract';
 
 /**
@@ -21,8 +24,21 @@ import { QUOTA_SERVICE } from '../../common/contracts/quota.contract';
  */
 @Global()
 @Module({
-  imports: [PrismaModule],
-  controllers: [SignupController, SuperAdminTenantsController],
+  imports: [
+    PrismaModule,
+    // Local JWT registration so the SA impersonate controller can sign
+    // tokens without importing AuthModule (no cross-module business
+    // import). Uses the same JWT_SECRET / expiresIn as AuthModule.
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: (config: ConfigService) => ({
+        secret: config.get<string>('JWT_SECRET', 'changeme-jwt-secret'),
+        signOptions: { expiresIn: '15m' },
+      }),
+      inject: [ConfigService],
+    }),
+  ],
+  controllers: [SignupController, SuperAdminTenantsController, ImpersonateController],
   providers: [
     QuotaService,
     QuotaResetService,

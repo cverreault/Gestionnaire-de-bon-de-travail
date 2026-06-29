@@ -37,6 +37,7 @@ import { NotificationsController } from '../../modules/notifications/api/notific
 import { SuperAdminController } from '../../modules/system-configs/api/super-admin.controller';
 import { TenantConfigsController } from '../../modules/system-configs/api/tenant-configs.controller';
 import { SuperAdminTenantsController } from '../../modules/tenants/api/super-admin-tenants.controller';
+import { ImpersonateController } from '../../modules/tenants/api/impersonate.controller';
 import { LocationsController } from '../../modules/locations/api/locations.controller';
 
 // ─── Matrix rows ─────────────────────────────────────────────────────────────
@@ -178,6 +179,12 @@ const ALL_ROWS: { name: string; rows: MatrixRow[] }[] = [
   { name: 'LocationsController',     rows: LOCATIONS_MATRIX },
   { name: 'TenantConfigsController', rows: TENANT_CONFIGS_MATRIX },
   { name: 'SuperAdminTenantsController', rows: SUPER_ADMIN_TENANTS_MATRIX },
+  {
+    name: 'ImpersonateController',
+    rows: [
+      { controller: ImpersonateController, method: 'impersonate', expectedRoles: [Role.SUPER_ADMIN], note: 'POST /super-admin/impersonate' },
+    ],
+  },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
