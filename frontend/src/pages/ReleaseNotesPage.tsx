@@ -59,6 +59,37 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.1.7',
+    name: 'Suivi GPS des techniciens (B5)',
+    date: 'Juin 2026',
+    entries: [
+      {
+        type: 'new',
+        text: 'Les techniciens peuvent partager leur position GPS depuis leur profil — case « 📍 Suivi de position » avec consentement explicite (Loi 25 / PIPEDA)',
+      },
+      {
+        type: 'new',
+        text: 'Carte interactive « Techniciens sur le terrain » sur le tableau de bord du répartiteur — markers OpenStreetMap rafraîchis toutes les 15 s avec les initiales du tech',
+      },
+      {
+        type: 'security',
+        text: 'Vérification double opt-in : la préférence est lue côté serveur à chaque envoi de position — un onglet périmé ou un client modifié ne peut pas continuer à envoyer après désactivation',
+      },
+      {
+        type: 'security',
+        text: 'Rétention 7 jours stricte : une tâche automatique purge tout enregistrement plus ancien chaque nuit à 03h15 UTC',
+      },
+      {
+        type: 'improvement',
+        text: 'Le hook frontend limite l\'envoi à 1 position par 25 s (largement sous le quota throttler de 60/min) et arrête immédiatement le suivi quand la case est décochée',
+      },
+      {
+        type: 'infra',
+        text: 'Nouvelle ADR-008 documentant la posture de consentement par défaut OFF, la portée 7 jours, et l\'enforcement serveur',
+      },
+    ],
+  },
+  {
     version: '2.1.6',
     name: 'Rapports & KPIs avancés (B3)',
     date: 'Juin 2026',

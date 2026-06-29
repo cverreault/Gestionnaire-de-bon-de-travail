@@ -154,6 +154,28 @@ Pourquoi pas de dépendance charting (recharts, d3) : le bundle frontend est dé
 
 ---
 
+### B5 — Suivi GPS des techniciens (post-Sprint 1 extension #5)
+
+Position live des techniciens sur une carte OpenStreetMap pour le répartiteur, avec opt-in strict et rétention 7 jours (Loi 25 / PIPEDA).
+
+| # | Commit | Description |
+|---|---|---|
+| **B5.1** | (schema) | Table `technician_locations` (lat/lng/accuracy/recorded_at), 2 indices (composite tech+date DESC + retention sweep), CASCADE on user delete. Contrat `gps-preferences.contract.ts` (`isGpsEnabled` strict boolean) dans `common/contracts/`. 5 tests |
+| **B5.2** | (endpoints) | `POST /me/location` (TECH only, gating server-side) + `GET /dispatcher/technicians/positions` (DISTINCT ON pour la dernière position par tech). DTO @IsLatitude/@IsLongitude, throttle 60/min THROTTLER_DISABLE-aware. 6 tests service + 2 lignes roles-matrix |
+| **B5.3** | (frontend) | Hook `useGpsTracker` (navigator.geolocation.watchPosition + throttle 25s + cleanup). Section « 📍 Suivi de position » dans `/profil` (TECH only) avec paragraphe consentement explicite |
+| **B5.4** | (map) | `leaflet@^1.9` + `react-leaflet@^4` (React 18 peer). Composant `TechnicianLocationsMap` (markers initiales sur tuiles OSM, polling 15s, auto-fit only-once, popups). Carte intégrée au dashboard répartiteur |
+| **B5.5** | (retention) | `LocationRetentionService` `@Cron('15 3 * * *')` — DELETE WHERE recorded_at < now() - 7 days. Index-driven, runs unconditionally (défense en profondeur si l'opt-in régressait). 3 tests fake-timers |
+
+Posture privacy :
+- **Default OFF** — un déploiement neuf ne tracke personne.
+- **Per-feature flag** (`preferences.gps.enabled`) — pas un umbrella "data sharing" générique.
+- **Server re-check à chaque upload** — un onglet stale ou un client trafiqué ne peut pas continuer à poster après opt-out.
+- **7 jours stricts** — couvre l'audit "le tech est-il bien arrivé sur place ?" sans accumuler un profil de déplacement long-terme.
+
+Voir [ADR-008](../adrs/ADR-008-gps-tracking-privacy.md) pour le rationale complet et les open questions (right-of-access PIPEDA, geofencing, tenant-level disable B6).
+
+---
+
 ## État de la suite Jest
 
 | Métrique | Avant sprint | Après sprint |
