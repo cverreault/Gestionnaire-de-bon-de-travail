@@ -1,9 +1,11 @@
 # E2E tests (Playwright) — C5
 
-Two specs:
+Four specs:
 
 - `smoke-admin-nav.spec.ts` — login admin + dashboard / work-orders / audit nav (fast canary)
 - `workflow-create-assign-transition.spec.ts` — full create → assign → dispatch → tech terminates (slow lifecycle)
+- `auth-failure.spec.ts` — wrong password / unknown email both stay on /login with a visible error (anti-enumeration UX)
+- `tech-permission-denied.spec.ts` — TECH cannot see admin-only paths (dashboard / users / settings / audit / backup / reports / super-admin) — UI gate matches the backend RBAC
 
 ## Setup (once)
 
@@ -27,7 +29,7 @@ E2E_TECH_PASSWORD=*** \
 npm run e2e
 ```
 
-Without `E2E_TECH_*` the lifecycle spec is skipped — the smoke spec still runs.
+Without `E2E_TECH_*` the lifecycle + permission-denied specs are skipped — the smoke + auth-failure specs still run on the admin creds alone.
 
 Headed mode (`npm run e2e:ui`) gives the interactive Playwright UI, useful for selector tuning when the markup changes.
 
