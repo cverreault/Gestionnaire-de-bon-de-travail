@@ -20,6 +20,22 @@ Depuis C6 (juin 2026), le refresh n'est plus en mémoire : chaque token est pers
 |---|---|
 | **Tous** | Login `/auth/login`, refresh `/auth/refresh`, logout `/auth/logout`, lecture de leur propre profil `/auth/me` |
 | **Admin** | Création de nouveaux utilisateurs (délégué à `UsersModule` qui utilise `AuthService.register()`) |
+| **Super-Admin** | Configuration plateforme via `/api/super-admin/*` (voir [`system-configs.md`](system-configs.md)). Bootstrap automatique via `SUPER_ADMIN_EMAIL` env |
+
+## Hiérarchie des rôles
+
+```
+SUPER_ADMIN     ← plateforme : config globale, futurs tenants
+   │            └─ hérite implicitement de toutes les permissions ADMIN
+   ▼
+ADMIN           ← un tenant : clients, BT, processus, paramètres, audit
+   ▼
+DISPATCHER     ← assignation, suivi du parc, top-bar search
+   ▼
+TECHNICIAN     ← lecture/édition limitée à ses BT
+```
+
+L'héritage `SUPER_ADMIN → ADMIN` est implémenté dans `RolesGuard.canActivate()` (court-circuit si `user.role === SUPER_ADMIN`). **One-way** : un `@Roles(Role.SUPER_ADMIN)` explicite rejette les ADMIN réguliers (utilisé pour les endpoints `/super-admin/configs`).
 
 ## Capabilities
 
@@ -30,6 +46,7 @@ Depuis C6 (juin 2026), le refresh n'est plus en mémoire : chaque token est pers
 - Logout best-effort : révoque le token présenté sans erreur s'il n'existe pas / déjà révoqué
 - Register pour l'admin (création d'utilisateur avec bcrypt 10 rounds)
 - Énumération de comptes prévenue : même message d'erreur pour « email inconnu » et « mauvais mot de passe »
+- **Bootstrap SUPER_ADMIN** (SA.1.a) : au boot, si aucun SUPER_ADMIN actif n'existe et que `SUPER_ADMIN_EMAIL` est défini, le user correspondant est promu. Idempotent — les redémarrages suivants no-op tant qu'un SA actif existe
 
 ## API publique
 

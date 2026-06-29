@@ -116,6 +116,24 @@ Posture : SLA est **opt-in par type**. Un type sans `slaHours` ne génère jamai
 
 Validation end-to-end : un type avec `slaHours: 1`, créer un BT, attendre 1h + 15min → push notification automatique sur tech + admins, badge rouge sur les 3 surfaces UI, event visible dans `/audit?eventName=workOrders.workOrder.slaBreached`.
 
+### SA — Super-Admin configuration plateforme (post-Sprint 1 extension #3)
+
+Préparation de la trajectoire SaaS (B6 lointain mais explicite) : nouveau tier `SUPER_ADMIN` au-dessus d'`ADMIN`, store de configs runtime chiffré, UI dédiée.
+
+| # | Commit | Description |
+|---|---|---|
+| **SA.1.a** | (foundation) | Enum `Role.SUPER_ADMIN` (Postgres ALTER TYPE ADD VALUE), `RolesGuard` inheritance one-way (SA passe toutes les routes ADMIN-gated, l'inverse non), `SuperAdminBootstrapService` qui promote `SUPER_ADMIN_EMAIL` au boot. 7 tests bootstrap + 2 tests guard |
+| **SA.1.b** | (configs) | Table `system_configs` (key/value/encrypted/updatedBy), helper `aes-gcm.ts` (AES-256-GCM via node:crypto), `SystemConfigService` avec resolver hiérarchique DB > env > undefined + clé maître `CONFIG_MASTER_KEY` SHA-256-derived. 9 tests crypto + 13 tests service + envKeyFor |
+| **SA.2.a** | (api + refactor) | `SuperAdminController` (`GET/PUT/DELETE /super-admin/configs/:key`) gated `@Roles(SUPER_ADMIN)`. Event `systemConfigs.config.changed` émis sur chaque write. `EmailChannelService` lit à chaque send via `resolve()`. `PushChannelService` lit au boot + `@OnEvent` pour rafraîchir VAPID sans restart. Module event-driven decoupling (pas de cycle SystemConfigsModule ↔ NotificationsModule). 4 lignes ajoutées au roles-matrix |
+| **SA.2.b** | (frontend) | `Role.SUPER_ADMIN` côté front, `SuperAdminRoute` guard, page `/super-admin` avec sections curées (📨 SMTP / 🔔 VAPID / 🐛 Sentry / 📦 Audit), inline editor + toggle « 🔐 Chiffrer », sidebar entry "Plateforme" SA-only, `AdminOnlyRoute` accepte aussi SUPER_ADMIN (héritage one-way) |
+
+Posture sur les secrets :
+- `CONFIG_MASTER_KEY` jamais en DB, jamais en git — vit dans `.env`. Sa rotation rend les valeurs chiffrées illisibles : à traiter comme `JWT_SECRET`.
+- Sans clé maître, le service refuse les écritures chiffrées mais sert les rows plaintext. Les déploiements existants ne cassent pas — ils ne peuvent juste pas ajouter de secrets via l'UI tant qu'ils n'ont pas posé `CONFIG_MASTER_KEY`.
+- Le bootstrap SA est idempotent : `SUPER_ADMIN_EMAIL` peut rester défini après la promotion, le service no-op tant qu'un SA actif existe.
+
+Multi-tenancy (B6) : **non implémenté**, intentionnellement. La table `system_configs` n'a pas encore de `tenant_id` — décision : on l'ajoute quand B6 démarre, c'est un ALTER TABLE non-breaking. Le rôle SUPER_ADMIN est déjà en place pour ne pas avoir à refactoriser la couche RBAC plus tard.
+
 ---
 
 ## État de la suite Jest

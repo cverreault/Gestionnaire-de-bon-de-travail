@@ -59,6 +59,41 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.1.5',
+    name: 'Configuration plateforme par le Super-Admin (SA)',
+    date: 'Juin 2026',
+    entries: [
+      {
+        type: 'new',
+        text: 'Nouveau rôle SUPER_ADMIN — au-dessus d\'ADMIN, dédié à la configuration de la plateforme (clés VAPID, SMTP, Sentry, rétention audit, futurs tenants)',
+      },
+      {
+        type: 'new',
+        text: 'Page « 👑 Super-Admin » dans la sidebar (uniquement visible pour ce rôle) avec un éditeur curé : sections Email SMTP / Web Push / Sentry / Audit, statut DB vs env pour chaque clé, mise à jour instantanée',
+      },
+      {
+        type: 'new',
+        text: 'Les secrets sensibles (mot de passe SMTP, clé privée VAPID, DSN Sentry) sont chiffrés AES-GCM en base via une clé maître CONFIG_MASTER_KEY conservée dans .env — un dump DB ne suffit plus à exposer les secrets',
+      },
+      {
+        type: 'new',
+        text: 'Bootstrap automatique au démarrage : si SUPER_ADMIN_EMAIL est défini dans .env, l\'utilisateur correspondant est promu au premier boot. Idempotent — les redémarrages suivants sont no-op',
+      },
+      {
+        type: 'improvement',
+        text: 'Les services Email et Web Push consultent maintenant la configuration en cascade DB > env > défaut. Une modification depuis l\'UI Super-Admin prend effet immédiatement (Web Push) ou au prochain envoi (Email), sans redémarrage',
+      },
+      {
+        type: 'security',
+        text: 'Le SUPER_ADMIN hérite implicitement de toutes les permissions ADMIN, mais la réciproque ne tient pas — les ADMIN classiques ne peuvent pas accéder à /super-admin',
+      },
+      {
+        type: 'infra',
+        text: 'Architecture découplée : les changements de config émettent un événement systemConfigs.config.changed que les consommateurs écoutent pour recharger leur état — pas de coupling direct entre les modules',
+      },
+    ],
+  },
+  {
     version: '2.1.4',
     name: 'SLA + escalades automatiques (B4)',
     date: 'Juin 2026',
