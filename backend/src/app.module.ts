@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
@@ -30,6 +30,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { SystemConfigsModule } from './modules/system-configs/system-configs.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { LocationsModule } from './modules/locations/locations.module';
+import { TenantResolverMiddleware } from './common/middleware/tenant-resolver.middleware';
 
 @Module({
   imports: [
@@ -133,6 +134,21 @@ import { LocationsModule } from './modules/locations/locations.module';
       provide: APP_GUARD,
       useClass: UserScopedThrottlerGuard,
     },
+    // Tenant resolver — needs to be a provider so NestJS can DI Prisma
+    // into the middleware. The actual wiring (`forRoutes`) happens in
+    // `configure()` below.
+    TenantResolverMiddleware,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    // Runs first — every /api request gets a resolved tenant attached
+    // to `request.tenant` before any guard or controller. The health
+    // check stays unprotected so monitoring doesn't depend on a DB
+    // round-trip.
+    consumer
+      .apply(TenantResolverMiddleware)
+      .exclude('api/health', 'api/health/(.*)')
+      .forRoutes('*');
+  }
+}
