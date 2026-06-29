@@ -1,6 +1,8 @@
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
 export enum Role {
+  /** Platform-level administrator (SA). Inherits every ADMIN privilege. */
+  SUPER_ADMIN = 'SUPER_ADMIN',
   ADMIN = 'ADMIN',
   DISPATCHER = 'DISPATCHER',
   TECHNICIAN = 'TECHNICIAN',

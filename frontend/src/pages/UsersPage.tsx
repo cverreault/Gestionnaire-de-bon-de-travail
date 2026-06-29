@@ -11,12 +11,14 @@ import { theme, tableStyles, cardStyles, buttonStyles, formStyles, modalStyles, 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const ROLE_LABELS: Record<Role, string> = {
+  [Role.SUPER_ADMIN]: 'Super-Admin',
   [Role.ADMIN]: 'Admin',
   [Role.DISPATCHER]: 'Dispatcher',
   [Role.TECHNICIAN]: 'Technicien',
 };
 
 const ROLE_COLORS: Record<Role, string> = {
+  [Role.SUPER_ADMIN]: '#7e22ce',
   [Role.ADMIN]: '#1e40af',
   [Role.DISPATCHER]: '#7c3aed',
   [Role.TECHNICIAN]: '#065f46',

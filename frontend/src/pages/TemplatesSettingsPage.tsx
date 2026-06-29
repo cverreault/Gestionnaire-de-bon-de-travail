@@ -17,11 +17,13 @@ import { TemplateFieldType, Role } from '../types';
 import type { TemplateField, TemplateSection } from '../types';
 
 const ROLE_LABELS: Record<Role, string> = {
+  [Role.SUPER_ADMIN]: 'Super-Admin',
   [Role.ADMIN]: 'Admin',
   [Role.DISPATCHER]: 'Dispatcher',
   [Role.TECHNICIAN]: 'Technicien',
 };
 
+// SUPER_ADMIN is platform-level, not part of the template RBAC matrix.
 const ALL_ROLES: Role[] = [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN];
 
 /** Tristate role matrix: view + edit (+ optional required for fields). */

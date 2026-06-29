@@ -81,7 +81,8 @@ export default function AdminSidebar() {
   const { user } = useAuthStore();
   const logout = useLogout();
   const { t } = useTranslation();
-  const isAdmin = user?.role === Role.ADMIN;
+  const isAdmin = user?.role === Role.ADMIN || user?.role === Role.SUPER_ADMIN;
+  const isSuperAdmin = user?.role === Role.SUPER_ADMIN;
 
   const sharedNavItems = [
     { to: '/dashboard',        label: `📊 ${t('nav:dashboard')}` },
@@ -96,6 +97,10 @@ export default function AdminSidebar() {
     { to: '/parametres',   label: `⚙️ ${t('nav:settings')}` },
     { to: '/audit',        label: `📜 ${t('nav:audit', { defaultValue: 'Audit' })}` },
     { to: '/sauvegarde',   label: `💾 ${t('nav:backup')}` },
+  ];
+
+  const superAdminNavItems = [
+    { to: '/super-admin',  label: `👑 ${t('nav:superAdmin', { defaultValue: 'Super-Admin' })}` },
   ];
 
   // ── Pending dispatch state (modal) ───────────────────────────────────────
@@ -175,6 +180,22 @@ export default function AdminSidebar() {
             <div style={sectionLabelStyle}>{t('nav:admin')}</div>
             <nav>
               {adminOnlyNavItems.map((item) => (
+                <NavLink key={item.to} to={item.to} style={navLinkStyle}>
+                  {item.label}
+                </NavLink>
+              ))}
+            </nav>
+          </>
+        )}
+
+        {/* Super-admin only */}
+        {isSuperAdmin && (
+          <>
+            <div style={sectionLabelStyle}>
+              {t('nav:platform', { defaultValue: 'Plateforme' })}
+            </div>
+            <nav>
+              {superAdminNavItems.map((item) => (
                 <NavLink key={item.to} to={item.to} style={navLinkStyle}>
                   {item.label}
                 </NavLink>

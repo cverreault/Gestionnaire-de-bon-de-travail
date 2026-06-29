@@ -11,6 +11,8 @@
   "processes": "Processes",
   "backup": "Backup",
   "audit": "Audit",
+  "platform": "Platform",
+  "superAdmin": "Super-Admin",
   "profile": "My profile",
   "logout": "Log out",
   "releaseNotes": "Release notes",

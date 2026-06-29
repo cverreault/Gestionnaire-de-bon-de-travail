@@ -9,7 +9,8 @@ import { Role } from './types';
 // ── Guards ────────────────────────────────────────────────────────────────────
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';           // ADMIN + DISPATCHER
-import AdminOnlyRoute from './components/AdminOnlyRoute';  // ADMIN only
+import AdminOnlyRoute from './components/AdminOnlyRoute';  // ADMIN only (SA inherits)
+import SuperAdminRoute from './components/SuperAdminRoute'; // SUPER_ADMIN only
 import AppLayout from './components/layouts/AppLayout';
 
 // ── Pages ─────────────────────────────────────────────────────────────────────
@@ -30,6 +31,7 @@ import ProcessSettingsPage from './pages/ProcessSettingsPage';
 import TemplatesSettingsPage from './pages/TemplatesSettingsPage';
 import BackupPage from './pages/BackupPage';
 import AuditPage from './pages/AuditPage';
+import SuperAdminPage from './pages/SuperAdminPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ReleaseNotesPage from './pages/ReleaseNotesPage';
 
@@ -140,7 +142,7 @@ export default function App() {
             <Route path="/adresses" element={<AddressesPage />} />
           </Route>
 
-          {/* ── Admin only ────────────────────────────────────────────── */}
+          {/* ── Admin only (SA inherits) ──────────────────────────────── */}
           <Route element={<AdminOnlyRoute />}>
             <Route path="/utilisateurs" element={<UsersPage />} />
             <Route path="/parametres" element={<SettingsPage />} />
@@ -148,6 +150,11 @@ export default function App() {
             <Route path="/parametres/templates" element={<TemplatesSettingsPage />} />
             <Route path="/sauvegarde" element={<BackupPage />} />
             <Route path="/audit" element={<AuditPage />} />
+          </Route>
+
+          {/* ── Super-admin only ──────────────────────────────────────── */}
+          <Route element={<SuperAdminRoute />}>
+            <Route path="/super-admin" element={<SuperAdminPage />} />
           </Route>
 
         </Route>

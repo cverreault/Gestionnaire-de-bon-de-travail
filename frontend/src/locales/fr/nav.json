@@ -11,6 +11,8 @@
   "processes": "Processus",
   "backup": "Sauvegarde",
   "audit": "Audit",
+  "platform": "Plateforme",
+  "superAdmin": "Super-Admin",
   "profile": "Mon profil",
   "logout": "Déconnexion",
   "releaseNotes": "Notes de version",
