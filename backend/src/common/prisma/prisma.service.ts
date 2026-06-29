@@ -5,12 +5,14 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { RequestContextService } from '../context/request-context.service';
+import { buildTenantScopeMiddleware } from './tenant-scope.middleware';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
 
-  constructor() {
+  constructor(private readonly context: RequestContextService) {
     super({
       log: [
         { emit: 'event', level: 'query' },
@@ -23,7 +25,14 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   async onModuleInit() {
     await this.$connect();
+    // Install the tenant-scope auto-filter middleware (B6.4). Every
+    // query touching a tenant-scoped model now inherits the active
+    // tenantId from the AsyncLocalStorage scope set by
+    // TenantResolverMiddleware. Background hooks (cron, seed, SA
+    // bootstrap) run without context and stay unscoped.
+    this.$use(buildTenantScopeMiddleware(this.context));
     this.logger.log('✅ Prisma connected to PostgreSQL');
+    this.logger.log('🛡️  Tenant-scope middleware installed');
   }
 
   async onModuleDestroy() {
