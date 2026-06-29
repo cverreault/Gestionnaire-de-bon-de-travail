@@ -16,7 +16,9 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { IsString, IsNotEmpty } from 'class-validator';
 import { AuthService } from './auth.service';
+import { EmailVerificationService } from './application/email-verification.service';
 import { LoginDto } from './dto/login.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
@@ -32,7 +34,10 @@ class RefreshBodyDto {
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly emailVerification: EmailVerificationService,
+  ) {}
 
   // ── POST /api/auth/login ───────────────────────────────────────────────────
 
@@ -118,5 +123,26 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   me(@CurrentUser() user: UserResponseDto) {
     return user;
+  }
+
+  // ── POST /api/auth/verify-email ────────────────────────────────────────────
+
+  @Public()
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Valider une adresse email via le lien reçu (B6.8)',
+    description:
+      'Le token est consommé une seule fois. Soft enforcement : ' +
+      'l\'utilisateur peut continuer à utiliser TaskMgr même sans ' +
+      'cliquer, mais une bannière s\'affiche tant que la vérification ' +
+      'n\'est pas faite.',
+  })
+  @ApiResponse({ status: 200, description: 'Email vérifié' })
+  @ApiResponse({ status: 400, description: 'Lien expiré ou déjà utilisé' })
+  @ApiResponse({ status: 404, description: 'Lien inconnu' })
+  async verifyEmail(@Body() dto: VerifyEmailDto) {
+    const { userId } = await this.emailVerification.verify(dto.token);
+    return { success: true, userId };
   }
 }

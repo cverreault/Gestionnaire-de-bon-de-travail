@@ -143,19 +143,43 @@ model User {
   // Per-user UI preferences (column layouts, hidden filters, etc.) as free-form JSON.
   preferences Json?
 
+  /// Email verification timestamp (B6.8). Null = unverified ; the
+  /// account still works (soft enforcement) but the front-end shows
+  /// a banner until verified_at is set.
+  emailVerifiedAt DateTime? @map("email_verified_at")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  assignedWorkOrders WorkOrder[]          @relation("AssignedTechnician")
-  createdWorkOrders  WorkOrder[]          @relation("CreatedBy")
-  notes              Note[]
-  appointments       Appointment[]        @relation("TechnicianAppointments")
-  locations          TechnicianLocation[]
+  assignedWorkOrders   WorkOrder[]          @relation("AssignedTechnician")
+  createdWorkOrders    WorkOrder[]          @relation("CreatedBy")
+  notes                Note[]
+  appointments         Appointment[]        @relation("TechnicianAppointments")
+  locations            TechnicianLocation[]
+  emailVerifications   EmailVerification[]
 
   @@unique([tenantId, email], map: "idx_users_tenant_email")
   @@index([tenantId], map: "idx_users_tenant_id")
   @@index([email], map: "idx_users_email")
   @@map("users")
+}
+
+/// Token table backing the /verify-email endpoint (B6.8).
+///
+/// The raw token is sent to the user by email and stored ONLY as a
+/// SHA-256 hash, same posture as RefreshToken. Once `consumed_at` is
+/// set, the token is dead.
+model EmailVerification {
+  id         String    @id @default(uuid())
+  userId     String    @map("user_id")
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash  String    @unique @map("token_hash")
+  expiresAt  DateTime  @map("expires_at")
+  consumedAt DateTime? @map("consumed_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([userId], map: "idx_email_verifications_user_id")
+  @@map("email_verifications")
 }
 
 /// Time-series of technician positions for live dispatch view (B5).
