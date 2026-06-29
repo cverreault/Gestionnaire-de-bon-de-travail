@@ -41,6 +41,37 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   /**
+   * Run a callback inside a transaction with `app.tenant_id` set on
+   * the Postgres session for the duration (B6.5).
+   *
+   * The RLS policies installed in migration 20260629130000 read this
+   * GUC to filter every row visible inside the transaction. Callers
+   * who care about the second-line defence (sensitive `$queryRaw`,
+   * cross-tenant audits) wrap the work in this helper :
+   *
+   *   await prisma.withTenantScope(tenantId, async (tx) => {
+   *     return tx.$queryRaw`SELECT * FROM work_orders`;
+   *   });
+   *
+   * Outside this helper, queries still go through the application
+   * middleware (B6.4) — RLS allows them because the GUC is unset.
+   */
+  async withTenantScope<R>(
+    tenantId: string,
+    callback: (tx: PrismaClient) => Promise<R>,
+  ): Promise<R> {
+    return this.$transaction(async (tx) => {
+      // set_config(name, value, is_local) — third arg true scopes the
+      // setting to the current transaction, matching SET LOCAL.
+      await tx.$executeRawUnsafe(
+        `SELECT set_config('app.tenant_id', $1, true)`,
+        tenantId,
+      );
+      return callback(tx as unknown as PrismaClient);
+    });
+  }
+
+  /**
    * Utility to clean all tables in test environments.
    * Never call this in production.
    */
