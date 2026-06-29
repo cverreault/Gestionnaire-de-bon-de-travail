@@ -59,6 +59,37 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.1.6',
+    name: 'Rapports & KPIs avancés (B3)',
+    date: 'Juin 2026',
+    entries: [
+      {
+        type: 'new',
+        text: 'Nouvelle page « 📈 Rapports » dans la sidebar (ADMIN + DISPATCHER) avec sélecteur de période et 4 sections de KPIs : temps de résolution moyen/médian par type, taux de réussite, conformité SLA, charge quotidienne (créés vs complétés)',
+      },
+      {
+        type: 'new',
+        text: 'Bouton « Télécharger en PDF » sur chaque bon de travail — produit une fiche d\'intervention propre, prête à imprimer ou à envoyer au client (français ou anglais)',
+      },
+      {
+        type: 'new',
+        text: 'Rapport mensuel exécutif téléchargeable en PDF — synthèse des 4 sections de KPIs sur le mois choisi, idéal pour les revues d\'équipe ou les rapports clients',
+      },
+      {
+        type: 'new',
+        text: 'Génération PDF basée sur Chromium intégré au container backend — aucune dépendance externe à installer, fonctionne en environnement self-hosted hors-ligne',
+      },
+      {
+        type: 'improvement',
+        text: 'Endpoint /reports/capabilities — le frontend détecte automatiquement si la génération PDF est disponible et désactive le bouton sinon (utile pour les déploiements légers)',
+      },
+      {
+        type: 'security',
+        text: 'Les techniciens ne peuvent télécharger que le PDF des BTs qui leur sont assignés — protection IDOR identique à celle des endpoints de lecture',
+      },
+    ],
+  },
+  {
     version: '2.1.5',
     name: 'Configuration plateforme par le Super-Admin (SA)',
     date: 'Juin 2026',

@@ -136,6 +136,24 @@ Multi-tenancy (B6) : **non implémenté**, intentionnellement. La table `system_
 
 ---
 
+### B3 — Rapports & KPIs avancés (post-Sprint 1 extension #4)
+
+Reporting layer : génération PDF (fiche d'intervention, rapport mensuel exécutif) via puppeteer-core + Chromium embarqué dans le container, plus une page « 📈 Rapports » qui complémente le `/dashboard` (snapshots) avec des analytics historiques par type de tâche.
+
+| # | Commit | Description |
+|---|---|---|
+| **B3.1** | (foundation) | Module `reports/` (clean architecture), `PdfGeneratorService` wrapper puppeteer-core avec lazy browser launch + `isAvailable()` graceful degradation, Dockerfile production stage installe chromium + nss + freetype + harfbuzz + fonts, env vars `PUPPETEER_SKIP_DOWNLOAD=true` et `PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser`. Endpoint capability probe `GET /reports/capabilities` |
+| **B3.3** | (BT PDF) | `GET /reports/work-orders/:id/pdf` — fiche d'intervention bilingual fr/en. IDOR check : TECHNICIAN ne peut télécharger que ses BTs (mirroring `WorkOrdersService.findOne`). Template HTML standalone (esc + Intl.DateTimeFormat, pas de Handlebars), 7 tests template renderer |
+| **B3.4** | (KPIs) | `KpiService` avec 4 endpoints `/reports/kpis/*` (resolution-time avec median PERCENTILE_CONT, completion-outcome avec successRate, sla avec breachRate, throughput buckets daily). Date range bounded, default last 30 days, midnight-UTC aligned. 11 tests service |
+| **B3.5** | (frontend) | Page `/rapports` avec sélecteur de période et 4 sections (tables + barres CSS inline, pas de dépendance recharts). `downloadWorkOrderPdf()` axios-based pour envoyer le JWT. i18n bilingual via namespace `reports` |
+| **B3.6** | (monthly) | `GET /reports/monthly/:year/:month/pdf` — rapport mensuel exécutif. Aggrège 6 queries en parallèle (3 KPIs + 3 totals cross-cutting), 4-tile summary grid + 3 tables par type. Template séparé, 7 tests |
+
+Distribution par email du rapport mensuel : **différée**. Le câblage `notifications` ↔ `reports` requiert que `EmailChannelService` accepte des attachments, ce qui n'est pas prévu dans la signature `INotificationChannel` actuelle. À reprendre quand on étend le contrat (ou via un mediator).
+
+Pourquoi pas de dépendance charting (recharts, d3) : le bundle frontend est déjà à ~600KB gzip. Tables + barres CSS inline couvrent 95% du besoin v1 sans 50KB+ de plus. Si le user demande des charts interactifs (zoom, tooltip riches), reconsidérer.
+
+---
+
 ## État de la suite Jest
 
 | Métrique | Avant sprint | Après sprint |
