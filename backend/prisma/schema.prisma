@@ -75,8 +75,35 @@ model User {
   createdWorkOrders    WorkOrder[]   @relation("CreatedBy")
   notes                Note[]
   appointments         Appointment[] @relation("TechnicianAppointments")
+  locations            TechnicianLocation[]
 
   @@map("users")
+}
+
+/// Time-series of technician positions for live dispatch view (B5).
+///
+/// Append-only — old rows are pruned by a nightly cron (7-day retention,
+/// PIPEDA/Loi 25 compliance). Opt-in via `User.preferences.gps.enabled`;
+/// rows are only inserted when the front-end posts a position with that
+/// flag set, so a tech who never opted in never produces rows.
+///
+/// The (technician_id, recorded_at DESC) index supports the most common
+/// query: "give me the latest position for each tech right now" — the
+/// dispatcher dashboard polls this every few seconds.
+model TechnicianLocation {
+  id           String   @id @default(uuid())
+  technicianId String   @map("technician_id")
+  technician   User     @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+  latitude     Float
+  longitude    Float
+  /// Reported by the Geolocation API in metres. Null when the source
+  /// didn't provide it (rare — desktop browsers sometimes omit).
+  accuracy     Float?
+  recordedAt   DateTime @default(now()) @map("recorded_at")
+
+  @@index([technicianId, recordedAt(sort: Desc)], map: "idx_technician_locations_tech_recorded")
+  @@index([recordedAt], map: "idx_technician_locations_recorded_at")
+  @@map("technician_locations")
 }
 
 model TemporaryClient {
