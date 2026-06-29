@@ -132,4 +132,37 @@ export class ReportsController {
     const buckets = await this.kpiService.throughput(range);
     return { range, buckets };
   }
+
+  @Get('monthly/:year/:month/pdf')
+  @Roles(Role.ADMIN, Role.DISPATCHER)
+  @ApiOperation({
+    summary: 'Download the monthly executive report as a PDF',
+    description:
+      'Aggregates the four KPI sections + cross-cutting totals for ' +
+      'the given (year, month). year ∈ [2000, 2100], month ∈ [1, 12].',
+  })
+  @ApiQuery({
+    name: 'locale',
+    required: false,
+    enum: ['fr', 'en'],
+    description: 'Locale of the rendered document. Defaults to "fr".',
+  })
+  async monthlyReportPdf(
+    @Param('year') year: string,
+    @Param('month') month: string,
+    @Res() res: Response,
+    @Query('locale') locale?: string,
+  ) {
+    const lang: 'fr' | 'en' = locale === 'en' ? 'en' : 'fr';
+    const { buffer, filename } = await this.reportsService.renderMonthlyReportPdf(
+      parseInt(year, 10),
+      parseInt(month, 10),
+      lang,
+    );
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', String(buffer.length));
+    res.end(buffer);
+  }
 }
