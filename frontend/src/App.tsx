@@ -34,6 +34,7 @@ import AuditPage from './pages/AuditPage';
 import SuperAdminPage from './pages/SuperAdminPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ReleaseNotesPage from './pages/ReleaseNotesPage';
+import ReportsPage from './pages/ReportsPage';
 
 export default function App() {
   const { user } = useAuthStore();
@@ -140,6 +141,7 @@ export default function App() {
             <Route path="/calendrier" element={<CalendarPage />} />
             <Route path="/clients" element={<ClientsPage />} />
             <Route path="/adresses" element={<AddressesPage />} />
+            <Route path="/rapports" element={<ReportsPage />} />
           </Route>
 
           {/* ── Admin only (SA inherits) ──────────────────────────────── */}

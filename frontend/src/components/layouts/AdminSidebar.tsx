@@ -90,6 +90,7 @@ export default function AdminSidebar() {
     { to: '/calendrier',       label: `📅 ${t('nav:calendar')}` },
     { to: '/clients',          label: `🧑‍🤝‍🧑 ${t('nav:clients')}` },
     { to: '/adresses',         label: `📍 ${t('nav:addresses')}` },
+    { to: '/rapports',         label: `📈 ${t('nav:reports', { defaultValue: 'Rapports' })}` },
   ];
 
   const adminOnlyNavItems = [

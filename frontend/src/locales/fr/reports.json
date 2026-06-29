@@ -1,0 +1,47 @@
+{
+  "title": "Rapports et KPIs",
+  "subtitle": "Analytiques avancées sur la performance opérationnelle",
+  "range": "Période",
+  "from": "Du",
+  "to": "Au",
+  "apply": "Appliquer",
+  "lastNDays": "Derniers {{n}} jours",
+  "noData": "Aucune donnée pour cette période",
+  "pdfUnavailable": "Génération PDF désactivée sur ce serveur",
+
+  "sections": {
+    "resolutionTime": {
+      "title": "Temps de résolution",
+      "description": "Délai moyen et médian entre la création et la complétion d'un BT, par type de tâche."
+    },
+    "completionOutcome": {
+      "title": "Taux de réussite",
+      "description": "Proportion de complétions positives vs négatives, par type de tâche."
+    },
+    "sla": {
+      "title": "Conformité SLA",
+      "description": "BTs suivis sous un SLA vs ceux qui ont dépassé le délai, par type de tâche."
+    },
+    "throughput": {
+      "title": "Charge quotidienne",
+      "description": "Nombre de BTs créés et complétés par jour sur la période."
+    }
+  },
+
+  "columns": {
+    "taskType": "Type",
+    "completed": "Complétés",
+    "average": "Moyenne",
+    "median": "Médiane",
+    "hours": "h",
+    "positive": "Positifs",
+    "negative": "Négatifs",
+    "successRate": "Taux de réussite",
+    "tracked": "Suivis SLA",
+    "breached": "Dépassés",
+    "breachRate": "Taux de dépassement",
+    "created": "Créés",
+    "date": "Date",
+    "untyped": "Sans type"
+  }
+}

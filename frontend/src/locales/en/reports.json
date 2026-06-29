@@ -1,0 +1,47 @@
+{
+  "title": "Reports & KPIs",
+  "subtitle": "Advanced analytics on operational performance",
+  "range": "Range",
+  "from": "From",
+  "to": "To",
+  "apply": "Apply",
+  "lastNDays": "Last {{n}} days",
+  "noData": "No data for this range",
+  "pdfUnavailable": "PDF generation is disabled on this server",
+
+  "sections": {
+    "resolutionTime": {
+      "title": "Resolution time",
+      "description": "Average and median time between creation and completion, by task type."
+    },
+    "completionOutcome": {
+      "title": "Success rate",
+      "description": "Positive vs negative completion ratio, by task type."
+    },
+    "sla": {
+      "title": "SLA compliance",
+      "description": "BTs tracked under an SLA vs those that breached, by task type."
+    },
+    "throughput": {
+      "title": "Daily throughput",
+      "description": "BTs created and completed per day over the range."
+    }
+  },
+
+  "columns": {
+    "taskType": "Type",
+    "completed": "Completed",
+    "average": "Average",
+    "median": "Median",
+    "hours": "h",
+    "positive": "Positive",
+    "negative": "Negative",
+    "successRate": "Success rate",
+    "tracked": "SLA tracked",
+    "breached": "Breached",
+    "breachRate": "Breach rate",
+    "created": "Created",
+    "date": "Date",
+    "untyped": "Untyped"
+  }
+}
