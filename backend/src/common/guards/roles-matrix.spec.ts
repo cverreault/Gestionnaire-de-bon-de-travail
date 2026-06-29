@@ -39,7 +39,8 @@ import { SuperAdminController } from '../../modules/system-configs/api/super-adm
 // ─── Matrix rows ─────────────────────────────────────────────────────────────
 
 type MatrixRow = {
-  controller: new (...args: unknown[]) => unknown;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  controller: new (...args: any[]) => any;
   method: string;
   /** Either the literal authorized role list, or 'ANY' for "no @Roles()" */
   expectedRoles: Role[] | 'ANY';

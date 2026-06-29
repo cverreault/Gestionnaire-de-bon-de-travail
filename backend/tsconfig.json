@@ -14,9 +14,13 @@
     "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
-    "strictNullChecks": true,
-    "noImplicitAny": true,
-    "strictBindCallApply": true,
+    "strict": true,
+    // DTOs (response + class-validator inputs) and a few module-init
+    // services rely on framework-side filling (Prisma row spread, the
+    // I18nValidationPipe, OnModuleInit). Standard NestJS escape hatch —
+    // leaves the rest of strict mode (strictNullChecks, strictFunctionTypes,
+    // noImplicitAny, alwaysStrict, …) fully on.
+    "strictPropertyInitialization": false,
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "paths": {
