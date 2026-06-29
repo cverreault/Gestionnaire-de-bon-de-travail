@@ -101,7 +101,11 @@ export default function AdminSidebar() {
   ];
 
   const superAdminNavItems = [
-    { to: '/super-admin',  label: `👑 ${t('nav:superAdmin', { defaultValue: 'Super-Admin' })}` },
+    { to: '/super-admin',          label: `👑 ${t('nav:saConfig', { defaultValue: 'Configuration' })}` },
+    { to: '/super-admin/tenants',  label: `🌍 ${t('nav:saTenants', { defaultValue: 'Tenants' })}` },
+    { to: '/super-admin/stats',    label: `📊 ${t('nav:saStats', { defaultValue: 'Stats globales' })}` },
+    { to: '/super-admin/audit',    label: `📜 ${t('nav:saAudit', { defaultValue: 'Audit cross-tenant' })}` },
+    { to: '/super-admin/users',    label: `🔍 ${t('nav:saUsers', { defaultValue: 'Rechercher utilisateur' })}` },
   ];
 
   // ── Pending dispatch state (modal) ───────────────────────────────────────

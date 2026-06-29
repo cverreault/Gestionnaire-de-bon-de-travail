@@ -34,6 +34,10 @@ import TemplatesSettingsPage from './pages/TemplatesSettingsPage';
 import BackupPage from './pages/BackupPage';
 import AuditPage from './pages/AuditPage';
 import SuperAdminPage from './pages/SuperAdminPage';
+import SuperAdminTenantsPage from './pages/SuperAdminTenantsPage';
+import SuperAdminStatsPage from './pages/SuperAdminStatsPage';
+import SuperAdminAuditPage from './pages/SuperAdminAuditPage';
+import SuperAdminUsersPage from './pages/SuperAdminUsersPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ReleaseNotesPage from './pages/ReleaseNotesPage';
 import ReportsPage from './pages/ReportsPage';
@@ -163,6 +167,10 @@ export default function App() {
           {/* ── Super-admin only ──────────────────────────────────────── */}
           <Route element={<SuperAdminRoute />}>
             <Route path="/super-admin" element={<SuperAdminPage />} />
+            <Route path="/super-admin/tenants" element={<SuperAdminTenantsPage />} />
+            <Route path="/super-admin/stats" element={<SuperAdminStatsPage />} />
+            <Route path="/super-admin/audit" element={<SuperAdminAuditPage />} />
+            <Route path="/super-admin/users" element={<SuperAdminUsersPage />} />
           </Route>
 
         </Route>
