@@ -63,7 +63,9 @@ export class UsersService {
   // ── Commands ───────────────────────────────────────────────────────────────
 
   async create(dto: CreateUserDto) {
-    const existing = await this.prisma.user.findUnique({
+    // Email is per-tenant unique (B6.3). findFirst scoped via the
+    // tenant filter automatically injected by Prisma $extends (B6.4).
+    const existing = await this.prisma.user.findFirst({
       where: { email: dto.email },
     });
     if (existing) {

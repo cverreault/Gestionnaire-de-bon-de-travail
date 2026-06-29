@@ -27,7 +27,7 @@ function makeMockPrisma(rows: UserRow[]) {
       count: jest.fn(({ where }: { where: { role: Role; isActive: boolean } }) =>
         Promise.resolve(rows.filter((r) => r.role === where.role && r.isActive === where.isActive).length),
       ),
-      findUnique: jest.fn(({ where }: { where: { email: string } }) =>
+      findFirst: jest.fn(({ where }: { where: { email: string } }) =>
         Promise.resolve(rows.find((r) => r.email === where.email) ?? null),
       ),
       update: jest.fn(({ where, data }: { where: { id: string }; data: Partial<UserRow> }) => {
@@ -59,7 +59,7 @@ describe('SuperAdminBootstrapService.onApplicationBootstrap', () => {
 
     await svc.onApplicationBootstrap();
 
-    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    expect(prisma.user.findFirst).not.toHaveBeenCalled();
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
@@ -71,7 +71,7 @@ describe('SuperAdminBootstrapService.onApplicationBootstrap', () => {
 
     await svc.onApplicationBootstrap();
 
-    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    expect(prisma.user.findFirst).not.toHaveBeenCalled();
     expect(prisma._rows[0].role).toBe(Role.ADMIN); // unchanged
   });
 

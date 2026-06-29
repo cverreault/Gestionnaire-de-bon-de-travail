@@ -19,6 +19,8 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
+import type { TenantContext } from '../../common/contracts/tenant-context.contract';
 import { UserResponseDto } from '../users/dto/user-response.dto';
 
 class RefreshBodyDto {
@@ -55,8 +57,11 @@ export class AuthController {
     },
   })
   @ApiResponse({ status: 401, description: 'Email ou mot de passe invalide' })
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  login(
+    @Body() dto: LoginDto,
+    @CurrentTenant() tenant: TenantContext,
+  ) {
+    return this.authService.login(dto, tenant.id);
   }
 
   // ── POST /api/auth/refresh ─────────────────────────────────────────────────

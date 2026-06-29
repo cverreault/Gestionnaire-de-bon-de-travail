@@ -25,8 +25,17 @@ function makePrisma() {
 
 type MockPrisma = ReturnType<typeof makePrisma>;
 
+function makeContext() {
+  return {
+    run: jest.fn((_ctx, cb: () => unknown) => cb()),
+  };
+}
+
 function makeMiddleware(prisma: MockPrisma): TenantResolverMiddleware {
-  return new TenantResolverMiddleware(prisma as unknown as never);
+  return new TenantResolverMiddleware(
+    prisma as unknown as never,
+    makeContext() as unknown as never,
+  );
 }
 
 function makeReq(host: string | undefined) {

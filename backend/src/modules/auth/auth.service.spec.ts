@@ -63,6 +63,12 @@ function makeMockPrisma(opts: {
         if (where.id && where.id !== opts.user.id) return Promise.resolve(null);
         return Promise.resolve(opts.user);
       }),
+      // B6.3 — login uses findFirst({ email, tenantId })
+      findFirst: jest.fn(({ where }: { where: { email?: string } }) => {
+        if (!opts.user) return Promise.resolve(null);
+        if (where.email && where.email !== opts.user.email) return Promise.resolve(null);
+        return Promise.resolve(opts.user);
+      }),
     },
     refreshToken: {
       create: jest.fn(({ data }: { data: Omit<MockTokenRow, 'id' | 'createdAt' | 'revokedAt'> }) => {
@@ -151,7 +157,7 @@ describe('AuthService.login', () => {
     const prisma = makeMockPrisma({ user });
     const svc = await buildService(prisma);
 
-    const result = await svc.login({ email: user.email, password: 'correct-pw' } as LoginDto);
+    const result = await svc.login({ email: user.email, password: 'correct-pw' } as LoginDto, 'test-tenant');
 
     expect(result.accessToken).toMatch(/^mock-access-/);
     expect(result.refreshToken).toMatch(/^mock-refresh-/);
@@ -170,7 +176,7 @@ describe('AuthService.login', () => {
     const prisma = makeMockPrisma({ user: null });
     const svc = await buildService(prisma);
     await expect(
-      svc.login({ email: 'nobody@x.io', password: 'x' } as LoginDto),
+      svc.login({ email: 'nobody@x.io', password: 'x' } as LoginDto, 'test-tenant'),
     ).rejects.toThrow(UnauthorizedException);
     expect(prisma._tokens).toHaveLength(0);
   });
@@ -180,7 +186,7 @@ describe('AuthService.login', () => {
     const prisma = makeMockPrisma({ user });
     const svc = await buildService(prisma);
     await expect(
-      svc.login({ email: user.email, password: 'wrong-pw' } as LoginDto),
+      svc.login({ email: user.email, password: 'wrong-pw' } as LoginDto, 'test-tenant'),
     ).rejects.toThrow(UnauthorizedException);
     expect(prisma._tokens).toHaveLength(0);
   });
@@ -190,7 +196,7 @@ describe('AuthService.login', () => {
     const prisma = makeMockPrisma({ user });
     const svc = await buildService(prisma);
     await expect(
-      svc.login({ email: user.email, password: 'correct-pw' } as LoginDto),
+      svc.login({ email: user.email, password: 'correct-pw' } as LoginDto, 'test-tenant'),
     ).rejects.toThrow(UnauthorizedException);
     expect(prisma._tokens).toHaveLength(0);
   });

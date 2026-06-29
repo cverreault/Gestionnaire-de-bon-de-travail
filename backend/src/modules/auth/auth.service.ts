@@ -46,9 +46,12 @@ export class AuthService {
 
   // ── Login ──────────────────────────────────────────────────────────────────
 
-  async login(dto: LoginDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+  async login(dto: LoginDto, tenantId: string) {
+    // Email is now per-tenant unique (B6.3) — same gmail address can
+    // exist in two tenants. The sub-domain decides which one is
+    // logging in.
+    const user = await this.prisma.user.findFirst({
+      where: { email: dto.email, tenantId },
     });
 
     // Message volontairement identique pour les deux cas (email inconnu / mauvais mdp)
@@ -64,7 +67,13 @@ export class AuthService {
 
     // Nouvelle famille à chaque login.
     const family = crypto.randomUUID();
-    const tokens = await this.generateTokens(user.id, user.email, user.role, family);
+    const tokens = await this.generateTokens(
+      user.id,
+      user.email,
+      user.role,
+      user.tenantId,
+      family,
+    );
     const { password: _pw, ...safeUser } = user;
 
     return {
@@ -140,7 +149,13 @@ export class AuthService {
       data: { revokedAt: new Date() },
     });
 
-    return this.generateTokens(user.id, user.email, user.role, row.family);
+    return this.generateTokens(
+      user.id,
+      user.email,
+      user.role,
+      user.tenantId,
+      row.family,
+    );
   }
 
   // ── Logout ─────────────────────────────────────────────────────────────────
@@ -162,9 +177,11 @@ export class AuthService {
 
   // ── Register (Admin only — appelé depuis UsersModule) ──────────────────────
 
-  async register(dto: RegisterDto) {
-    const existing = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+  async register(dto: RegisterDto, tenantId: string) {
+    // Email is per-tenant unique (B6.3). Pre-flight check is scoped to
+    // the current tenant.
+    const existing = await this.prisma.user.findFirst({
+      where: { email: dto.email, tenantId },
     });
     if (existing) {
       throw new ConflictException('Un utilisateur avec cet email existe déjà');
@@ -174,6 +191,7 @@ export class AuthService {
 
     const user = await this.prisma.user.create({
       data: {
+        tenantId,
         email: dto.email,
         password: hashedPassword,
         firstName: dto.firstName,
@@ -193,9 +211,10 @@ export class AuthService {
     userId: string,
     email: string,
     role: string,
+    tenantId: string,
     family: string,
   ) {
-    const payload: JwtPayload = { sub: userId, email, role };
+    const payload: JwtPayload = { sub: userId, email, role, tenantId };
 
     const accessToken = this.jwtService.sign(payload);
     // Le refresh token utilise un secret distinct et une durée de vie plus longue.

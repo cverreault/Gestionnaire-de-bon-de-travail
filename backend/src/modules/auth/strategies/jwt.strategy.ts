@@ -27,6 +27,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       where: { id: payload.sub },
       select: {
         id: true,
+        tenantId: true,
         email: true,
         firstName: true,
         lastName: true,
@@ -40,6 +41,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     if (!user || !user.isActive) {
       throw new UnauthorizedException('Utilisateur introuvable ou désactivé');
+    }
+
+    // Defence-in-depth: the JWT claim must match the user's DB row.
+    // A revoked-then-reissued token from a moved user would otherwise
+    // carry the old tenantId.
+    if (payload.tenantId && user.tenantId !== payload.tenantId) {
+      throw new UnauthorizedException(
+        'Token incompatible avec le compte utilisateur',
+      );
     }
 
     return user;

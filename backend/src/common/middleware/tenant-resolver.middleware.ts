@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import type { NextFunction, Request, Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
+import { RequestContextService } from '../context/request-context.service';
 import {
   DEFAULT_TENANT_ID,
   TENANT_REQUEST_KEY,
@@ -39,7 +40,10 @@ export class TenantResolverMiddleware implements NestMiddleware {
 
   private cache = new Map<string, TenantContext>();
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly context: RequestContextService,
+  ) {}
 
   async use(req: Request, _res: Response, next: NextFunction): Promise<void> {
     const slug = extractTenantSlug(req.headers.host);
@@ -82,7 +86,10 @@ export class TenantResolverMiddleware implements NestMiddleware {
       TENANT_REQUEST_KEY
     ] = tenant;
 
-    next();
+    // Open the AsyncLocalStorage scope so deep services can read the
+    // tenant without threading it through every signature. userId is
+    // filled in later by JwtAuthGuard — start as null.
+    this.context.run({ tenantId: tenant.id, userId: null }, () => next());
   }
 
   /** Test-only — wipe the slug→tenant cache. */

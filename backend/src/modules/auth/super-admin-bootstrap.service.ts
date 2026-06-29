@@ -48,7 +48,10 @@ export class SuperAdminBootstrapService implements OnApplicationBootstrap {
         return;
       }
 
-      const target = await this.prisma.user.findUnique({
+      // SA bootstrap reaches across every tenant — the platform owner's
+      // email is unique platform-wide by convention. findFirst rather
+      // than findUnique now that email is per-tenant.
+      const target = await this.prisma.user.findFirst({
         where: { email },
         select: { id: true, email: true, role: true, isActive: true },
       });
