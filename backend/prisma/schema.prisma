@@ -11,6 +11,11 @@ datasource db {
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
 enum Role {
+  /// Platform-level administrator (SA). Inherits every ADMIN privilege
+  /// and additionally manages global system configs (SMTP, VAPID,
+  /// Sentry…). When multi-tenancy lands, SA is the only role that can
+  /// CRUD tenants. Bootstrapped via SUPER_ADMIN_EMAIL env on boot.
+  SUPER_ADMIN
   ADMIN
   DISPATCHER
   TECHNICIAN

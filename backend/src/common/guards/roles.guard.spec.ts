@@ -143,4 +143,26 @@ describe('RolesGuard', () => {
     expect(() => bareGuard.canActivate(ctx)).not.toThrow();
     expect(bareGuard.canActivate(ctx)).toBe(false);
   });
+
+  // ── SUPER_ADMIN inheritance (SA.1.a) ────────────────────────────────────
+
+  it('SUPER_ADMIN passes any role-gated endpoint (inheritance)', () => {
+    const ctx = buildContext({
+      metadata: [Role.ADMIN],
+      user: { id: 'sa-1', role: Role.SUPER_ADMIN },
+    });
+    const warn = spyOnGuardLogger(guard);
+
+    expect(guard.canActivate(ctx)).toBe(true);
+    expect(warn).not.toHaveBeenCalled();
+    expect(emit).not.toHaveBeenCalled();
+  });
+
+  it('SUPER_ADMIN passes even endpoints gated by DISPATCHER alone', () => {
+    const ctx = buildContext({
+      metadata: [Role.DISPATCHER],
+      user: { id: 'sa-1', role: Role.SUPER_ADMIN },
+    });
+    expect(guard.canActivate(ctx)).toBe(true);
+  });
 });

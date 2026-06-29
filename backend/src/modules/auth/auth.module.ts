@@ -6,6 +6,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RefreshTokenCleanupService } from './refresh-token-cleanup.service';
+import { SuperAdminBootstrapService } from './super-admin-bootstrap.service';
 
 @Module({
   imports: [
@@ -20,7 +21,12 @@ import { RefreshTokenCleanupService } from './refresh-token-cleanup.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, RefreshTokenCleanupService],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    RefreshTokenCleanupService,
+    SuperAdminBootstrapService,
+  ],
   /**
    * JwtModule est exporté pour que d'autres modules (ex. UsersModule)
    * puissent utiliser JwtService si besoin.

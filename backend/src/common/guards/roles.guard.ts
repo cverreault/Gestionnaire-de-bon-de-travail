@@ -41,6 +41,12 @@ export class RolesGuard implements CanActivate {
 
     const req = context.switchToHttp().getRequest<Request & { user?: JwtUserRef }>();
     const user = req.user;
+
+    // SUPER_ADMIN inherits every ADMIN privilege (and beyond): if the
+    // route requires any role at all, SA passes. Keeps the @Roles
+    // decorator on existing endpoints unchanged.
+    if (user?.role === Role.SUPER_ADMIN) return true;
+
     const allowed = requiredRoles.some((role) => user?.role === role);
 
     if (!allowed) {
