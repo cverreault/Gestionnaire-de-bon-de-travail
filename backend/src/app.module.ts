@@ -28,6 +28,7 @@ import { AuditModule } from './modules/audit/audit.module';
 import { SearchModule } from './modules/search/search.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SystemConfigsModule } from './modules/system-configs/system-configs.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -111,6 +112,7 @@ import { SystemConfigsModule } from './modules/system-configs/system-configs.mod
     SearchModule,
     NotificationsModule,
     SystemConfigsModule,
+    ReportsModule,
   ],
   providers: [
     // ── Guards globaux ─────────────────────────────────────────────────────

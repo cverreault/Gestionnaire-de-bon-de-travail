@@ -27,10 +27,15 @@ FROM node:20-alpine AS production
 WORKDIR /app
 
 # wget/curl pour les health checks Docker, openssl pour Prisma,
-# postgresql-client pour pg_dump/psql utilisés par la feature backup/restore.
-RUN apk add --no-cache wget curl openssl postgresql16-client
+# postgresql-client pour pg_dump/psql utilisés par la feature backup/restore,
+# chromium + fonts pour puppeteer-core (génération PDF rapports B3).
+RUN apk add --no-cache \
+    wget curl openssl postgresql16-client \
+    chromium nss freetype harfbuzz ca-certificates ttf-freefont font-noto
 
-ENV NODE_ENV=production
+ENV NODE_ENV=production \
+    PUPPETEER_SKIP_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 # Installer uniquement les dépendances de production
 COPY package.json package-lock.json* ./
