@@ -1,32 +1,24 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { OnEvent } from '@nestjs/event-emitter';
 import * as webpush from 'web-push';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
+import { SystemConfigService } from '../../../system-configs/application/system-config.service';
+import { SYSTEM_CONFIG_EVENTS } from '../../../system-configs/events/system-config-events';
 
 /**
- * Web Push channel (B1.3).
+ * Web Push channel (B1.3, refactored in SA.2.a).
  *
- * Configuration model
- * - VAPID keys come from VAPID_PUBLIC_KEY + VAPID_PRIVATE_KEY in the env.
- * - VAPID_SUBJECT (default mailto:noreply@taskmgr.local) tells push
- *   services who to contact about abuse.
- * - When VAPID_PUBLIC_KEY is absent the channel goes into DISABLED mode:
- *   subscribe/send become no-ops and a warning is logged at startup,
- *   identical posture to the email channel without SMTP_HOST.
+ * Configuration source (since SA.2.a)
+ * - VAPID keys resolve through SystemConfigService.resolve(): DB rows
+ *   (set by SA via UI) take precedence over env vars. Falls back to
+ *   DISABLED when neither source has both keys.
+ * - Loaded once at boot (onApplicationBootstrap) and re-loadable via
+ *   refreshConfig() — the SA controller calls that after a successful
+ *   PUT on a vapid.* key so the change picks up without a restart.
  *
- * How to provision keys
- *   npx web-push generate-vapid-keys
- *   then paste publicKey + privateKey into the env.
- *
- * The PUBLIC key is also returned via GET /me/notifications/push/vapid-public-key
- * so the frontend service worker can call PushManager.subscribe() with it.
- *
- * Subscription lifecycle
- * - On subscribe() we upsert by endpoint (browser is the unique source
- *   of truth — re-subscribing the same browser replaces the row).
- * - On 404 / 410 from a push service during send() we delete the
- *   subscription — the browser unsubscribed and reusing it forever
- *   would just burn CPU.
+ * The rest of the original behaviour is unchanged:
+ * - On 404 / 410 from a push service we delete the subscription.
+ * - send() in DISABLED mode logs to Pino and treats itself as success.
  */
 
 export interface PushSubscribeInput {
@@ -47,29 +39,52 @@ export interface PushSendInput {
 @Injectable()
 export class PushChannelService implements OnModuleInit {
   private readonly logger = new Logger(PushChannelService.name);
-  private readonly publicKey: string | undefined;
-  private readonly privateKey: string | undefined;
-  private readonly subject: string;
+  private publicKey: string | undefined;
+  private privateKey: string | undefined;
+  private subject = 'mailto:noreply@taskmgr.local';
   private enabled = false;
 
   constructor(
-    private readonly config: ConfigService,
+    private readonly configs: SystemConfigService,
     private readonly prisma: PrismaService,
-  ) {
-    this.publicKey = config.get<string>('VAPID_PUBLIC_KEY');
-    this.privateKey = config.get<string>('VAPID_PRIVATE_KEY');
-    this.subject = config.get<string>('VAPID_SUBJECT') ?? 'mailto:noreply@taskmgr.local';
+  ) {}
+
+  async onModuleInit() {
+    await this.refreshConfig();
   }
 
-  onModuleInit() {
+  /**
+   * React to live config updates from the SA UI. Re-loads when the
+   * mutated key starts with `vapid.` — other keys don't affect us.
+   */
+  @OnEvent(SYSTEM_CONFIG_EVENTS.CHANGED, { async: true, promisify: true })
+  async onConfigChanged(event: { aggregateId: string }) {
+    if (event.aggregateId.startsWith('vapid.')) {
+      this.logger.log(`🔄 VAPID config changed (${event.aggregateId}) — reloading`);
+      await this.refreshConfig();
+    }
+  }
+
+  /**
+   * Re-reads VAPID config from SystemConfigService and re-registers with
+   * web-push. Called once at boot, and again whenever the SA writes a
+   * vapid.* key from the UI.
+   */
+  async refreshConfig(): Promise<void> {
+    this.publicKey = await this.configs.resolve('vapid.public-key', 'VAPID_PUBLIC_KEY');
+    this.privateKey = await this.configs.resolve('vapid.private-key', 'VAPID_PRIVATE_KEY');
+    this.subject = (await this.configs.resolve('vapid.subject', 'VAPID_SUBJECT'))
+      ?? 'mailto:noreply@taskmgr.local';
+
     if (this.publicKey && this.privateKey) {
       webpush.setVapidDetails(this.subject, this.publicKey, this.privateKey);
       this.enabled = true;
       this.logger.log(`🔔 Web Push enabled (subject=${this.subject})`);
     } else {
+      this.enabled = false;
       this.logger.warn(
-        '🔕 Web Push DISABLED: VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY missing. ' +
-        'Generate keys with `npx web-push generate-vapid-keys`.',
+        '🔕 Web Push DISABLED: vapid.public-key / vapid.private-key missing. ' +
+        'Generate keys with `npx web-push generate-vapid-keys` and set them via SA UI or env.',
       );
     }
   }
@@ -144,7 +159,6 @@ export class PushChannelService implements OnModuleInit {
           payload,
         );
         successCount++;
-        // Touch lastUsedAt so a future GC sweep can prune long-stale subs.
         await this.prisma.pushSubscription.update({
           where: { id: sub.id },
           data: { lastUsedAt: new Date() },

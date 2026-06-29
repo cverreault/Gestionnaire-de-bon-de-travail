@@ -1,21 +1,28 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
+import { SystemConfigService } from '../../../system-configs/application/system-config.service';
 
 /**
- * Email delivery channel for notifications (B1.1.c).
+ * Email delivery channel for notifications (B1.1.c, refactored in SA.2.a).
  *
  * Two operating modes:
  *
- * 1. **SMTP mode** — when SMTP_HOST is set in the env, lazily build a
- *    nodemailer transport using SMTP_PORT (default 587), SMTP_USER and
- *    SMTP_PASS for AUTH, and SMTP_SECURE=true|false (default false to
- *    match STARTTLS on 587). FROM address comes from
- *    NOTIFICATIONS_FROM ("TaskMgr <noreply@localhost>" by default).
+ * 1. **SMTP mode** — when `smtp.host` resolves to a value (DB > env),
+ *    build a nodemailer transport using `smtp.port` (default 587),
+ *    `smtp.user` and `smtp.pass` for AUTH, and `smtp.secure=true|false`
+ *    (default false to match STARTTLS on 587). FROM address comes from
+ *    `notifications.from` ("TaskMgr <noreply@localhost>" by default).
  *
- * 2. **Console mode** — when SMTP_HOST is absent (typical local dev),
- *    log the email payload to Pino instead of sending. No deps on
- *    Mailhog / Mailpit; the operator just reads the backend log.
+ * 2. **Console mode** — when `smtp.host` is absent, log the email
+ *    payload to Pino instead of sending. No deps on Mailhog / Mailpit.
+ *
+ * Configuration source (since SA.2.a)
+ * - All values flow through SystemConfigService.resolve(): a SUPER_ADMIN
+ *   can override SMTP creds from the UI without touching .env. The env
+ *   var fallback keeps existing deployments working.
+ * - Resolved on every send() call. nodemailer's createTransport is cheap
+ *   (no connection — that happens during sendMail) so this isn't a
+ *   perf concern at notification volumes.
  *
  * The channel never throws on send — failures are caught and returned
  * as a boolean so the orchestrator can mark `FAILED` without bringing
@@ -32,25 +39,13 @@ export interface SendEmailInput {
 @Injectable()
 export class EmailChannelService {
   private readonly logger = new Logger(EmailChannelService.name);
-  private transporter: nodemailer.Transporter | null = null;
-  private readonly from: string;
-  private readonly smtpConfigured: boolean;
 
-  constructor(private readonly config: ConfigService) {
-    this.from = config.get<string>('NOTIFICATIONS_FROM') ?? 'TaskMgr <noreply@localhost>';
-    this.smtpConfigured = !!config.get<string>('SMTP_HOST');
-
-    if (!this.smtpConfigured) {
-      this.logger.warn(
-        '📭 Email channel in CONSOLE mode: SMTP_HOST not set, emails will be logged only. ' +
-        'Set SMTP_HOST, SMTP_USER, SMTP_PASS to enable delivery.',
-      );
-    }
-  }
+  constructor(private readonly configs: SystemConfigService) {}
 
   /** Returns true on success, false on failure. Never throws. */
   async send(input: SendEmailInput): Promise<boolean> {
-    if (!this.smtpConfigured) {
+    const host = await this.configs.resolve('smtp.host', 'SMTP_HOST');
+    if (!host) {
       this.logger.log(
         `[CONSOLE EMAIL] to=${input.to} subject="${input.subject}"\n${input.text}`,
       );
@@ -58,9 +53,11 @@ export class EmailChannelService {
     }
 
     try {
-      if (!this.transporter) this.transporter = this.buildTransporter();
-      await this.transporter.sendMail({
-        from: this.from,
+      const transporter = await this.buildTransporter(host);
+      const from = (await this.configs.resolve('notifications.from', 'NOTIFICATIONS_FROM'))
+        ?? 'TaskMgr <noreply@localhost>';
+      await transporter.sendMail({
+        from,
         to: input.to,
         subject: input.subject,
         text: input.text,
@@ -75,18 +72,20 @@ export class EmailChannelService {
     }
   }
 
-  private buildTransporter(): nodemailer.Transporter {
+  private async buildTransporter(host: string): Promise<nodemailer.Transporter> {
+    const port = parseInt(
+      (await this.configs.resolve('smtp.port', 'SMTP_PORT')) ?? '587',
+      10,
+    );
+    const secure = (await this.configs.resolve('smtp.secure', 'SMTP_SECURE')) === 'true';
+    const user = await this.configs.resolve('smtp.user', 'SMTP_USER');
+    const pass = await this.configs.resolve('smtp.pass', 'SMTP_PASS');
+
     return nodemailer.createTransport({
-      host: this.config.getOrThrow<string>('SMTP_HOST'),
-      port: parseInt(this.config.get<string>('SMTP_PORT') ?? '587', 10),
-      secure: this.config.get<string>('SMTP_SECURE') === 'true',
-      auth:
-        this.config.get<string>('SMTP_USER') || this.config.get<string>('SMTP_PASS')
-          ? {
-              user: this.config.get<string>('SMTP_USER') ?? '',
-              pass: this.config.get<string>('SMTP_PASS') ?? '',
-            }
-          : undefined,
+      host,
+      port,
+      secure,
+      auth: user || pass ? { user: user ?? '', pass: pass ?? '' } : undefined,
     });
   }
 }

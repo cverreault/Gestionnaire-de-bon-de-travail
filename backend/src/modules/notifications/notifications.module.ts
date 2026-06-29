@@ -4,6 +4,7 @@ import { NotificationsService } from './application/notifications.service';
 import { NotificationsListener } from './application/notifications.listener';
 import { EmailChannelService } from './infrastructure/channels/email-channel.service';
 import { PushChannelService } from './infrastructure/channels/push-channel.service';
+import { SystemConfigsModule } from '../system-configs/system-configs.module';
 
 /**
  * Notifications module (B1).
@@ -20,6 +21,7 @@ import { PushChannelService } from './infrastructure/channels/push-channel.servi
  *   VAPID_PRIVATE_KEY (console fallback when absent).
  */
 @Module({
+  imports: [SystemConfigsModule],
   controllers: [NotificationsController],
   providers: [
     NotificationsService,

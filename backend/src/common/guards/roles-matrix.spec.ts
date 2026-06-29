@@ -34,6 +34,7 @@ import { AuditController } from '../../modules/audit/api/audit.controller';
 import { BackupController } from '../../modules/backup/backup.controller';
 import { SearchController } from '../../modules/search/api/search.controller';
 import { NotificationsController } from '../../modules/notifications/api/notifications.controller';
+import { SuperAdminController } from '../../modules/system-configs/api/super-admin.controller';
 
 // ─── Matrix rows ─────────────────────────────────────────────────────────────
 
@@ -110,6 +111,16 @@ const SEARCH_MATRIX: MatrixRow[] = [
   { controller: SearchController, method: 'search', expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'GET /search — dispatcher top-bar (TECH not exposed)' },
 ];
 
+const SUPER_ADMIN_MATRIX: MatrixRow[] = [
+  // SA.2.a — every endpoint here is SUPER_ADMIN only. Even though
+  // RolesGuard treats SA as a tier above ADMIN, @Roles(SUPER_ADMIN)
+  // explicitly keeps regular ADMINs OUT (the inheritance is one-way).
+  { controller: SuperAdminController, method: 'list',    expectedRoles: [Role.SUPER_ADMIN], note: 'GET /super-admin/configs' },
+  { controller: SuperAdminController, method: 'getOne',  expectedRoles: [Role.SUPER_ADMIN], note: 'GET /super-admin/configs/:key' },
+  { controller: SuperAdminController, method: 'upsert',  expectedRoles: [Role.SUPER_ADMIN], note: 'PUT /super-admin/configs/:key' },
+  { controller: SuperAdminController, method: 'remove',  expectedRoles: [Role.SUPER_ADMIN], note: 'DELETE /super-admin/configs/:key' },
+];
+
 const NOTIFICATIONS_MATRIX: MatrixRow[] = [
   // Inbox endpoints are self-service for the current user — no @Roles().
   // Object-level RBAC happens in the service (userId from JWT vs row.userId).
@@ -139,6 +150,7 @@ const ALL_ROWS: { name: string; rows: MatrixRow[] }[] = [
   { name: 'BackupController',     rows: BACKUP_MATRIX },
   { name: 'SearchController',     rows: SEARCH_MATRIX },
   { name: 'NotificationsController', rows: NOTIFICATIONS_MATRIX },
+  { name: 'SuperAdminController',    rows: SUPER_ADMIN_MATRIX },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
