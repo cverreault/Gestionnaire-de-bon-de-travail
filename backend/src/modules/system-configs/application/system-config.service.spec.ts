@@ -56,7 +56,15 @@ function makeConfig(env: Record<string, string | undefined> = {}) {
 }
 
 function buildSvc(prisma: any, env: Record<string, string | undefined> = {}) {
-  const svc = new SystemConfigService(prisma as any, makeConfig(env) as any);
+  // B6.9 — service now takes a RequestContextService too. Specs run
+  // without an active request, so current() returns null and the
+  // resolver skips the TENANT scope branch automatically.
+  const requestContext = { current: () => null } as any;
+  const svc = new SystemConfigService(
+    prisma as any,
+    makeConfig(env) as any,
+    requestContext,
+  );
   // Always init — the test setup is intentionally tight.
   svc.onModuleInit();
   return svc;

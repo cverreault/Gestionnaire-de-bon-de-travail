@@ -1,6 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { SystemConfigService } from './application/system-config.service';
 import { SuperAdminController } from './api/super-admin.controller';
+import { TenantConfigsController } from './api/tenant-configs.controller';
 import { SYSTEM_CONFIG_RESOLVER } from '../../common/contracts/system-config-resolver.contract';
 
 /**
@@ -18,7 +19,7 @@ import { SYSTEM_CONFIG_RESOLVER } from '../../common/contracts/system-config-res
  */
 @Global()
 @Module({
-  controllers: [SuperAdminController],
+  controllers: [SuperAdminController, TenantConfigsController],
   providers: [
     SystemConfigService,
     { provide: SYSTEM_CONFIG_RESOLVER, useExisting: SystemConfigService },

@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../common/prisma/prisma.service';
+import { RequestContextService } from '../../../common/context/request-context.service';
 import { deriveKey, encrypt, decrypt } from '../../../common/crypto/aes-gcm';
 
 /**
@@ -44,6 +45,7 @@ export class SystemConfigService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly context: RequestContextService,
   ) {}
 
   onModuleInit() {
@@ -62,28 +64,48 @@ export class SystemConfigService implements OnModuleInit {
   // ── Public API ──────────────────────────────────────────────────────────
 
   /**
-   * Hierarchical resolver. Returns the first non-empty source:
-   * DB row → env var → undefined.
+   * Hierarchical resolver (B6.9 dual-scope) :
+   *   1. TENANT row (tenantId = active request's tenant)  ← per-customer
+   *   2. GLOBAL row (tenantId = NULL)                     ← SaaS-wide
+   *   3. process.env[envKey]                              ← deployment
+   *   4. undefined                                        ← caller default
    *
-   * The env mapping is mechanical (envKeyFor). Callers needing a custom
-   * env name can pass envKey explicitly.
+   * The TENANT step is skipped when there's no request context (cron,
+   * seed, startup) or when no tenant is active. Result : a per-tenant
+   * SMTP override seamlessly takes precedence over the operator's
+   * default, but background jobs still see the GLOBAL value.
    */
   async resolve(key: string, envKey?: string): Promise<string | undefined> {
-    const dbValue = await this.get(key);
-    if (dbValue !== undefined) return dbValue;
+    const tenantId = this.context.current()?.tenantId;
+
+    if (tenantId) {
+      const tenantValue = await this.readScopedRow(key, tenantId);
+      if (tenantValue !== undefined) return tenantValue;
+    }
+
+    const globalValue = await this.readScopedRow(key, null);
+    if (globalValue !== undefined) return globalValue;
+
     const fromEnv = this.config.get<string>(envKey ?? envKeyFor(key));
     return fromEnv ?? undefined;
   }
 
   /**
-   * DB-only read. Decrypts if needed. Returns undefined if absent.
-   *
-   * B6.1 — every config is still GLOBAL (tenantId = null). B6.9 will
-   * switch to per-tenant override via the request context.
+   * DB-only read on the GLOBAL row. Kept for the existing
+   * SuperAdminController + its specs ; consumers should prefer
+   * resolve() so the TENANT scope kicks in automatically.
    */
   async get(key: string): Promise<string | undefined> {
+    return this.readScopedRow(key, null);
+  }
+
+  /** Read a single row scoped to (key, tenantId). Returns undefined when absent or undecryptable. */
+  private async readScopedRow(
+    key: string,
+    tenantId: string | null,
+  ): Promise<string | undefined> {
     const row = await this.prisma.systemConfig.findFirst({
-      where: { key, tenantId: null },
+      where: { key, tenantId },
     });
     if (!row) return undefined;
 
@@ -107,10 +129,26 @@ export class SystemConfigService implements OnModuleInit {
     }
   }
 
-  /** Persist a config value. Encrypts before insert when `encrypted: true`. */
-  async set(key: string, value: string, opts: SetOpts = {}): Promise<void> {
+  /**
+   * Persist a config value. Encrypts before insert when `encrypted: true`.
+   *
+   * scope :
+   *   - 'GLOBAL' (default) — operator-wide, accessible to every tenant
+   *     unless they have their own TENANT override. SuperAdmin only.
+   *   - 'TENANT' — pass a tenantId. ADMIN of that tenant only.
+   */
+  async set(
+    key: string,
+    value: string,
+    opts: SetOpts & { scope?: 'GLOBAL' | 'TENANT'; tenantId?: string | null } = {},
+  ): Promise<void> {
     const encrypted = !!opts.encrypted;
+    const scope = opts.scope ?? 'GLOBAL';
+    const tenantId = scope === 'TENANT' ? opts.tenantId ?? null : null;
 
+    if (scope === 'TENANT' && !tenantId) {
+      throw new Error('TENANT scope requires a tenantId');
+    }
     if (encrypted && !this.masterKey) {
       throw new Error(
         'Cannot persist encrypted value: CONFIG_MASTER_KEY is unset on this deployment.',
@@ -119,18 +157,33 @@ export class SystemConfigService implements OnModuleInit {
 
     const stored = encrypted ? encrypt(value, this.masterKey!) : value;
 
-    // B6.1 — still operating on GLOBAL configs only. tenantId stays null.
     await this.prisma.systemConfig.upsert({
-      where: { tenantId_key: { tenantId: null as unknown as string, key } },
-      create: { key, value: stored, encrypted, updatedBy: opts.updatedBy ?? null },
-      update: { value: stored, encrypted, updatedBy: opts.updatedBy ?? null },
+      where: { tenantId_key: { tenantId: tenantId as unknown as string, key } },
+      create: {
+        key,
+        value: stored,
+        encrypted,
+        scope,
+        tenantId,
+        updatedBy: opts.updatedBy ?? null,
+      },
+      update: {
+        value: stored,
+        encrypted,
+        updatedBy: opts.updatedBy ?? null,
+      },
     });
   }
 
   /** Remove a config entry. The hierarchical resolver will fall back to env. */
-  async delete(key: string): Promise<void> {
+  async delete(
+    key: string,
+    opts: { scope?: 'GLOBAL' | 'TENANT'; tenantId?: string | null } = {},
+  ): Promise<void> {
+    const scope = opts.scope ?? 'GLOBAL';
+    const tenantId = scope === 'TENANT' ? opts.tenantId ?? null : null;
     await this.prisma.systemConfig.deleteMany({
-      where: { key, tenantId: null },
+      where: { key, tenantId },
     });
   }
 

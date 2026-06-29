@@ -35,6 +35,7 @@ import { BackupController } from '../../modules/backup/backup.controller';
 import { SearchController } from '../../modules/search/api/search.controller';
 import { NotificationsController } from '../../modules/notifications/api/notifications.controller';
 import { SuperAdminController } from '../../modules/system-configs/api/super-admin.controller';
+import { TenantConfigsController } from '../../modules/system-configs/api/tenant-configs.controller';
 import { LocationsController } from '../../modules/locations/api/locations.controller';
 
 // ─── Matrix rows ─────────────────────────────────────────────────────────────
@@ -123,6 +124,14 @@ const SUPER_ADMIN_MATRIX: MatrixRow[] = [
   { controller: SuperAdminController, method: 'remove',  expectedRoles: [Role.SUPER_ADMIN], note: 'DELETE /super-admin/configs/:key' },
 ];
 
+const TENANT_CONFIGS_MATRIX: MatrixRow[] = [
+  // B6.9 — class-level @Roles(ADMIN). Tenant ADMIN manages TENANT-scoped
+  // overrides only ; the GLOBAL surface stays on /super-admin/configs.
+  { controller: TenantConfigsController, method: 'list',   expectedRoles: [Role.ADMIN], note: 'GET /tenant/configs' },
+  { controller: TenantConfigsController, method: 'upsert', expectedRoles: [Role.ADMIN], note: 'PUT /tenant/configs/:key' },
+  { controller: TenantConfigsController, method: 'remove', expectedRoles: [Role.ADMIN], note: 'DELETE /tenant/configs/:key' },
+];
+
 const NOTIFICATIONS_MATRIX: MatrixRow[] = [
   // Inbox endpoints are self-service for the current user — no @Roles().
   // Object-level RBAC happens in the service (userId from JWT vs row.userId).
@@ -159,6 +168,7 @@ const ALL_ROWS: { name: string; rows: MatrixRow[] }[] = [
   { name: 'NotificationsController', rows: NOTIFICATIONS_MATRIX },
   { name: 'SuperAdminController',    rows: SUPER_ADMIN_MATRIX },
   { name: 'LocationsController',     rows: LOCATIONS_MATRIX },
+  { name: 'TenantConfigsController', rows: TENANT_CONFIGS_MATRIX },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
