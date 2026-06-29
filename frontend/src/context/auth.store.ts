@@ -31,12 +31,13 @@ interface AuthState {
   /**
    * Start impersonating a target tenant (B7).
    * Saves the SA's tokens + user into `impersonation.saOriginal*`, swaps
-   * the active token to the impersonate one. The target user shape is
-   * reconstructed on the next /auth/me call — for now we keep the SA
-   * user object visible until that round-trip completes.
+   * the active token AND user object. The synthesized user carries the
+   * impersonated role so the sidebar / layout react immediately —
+   * `/auth/me` refresh on next page load reconciles any drift.
    */
   startImpersonation: (input: {
     targetAccessToken: string;
+    targetUser: User;
     targetTenantSlug: string;
     targetTenantName: string;
     targetUserEmail: string;
@@ -96,6 +97,7 @@ export const useAuthStore = create<AuthState>()(
 
       startImpersonation: ({
         targetAccessToken,
+        targetUser,
         targetTenantSlug,
         targetTenantName,
         targetUserEmail,
@@ -112,6 +114,7 @@ export const useAuthStore = create<AuthState>()(
         // 15-min TTL forces a re-impersonate before any refresh attempt.
         set({
           accessToken: targetAccessToken,
+          user: targetUser,
           isAuthenticated: true,
           impersonation: {
             active: true,

@@ -10,6 +10,7 @@ import {
   type UpdateTenantInput,
 } from '../services/super-admin.service';
 import { useAuthStore } from '../context/auth.store';
+import { Role } from '../types';
 
 const PLANS: TenantPlan[] = ['FREE', 'PRO', 'ENTERPRISE'];
 
@@ -97,8 +98,20 @@ function TenantRowDisplay({
   const enter = useMutation({
     mutationFn: () => impersonate({ tenantId: tenant.id }),
     onSuccess: (resp) => {
+      const now = new Date().toISOString();
       startImpersonation({
         targetAccessToken: resp.accessToken,
+        targetUser: {
+          id: resp.user.id,
+          email: resp.user.email,
+          firstName: resp.user.firstName,
+          lastName: resp.user.lastName,
+          role: resp.user.role as Role,
+          isActive: true,
+          phone: null,
+          createdAt: now,
+          updatedAt: now,
+        },
         targetTenantSlug: resp.tenant.slug,
         targetTenantName: resp.tenant.name,
         targetUserEmail: resp.user.email,

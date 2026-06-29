@@ -6,6 +6,7 @@ import { Role } from '../../types';
 import AdminSidebar from './AdminSidebar';
 import TechnicianNav from './TechnicianNav';
 import OfflineBanner from '../OfflineBanner';
+import ImpersonationBanner from '../ImpersonationBanner';
 import GlobalSearchBar from '../GlobalSearchBar';
 import NotificationsBell from '../NotificationsBell';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
@@ -19,8 +20,11 @@ import { theme } from '../../theme';
 export default function AppLayout() {
   const { user } = useAuthStore();
   const qc = useQueryClient();
-  // Both ADMIN and DISPATCHER get the full desktop sidebar layout
-  const isAdmin = user?.role === Role.ADMIN || user?.role === Role.DISPATCHER;
+  // ADMIN / DISPATCHER / SUPER_ADMIN get the full desktop sidebar layout
+  const isAdmin =
+    user?.role === Role.ADMIN ||
+    user?.role === Role.DISPATCHER ||
+    user?.role === Role.SUPER_ADMIN;
   const isOnline = useOnlineStatus();
   const wasOffline = useRef(false);
 
@@ -49,6 +53,7 @@ export default function AppLayout() {
   return (
     <>
       {!isOnline && <OfflineBanner />}
+      <ImpersonationBanner />
       <div
         style={{
           display: 'flex',

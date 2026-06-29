@@ -46,7 +46,14 @@ interface JwtUser {
 
 interface ImpersonateResponse {
   accessToken: string;
-  user: { id: string; email: string; tenantId: string };
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: Role;
+    tenantId: string;
+  };
   tenant: { id: string; slug: string; name: string };
 }
 
@@ -148,6 +155,9 @@ export class ImpersonateController {
       user: {
         id: target.id,
         email: target.email,
+        firstName: target.firstName,
+        lastName: target.lastName,
+        role: target.role,
         tenantId: target.tenantId,
       },
       tenant,
@@ -157,7 +167,15 @@ export class ImpersonateController {
   private async resolveByUserId(userId: string) {
     const target = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, role: true, tenantId: true, isActive: true },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        tenantId: true,
+        isActive: true,
+      },
     });
     if (!target) {
       throw new NotFoundException(`Utilisateur ${userId} introuvable`);
@@ -172,7 +190,15 @@ export class ImpersonateController {
     const target = await this.prisma.user.findFirst({
       where: { tenantId, role: Role.ADMIN, isActive: true },
       orderBy: { createdAt: 'asc' },
-      select: { id: true, email: true, role: true, tenantId: true, isActive: true },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        tenantId: true,
+        isActive: true,
+      },
     });
     if (!target) {
       throw new NotFoundException(

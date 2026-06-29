@@ -68,6 +68,8 @@ describe('ImpersonateController', () => {
       prisma.user.findUnique.mockResolvedValueOnce({
         id: 'u-target',
         email: 'jean@x.io',
+        firstName: 'Jean',
+        lastName: 'Tremblay',
         role: Role.ADMIN,
         tenantId: 't-1',
         isActive: true,
@@ -86,6 +88,9 @@ describe('ImpersonateController', () => {
       expect(result.user).toEqual({
         id: 'u-target',
         email: 'jean@x.io',
+        firstName: 'Jean',
+        lastName: 'Tremblay',
+        role: Role.ADMIN,
         tenantId: 't-1',
       });
       expect(result.tenant).toEqual({ id: 't-1', slug: 'aco', name: 'A Co' });
@@ -104,6 +109,8 @@ describe('ImpersonateController', () => {
       prisma.user.findUnique.mockResolvedValueOnce({
         id: 'sa-1',
         email: 'sa@x.io',
+        firstName: 'SA',
+        lastName: 'One',
         role: Role.SUPER_ADMIN,
         tenantId: 't-1',
         isActive: true,
@@ -118,6 +125,8 @@ describe('ImpersonateController', () => {
       prisma.user.findUnique.mockResolvedValueOnce({
         id: 'sa-2',
         email: 'sa2@x.io',
+        firstName: 'SA',
+        lastName: 'Two',
         role: Role.SUPER_ADMIN,
         tenantId: 't-1',
         isActive: true,
@@ -132,6 +141,8 @@ describe('ImpersonateController', () => {
       prisma.user.findUnique.mockResolvedValueOnce({
         id: 'u-target',
         email: 'jean@x.io',
+        firstName: 'Jean',
+        lastName: 'X',
         role: Role.ADMIN,
         tenantId: 't-1',
         isActive: false,
@@ -148,6 +159,8 @@ describe('ImpersonateController', () => {
       prisma.user.findFirst.mockResolvedValueOnce({
         id: 'u-admin',
         email: 'admin@aco.io',
+        firstName: 'Admin',
+        lastName: 'Aco',
         role: Role.ADMIN,
         tenantId: 't-aco',
         isActive: true,

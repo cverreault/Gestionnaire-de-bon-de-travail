@@ -139,7 +139,14 @@ export async function searchUsers(
 
 export interface ImpersonateResponse {
   accessToken: string;
-  user: { id: string; email: string; tenantId: string };
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: 'ADMIN' | 'DISPATCHER' | 'TECHNICIAN';
+    tenantId: string;
+  };
   tenant: { id: string; slug: string; name: string };
 }
 
