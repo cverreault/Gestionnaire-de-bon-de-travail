@@ -35,6 +35,7 @@ import { BackupController } from '../../modules/backup/backup.controller';
 import { SearchController } from '../../modules/search/api/search.controller';
 import { NotificationsController } from '../../modules/notifications/api/notifications.controller';
 import { SuperAdminController } from '../../modules/system-configs/api/super-admin.controller';
+import { LocationsController } from '../../modules/locations/api/locations.controller';
 
 // ─── Matrix rows ─────────────────────────────────────────────────────────────
 
@@ -142,6 +143,11 @@ const BACKUP_MATRIX: MatrixRow[] = [
   { controller: BackupController, method: 'restore', expectedRoles: [Role.ADMIN], note: 'POST /backup/restore' },
 ];
 
+const LOCATIONS_MATRIX: MatrixRow[] = [
+  { controller: LocationsController, method: 'record',          expectedRoles: [Role.TECHNICIAN],            note: 'POST /me/location — opt-in via gps.enabled' },
+  { controller: LocationsController, method: 'latestPositions', expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'GET /dispatcher/technicians/positions' },
+];
+
 const ALL_ROWS: { name: string; rows: MatrixRow[] }[] = [
   { name: 'WorkOrdersController', rows: WORK_ORDERS_MATRIX },
   { name: 'ClientsController',    rows: CLIENTS_MATRIX },
@@ -152,6 +158,7 @@ const ALL_ROWS: { name: string; rows: MatrixRow[] }[] = [
   { name: 'SearchController',     rows: SEARCH_MATRIX },
   { name: 'NotificationsController', rows: NOTIFICATIONS_MATRIX },
   { name: 'SuperAdminController',    rows: SUPER_ADMIN_MATRIX },
+  { name: 'LocationsController',     rows: LOCATIONS_MATRIX },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

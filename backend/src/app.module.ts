@@ -29,6 +29,7 @@ import { SearchModule } from './modules/search/search.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SystemConfigsModule } from './modules/system-configs/system-configs.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { LocationsModule } from './modules/locations/locations.module';
 
 @Module({
   imports: [
@@ -112,6 +113,7 @@ import { ReportsModule } from './modules/reports/reports.module';
     NotificationsModule,
     SystemConfigsModule,
     ReportsModule,
+    LocationsModule,
   ],
   providers: [
     // ── Guards globaux ─────────────────────────────────────────────────────
