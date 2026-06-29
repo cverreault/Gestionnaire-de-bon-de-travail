@@ -556,6 +556,29 @@ model AuditLog {
   @@map("audit_logs")
 }
 
+/// Platform-level system configuration (SA.1.b).
+///
+/// Key/value store for runtime overrides of what would otherwise live in
+/// .env (SMTP, VAPID, Sentry DSN, retention windows…). Resolution order
+/// at read time: this table → process.env → hardcoded default.
+///
+/// Secrets (SMTP_PASS, VAPID_PRIVATE, etc.) are stored AES-GCM encrypted
+/// with a master key sourced from CONFIG_MASTER_KEY (env). The `encrypted`
+/// flag tells the service whether to decrypt on read.
+///
+/// Multi-tenancy (B6) deferred: every row is GLOBAL for now. When B6
+/// lands, add a tenant_id column + composite uniqueness.
+model SystemConfig {
+  key       String   @id                              // "smtp.host", "vapid.public-key", …
+  value     String   @db.Text                          // ciphertext if `encrypted`, else raw UTF-8
+  encrypted Boolean  @default(false)
+  updatedBy String?  @map("updated_by")                // userId who last wrote
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("system_configs")
+}
+
 /// Refresh tokens — DB-backed rotation chain.
 ///
 /// Chaque login démarre une nouvelle famille. Chaque refresh révoque l'ancien
