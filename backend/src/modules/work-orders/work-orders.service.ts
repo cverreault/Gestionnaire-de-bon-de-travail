@@ -149,6 +149,7 @@ export class WorkOrdersService {
       clientId,
       taskTypeId,
       excludeCompleted,
+      slaBreached,
       page = 1,
       limit = 20,
     } = filters;
@@ -180,6 +181,10 @@ export class WorkOrdersService {
 
     if (priorityMin !== undefined) {
       where.priority = { gte: priorityMin };
+    }
+
+    if (slaBreached) {
+      where.slaBreachedAt = { not: null };
     }
 
     if (search) {
@@ -263,6 +268,10 @@ export class WorkOrdersService {
 
     if (filters.priorityMin !== undefined) {
       where.priority = { gte: filters.priorityMin };
+    }
+
+    if (filters.slaBreached) {
+      where.slaBreachedAt = { not: null };
     }
 
     if (filters.search) {

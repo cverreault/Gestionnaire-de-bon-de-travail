@@ -13,6 +13,7 @@ import TemplateValuesView from '../components/TemplateValuesView';
 import WorkOrderStatusBadge from '../components/WorkOrderStatusBadge';
 import TransitionActionBar from '../components/transitions/TransitionActionBar';
 import WorkOrderAuditTimeline from '../components/WorkOrderAuditTimeline';
+import SlaBadge from '../components/SlaBadge';
 import PrintWorkOrder from '../components/PrintWorkOrder';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useState, useRef, useEffect } from 'react';
@@ -367,6 +368,7 @@ export default function WorkOrderDetailPage() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
             <WorkOrderStatusBadge step={wo.currentStep} status={wo.status} />
+            <SlaBadge wo={wo} />
             <TransitionActionBar workOrderId={wo.id} variant="dropdown" />
             {isAdmin && (
               <button

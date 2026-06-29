@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useMyWorkOrders } from '../hooks/useWorkOrders';
 import { useAddressTypes } from '../hooks/useSettings';
 import WorkOrderStatusBadge from '../components/WorkOrderStatusBadge';
+import SlaBadge from '../components/SlaBadge';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { WorkOrderStatus, WorkOrderType, ClientType } from '../types';
 import type { WorkOrder } from '../types';
@@ -189,7 +190,10 @@ export default function TechnicianWorkOrdersPage() {
                         </p>
                       </div>
                     </div>
-                    <WorkOrderStatusBadge step={wo.currentStep} status={wo.status} size="sm" />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
+                      <WorkOrderStatusBadge step={wo.currentStep} status={wo.status} size="sm" />
+                      <SlaBadge wo={wo} compact />
+                    </div>
                   </div>
 
                   {/* Client info */}

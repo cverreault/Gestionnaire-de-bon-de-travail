@@ -7,6 +7,7 @@ import workOrdersService from '../services/work-orders.service';
 import { WorkOrderStatus, WorkOrderType } from '../types';
 import type { WorkOrderFilters, WorkOrder } from '../types';
 import WorkOrderStatusBadge from '../components/WorkOrderStatusBadge';
+import SlaBadge from '../components/SlaBadge';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ColumnPicker, { type ColumnDef } from '../components/ColumnPicker';
 import { useUserPreferences, useUpdateUserPreferences } from '../hooks/useUserPreferences';
@@ -22,6 +23,7 @@ const COMPLETED_STATUSES = new Set([
 ]);
 
 const LS_HIDE_COMPLETED_KEY = 'wo-hide-completed';
+const LS_SLA_BREACHED_KEY = 'wo-sla-breached-only';
 const LS_FILTER_PRESETS_KEY = 'wo-filter-presets';
 
 // ─── Saved filter presets ─────────────────────────────────────────────────────
@@ -156,7 +158,12 @@ function buildWorkOrderColumnCatalog(t: TFunc, tCommon: TFunc): ColumnDef<WorkOr
     {
       id: 'status',
       label: t('fields.status'),
-      render: (wo) => <WorkOrderStatusBadge step={wo.currentStep} status={wo.status} size="sm" />,
+      render: (wo) => (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+          <WorkOrderStatusBadge step={wo.currentStep} status={wo.status} size="sm" />
+          <SlaBadge wo={wo} compact />
+        </span>
+      ),
     },
     {
       id: 'technician',
@@ -260,6 +267,9 @@ export default function WorkOrdersPage() {
   const [hideCompleted, setHideCompleted] = useState<boolean>(
     () => localStorage.getItem(LS_HIDE_COMPLETED_KEY) === 'true',
   );
+  const [slaBreachedOnly, setSlaBreachedOnly] = useState<boolean>(
+    () => localStorage.getItem(LS_SLA_BREACHED_KEY) === 'true',
+  );
 
   // Row hover / drag state
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
@@ -319,6 +329,7 @@ export default function WorkOrdersPage() {
     ...(scheduledDateFrom ? { scheduledDateFrom } : {}),
     ...(scheduledDateTo ? { scheduledDateTo } : {}),
     ...(priorityMin !== undefined && priorityMin > 0 ? { priorityMin } : {}),
+    ...(slaBreachedOnly ? { slaBreached: true } : {}),
     page,
     limit: 20,
   };
@@ -468,6 +479,38 @@ export default function WorkOrdersPage() {
       <div style={{ ...layoutStyles.pageHeader }}>
         <h1 style={{ ...layoutStyles.pageTitle }}>{t('title')}</h1>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          {/* SLA breach toggle (B4) */}
+          <button
+            onClick={() => {
+              setSlaBreachedOnly((prev) => {
+                const next = !prev;
+                localStorage.setItem(LS_SLA_BREACHED_KEY, String(next));
+                return next;
+              });
+              setPage(1);
+            }}
+            title={slaBreachedOnly ? 'Afficher tous les BT' : 'N\'afficher que les BT en retard SLA'}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              padding: '0.45rem 0.875rem',
+              borderRadius: theme.radius.md,
+              border: slaBreachedOnly
+                ? `1px solid ${theme.colors.danger ?? '#dc2626'}`
+                : theme.borders.default,
+              background: slaBreachedOnly ? (theme.colors.dangerLight ?? '#fee2e2') : theme.colors.surface,
+              color: slaBreachedOnly ? (theme.colors.danger ?? '#dc2626') : theme.colors.textSecondary,
+              fontWeight: theme.font.weightMedium,
+              fontSize: theme.font.sizeSm,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            ⚠ En retard
+          </button>
+
           {/* Hide completed toggle */}
           <button
             onClick={toggleHideCompleted}

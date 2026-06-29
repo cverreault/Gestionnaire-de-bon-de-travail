@@ -78,6 +78,14 @@ export class WorkOrderFilterDto {
   @Transform(({ value }) => value === 'true' || value === true)
   excludeCompleted?: boolean;
 
+  @ApiPropertyOptional({
+    description: 'Ne retourner que les BT en breach SLA (B4) — slaBreachedAt non null',
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true' || value === true)
+  slaBreached?: boolean;
+
   @ApiPropertyOptional({ description: 'Numéro de page (commence à 1)', default: 1 })
   @IsOptional()
   @Type(() => Number)

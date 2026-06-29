@@ -331,6 +331,10 @@ export interface WorkOrder {
   negativeReason?: string | null;
   dispatchedAt?: string | null;
 
+  // SLA (B4)
+  slaTargetAt?: string | null;
+  slaBreachedAt?: string | null;
+
   // V3 client / task-type relations
   clientId?: string | null;
   client?: Client | null;
@@ -512,6 +516,7 @@ export interface WorkOrderFilters {
   priorityMin?: number;
   search?: string;
   excludeCompleted?: boolean;
+  slaBreached?: boolean;
   page?: number;
   limit?: number;
 }
