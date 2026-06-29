@@ -217,7 +217,11 @@ export class WorkOrdersController {
   // Tight rate limit (C7bis) — a legitimate tech transitions at most once
   // every few seconds. 20 per minute leaves room for retries on flaky
   // network without enabling brute-forcing of valid transition payloads.
-  @Throttle({ short: { ttl: 60000, limit: 20 } })
+  @Throttle(
+    process.env.THROTTLER_DISABLE === '1'
+      ? { short: { ttl: 1000, limit: 1_000_000 } }
+      : { short: { ttl: 60000, limit: 20 } },
+  )
   @ApiOperation({
     summary: 'Changer le statut d\'un bon de travail',
     description:

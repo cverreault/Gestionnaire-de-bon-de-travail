@@ -37,7 +37,11 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { ttl: 60000, limit: 5 } })
+  @Throttle(
+    process.env.THROTTLER_DISABLE === '1'
+      ? { short: { ttl: 1000, limit: 1_000_000 } }
+      : { short: { ttl: 60000, limit: 5 } },
+  )
   @ApiOperation({ summary: 'Connexion — retourne access + refresh token' })
   @ApiResponse({
     status: 200,

@@ -19,7 +19,9 @@
     "prisma:migrate": "prisma migrate deploy",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "prisma:seed": "ts-node prisma/seed.ts"
+    "prisma:seed": "ts-node prisma/seed.ts",
+    "test": "jest",
+    "test:integration": "DATABASE_URL=\"postgresql://taskmgr:taskmgr_secret@localhost:5434/taskmgr_test\" THROTTLER_DISABLE=1 JWT_SECRET=test-jwt-secret JWT_REFRESH_SECRET=test-refresh-secret JWT_EXPIRATION=15m JWT_REFRESH_EXPIRATION=7d MINIO_ENDPOINT=localhost MINIO_PORT=9000 MINIO_ACCESS_KEY=test MINIO_SECRET_KEY=test MINIO_BUCKET=test SENTRY_DSN= LOG_LEVEL=silent jest --config jest.integration.config.js --runInBand"
   },
   "dependencies": {
     "@nestjs/axios": "^4.0.1",
@@ -67,6 +69,7 @@
   "devDependencies": {
     "@nestjs/cli": "10.4.5",
     "@nestjs/schematics": "10.1.4",
+    "@nestjs/testing": "^10.4.22",
     "@types/bcrypt": "5.0.2",
     "@types/compression": "1.7.5",
     "@types/jest": "^30.0.0",
@@ -75,6 +78,7 @@
     "@types/passport-jwt": "4.0.1",
     "@types/passport-local": "1.0.38",
     "@types/pg": "8.11.6",
+    "@types/supertest": "^7.2.0",
     "@types/tar": "6.1.13",
     "@types/tar-stream": "3.1.4",
     "@types/uuid": "10.0.0",
@@ -82,6 +86,7 @@
     "jest": "^30.3.0",
     "pino-pretty": "^13.1.3",
     "prisma": "5.17.0",
+    "supertest": "^7.2.2",
     "ts-jest": "^29.4.9",
     "ts-loader": "9.5.1",
     "ts-node": "10.9.2",

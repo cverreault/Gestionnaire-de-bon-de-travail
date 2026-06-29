@@ -109,7 +109,11 @@ export class UsersController {
   @Patch('me/preferences')
   // Tight rate limit (C7bis) — 30 updates per minute is well above any
   // legitimate UI use and well below what a flood/scan would generate.
-  @Throttle({ short: { ttl: 60000, limit: 30 } })
+  @Throttle(
+    process.env.THROTTLER_DISABLE === '1'
+      ? { short: { ttl: 1000, limit: 1_000_000 } }
+      : { short: { ttl: 60000, limit: 30 } },
+  )
   @ApiOperation({ summary: 'Mettre à jour (merge) les préférences UI de l\'utilisateur courant' })
   @ApiResponse({ status: 200, description: 'Préférences mises à jour' })
   updateMyPreferences(

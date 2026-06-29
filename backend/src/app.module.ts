@@ -60,23 +60,22 @@ import { ReportsModule } from './modules/reports/reports.module';
     ScheduleModule.forRoot(),
 
     // ── Rate limiting ──────────────────────────────────────────────────────
-    ThrottlerModule.forRoot([
-      {
-        name: 'short',
-        ttl: 1000,
-        limit: 20,
-      },
-      {
-        name: 'medium',
-        ttl: 10000,
-        limit: 100,
-      },
-      {
-        name: 'long',
-        ttl: 60000,
-        limit: 300,
-      },
-    ]),
+    // Integration tests set THROTTLER_DISABLE=1 — every bucket gets a
+    // very high limit so the cumulative requests of a multi-test run
+    // don't trip the cap. Production keeps the tight defaults.
+    ThrottlerModule.forRoot(
+      process.env.THROTTLER_DISABLE === '1'
+        ? [
+            { name: 'short', ttl: 1000, limit: 1_000_000 },
+            { name: 'medium', ttl: 10000, limit: 1_000_000 },
+            { name: 'long', ttl: 60000, limit: 1_000_000 },
+          ]
+        : [
+            { name: 'short', ttl: 1000, limit: 20 },
+            { name: 'medium', ttl: 10000, limit: 100 },
+            { name: 'long', ttl: 60000, limit: 300 },
+          ],
+    ),
 
     // ── i18n (FR default, EN via Accept-Language or ?lang=) ──────────────
     I18nModule.forRoot({

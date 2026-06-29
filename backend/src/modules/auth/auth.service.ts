@@ -198,14 +198,20 @@ export class AuthService {
     const payload: JwtPayload = { sub: userId, email, role };
 
     const accessToken = this.jwtService.sign(payload);
-    // Le refresh token utilise un secret distinct et une durée de vie plus longue
-    const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>(
-        'JWT_REFRESH_SECRET',
-        'changeme-jwt-refresh-secret',
-      ),
-      expiresIn: '7d',
-    });
+    // Le refresh token utilise un secret distinct et une durée de vie plus longue.
+    // jti is added to guarantee each token is unique even when two refreshes
+    // happen in the same second (JWT iat is second-grained). Without it, the
+    // resulting tokenHash collides and the unique constraint trips.
+    const refreshToken = this.jwtService.sign(
+      { ...payload, jti: crypto.randomUUID() },
+      {
+        secret: this.configService.get<string>(
+          'JWT_REFRESH_SECRET',
+          'changeme-jwt-refresh-secret',
+        ),
+        expiresIn: '7d',
+      },
+    );
 
     // Persister la rangée DB pour pouvoir révoquer.
     await this.prisma.refreshToken.create({
