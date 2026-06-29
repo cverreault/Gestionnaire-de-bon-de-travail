@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from './context/auth.store';
 import { useUiStore, resolveTheme } from './context/ui.store';
 import { useUserPreferences, useUpdateUserPreferences } from './hooks/useUserPreferences';
+import { useGpsTracker } from './hooks/useGpsTracker';
 import { Role } from './types';
 
 // ── Guards ────────────────────────────────────────────────────────────────────
@@ -55,6 +56,9 @@ export default function App() {
   // 2) On user toggle (store changes), push the patch to the server.
   const { data: prefs } = useUserPreferences();
   const updatePrefs = useUpdateUserPreferences();
+  // GPS tracker is a no-op unless the user is a TECHNICIAN AND
+  // preferences.gps.enabled is true — both checks live inside the hook.
+  useGpsTracker();
   const hydratedRef = useRef(false);
   const setTheme = useUiStore((s) => s.setTheme);
   const setLocale = useUiStore((s) => s.setLocale);

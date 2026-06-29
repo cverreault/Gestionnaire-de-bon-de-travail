@@ -4,6 +4,8 @@ import { useAuthStore } from '../context/auth.store';
 import { useUiStore, type ThemeMode, type Locale } from '../context/ui.store';
 import { useUpdateMyProfile, useChangeMyPassword } from '../hooks/useUsers';
 import { useNotificationPreferences, useUpdateNotificationPreferences } from '../hooks/useNotifications';
+import { useUserPreferences, useUpdateUserPreferences } from '../hooks/useUserPreferences';
+import { Role } from '../types';
 import type { NotifiableEventName, PerEventPrefs } from '../services/notifications.service';
 import {
   enablePush,
@@ -373,6 +375,9 @@ export default function ProfilePage() {
 
       {/* ── Section : Préférences de notifications ── */}
       <NotificationPreferencesSection />
+
+      {/* ── Section : Suivi GPS (TECH only) ── */}
+      <GpsTrackingSection />
 
       {/* ── Section 2 : Change password ── */}
       <div style={{ ...cardStyles.card }}>
@@ -761,6 +766,65 @@ function NotificationPreferencesSection() {
               </p>
             )}
           </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── GPS opt-in (B5.3) ──────────────────────────────────────────────────────
+/**
+ * TECH-only toggle that stores `gps.enabled` in User.preferences.
+ *
+ * The hook on App.tsx (useGpsTracker) reads the same value and
+ * calls navigator.geolocation when it flips to true. The browser's
+ * OS-level permission prompt happens then — denying it leaves the
+ * preference ON but no rows get posted until the user grants it.
+ */
+function GpsTrackingSection() {
+  const user = useAuthStore((s) => s.user);
+  const { data: prefs } = useUserPreferences();
+  const updatePrefs = useUpdateUserPreferences();
+
+  // Section is TECH-only — admins/dispatchers can't post their own positions.
+  if (user?.role !== Role.TECHNICIAN) return null;
+
+  const enabled =
+    !!prefs &&
+    typeof prefs.gps === 'object' &&
+    prefs.gps !== null &&
+    (prefs.gps as { enabled?: boolean }).enabled === true;
+
+  return (
+    <div style={{ ...cardStyles.card }}>
+      <div style={{ ...cardStyles.cardHeader }}>
+        <h2 style={{ ...cardStyles.cardTitle }}>📍 Suivi de position</h2>
+      </div>
+      <div style={{ ...cardStyles.cardBody, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <p style={{ color: theme.colors.textMuted, margin: 0, fontSize: theme.font.sizeSm }}>
+          En activant ce suivi, votre position GPS est transmise au répartiteur pendant que vous êtes connecté. Les données sont conservées 7 jours puis supprimées automatiquement (Loi 25 / PIPEDA). Vous pouvez désactiver le suivi en tout temps.
+        </p>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={enabled}
+            disabled={updatePrefs.isPending}
+            onChange={(e) =>
+              updatePrefs.mutate({
+                ...(prefs ?? {}),
+                gps: { enabled: e.target.checked },
+              })
+            }
+            aria-label="Activer le suivi GPS"
+          />
+          <span style={{ color: theme.colors.text }}>
+            Partager ma position avec le répartiteur
+          </span>
+        </label>
+        {updatePrefs.isError && (
+          <p style={{ color: theme.colors.danger, fontSize: theme.font.sizeSm, margin: 0 }}>
+            Échec de la mise à jour — la case est revenue à son ancien état.
+          </p>
         )}
       </div>
     </div>
