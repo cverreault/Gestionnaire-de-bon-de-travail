@@ -9,6 +9,7 @@ import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import WorkOrderStatusBadge from '../components/WorkOrderStatusBadge';
 import AuditActivityChart from '../components/AuditActivityChart';
+import TechnicianLocationsMap from '../components/TechnicianLocationsMap';
 import type { ApiResponse, AdminStats, TechnicianStats, WorkOrder } from '../types';
 import { Role, WorkOrderStatus } from '../types';
 import { theme, tableStyles, cardStyles, layoutStyles, getRowStyle } from '../theme';
@@ -364,6 +365,19 @@ function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* ── Live technician positions (B5) ───────────────────────────────── */}
+      <div style={{ ...cardStyles.card, padding: 0, overflow: 'hidden', marginBottom: '1rem' }}>
+        <div style={{ padding: '0.75rem 1rem', borderBottom: `1px solid ${theme.colors.border}` }}>
+          <h3 style={{ margin: 0, fontSize: 14, color: theme.colors.text }}>
+            📍 Techniciens sur le terrain
+          </h3>
+          <p style={{ margin: '4px 0 0', fontSize: 12, color: theme.colors.textMuted }}>
+            Rafraîchi toutes les 15&nbsp;s. Seuls les techniciens qui ont activé le suivi GPS sont affichés.
+          </p>
+        </div>
+        <TechnicianLocationsMap />
+      </div>
 
       {/* ── Audit activity (ADMIN only) ──────────────────────────────────── */}
       {isAdmin && <AuditActivityChart days={30} />}
