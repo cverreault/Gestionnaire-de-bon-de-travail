@@ -99,6 +99,23 @@ Posture symétrique sur les deux canaux opt-in (email + push) :
 - Variables présentes → canal actif, échecs (4xx, 410, etc.) gérés par retry simple côté nodemailer ou cleanup automatique côté push (subscription gone)
 - `channelsSent` JSONB reflète exactement ce qui a réussi, lisible dans la page admin `/audit`
 
+### B4 — SLA + escalades (post-Sprint 1 extension #2)
+
+Premier vrai consommateur métier du pipeline notifications. Boucle complète bout-en-bout : configuration admin (slaHours par type) → calcul automatique au create → cron de détection → fan-out via B1 → UI badge + filtre.
+
+| # | Commit | Description |
+|---|---|---|
+| **B4.a** | `bc00848` | Schema : `task_types.sla_hours` + `work_orders.sla_target_at` + `work_orders.sla_breached_at` + migration. `WorkOrdersService.create()` calcule `sla_target_at` au create, immuable. DTO `CreateTaskTypeDto.slaHours` + 4 tests |
+| **B4.b** | (cron) | `SlaCheckService` `@Cron('*/15 * * * *')` — scanne les BT actifs en breach, set `sla_breached_at`, émet `workOrders.workOrder.slaBreached`. Cap 100 rows/run, batch try/catch par row. 7 tests |
+| **B4.c** | `9fbd15c` | `NotificationsListener.onWorkOrderSlaBreached` — fan-out vers `{assignedToId + ADMIN + DISPATCHER}` dédupliqués. `dispatchOne()` helper partagé entre `assigned` et `slaBreached`. Préférence `workOrder.slaBreached` (defaults : tous canaux ON). 6 tests |
+| **B4.d** | `1a40258` | `SlaBadge` component (3 états : Retard / Bientôt / hidden) sur 3 surfaces (détail BT, table admin, card tech). Backend filter `slaBreached` sur `WorkOrderFilterDto` + bouton toggle UI persisté localStorage |
+
+Stack technique : juste `@nestjs/schedule` (déjà installé pour B2 cleanup). Pas de nouvelle dépendance.
+
+Posture : SLA est **opt-in par type**. Un type sans `slaHours` ne génère jamais de cible, jamais de breach, jamais d'event. Le passage d'un type sans SLA à un type avec SLA n'affecte pas les BT existants (la cible est figée au create).
+
+Validation end-to-end : un type avec `slaHours: 1`, créer un BT, attendre 1h + 15min → push notification automatique sur tech + admins, badge rouge sur les 3 surfaces UI, event visible dans `/audit?eventName=workOrders.workOrder.slaBreached`.
+
 ---
 
 ## État de la suite Jest

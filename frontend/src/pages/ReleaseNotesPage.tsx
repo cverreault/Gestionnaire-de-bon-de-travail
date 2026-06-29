@@ -59,6 +59,41 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.1.4',
+    name: 'SLA + escalades automatiques (B4)',
+    date: 'Juin 2026',
+    entries: [
+      {
+        type: 'new',
+        text: 'Champ « SLA (heures) » sur chaque type de tâche — l\'admin configure le délai max attendu pour chaque catégorie de BT depuis les paramètres',
+      },
+      {
+        type: 'new',
+        text: 'Tout BT créé d\'un type avec SLA reçoit une cible automatique (« doit être terminé avant X »). La cible reste figée une fois créée, même si on reclasse le BT',
+      },
+      {
+        type: 'new',
+        text: 'Tâche automatique toutes les 15 minutes qui détecte les BT en retard SLA encore actifs — marquage en base + envoi automatique des notifications',
+      },
+      {
+        type: 'new',
+        text: 'Quand un BT dépasse son SLA : notification au technicien assigné ET à tous les admins + dispatchers actifs, sur leurs canaux préférés (en-app + email + push selon préférences)',
+      },
+      {
+        type: 'new',
+        text: 'Badge « ⚠ Retard » (rouge) sur les BT en breach + badge « 🕒 N min » (orange) sur les BT qui vont breacher dans l\'heure. Visible partout : détail BT, liste admin, liste technicien',
+      },
+      {
+        type: 'new',
+        text: 'Bouton « ⚠ En retard » dans la liste des BT — filtre instantané pour ne voir que les BT en breach SLA. Persisté dans le navigateur',
+      },
+      {
+        type: 'infra',
+        text: 'Nouvel événement domain workOrders.workOrder.slaBreached qui apparaît dans le journal d\'audit. Drill-down possible depuis la page audit (`/audit?eventName=workOrders.workOrder.slaBreached`)',
+      },
+    ],
+  },
+  {
     version: '2.1.3',
     name: 'Notifications multi-canaux (B1)',
     date: 'Juin 2026',
