@@ -16,6 +16,7 @@ import AppLayout from './components/layouts/AppLayout';
 
 // ── Pages ─────────────────────────────────────────────────────────────────────
 import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
 import DashboardPage from './pages/DashboardPage';
 import WorkOrdersPage from './pages/WorkOrdersPage';
 import WorkOrderDetailPage from './pages/WorkOrderDetailPage';
@@ -113,6 +114,7 @@ export default function App() {
     <Routes>
       {/* ── Public ────────────────────────────────────────────────────── */}
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignupPage />} />
 
       {/* ── Protected ─────────────────────────────────────────────────── */}
       <Route element={<ProtectedRoute />}>
