@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../common/prisma/prisma.module';
 import { PdfGeneratorService } from './application/pdf-generator.service';
 import { ReportsService } from './application/reports.service';
+import { KpiService } from './application/kpi.service';
 import { ReportsController } from './api/reports.controller';
 
 /**
@@ -23,7 +24,7 @@ import { ReportsController } from './api/reports.controller';
 @Module({
   imports: [PrismaModule],
   controllers: [ReportsController],
-  providers: [PdfGeneratorService, ReportsService],
-  exports: [ReportsService, PdfGeneratorService],
+  providers: [PdfGeneratorService, ReportsService, KpiService],
+  exports: [ReportsService, PdfGeneratorService, KpiService],
 })
 export class ReportsModule {}
