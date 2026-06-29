@@ -1,9 +1,12 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import * as webpush from 'web-push';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
-import { SystemConfigService } from '../../../system-configs/application/system-config.service';
-import { SYSTEM_CONFIG_EVENTS } from '../../../system-configs/events/system-config-events';
+import {
+  ISystemConfigResolver,
+  SYSTEM_CONFIG_RESOLVER,
+  SYSTEM_CONFIG_CHANGED_EVENT,
+} from '../../../../common/contracts/system-config-resolver.contract';
 
 /**
  * Web Push channel (B1.3, refactored in SA.2.a).
@@ -45,7 +48,8 @@ export class PushChannelService implements OnModuleInit {
   private enabled = false;
 
   constructor(
-    private readonly configs: SystemConfigService,
+    @Inject(SYSTEM_CONFIG_RESOLVER)
+    private readonly configs: ISystemConfigResolver,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -57,7 +61,7 @@ export class PushChannelService implements OnModuleInit {
    * React to live config updates from the SA UI. Re-loads when the
    * mutated key starts with `vapid.` — other keys don't affect us.
    */
-  @OnEvent(SYSTEM_CONFIG_EVENTS.CHANGED, { async: true, promisify: true })
+  @OnEvent(SYSTEM_CONFIG_CHANGED_EVENT, { async: true, promisify: true })
   async onConfigChanged(event: { aggregateId: string }) {
     if (event.aggregateId.startsWith('vapid.')) {
       this.logger.log(`🔄 VAPID config changed (${event.aggregateId}) — reloading`);

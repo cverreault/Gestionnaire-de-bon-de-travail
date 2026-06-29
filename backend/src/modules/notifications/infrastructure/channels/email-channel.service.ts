@@ -1,6 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
-import { SystemConfigService } from '../../../system-configs/application/system-config.service';
+import {
+  ISystemConfigResolver,
+  SYSTEM_CONFIG_RESOLVER,
+} from '../../../../common/contracts/system-config-resolver.contract';
 
 /**
  * Email delivery channel for notifications (B1.1.c, refactored in SA.2.a).
@@ -40,7 +43,10 @@ export interface SendEmailInput {
 export class EmailChannelService {
   private readonly logger = new Logger(EmailChannelService.name);
 
-  constructor(private readonly configs: SystemConfigService) {}
+  constructor(
+    @Inject(SYSTEM_CONFIG_RESOLVER)
+    private readonly configs: ISystemConfigResolver,
+  ) {}
 
   /** Returns true on success, false on failure. Never throws. */
   async send(input: SendEmailInput): Promise<boolean> {
