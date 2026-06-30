@@ -156,9 +156,11 @@ export default function App() {
     return () => mq.removeEventListener('change', apply);
   }, [themeMode]);
 
-  // Roles that access the admin/dispatcher UI
+  // Roles that access the admin/dispatcher UI (SUPER_ADMIN inherits)
   const isAdminOrDispatcher =
-    user?.role === Role.ADMIN || user?.role === Role.DISPATCHER;
+    user?.role === Role.ADMIN ||
+    user?.role === Role.DISPATCHER ||
+    user?.role === Role.SUPER_ADMIN;
 
   return (
     <Routes>

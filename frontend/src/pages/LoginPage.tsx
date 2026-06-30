@@ -20,9 +20,15 @@ export default function LoginPage() {
     formState: { errors },
   } = useForm<LoginCredentials>();
 
-  // Already authenticated → redirect
+  // Already authenticated → redirect to the right home for the role.
+  // SUPER_ADMIN / ADMIN / DISPATCHER all get the desktop dashboard ;
+  // TECHNICIAN goes straight to their work-orders list.
   if (isAuthenticated && user) {
-    return <Navigate to={user.role === 'ADMIN' ? '/dashboard' : '/mes-bons'} replace />;
+    const goesToDashboard =
+      user.role === 'SUPER_ADMIN' ||
+      user.role === 'ADMIN' ||
+      user.role === 'DISPATCHER';
+    return <Navigate to={goesToDashboard ? '/dashboard' : '/mes-bons'} replace />;
   }
 
   const onSubmit = (data: LoginCredentials) => login(data);
