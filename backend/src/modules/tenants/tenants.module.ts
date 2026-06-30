@@ -5,9 +5,11 @@ import { PrismaModule } from '../../common/prisma/prisma.module';
 import { QuotaService } from './application/quota.service';
 import { QuotaResetService } from './application/quota-reset.service';
 import { SignupService } from './application/signup.service';
+import { SuperAdminTenantService } from './application/super-admin-tenant.service';
 import { TenantBootstrapService } from './application/tenant-bootstrap.service';
 import { SignupController } from './api/signup.controller';
 import { SuperAdminTenantsController } from './api/super-admin-tenants.controller';
+import { TenantBrandingController } from './api/tenant-branding.controller';
 import { ImpersonateController } from './api/impersonate.controller';
 import { SuperAdminStatsController } from './api/super-admin-stats.controller';
 import { SuperAdminAuditController } from './api/super-admin-audit.controller';
@@ -45,6 +47,7 @@ import { QUOTA_SERVICE } from '../../common/contracts/quota.contract';
   controllers: [
     SignupController,
     SuperAdminTenantsController,
+    TenantBrandingController,
     ImpersonateController,
     SuperAdminStatsController,
     SuperAdminAuditController,
@@ -55,6 +58,7 @@ import { QUOTA_SERVICE } from '../../common/contracts/quota.contract';
     QuotaService,
     QuotaResetService,
     SignupService,
+    SuperAdminTenantService,
     TenantBootstrapService,
     { provide: QUOTA_SERVICE, useExisting: QuotaService },
   ],

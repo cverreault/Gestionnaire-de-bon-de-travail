@@ -12,6 +12,11 @@ RUN npm ci
 # Copier les sources
 COPY . .
 
+# Variables VITE_* injectées au build (Vite les fige dans le bundle).
+# VITE_BASE_DOMAIN sert à l'aperçu des sous-domaines tenants (slug.<domaine>).
+ARG VITE_BASE_DOMAIN=taskmgr.local
+ENV VITE_BASE_DOMAIN=$VITE_BASE_DOMAIN
+
 # Build Vite → dist/
 RUN npm run build
 

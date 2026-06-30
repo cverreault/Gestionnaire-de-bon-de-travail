@@ -102,6 +102,10 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       target: production
+      args:
+        # Base domain for tenant subdomain previews (slug.<domaine>). Set
+        # VITE_BASE_DOMAIN in .env to your real domain before building.
+        VITE_BASE_DOMAIN: ${VITE_BASE_DOMAIN:-taskmgr.local}
     container_name: taskmgr_frontend
     restart: unless-stopped
     ports:

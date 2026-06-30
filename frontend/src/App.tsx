@@ -35,6 +35,7 @@ import BackupPage from './pages/BackupPage';
 import AuditPage from './pages/AuditPage';
 import SuperAdminPage from './pages/SuperAdminPage';
 import SuperAdminTenantsPage from './pages/SuperAdminTenantsPage';
+import SuperAdminCreateTenantPage from './pages/SuperAdminCreateTenantPage';
 import SuperAdminStatsPage from './pages/SuperAdminStatsPage';
 import SuperAdminAuditPage from './pages/SuperAdminAuditPage';
 import SuperAdminUsersPage from './pages/SuperAdminUsersPage';
@@ -216,6 +217,7 @@ export default function App() {
           <Route element={<SuperAdminRoute />}>
             <Route path="/super-admin" element={<SuperAdminPage />} />
             <Route path="/super-admin/tenants" element={<SuperAdminTenantsPage />} />
+            <Route path="/super-admin/tenants/nouveau" element={<SuperAdminCreateTenantPage />} />
             <Route path="/super-admin/stats" element={<SuperAdminStatsPage />} />
             <Route path="/super-admin/audit" element={<SuperAdminAuditPage />} />
             <Route path="/super-admin/users" element={<SuperAdminUsersPage />} />

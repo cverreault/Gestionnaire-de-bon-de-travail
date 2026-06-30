@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
+import { getBranding } from '../../services/super-admin.service';
 import { useAuthStore } from '../../context/auth.store';
 import { useLogout } from '../../hooks/useAuth';
 import { useTechnicians } from '../../hooks/useUsers';
@@ -84,6 +86,15 @@ export default function AdminSidebar() {
   const isAdmin = user?.role === Role.ADMIN || user?.role === Role.SUPER_ADMIN;
   const isSuperAdmin = user?.role === Role.SUPER_ADMIN;
 
+  // Per-tenant branding resolved from the subdomain (B7.5). Generic TaskMgr
+  // on the apex / operator subdomain (SUPER_ADMIN console).
+  const { data: branding } = useQuery({
+    queryKey: ['branding'],
+    queryFn: getBranding,
+    staleTime: Infinity,
+    retry: false,
+  });
+
   const sharedNavItems = [
     { to: '/dashboard',        label: `📊 ${t('nav:dashboard')}` },
     { to: '/bons-de-travail',  label: `📋 ${t('nav:workOrders')}` },
@@ -103,6 +114,7 @@ export default function AdminSidebar() {
   const superAdminNavItems = [
     { to: '/super-admin',          label: `👑 ${t('nav:saConfig', { defaultValue: 'Configuration' })}` },
     { to: '/super-admin/tenants',  label: `🌍 ${t('nav:saTenants', { defaultValue: 'Tenants' })}` },
+    { to: '/super-admin/tenants/nouveau', label: `➕ ${t('nav:saTenantCreate', { defaultValue: 'Créer un tenant' })}` },
     { to: '/super-admin/stats',    label: `📊 ${t('nav:saStats', { defaultValue: 'Stats globales' })}` },
     { to: '/super-admin/audit',    label: `📜 ${t('nav:saAudit', { defaultValue: 'Audit cross-tenant' })}` },
     { to: '/super-admin/users',    label: `🔍 ${t('nav:saUsers', { defaultValue: 'Rechercher utilisateur' })}` },
@@ -168,8 +180,19 @@ export default function AdminSidebar() {
   return (
     <>
       <aside style={sidebarStyle}>
-        {/* Logo */}
-        <div style={logoStyle}>🔧 TaskMgr</div>
+        {/* Logo — per-tenant when on a tenant subdomain */}
+        <div style={{ ...logoStyle, display: 'flex', alignItems: 'center', gap: 8 }}>
+          {branding?.logoUrl ? (
+            <img
+              src={branding.logoUrl}
+              alt={branding.name}
+              style={{ maxHeight: 28, maxWidth: 120, objectFit: 'contain' }}
+            />
+          ) : (
+            <span>🔧</span>
+          )}
+          <span>{branding?.name ?? 'TaskMgr'}</span>
+        </div>
 
         {/* Main navigation */}
         <nav>

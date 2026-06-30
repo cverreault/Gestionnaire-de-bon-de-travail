@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { theme, cardStyles, layoutStyles, buttonStyles, formStyles } from '../theme';
 import {
   listTenants,
   updateTenant,
+  deleteTenant,
   impersonate,
   type TenantRow,
   type TenantPlan,
@@ -25,6 +27,7 @@ const PLANS: TenantPlan[] = ['FREE', 'PRO', 'ENTERPRISE'];
 export default function SuperAdminTenantsPage() {
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<TenantRow | null>(null);
+  const [deleting, setDeleting] = useState<TenantRow | null>(null);
 
   const { data, isFetching } = useQuery({
     queryKey: ['superAdmin', 'tenants', page],
@@ -33,12 +36,17 @@ export default function SuperAdminTenantsPage() {
 
   return (
     <div style={layoutStyles.page}>
-      <header style={{ marginBottom: 16 }}>
-        <h1 style={{ margin: 0 }}>🌍 Gestion des tenants</h1>
-        <p style={{ color: theme.colors.textMuted, margin: '4px 0 0', fontSize: 13 }}>
-          Liste de tous les espaces de travail. Clique « Entrer » pour
-          accéder à un tenant en tant que son 1er ADMIN.
-        </p>
+      <header style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+        <div>
+          <h1 style={{ margin: 0 }}>🌍 Gestion des tenants</h1>
+          <p style={{ color: theme.colors.textMuted, margin: '4px 0 0', fontSize: 13 }}>
+            Liste de tous les espaces de travail. Clique « Entrer » pour
+            accéder à un tenant en tant que son 1er ADMIN.
+          </p>
+        </div>
+        <Link to="/super-admin/tenants/nouveau" style={{ textDecoration: 'none' }}>
+          <button style={buttonStyles.primary}>➕ Créer un tenant</button>
+        </Link>
       </header>
 
       {isFetching && <p>Chargement…</p>}
@@ -63,7 +71,12 @@ export default function SuperAdminTenantsPage() {
             </thead>
             <tbody>
               {data.data.map((t) => (
-                <TenantRowDisplay key={t.id} tenant={t} onEdit={() => setEditing(t)} />
+                <TenantRowDisplay
+                  key={t.id}
+                  tenant={t}
+                  onEdit={() => setEditing(t)}
+                  onDelete={() => setDeleting(t)}
+                />
               ))}
             </tbody>
           </table>
@@ -83,6 +96,7 @@ export default function SuperAdminTenantsPage() {
       )}
 
       {editing && <EditModal tenant={editing} onClose={() => setEditing(null)} />}
+      {deleting && <DeleteModal tenant={deleting} onClose={() => setDeleting(null)} />}
     </div>
   );
 }
@@ -90,11 +104,20 @@ export default function SuperAdminTenantsPage() {
 function TenantRowDisplay({
   tenant,
   onEdit,
+  onDelete,
 }: {
   tenant: TenantRow;
   onEdit: () => void;
+  onDelete: () => void;
 }) {
+  const qc = useQueryClient();
   const startImpersonation = useAuthStore((s) => s.startImpersonation);
+
+  const toggleActive = useMutation({
+    mutationFn: () => updateTenant(tenant.id, { isActive: !tenant.isActive }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['superAdmin', 'tenants'] }),
+  });
+
   const enter = useMutation({
     mutationFn: () => impersonate({ tenantId: tenant.id }),
     onSuccess: (resp) => {
@@ -157,20 +180,49 @@ function TenantRowDisplay({
         {(tenant.currentStorageBytes / 1024 / 1024).toFixed(0)} / {tenant.maxStorageMb} MB
       </td>
       <td style={td}>
-        <button
-          onClick={onEdit}
-          style={{ ...buttonStyles.secondary, fontSize: 11, padding: '3px 6px', marginRight: 4 }}
-        >
-          ✏️
-        </button>
-        <button
-          onClick={() => enter.mutate()}
-          disabled={!tenant.isActive || enter.isPending}
-          title={!tenant.isActive ? 'Tenant suspendu' : 'Entrer en tant qu\'ADMIN'}
-          style={{ ...buttonStyles.primary, fontSize: 11, padding: '3px 6px' }}
-        >
-          {enter.isPending ? '…' : 'Entrer 🎭'}
-        </button>
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+          <button
+            onClick={onEdit}
+            title="Éditer"
+            style={{ ...buttonStyles.secondary, fontSize: 11, padding: '3px 6px' }}
+          >
+            ✏️
+          </button>
+          <button
+            onClick={() => toggleActive.mutate()}
+            disabled={toggleActive.isPending}
+            title={tenant.isActive ? 'Suspendre (rend inaccessible)' : 'Réactiver'}
+            style={{
+              ...buttonStyles.secondary,
+              fontSize: 11,
+              padding: '3px 6px',
+              color: tenant.isActive ? theme.colors.warning : theme.colors.success,
+            }}
+          >
+            {toggleActive.isPending ? '…' : tenant.isActive ? '⏸ Suspendre' : '▶ Réactiver'}
+          </button>
+          <button
+            onClick={() => enter.mutate()}
+            disabled={!tenant.isActive || enter.isPending}
+            title={!tenant.isActive ? 'Tenant suspendu' : 'Entrer en tant qu\'ADMIN'}
+            style={{ ...buttonStyles.primary, fontSize: 11, padding: '3px 6px' }}
+          >
+            {enter.isPending ? '…' : 'Entrer 🎭'}
+          </button>
+          <button
+            onClick={onDelete}
+            title="Supprimer définitivement"
+            style={{
+              ...buttonStyles.secondary,
+              fontSize: 11,
+              padding: '3px 6px',
+              color: theme.colors.danger,
+              borderColor: theme.colors.danger,
+            }}
+          >
+            🗑
+          </button>
+        </div>
       </td>
     </tr>
   );
@@ -279,6 +331,107 @@ function EditModal({
             Échec : vérifie les valeurs et réessaie.
           </p>
         )}
+      </div>
+    </div>
+  );
+}
+
+function DeleteModal({
+  tenant,
+  onClose,
+}: {
+  tenant: TenantRow;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const [confirmSlug, setConfirmSlug] = useState('');
+  const matches = confirmSlug === tenant.slug;
+
+  const del = useMutation({
+    mutationFn: () => deleteTenant(tenant.id, confirmSlug),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['superAdmin', 'tenants'] });
+      onClose();
+    },
+  });
+
+  const apiError =
+    (del.error as { response?: { data?: { message?: string | string[] } } } | undefined)
+      ?.response?.data?.message;
+  const errorText = Array.isArray(apiError) ? apiError.join(', ') : apiError;
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.45)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+        zIndex: 100,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          ...cardStyles.card,
+          padding: 24,
+          maxWidth: 480,
+          width: '100%',
+          borderTop: `3px solid ${theme.colors.danger}`,
+        }}
+      >
+        <h2 style={{ margin: '0 0 8px', color: theme.colors.danger }}>
+          🗑 Supprimer définitivement
+        </h2>
+        <p style={{ fontSize: 13, color: theme.colors.text, margin: '0 0 12px' }}>
+          Cette action est <strong>irréversible</strong>. Toutes les données de{' '}
+          <strong>{tenant.name}</strong> seront effacées : utilisateurs, bons de
+          travail, clients, pièces jointes, configuration — tout.
+        </p>
+        <p style={{ fontSize: 13, color: theme.colors.textMuted, margin: '0 0 8px' }}>
+          Pour confirmer, tapez le slug{' '}
+          <code style={{ color: theme.colors.danger }}>{tenant.slug}</code> :
+        </p>
+        <input
+          value={confirmSlug}
+          onChange={(e) => setConfirmSlug(e.target.value)}
+          placeholder={tenant.slug}
+          autoFocus
+          style={{
+            ...formStyles.input,
+            borderColor:
+              confirmSlug && !matches ? theme.colors.danger : theme.colors.border,
+          }}
+        />
+
+        {errorText && (
+          <p style={{ color: theme.colors.danger, marginTop: 12, fontSize: 13 }}>
+            Échec : {errorText}
+          </p>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+          <button onClick={onClose} style={buttonStyles.secondary}>
+            Annuler
+          </button>
+          <button
+            onClick={() => del.mutate()}
+            disabled={!matches || del.isPending}
+            style={{
+              ...buttonStyles.primary,
+              background: theme.colors.danger,
+              borderColor: theme.colors.danger,
+              opacity: !matches || del.isPending ? 0.6 : 1,
+              cursor: !matches || del.isPending ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {del.isPending ? 'Suppression…' : 'Supprimer définitivement'}
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -96,6 +96,11 @@ model Tenant {
 
   ownerEmail String? @map("owner_email")
 
+  /// Branding (B7.5) — MinIO object key of the tenant logo (e.g.
+  /// `tenants/<id>/logo.png`). Null = no custom logo, the UI falls back
+  /// to the generic TaskMgr mark. The presigned URL is resolved on read.
+  logoStorageKey String? @map("logo_storage_key")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

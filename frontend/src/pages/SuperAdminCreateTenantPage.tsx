@@ -1,0 +1,330 @@
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { theme, cardStyles, layoutStyles, buttonStyles, formStyles } from '../theme';
+import {
+  createTenant,
+  uploadTenantLogo,
+  type CreateTenantInput,
+  type TenantPlan,
+} from '../services/super-admin.service';
+
+const PLANS: TenantPlan[] = ['FREE', 'PRO', 'ENTERPRISE'];
+
+/** Base domain for the subdomain preview — configurable per deployment. */
+const BASE_DOMAIN = import.meta.env.VITE_BASE_DOMAIN || 'taskmgr.local';
+
+const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,18}[a-z0-9]$/;
+
+/**
+ * SA create-tenant page (B7.5).
+ *
+ * One step provisions the whole workspace: tenant identity + subdomain
+ * (= slug) + optional plan/quota overrides + optional logo + the first
+ * ADMIN account. The backend wraps tenant + admin + catalog seed in a
+ * single transaction; the logo (if any) is uploaded right after.
+ */
+export default function SuperAdminCreateTenantPage() {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+
+  const [slug, setSlug] = useState('');
+  const [name, setName] = useState('');
+  const [plan, setPlan] = useState<TenantPlan>('FREE');
+  const [quotas, setQuotas] = useState<{
+    maxUsers?: number;
+    maxWorkOrdersPerMonth?: number;
+    maxStorageMb?: number;
+    maxClients?: number;
+  }>({});
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [admin, setAdmin] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+  });
+
+  const logoPreview = useMemo(
+    () => (logoFile ? URL.createObjectURL(logoFile) : null),
+    [logoFile],
+  );
+
+  const slugValid = SLUG_RE.test(slug);
+  const canSubmit =
+    slugValid &&
+    name.trim().length >= 2 &&
+    admin.firstName.trim() &&
+    admin.lastName.trim() &&
+    /^\S+@\S+\.\S+$/.test(admin.email) &&
+    admin.password.length >= 8;
+
+  const create = useMutation({
+    mutationFn: async () => {
+      const input: CreateTenantInput = {
+        slug,
+        name: name.trim(),
+        plan,
+        ...quotas,
+        admin: {
+          email: admin.email.trim(),
+          password: admin.password,
+          firstName: admin.firstName.trim(),
+          lastName: admin.lastName.trim(),
+        },
+      };
+      const res = await createTenant(input);
+      if (logoFile) {
+        // Best-effort — the tenant already exists; a logo failure must not
+        // make the whole creation look like it failed.
+        await uploadTenantLogo(res.tenant.id, logoFile).catch(() => undefined);
+      }
+      return res;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['superAdmin', 'tenants'] });
+      navigate('/super-admin/tenants');
+    },
+  });
+
+  const apiError =
+    (create.error as { response?: { data?: { message?: string | string[] } } } | undefined)
+      ?.response?.data?.message;
+  const errorText = Array.isArray(apiError) ? apiError.join(', ') : apiError;
+
+  return (
+    <div style={layoutStyles.page}>
+      <header style={{ marginBottom: 16 }}>
+        <h1 style={{ margin: 0 }}>➕ Créer un tenant</h1>
+        <p style={{ color: theme.colors.textMuted, margin: '4px 0 0', fontSize: 13 }}>
+          Provisionne un espace de travail complet : sous-domaine, plan, logo et
+          premier administrateur.
+        </p>
+      </header>
+
+      <div style={{ ...cardStyles.card, padding: 24, maxWidth: 640 }}>
+        {/* ── Workspace ─────────────────────────────────────────── */}
+        <SectionTitle>Espace de travail</SectionTitle>
+        <Stack>
+          <Field label="Nom de l'organisation">
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Acme Corp"
+              style={formStyles.input}
+            />
+          </Field>
+
+          <Field label="Sous-domaine (slug)">
+            <input
+              value={slug}
+              onChange={(e) => setSlug(e.target.value.toLowerCase().trim())}
+              placeholder="acme"
+              style={{
+                ...formStyles.input,
+                borderColor:
+                  slug && !slugValid ? theme.colors.danger : theme.colors.border,
+              }}
+            />
+            <span style={{ fontSize: 12, color: theme.colors.textMuted }}>
+              Adresse :{' '}
+              <code style={{ color: theme.colors.primary }}>
+                {slug || 'votre-slug'}.{BASE_DOMAIN}
+              </code>
+            </span>
+            {slug && !slugValid && (
+              <span style={{ fontSize: 12, color: theme.colors.danger }}>
+                3–20 caractères, minuscules/chiffres/tirets, début et fin
+                alphanumériques.
+              </span>
+            )}
+          </Field>
+
+          <Field label="Plan">
+            <select
+              value={plan}
+              onChange={(e) => setPlan(e.target.value as TenantPlan)}
+              style={formStyles.input}
+            >
+              {PLANS.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </Stack>
+
+        {/* ── Quotas (optional) ─────────────────────────────────── */}
+        <SectionTitle>Quotas (optionnel — sinon valeurs du plan)</SectionTitle>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <NumField
+            label="Max users"
+            value={quotas.maxUsers}
+            onChange={(v) => setQuotas({ ...quotas, maxUsers: v })}
+          />
+          <NumField
+            label="Max BTs/mois"
+            value={quotas.maxWorkOrdersPerMonth}
+            onChange={(v) => setQuotas({ ...quotas, maxWorkOrdersPerMonth: v })}
+          />
+          <NumField
+            label="Max stockage (MB)"
+            value={quotas.maxStorageMb}
+            onChange={(v) => setQuotas({ ...quotas, maxStorageMb: v })}
+          />
+          <NumField
+            label="Max clients"
+            value={quotas.maxClients}
+            onChange={(v) => setQuotas({ ...quotas, maxClients: v })}
+          />
+        </div>
+
+        {/* ── Logo (optional) ───────────────────────────────────── */}
+        <SectionTitle>Logo (optionnel — PNG/JPEG/WEBP/SVG, ≤ 2 Mo)</SectionTitle>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          {logoPreview && (
+            <img
+              src={logoPreview}
+              alt="Aperçu du logo"
+              style={{
+                width: 56,
+                height: 56,
+                objectFit: 'contain',
+                borderRadius: 8,
+                border: `1px solid ${theme.colors.border}`,
+                background: theme.colors.surfaceAlt,
+              }}
+            />
+          )}
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
+            style={{ fontSize: 13 }}
+          />
+        </div>
+
+        {/* ── First admin ───────────────────────────────────────── */}
+        <SectionTitle>Premier administrateur</SectionTitle>
+        <Stack>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <Field label="Prénom">
+              <input
+                value={admin.firstName}
+                onChange={(e) => setAdmin({ ...admin, firstName: e.target.value })}
+                style={formStyles.input}
+              />
+            </Field>
+            <Field label="Nom">
+              <input
+                value={admin.lastName}
+                onChange={(e) => setAdmin({ ...admin, lastName: e.target.value })}
+                style={formStyles.input}
+              />
+            </Field>
+          </div>
+          <Field label="Email">
+            <input
+              type="email"
+              value={admin.email}
+              onChange={(e) => setAdmin({ ...admin, email: e.target.value })}
+              placeholder="admin@acme.com"
+              style={formStyles.input}
+            />
+          </Field>
+          <Field label="Mot de passe (≥ 8 caractères)">
+            <input
+              type="password"
+              value={admin.password}
+              onChange={(e) => setAdmin({ ...admin, password: e.target.value })}
+              placeholder="••••••••"
+              style={formStyles.input}
+            />
+          </Field>
+        </Stack>
+
+        {errorText && (
+          <p style={{ color: theme.colors.danger, marginTop: 16, fontSize: 13 }}>
+            Échec : {errorText}
+          </p>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}>
+          <button onClick={() => navigate('/super-admin/tenants')} style={buttonStyles.secondary}>
+            Annuler
+          </button>
+          <button
+            onClick={() => create.mutate()}
+            disabled={!canSubmit || create.isPending}
+            style={{
+              ...buttonStyles.primary,
+              opacity: !canSubmit || create.isPending ? 0.6 : 1,
+              cursor: !canSubmit || create.isPending ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {create.isPending ? 'Création…' : 'Créer le tenant'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h3
+      style={{
+        margin: '24px 0 12px',
+        fontSize: 13,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        color: theme.colors.textMuted,
+        borderBottom: `1px solid ${theme.colors.border}`,
+        paddingBottom: 6,
+      }}
+    >
+      {children}
+    </h3>
+  );
+}
+
+function Stack({ children }: { children: React.ReactNode }) {
+  return <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>{children}</div>;
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <span style={{ fontSize: 11, color: theme.colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+        {label}
+      </span>
+      {children}
+    </label>
+  );
+}
+
+function NumField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number | undefined;
+  onChange: (v: number | undefined) => void;
+}) {
+  return (
+    <Field label={label}>
+      <input
+        type="number"
+        min={1}
+        value={value ?? ''}
+        onChange={(e) => {
+          const v = e.target.value;
+          onChange(v === '' ? undefined : Number.parseInt(v, 10) || undefined);
+        }}
+        style={formStyles.input}
+      />
+    </Field>
+  );
+}

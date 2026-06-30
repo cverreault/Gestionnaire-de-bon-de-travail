@@ -1,24 +1,70 @@
 import {
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   NotFoundException,
   Param,
   Patch,
+  Post,
   Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import {
   IsBoolean,
+  IsEmail,
   IsEnum,
   IsOptional,
   IsString,
+  MinLength,
 } from 'class-validator';
 import { Role } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { PrismaService } from '../../../common/prisma/prisma.service';
+import { QuotaType } from '../../../common/contracts/quota.contract';
 import { Roles } from '../../../common/decorators/roles.decorator';
+import { QuotaService } from '../application/quota.service';
+
+/** Roles the SA may assign to a tenant user (never SUPER_ADMIN). */
+const ASSIGNABLE_ROLES = [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN];
+
+class CreateUserBySuperAdminDto {
+  @IsString({ message: i18nValidationMessage('validation.IS_STRING') })
+  tenantId!: string;
+
+  @IsEmail({}, { message: i18nValidationMessage('validation.IS_EMAIL') })
+  email!: string;
+
+  @IsString({ message: i18nValidationMessage('validation.IS_STRING') })
+  @MinLength(8, { message: i18nValidationMessage('validation.MIN_LENGTH') })
+  password!: string;
+
+  @IsString({ message: i18nValidationMessage('validation.IS_STRING') })
+  @MinLength(1, { message: i18nValidationMessage('validation.MIN_LENGTH') })
+  firstName!: string;
+
+  @IsString({ message: i18nValidationMessage('validation.IS_STRING') })
+  @MinLength(1, { message: i18nValidationMessage('validation.MIN_LENGTH') })
+  lastName!: string;
+
+  // Anti-escalation: SUPER_ADMIN is excluded from the assignable set.
+  @IsEnum(ASSIGNABLE_ROLES, {
+    message: i18nValidationMessage('validation.IS_ENUM'),
+  })
+  role!: Role;
+
+  @IsOptional()
+  @IsString({ message: i18nValidationMessage('validation.IS_STRING') })
+  phone?: string;
+
+  @IsOptional()
+  @IsBoolean({ message: i18nValidationMessage('validation.IS_BOOLEAN') })
+  isActive?: boolean;
+}
 
 class UpdateUserBySuperAdminDto {
   @IsOptional()
@@ -60,7 +106,77 @@ class UpdateUserBySuperAdminDto {
 @Roles(Role.SUPER_ADMIN)
 @Controller('super-admin/all-users')
 export class SuperAdminAllUsersController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly quota: QuotaService,
+  ) {}
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Créer un utilisateur dans un tenant (SA) — respecte le quota',
+  })
+  async create(@Body() dto: CreateUserBySuperAdminDto) {
+    // Target tenant must exist and be active.
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: dto.tenantId },
+      select: { id: true, isActive: true },
+    });
+    if (!tenant) {
+      throw new NotFoundException(`Tenant ${dto.tenantId} introuvable`);
+    }
+    if (!tenant.isActive) {
+      throw new BadRequestException(
+        'Tenant désactivé — réactivez-le avant d\'y créer un utilisateur',
+      );
+    }
+
+    // Email is unique per tenant — friendly pre-check before consuming quota.
+    const clash = await this.prisma.user.findFirst({
+      where: { tenantId: dto.tenantId, email: dto.email },
+      select: { id: true },
+    });
+    if (clash) {
+      throw new ConflictException(
+        `L'email « ${dto.email} » existe déjà dans ce tenant.`,
+      );
+    }
+
+    // Atomic check + consume of the USERS quota. Throws 403 if the ceiling
+    // is reached — the SA can raise maxUsers first.
+    await this.quota.checkAndConsume(QuotaType.USERS, dto.tenantId);
+
+    try {
+      const passwordHash = await bcrypt.hash(dto.password, 10);
+      return await this.prisma.user.create({
+        data: {
+          tenantId: dto.tenantId,
+          email: dto.email,
+          password: passwordHash,
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          role: dto.role,
+          phone: dto.phone ?? null,
+          isActive: dto.isActive ?? true,
+        },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          isActive: true,
+          phone: true,
+          tenantId: true,
+        },
+      });
+    } catch (err) {
+      // Creation failed after we already consumed a slot — give it back so
+      // the counter doesn't drift (e.g. the unique index lost a race).
+      await this.quota.release(QuotaType.USERS, dto.tenantId).catch(() => undefined);
+      throw err;
+    }
+  }
 
   @Get()
   @ApiOperation({ summary: 'Liste paginée de tous les users (tous tenants confondus)' })
