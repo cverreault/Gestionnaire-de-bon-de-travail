@@ -51,6 +51,17 @@ api.interceptors.response.use(
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
     if (error.response?.status === 401 && !originalRequest._retry) {
+      // Impersonation fallback: the impersonation access token has no refresh
+      // token, so a 401 here means it simply expired. Instead of logging the
+      // operator out, restore the SA session and drop them on the tenants list
+      // so they can re-enter (this one, or another) in one click.
+      const authState = useAuthStore.getState();
+      if (authState.impersonation.active) {
+        authState.stopImpersonation();
+        window.location.href = '/super-admin/tenants';
+        return Promise.reject(error);
+      }
+
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
