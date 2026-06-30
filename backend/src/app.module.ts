@@ -9,6 +9,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { loggerConfig } from './common/logger/logger.config';
 import * as path from 'path';
 import { PrismaModule } from './common/prisma/prisma.module';
+import { StorageModule } from './common/storage/storage.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { UserScopedThrottlerGuard } from './common/guards/user-scoped-throttler.guard';
@@ -97,6 +98,7 @@ import { TenantsModule } from './modules/tenants/tenants.module';
 
     // ── Core ───────────────────────────────────────────────────────────────
     PrismaModule,
+    StorageModule,
     RequestContextModule,
     TenantsModule,
 

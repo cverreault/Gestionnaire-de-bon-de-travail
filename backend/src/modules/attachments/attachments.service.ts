@@ -8,7 +8,7 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import * as path from 'path';
 import { PrismaService } from '../../common/prisma/prisma.service';
-import { MinioService } from './minio.service';
+import { MinioService } from '../../common/storage/minio.service';
 import { Role } from '@prisma/client';
 
 /** Allowed MIME types grouped by category */
