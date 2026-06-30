@@ -41,6 +41,7 @@ import { ImpersonateController } from '../../modules/tenants/api/impersonate.con
 import { SuperAdminStatsController } from '../../modules/tenants/api/super-admin-stats.controller';
 import { SuperAdminAuditController } from '../../modules/tenants/api/super-admin-audit.controller';
 import { SuperAdminUsersController } from '../../modules/tenants/api/super-admin-users.controller';
+import { SuperAdminAllUsersController } from '../../modules/tenants/api/super-admin-all-users.controller';
 import { LocationsController } from '../../modules/locations/api/locations.controller';
 
 // ─── Matrix rows ─────────────────────────────────────────────────────────────
@@ -204,6 +205,13 @@ const ALL_ROWS: { name: string; rows: MatrixRow[] }[] = [
     name: 'SuperAdminUsersController',
     rows: [
       { controller: SuperAdminUsersController, method: 'search', expectedRoles: [Role.SUPER_ADMIN], note: 'GET /super-admin/users' },
+    ],
+  },
+  {
+    name: 'SuperAdminAllUsersController',
+    rows: [
+      { controller: SuperAdminAllUsersController, method: 'list',   expectedRoles: [Role.SUPER_ADMIN], note: 'GET /super-admin/all-users' },
+      { controller: SuperAdminAllUsersController, method: 'update', expectedRoles: [Role.SUPER_ADMIN], note: 'PATCH /super-admin/all-users/:id' },
     ],
   },
 ];

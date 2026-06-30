@@ -106,6 +106,7 @@ export default function AdminSidebar() {
     { to: '/super-admin/stats',    label: `📊 ${t('nav:saStats', { defaultValue: 'Stats globales' })}` },
     { to: '/super-admin/audit',    label: `📜 ${t('nav:saAudit', { defaultValue: 'Audit cross-tenant' })}` },
     { to: '/super-admin/users',    label: `🔍 ${t('nav:saUsers', { defaultValue: 'Rechercher utilisateur' })}` },
+    { to: '/super-admin/all-users', label: `👥 ${t('nav:saAllUsers', { defaultValue: 'Tous les utilisateurs' })}` },
   ];
 
   // ── Pending dispatch state (modal) ───────────────────────────────────────

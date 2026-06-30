@@ -135,6 +135,55 @@ export async function searchUsers(
   return data;
 }
 
+// ─── All-users management (B7 follow-up) ────────────────────────────
+
+export interface AllUsersRow {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: 'SUPER_ADMIN' | 'ADMIN' | 'DISPATCHER' | 'TECHNICIAN';
+  isActive: boolean;
+  createdAt: string;
+  tenant: { id: string; slug: string; name: string };
+}
+
+export interface AllUsersListResponse {
+  data: AllUsersRow[];
+  pagination: { page: number; limit: number; total: number };
+}
+
+export interface AllUsersQuery {
+  page?: number;
+  limit?: number;
+  email?: string;
+  tenantId?: string;
+}
+
+export async function listAllUsers(q: AllUsersQuery): Promise<AllUsersListResponse> {
+  const { data } = await api.get<AllUsersListResponse>('/super-admin/all-users', {
+    params: q,
+  });
+  return data;
+}
+
+export interface UpdateUserBySuperAdminInput {
+  tenantId?: string;
+  role?: 'ADMIN' | 'DISPATCHER' | 'TECHNICIAN';
+  isActive?: boolean;
+}
+
+export async function updateUserBySuperAdmin(
+  id: string,
+  patch: UpdateUserBySuperAdminInput,
+): Promise<AllUsersRow> {
+  const { data } = await api.patch<AllUsersRow>(
+    `/super-admin/all-users/${id}`,
+    patch,
+  );
+  return data;
+}
+
 // ─── Impersonate (B6.11 + B7) ───────────────────────────────────────
 
 export interface ImpersonateResponse {

@@ -12,6 +12,7 @@ import { ImpersonateController } from './api/impersonate.controller';
 import { SuperAdminStatsController } from './api/super-admin-stats.controller';
 import { SuperAdminAuditController } from './api/super-admin-audit.controller';
 import { SuperAdminUsersController } from './api/super-admin-users.controller';
+import { SuperAdminAllUsersController } from './api/super-admin-all-users.controller';
 import { QUOTA_SERVICE } from '../../common/contracts/quota.contract';
 
 /**
@@ -48,6 +49,7 @@ import { QUOTA_SERVICE } from '../../common/contracts/quota.contract';
     SuperAdminStatsController,
     SuperAdminAuditController,
     SuperAdminUsersController,
+    SuperAdminAllUsersController,
   ],
   providers: [
     QuotaService,

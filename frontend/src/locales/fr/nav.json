@@ -18,6 +18,7 @@
   "saStats": "Stats globales",
   "saAudit": "Audit cross-tenant",
   "saUsers": "Rechercher utilisateur",
+  "saAllUsers": "Tous les utilisateurs",
   "profile": "Mon profil",
   "logout": "Déconnexion",
   "releaseNotes": "Notes de version",

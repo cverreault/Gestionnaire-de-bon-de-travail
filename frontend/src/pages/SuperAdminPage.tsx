@@ -1,359 +1,250 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
 import {
-  listConfigs,
   getConfigValue,
+  listConfigs,
   upsertConfig,
   deleteConfig,
   type ConfigListResponse,
   type ConfigValueResponse,
 } from '../services/system-configs.service';
 import { theme, cardStyles, layoutStyles, formStyles, buttonStyles } from '../theme';
-import { formatDateTime } from '../utils/dateFormat';
 
 /**
- * Super-admin platform configuration page (SA.2.b).
+ * Super-admin platform configuration (refonte — formulaire structuré).
  *
- * SA only — gated by SuperAdminRoute. Lists every key persisted in
- * system_configs + a curated catalog of "known" keys the operator can
- * set even when no row exists yet (so they don't have to know the
- * exact spelling of `vapid.public-key`).
- *
- * Editing flow
- *   1. Click a key → fetch its current resolved value (DB > env)
- *   2. Edit in a form → encrypted toggle (disabled when the backend
- *      reports encryptionAvailable=false)
- *   3. Save → PUT /super-admin/configs/:key + cache invalidation
- *   4. Delete → DELETE /super-admin/configs/:key (env fallback resumes)
+ * Approach :
+ *   - 4 sections (SMTP / VAPID / Sentry / Audit), each a card.
+ *   - Every field is visible immediately with its current value pre-
+ *     populated from the server (one /super-admin/configs/:key call
+ *     per known key, fired in parallel via useQueries).
+ *   - "💾 Enregistrer cette section" button per card. Only the
+ *     changed keys are PUT to the backend.
+ *   - Empty (or whitespace) → DELETE so the env fallback resumes.
+ *   - Secret fields (smtp.pass / vapid.private-key / sentry.dsn) are
+ *     rendered as <input type=password> + the "encrypted" flag is
+ *     forced ON when saving (no toggle to forget).
  */
 
-const SECTIONS: Array<{ section: string; keys: Array<{ key: string; label: string; encryptedByDefault?: boolean }> }> = [
+interface ConfigField {
+  key: string;
+  label: string;
+  hint: string;
+  placeholder?: string;
+  secret?: boolean;
+  multiline?: boolean;
+}
+
+interface ConfigSection {
+  title: string;
+  description: string;
+  fields: ConfigField[];
+}
+
+const SECTIONS: ConfigSection[] = [
   {
-    section: '📨 Email SMTP',
-    keys: [
-      { key: 'smtp.host',            label: 'SMTP host (ex: smtp.gmail.com)' },
-      { key: 'smtp.port',            label: 'SMTP port (587, 465…)' },
-      { key: 'smtp.secure',          label: 'SMTP secure ("true" pour SSL/465, "false" pour STARTTLS/587)' },
-      { key: 'smtp.user',            label: 'SMTP username' },
-      { key: 'smtp.pass',            label: 'SMTP password / app-password',  encryptedByDefault: true },
-      { key: 'notifications.from',   label: 'From address (ex: "TaskMgr <noreply@…>")' },
+    title: '📨 Email SMTP',
+    description:
+      'Identifiants de votre serveur SMTP pour l\'envoi de notifications. Laissez vide pour utiliser la console (dev).',
+    fields: [
+      { key: 'smtp.host', label: 'Hôte SMTP', placeholder: 'smtp.gmail.com', hint: 'Nom de domaine du serveur sortant' },
+      { key: 'smtp.port', label: 'Port', placeholder: '587', hint: '587 (STARTTLS) ou 465 (SSL)' },
+      { key: 'smtp.secure', label: 'Sécurisé (SSL)', placeholder: 'false', hint: '"true" pour SSL/465, "false" pour STARTTLS/587' },
+      { key: 'smtp.user', label: 'Utilisateur', placeholder: 'noreply@taskmgr.com', hint: 'Compte SMTP — souvent l\'adresse email d\'envoi' },
+      { key: 'smtp.pass', label: 'Mot de passe', placeholder: '••••••••', hint: 'Stocké chiffré. App-password recommandé pour Gmail.', secret: true },
+      { key: 'notifications.from', label: 'Adresse d\'envoi (From)', placeholder: 'TaskMgr <noreply@taskmgr.com>', hint: 'Ce que les destinataires verront comme expéditeur' },
     ],
   },
   {
-    section: '🔔 Web Push (VAPID)',
-    keys: [
-      { key: 'vapid.public-key',     label: 'VAPID public key' },
-      { key: 'vapid.private-key',    label: 'VAPID private key', encryptedByDefault: true },
-      { key: 'vapid.subject',        label: 'VAPID subject (mailto:…)' },
+    title: '🔔 Web Push (VAPID)',
+    description:
+      'Clés VAPID pour les notifications push web. Générez une paire avec `npx web-push generate-vapid-keys`.',
+    fields: [
+      { key: 'vapid.public-key', label: 'Clé publique VAPID', hint: 'Communiquée au navigateur lors de la souscription' },
+      { key: 'vapid.private-key', label: 'Clé privée VAPID', hint: 'Stockée chiffrée. Ne JAMAIS la perdre — pas de récupération.', secret: true },
+      { key: 'vapid.subject', label: 'Subject', placeholder: 'mailto:admin@taskmgr.com', hint: 'Contact technique communiqué aux services de push' },
     ],
   },
   {
-    section: '🐛 Sentry',
-    keys: [
-      { key: 'sentry.dsn',           label: 'Sentry DSN', encryptedByDefault: true },
-      { key: 'sentry.environment',   label: 'Sentry environment (ex: production)' },
-      { key: 'sentry.release',       label: 'Sentry release tag' },
+    title: '🐛 Sentry',
+    description:
+      'DSN Sentry pour l\'observabilité. Laissez vide pour désactiver la remontée d\'erreurs.',
+    fields: [
+      { key: 'sentry.dsn', label: 'DSN Sentry', hint: 'URL fournie par votre projet Sentry. Stockée chiffrée.', secret: true },
+      { key: 'sentry.environment', label: 'Environnement', placeholder: 'production', hint: 'Tag d\'environnement pour filtrer dans Sentry' },
+      { key: 'sentry.release', label: 'Release', placeholder: 'v2.3.0', hint: 'Version du build pour les sentry-releases' },
     ],
   },
   {
-    section: '📦 Audit',
-    keys: [
-      { key: 'audit.retention-days', label: 'Audit retention (jours, défaut 365)' },
+    title: '📦 Rétention audit',
+    description: 'Combien de jours conservez-vous les audit logs avant suppression.',
+    fields: [
+      { key: 'audit.retention-days', label: 'Jours', placeholder: '365', hint: 'Défaut 365. La purge tourne chaque nuit à 03:30 UTC.' },
     ],
   },
 ];
 
+const ALL_KEYS = SECTIONS.flatMap((s) => s.fields.map((f) => f.key));
+
 export default function SuperAdminPage() {
   const qc = useQueryClient();
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['superAdmin', 'configs', 'list'],
-    queryFn: async () => {
-      const res = await listConfigs();
-      return (res.data?.data ?? res.data) as ConfigListResponse;
-    },
-    staleTime: 30_000,
+  const [flash, setFlash] = useState<{ msg: string; ok: boolean } | null>(null);
+
+  // Fire one GET per key in parallel — gives us a {key: value} map
+  // for the form's initial state.
+  const queries = useQueries({
+    queries: ALL_KEYS.map((key) => ({
+      queryKey: ['superAdmin', 'configValue', key],
+      queryFn: async () => {
+        try {
+          const res = await getConfigValue(key);
+          return (res.data?.data ?? res.data) as ConfigValueResponse;
+        } catch (err: unknown) {
+          const status = (err as { response?: { status?: number } }).response?.status;
+          if (status === 404) return null;
+          throw err;
+        }
+      },
+      staleTime: 60_000,
+    })),
   });
 
-  const [editingKey, setEditingKey] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState('');
-  const [editEncrypted, setEditEncrypted] = useState(false);
-  const [editError, setEditError] = useState<string | null>(null);
-  const [statusMessage, setStatusMessage] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
+  // Local edit state — keyed by config key.
+  const [values, setValues] = useState<Record<string, string>>({});
 
-  function flash(msg: string, type: 'ok' | 'err') {
-    setStatusMessage({ msg, type });
-    setTimeout(() => setStatusMessage(null), 3500);
-  }
-
-  async function startEdit(key: string, encryptedByDefault?: boolean) {
-    setEditingKey(key);
-    setEditError(null);
-    setEditValue('');
-    setEditEncrypted(encryptedByDefault ?? false);
-    try {
-      const res = await getConfigValue(key);
-      const payload = (res.data?.data ?? res.data) as ConfigValueResponse;
-      setEditValue(payload.value);
-      setEditEncrypted(payload.encrypted);
-    } catch (err) {
-      const status = (err as { response?: { status?: number } }).response?.status;
-      if (status === 404) {
-        // Pas de valeur — l'utilisateur va en créer une. encryptedByDefault s'applique déjà.
+  // Hydrate values from the server fetches when they land.
+  useEffect(() => {
+    const next: Record<string, string> = {};
+    queries.forEach((q, i) => {
+      const key = ALL_KEYS[i];
+      if (q.data) {
+        next[key] = q.data.value;
+      } else if (values[key] === undefined) {
+        next[key] = '';
       } else {
-        setEditError('Impossible de lire la valeur actuelle.');
+        next[key] = values[key];
+      }
+    });
+    // Only commit changes if the server-side fetches added new info.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setValues((prev) => ({ ...next, ...prev }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queries.map((q) => q.dataUpdatedAt).join('|')]);
+
+  async function saveSection(section: ConfigSection) {
+    const toUpsert: Array<{ key: string; value: string; secret: boolean }> = [];
+    const toDelete: string[] = [];
+    for (const field of section.fields) {
+      const next = values[field.key] ?? '';
+      if (next.trim().length === 0) {
+        // Empty → delete the row so the env fallback resumes.
+        toDelete.push(field.key);
+      } else {
+        toUpsert.push({ key: field.key, value: next, secret: !!field.secret });
       }
     }
+    try {
+      await Promise.all([
+        ...toUpsert.map((f) => upsertConfig(f.key, f.value, f.secret)),
+        ...toDelete.map((k) => deleteConfig(k)),
+      ]);
+      qc.invalidateQueries({ queryKey: ['superAdmin', 'configValue'] });
+      setFlash({ msg: `✓ ${section.title} enregistré`, ok: true });
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } }).response?.data
+          ?.message ?? 'Erreur inconnue';
+      setFlash({ msg: `✗ Échec : ${msg}`, ok: false });
+    }
+    window.setTimeout(() => setFlash(null), 4000);
   }
-
-  function cancelEdit() {
-    setEditingKey(null);
-    setEditValue('');
-    setEditError(null);
-  }
-
-  const upsertMutation = useMutation({
-    mutationFn: ({ key, value, encrypted }: { key: string; value: string; encrypted: boolean }) =>
-      upsertConfig(key, value, encrypted),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['superAdmin', 'configs', 'list'] });
-      flash('Configuration enregistrée.', 'ok');
-      cancelEdit();
-    },
-    onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Erreur lors de l\'enregistrement.';
-      setEditError(msg);
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (key: string) => deleteConfig(key),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['superAdmin', 'configs', 'list'] });
-      flash('Configuration supprimée — le serveur retombe sur la valeur d\'environnement si présente.', 'ok');
-      cancelEdit();
-    },
-    onError: () => flash('Échec de la suppression.', 'err'),
-  });
-
-  const persisted = data?.items ?? [];
-  const encryptionAvailable = data?.encryptionAvailable ?? false;
 
   return (
-    <div style={{ ...layoutStyles.page }}>
-      <div style={{ ...layoutStyles.pageHeader }}>
-        <h1 style={{ ...layoutStyles.pageTitle }}>👑 Super-Admin — Configuration plateforme</h1>
-        <span style={{ fontSize: theme.font.sizeSm, color: theme.colors.textMuted }}>
-          {encryptionAvailable
-            ? '🔐 Chiffrement activé'
-            : '🔓 Chiffrement indisponible (CONFIG_MASTER_KEY non défini)'}
-        </span>
-      </div>
+    <div style={layoutStyles.page}>
+      <header style={{ marginBottom: 16 }}>
+        <h1 style={{ margin: 0 }}>👑 Configuration plateforme</h1>
+        <p style={{ color: theme.colors.textMuted, margin: '4px 0 0', fontSize: 13 }}>
+          Réglages globaux de TaskMgr. Laissez un champ vide pour utiliser la variable d'environnement ou la valeur par défaut.
+        </p>
+      </header>
 
-      {isLoading && <p style={{ color: theme.colors.textMuted }}>Chargement…</p>}
-      {isError && <p style={{ color: theme.colors.danger }}>Erreur de chargement.</p>}
-
-      {statusMessage && (
-        <div style={{
-          padding: '0.7rem 1rem',
-          marginBottom: '1rem',
-          borderRadius: theme.radius.md,
-          background: statusMessage.type === 'ok' ? (theme.colors.successLight ?? '#dcfce7') : (theme.colors.dangerLight ?? '#fee2e2'),
-          color: statusMessage.type === 'ok' ? (theme.colors.success ?? '#15803d') : (theme.colors.danger ?? '#dc2626'),
-          border: `1px solid ${statusMessage.type === 'ok' ? '#86efac' : '#fca5a5'}`,
-          fontSize: theme.font.sizeSm,
-        }}>
-          {statusMessage.msg}
+      {flash && (
+        <div
+          role="alert"
+          style={{
+            padding: '8px 12px',
+            borderRadius: 4,
+            marginBottom: 12,
+            background: flash.ok ? theme.colors.successLight : theme.colors.dangerLight,
+            color: flash.ok ? theme.colors.success : theme.colors.danger,
+            fontSize: 13,
+            fontWeight: 600,
+          }}
+        >
+          {flash.msg}
         </div>
       )}
 
       {SECTIONS.map((section) => (
-        <div key={section.section} style={{ ...cardStyles.card, marginBottom: '1.25rem' }}>
-          <div style={{ ...cardStyles.cardHeader }}>
-            <h2 style={{ ...cardStyles.cardTitle }}>{section.section}</h2>
-          </div>
-          <div style={{ ...cardStyles.cardBody }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: theme.font.sizeSm }}>
-              <thead>
-                <tr>
-                  <th style={{ textAlign: 'left', padding: '0.5rem', color: theme.colors.textMuted, borderBottom: theme.borders.light }}>Clé</th>
-                  <th style={{ textAlign: 'left', padding: '0.5rem', color: theme.colors.textMuted, borderBottom: theme.borders.light }}>Statut</th>
-                  <th style={{ textAlign: 'right', padding: '0.5rem', color: theme.colors.textMuted, borderBottom: theme.borders.light, width: '180px' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {section.keys.map((meta) => {
-                  const persistedRow = persisted.find((p) => p.key === meta.key);
-                  const isEditing = editingKey === meta.key;
-                  return (
-                    <RowAndEditor
-                      key={meta.key}
-                      label={meta.label}
-                      configKey={meta.key}
-                      persisted={persistedRow}
-                      isEditing={isEditing}
-                      editValue={editValue}
-                      editEncrypted={editEncrypted}
-                      editError={editError}
-                      encryptionAvailable={encryptionAvailable}
-                      onStartEdit={() => startEdit(meta.key, meta.encryptedByDefault)}
-                      onCancel={cancelEdit}
-                      onValueChange={setEditValue}
-                      onEncryptedChange={setEditEncrypted}
-                      onSave={() => upsertMutation.mutate({ key: meta.key, value: editValue, encrypted: editEncrypted })}
-                      onDelete={() => deleteMutation.mutate(meta.key)}
-                      isSaving={upsertMutation.isPending}
-                      isDeleting={deleteMutation.isPending}
-                    />
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ))}
+        <section key={section.title} style={{ ...cardStyles.card, padding: 20, marginBottom: 16 }}>
+          <h2 style={{ margin: '0 0 4px', fontSize: 16 }}>{section.title}</h2>
+          <p style={{ margin: '0 0 16px', color: theme.colors.textMuted, fontSize: 12 }}>
+            {section.description}
+          </p>
 
-      {persisted.length > 0 && (
-        <div style={{ ...cardStyles.card }}>
-          <div style={{ ...cardStyles.cardHeader }}>
-            <h2 style={{ ...cardStyles.cardTitle }}>🗂 Autres clés persistées</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {section.fields.map((field) => (
+              <FieldRow
+                key={field.key}
+                field={field}
+                value={values[field.key] ?? ''}
+                onChange={(v) => setValues({ ...values, [field.key]: v })}
+              />
+            ))}
           </div>
-          <div style={{ ...cardStyles.cardBody }}>
-            <p style={{ color: theme.colors.textMuted, fontSize: theme.font.sizeSm, margin: '0 0 0.5rem' }}>
-              Clés sauvegardées en base et non listées dans les sections ci-dessus (configurations historiques ou ajoutées manuellement).
-            </p>
-            <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
-              {persisted
-                .filter((p) => !SECTIONS.flatMap((s) => s.keys.map((k) => k.key)).includes(p.key))
-                .map((p) => (
-                  <li key={p.key} style={{ padding: '0.4rem 0', borderBottom: theme.borders.light, fontFamily: 'monospace' }}>
-                    {p.key} {p.encrypted && '🔐'} <span style={{ color: theme.colors.textMuted, fontSize: theme.font.sizeXs }}> · maj {formatDateTime(p.updatedAt)}</span>
-                  </li>
-                ))}
-            </ul>
-          </div>
-        </div>
-      )}
+
+          <button
+            onClick={() => saveSection(section)}
+            style={{ ...buttonStyles.primary, marginTop: 16 }}
+          >
+            💾 Enregistrer cette section
+          </button>
+        </section>
+      ))}
     </div>
   );
 }
 
-interface RowProps {
-  label: string;
-  configKey: string;
-  persisted: { encrypted: boolean; updatedAt: string; updatedBy: string | null } | undefined;
-  isEditing: boolean;
-  editValue: string;
-  editEncrypted: boolean;
-  editError: string | null;
-  encryptionAvailable: boolean;
-  onStartEdit: () => void;
-  onCancel: () => void;
-  onValueChange: (v: string) => void;
-  onEncryptedChange: (v: boolean) => void;
-  onSave: () => void;
-  onDelete: () => void;
-  isSaving: boolean;
-  isDeleting: boolean;
-}
-
-function RowAndEditor(props: RowProps) {
-  const { persisted, isEditing } = props;
+function FieldRow({
+  field,
+  value,
+  onChange,
+}: {
+  field: ConfigField;
+  value: string;
+  onChange: (v: string) => void;
+}) {
   return (
-    <>
-      <tr style={{ borderBottom: isEditing ? 'none' : theme.borders.light }}>
-        <td style={{ padding: '0.5rem' }}>
-          <div style={{ fontFamily: 'monospace', fontSize: theme.font.sizeSm }}>{props.configKey}</div>
-          <div style={{ fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>{props.label}</div>
-        </td>
-        <td style={{ padding: '0.5rem' }}>
-          {persisted ? (
-            <span style={{ fontSize: theme.font.sizeXs }}>
-              <span style={{ background: theme.colors.successLight ?? '#dcfce7', color: theme.colors.success ?? '#15803d', padding: '0.1rem 0.5rem', borderRadius: theme.radius.full }}>
-                💾 DB
-              </span>
-              {persisted.encrypted && (
-                <span style={{ marginLeft: '0.4rem', color: theme.colors.textMuted }}>🔐</span>
-              )}
-              <span style={{ marginLeft: '0.5rem', color: theme.colors.textMuted }}>
-                maj {formatDateTime(persisted.updatedAt)}
-              </span>
-            </span>
-          ) : (
-            <span style={{ fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>
-              <span style={{ background: theme.colors.surfaceAlt, padding: '0.1rem 0.5rem', borderRadius: theme.radius.full, fontFamily: 'monospace' }}>
-                env
-              </span>
-              <span style={{ marginLeft: '0.5rem' }}>fallback ou non défini</span>
-            </span>
-          )}
-        </td>
-        <td style={{ padding: '0.5rem', textAlign: 'right' }}>
-          {!isEditing && (
-            <button onClick={props.onStartEdit} style={{ ...buttonStyles.secondary, fontSize: theme.font.sizeXs }}>
-              ✏️ Modifier
-            </button>
-          )}
-          {!isEditing && persisted && (
-            <button
-              onClick={props.onDelete}
-              disabled={props.isDeleting}
-              style={{ ...buttonStyles.secondary, fontSize: theme.font.sizeXs, marginLeft: '0.4rem', color: theme.colors.danger, opacity: props.isDeleting ? 0.6 : 1 }}
-            >
-              🗑 Supprimer
-            </button>
-          )}
-        </td>
-      </tr>
-      {isEditing && (
-        <tr style={{ borderBottom: theme.borders.light, background: theme.colors.surfaceAlt }}>
-          <td colSpan={3} style={{ padding: '0.75rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <textarea
-                value={props.editValue}
-                onChange={(e) => props.onValueChange(e.target.value)}
-                rows={props.editEncrypted ? 1 : 2}
-                placeholder="Valeur…"
-                style={{
-                  ...formStyles.input,
-                  fontFamily: 'monospace',
-                  fontSize: theme.font.sizeSm,
-                  resize: 'vertical',
-                  background: theme.colors.surface,
-                }}
-              />
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: theme.font.sizeSm, color: theme.colors.text }}>
-                <input
-                  type="checkbox"
-                  checked={props.editEncrypted}
-                  onChange={(e) => props.onEncryptedChange(e.target.checked)}
-                  disabled={!props.encryptionAvailable}
-                />
-                🔐 Chiffrer cette valeur
-                {!props.encryptionAvailable && (
-                  <span style={{ color: theme.colors.textMuted, fontSize: theme.font.sizeXs, marginLeft: '0.4rem' }}>
-                    (indisponible — CONFIG_MASTER_KEY non défini)
-                  </span>
-                )}
-              </label>
-              {props.editError && (
-                <p style={{ color: theme.colors.danger, fontSize: theme.font.sizeSm, margin: 0 }}>{props.editError}</p>
-              )}
-              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                <button onClick={props.onCancel} style={{ ...buttonStyles.secondary, fontSize: theme.font.sizeSm }}>
-                  Annuler
-                </button>
-                <button
-                  onClick={props.onSave}
-                  disabled={props.isSaving || !props.editValue}
-                  style={{ ...buttonStyles.primary, fontSize: theme.font.sizeSm, opacity: props.isSaving ? 0.6 : 1 }}
-                >
-                  {props.isSaving ? 'Enregistrement…' : '✓ Enregistrer'}
-                </button>
-              </div>
-            </div>
-          </td>
-        </tr>
-      )}
-    </>
+    <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <span style={{ fontSize: 12, color: theme.colors.text, fontWeight: 600 }}>
+        {field.label}
+        {field.secret && (
+          <span title="Stocké chiffré" style={{ marginLeft: 6, color: theme.colors.warning }}>
+            🔐
+          </span>
+        )}
+      </span>
+      <input
+        type={field.secret ? 'password' : 'text'}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={field.placeholder}
+        autoComplete="off"
+        style={formStyles.input}
+      />
+      <span style={{ fontSize: 11, color: theme.colors.textMuted }}>
+        {field.hint}
+      </span>
+    </label>
   );
 }

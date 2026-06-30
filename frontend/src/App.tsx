@@ -38,15 +38,61 @@ import SuperAdminTenantsPage from './pages/SuperAdminTenantsPage';
 import SuperAdminStatsPage from './pages/SuperAdminStatsPage';
 import SuperAdminAuditPage from './pages/SuperAdminAuditPage';
 import SuperAdminUsersPage from './pages/SuperAdminUsersPage';
+import SuperAdminAllUsersPage from './pages/SuperAdminAllUsersPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ReleaseNotesPage from './pages/ReleaseNotesPage';
 import ReportsPage from './pages/ReportsPage';
+import api from './services/api';
 
 export default function App() {
   const { user } = useAuthStore();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const updateUser = useAuthStore((s) => s.updateUser);
+  const stopImpersonation = useAuthStore((s) => s.stopImpersonation);
+  const impersonationActive = useAuthStore((s) => s.impersonation.active);
   const themeMode = useUiStore((s) => s.theme);
   const locale = useUiStore((s) => s.locale);
   const { i18n } = useTranslation();
+
+  // ── Refresh the persisted user object from the server on mount ──
+  // The Zustand persist middleware caches the user shape across reloads,
+  // including the role. If the server-side role changes (SA promoted /
+  // demoted in DB) the persisted state would otherwise lag and the SA
+  // routes / sidebar would render the wrong layout. /auth/me is cheap.
+  // We also use this round-trip to detect dangling impersonation : if
+  // the server returns a user whose tenantId doesn't match the
+  // impersonated tenant slug, we know the impersonation session has
+  // already been ended elsewhere → force a clean restore.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await api.get('/auth/me');
+        const refreshed = (data?.data ?? data) as typeof user;
+        if (cancelled || !refreshed) return;
+        updateUser(refreshed);
+        // Defensive : if persisted impersonation references a different
+        // tenant than the one the JWT actually puts us in, restore the
+        // SA session so the user is never stuck in a hybrid state.
+        if (
+          impersonationActive &&
+          refreshed?.role !== 'ADMIN' &&
+          refreshed?.role !== 'DISPATCHER' &&
+          refreshed?.role !== 'TECHNICIAN'
+        ) {
+          stopImpersonation();
+        }
+      } catch {
+        // Swallow — interceptor handles 401, anything else can wait.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // Run once per mount + once when isAuthenticated flips true.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
 
   // Sync i18next language with our UI store + reflect on <html lang>.
   useEffect(() => {
@@ -171,6 +217,7 @@ export default function App() {
             <Route path="/super-admin/stats" element={<SuperAdminStatsPage />} />
             <Route path="/super-admin/audit" element={<SuperAdminAuditPage />} />
             <Route path="/super-admin/users" element={<SuperAdminUsersPage />} />
+            <Route path="/super-admin/all-users" element={<SuperAdminAllUsersPage />} />
           </Route>
 
         </Route>
