@@ -126,16 +126,20 @@ async function bootstrap() {
   app.use(compression());
 
   // ── CORS ──────────────────────────────────────────────────────────────────
-  // The frontend UI is served from `CORS_ORIGIN` — a single trusted host.
+  // The frontend UI is served from `CORS_ORIGIN` — accepts a single origin
+  // OR a comma-separated list (useful when the same tenant is reachable via
+  // both a localhost dev URL and a LAN IP, or via multiple subdomains).
   // Third-party public-API integrations use `PUBLIC_API_CORS_ORIGINS`
-  // (comma-separated) — they don't share cookies (auth is `X-API-Key`)
-  // so `credentials` stays off for that origin set.
-  const uiOrigin = process.env.CORS_ORIGIN ?? 'http://localhost:8088';
+  // (comma-separated).
+  const uiOrigins = (process.env.CORS_ORIGIN ?? 'http://localhost:8088')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
   const publicOrigins = (process.env.PUBLIC_API_CORS_ORIGINS ?? '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
-  const allowedOrigins = new Set<string>([uiOrigin, ...publicOrigins]);
+  const allowedOrigins = new Set<string>([...uiOrigins, ...publicOrigins]);
   app.enableCors({
     origin: (origin, callback) => {
       // Allow same-origin (no `Origin` header) + whitelisted origins.
