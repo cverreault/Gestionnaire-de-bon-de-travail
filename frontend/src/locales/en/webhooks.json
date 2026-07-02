@@ -1,0 +1,73 @@
+{
+  "title": "Webhooks",
+  "subtitle": "Webhooks push your tenant's events (work order created, status change, client updated…) to a URL of your choice. Every delivery is HMAC-SHA256 signed.",
+  "docsLink": "See integrator documentation",
+  "empty": {
+    "title": "No webhook",
+    "description": "Create a webhook to receive TaskMgr events in your external system."
+  },
+  "table": {
+    "name": "Name",
+    "url": "URL",
+    "events": "Events",
+    "status": "Status",
+    "lastActivity": "Last activity",
+    "actions": "Actions"
+  },
+  "status": {
+    "active": "Active",
+    "paused": "Paused",
+    "disabled": "Auto-disabled",
+    "consecutiveFailures": "consecutive failure(s)"
+  },
+  "actions": {
+    "create": "New webhook",
+    "creating": "Creating…",
+    "confirmCreate": "Create webhook",
+    "cancel": "Cancel",
+    "close": "Close",
+    "test": "Test",
+    "log": "Log",
+    "regenerate": "New secret",
+    "pause": "Pause",
+    "resume": "Resume",
+    "retry": "Retry now",
+    "retryQueued": "Delivery queued for retry",
+    "toggleSuccess": "Webhook updated",
+    "deleteSuccess": "Webhook deleted",
+    "deleteConfirm": "Delete webhook \"{{name}}\"? This action is irreversible.",
+    "regenerateConfirm": "Regenerate the secret? The old secret will stop validating signatures immediately.",
+    "testTriggered": "Test delivery sent — check the log in ~30 seconds."
+  },
+  "create": {
+    "title": "Create a webhook",
+    "subtitle": "Pick a destination URL and the events you want to subscribe to.",
+    "nameLabel": "Name",
+    "namePlaceholder": "e.g. Zapier integration",
+    "urlLabel": "Destination URL",
+    "eventsLabel": "Subscribed events"
+  },
+  "reveal": {
+    "title": "Signing secret",
+    "warningTitle": "Copy this secret now.",
+    "warningBody": "It will never be shown again. Use it to verify the X-TaskMgr-Signature header on your receiver.",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "saved": "I've saved the secret"
+  },
+  "log": {
+    "title": "Delivery log",
+    "subtitle": "50 most recent attempts. Refreshed every 5 seconds.",
+    "empty": "No delivery yet",
+    "emptyDescription": "No subscribed event has fired yet — trigger a test to see an example.",
+    "attempt": "Attempt",
+    "nextRetry": "Next retry",
+    "status": {
+      "pending": "Pending",
+      "dispatching": "In flight",
+      "succeeded": "Succeeded",
+      "failed": "Failed",
+      "abandoned": "Abandoned"
+    }
+  }
+}

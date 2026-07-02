@@ -45,6 +45,7 @@ import SuperAdminPlansPage from './pages/SuperAdminPlansPage';
 import MySubscriptionPage from './pages/MySubscriptionPage';
 import ApiKeysPage from './pages/ApiKeysPage';
 import ApiDocsPage from './pages/ApiDocsPage';
+import WebhooksPage from './pages/WebhooksPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ReleaseNotesPage from './pages/ReleaseNotesPage';
 import ReportsPage from './pages/ReportsPage';
@@ -222,6 +223,7 @@ export default function App() {
             <Route path="/audit" element={<AuditPage />} />
             <Route path="/mon-abonnement" element={<MySubscriptionPage />} />
             <Route path="/parametres/api-keys" element={<ApiKeysPage />} />
+            <Route path="/parametres/webhooks" element={<WebhooksPage />} />
           </Route>
 
           {/* ── Super-admin only ──────────────────────────────────────── */}

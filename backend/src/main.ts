@@ -13,6 +13,7 @@ import { Logger as PinoLogger } from 'nestjs-pino';
 import type { INestApplication } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { PublicApiModule } from './modules/public-api/public-api.module';
+import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { DatabaseHealthIndicator } from './modules/health/indicators/database.health';
@@ -273,7 +274,7 @@ async function bootstrap() {
     // pick up controllers from the public-api module — the doc will not
     // even mention internal endpoints, no filtering needed.
     const document = SwaggerModule.createDocument(app, publicConfig, {
-      include: [PublicApiModule],
+      include: [PublicApiModule, WebhooksModule],
       operationIdFactory: (controllerKey, methodKey) =>
         `${controllerKey}_${methodKey}`,
     });

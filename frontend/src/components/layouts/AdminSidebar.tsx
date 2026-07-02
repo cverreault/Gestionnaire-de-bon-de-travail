@@ -115,6 +115,7 @@ export default function AdminSidebar() {
     { to: '/sauvegarde',      label: `💾 ${t('nav:backup')}` },
     { to: '/mon-abonnement',  label: `💳 ${t('nav:mySubscription', { defaultValue: 'Mon abonnement' })}` },
     { to: '/parametres/api-keys', label: `🔑 ${t('nav:apiKeys', { defaultValue: 'Clés API' })}` },
+    { to: '/parametres/webhooks', label: `🔔 ${t('nav:webhooks', { defaultValue: 'Webhooks' })}` },
   ];
 
   const superAdminNavItems = [

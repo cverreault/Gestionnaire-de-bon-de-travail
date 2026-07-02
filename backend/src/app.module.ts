@@ -38,6 +38,7 @@ import { RequestContextModule } from './common/context/request-context.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
 import { ApiKeysModule } from './modules/api-keys/api-keys.module';
 import { PublicApiModule } from './modules/public-api/public-api.module';
+import { WebhooksModule } from './modules/webhooks/webhooks.module';
 
 @Module({
   imports: [
@@ -110,6 +111,7 @@ import { PublicApiModule } from './modules/public-api/public-api.module';
     RequestContextModule,
     TenantsModule,
     ApiKeysModule,
+    WebhooksModule,
     PublicApiModule,
 
     // ── Feature modules ────────────────────────────────────────────────────
