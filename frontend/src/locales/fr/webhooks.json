@@ -1,0 +1,73 @@
+{
+  "title": "Webhooks",
+  "subtitle": "Les webhooks poussent les événements de votre tenant (BT créé, changement de statut, client mis à jour…) vers une URL de votre choix. Chaque livraison est signée en HMAC-SHA256.",
+  "docsLink": "Voir la documentation intégrateur",
+  "empty": {
+    "title": "Aucun webhook",
+    "description": "Créez un webhook pour recevoir les événements TaskMgr dans votre système externe."
+  },
+  "table": {
+    "name": "Nom",
+    "url": "URL",
+    "events": "Événements",
+    "status": "Statut",
+    "lastActivity": "Dernière activité",
+    "actions": "Actions"
+  },
+  "status": {
+    "active": "Actif",
+    "paused": "En pause",
+    "disabled": "Auto-désactivé",
+    "consecutiveFailures": "échec(s) consécutif(s)"
+  },
+  "actions": {
+    "create": "Nouveau webhook",
+    "creating": "Création…",
+    "confirmCreate": "Créer le webhook",
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "test": "Test",
+    "log": "Log",
+    "regenerate": "Nouveau secret",
+    "pause": "Pause",
+    "resume": "Réactiver",
+    "retry": "Réessayer maintenant",
+    "retryQueued": "Livraison remise en file d'attente",
+    "toggleSuccess": "Webhook mis à jour",
+    "deleteSuccess": "Webhook supprimé",
+    "deleteConfirm": "Supprimer le webhook « {{name}} » ? Cette action est irréversible.",
+    "regenerateConfirm": "Régénérer le secret ? L'ancien secret cessera immédiatement de valider les signatures.",
+    "testTriggered": "Livraison de test envoyée — vérifiez le log dans ~30 secondes."
+  },
+  "create": {
+    "title": "Créer un webhook",
+    "subtitle": "Choisissez une URL de destination et les événements auxquels vous voulez souscrire.",
+    "nameLabel": "Nom",
+    "namePlaceholder": "ex. Intégration Zapier",
+    "urlLabel": "URL de destination",
+    "eventsLabel": "Événements souscrits"
+  },
+  "reveal": {
+    "title": "Secret de signature",
+    "warningTitle": "Copiez ce secret maintenant.",
+    "warningBody": "Il ne sera plus jamais visible. Utilisez-le pour valider la signature X-TaskMgr-Signature côté receveur.",
+    "copy": "Copier",
+    "copied": "Copié !",
+    "saved": "J'ai bien sauvegardé le secret"
+  },
+  "log": {
+    "title": "Log des livraisons",
+    "subtitle": "50 tentatives les plus récentes. Actualisé toutes les 5 secondes.",
+    "empty": "Aucune livraison",
+    "emptyDescription": "Aucun événement souscrit ne s'est encore produit — déclenchez un test pour voir un exemple.",
+    "attempt": "Tentative",
+    "nextRetry": "Prochain essai",
+    "status": {
+      "pending": "En attente",
+      "dispatching": "En cours",
+      "succeeded": "Succès",
+      "failed": "Échec",
+      "abandoned": "Abandonné"
+    }
+  }
+}

@@ -4,8 +4,10 @@ import {
   BadRequestException,
   ConflictException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma, WorkOrderStatus } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { RequestContextService } from '../../common/context/request-context.service';
 import { ExternalClientService } from './external-client.service';
 import { CreateClientDto, CreateClientAddressDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
@@ -64,7 +66,33 @@ export class ClientsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly externalClientService: ExternalClientService,
+    private readonly eventEmitter: EventEmitter2,
+    private readonly requestContext: RequestContextService,
   ) {}
+
+  /**
+   * B9 — emit a domain event so the webhook fanout listener (and any other
+   * subscriber) can react. Errors are swallowed: emitting must never fail
+   * the business flow.
+   */
+  private emitClientEvent(
+    eventName: 'clients.client.created' | 'clients.client.updated' | 'clients.client.deleted',
+    entity: { id: string } & Record<string, unknown>,
+  ): void {
+    try {
+      const ctx = this.requestContext.current();
+      this.eventEmitter.emit(eventName, {
+        eventName,
+        occurredAt: new Date(),
+        aggregateId: entity.id,
+        tenantId: ctx?.tenantId,
+        actorUserId: ctx?.userId ?? null,
+        data: entity,
+      });
+    } catch {
+      // Fire-and-forget — never fail the CRUD path on emitter issues.
+    }
+  }
 
   // ── Clients enrichis — Queries ─────────────────────────────────────────────
 
@@ -149,7 +177,7 @@ export class ClientsService {
    * Si plusieurs ont isDefault=true, une seule sera retenue (la première trouvée).
    */
   async create(dto: CreateClientDto) {
-    return this.prisma.$transaction(async (tx) => {
+    const created = await this.prisma.$transaction(async (tx) => {
       // Créer le client
       const client = await tx.client.create({
         data: {
@@ -210,6 +238,8 @@ export class ClientsService {
         include: CLIENT_DETAIL_INCLUDE,
       });
     });
+    if (created) this.emitClientEvent('clients.client.created', created);
+    return created;
   }
 
   /**
@@ -219,11 +249,13 @@ export class ClientsService {
   async update(id: string, dto: UpdateClientDto) {
     await this.findOne(id);
 
-    return this.prisma.client.update({
+    const updated = await this.prisma.client.update({
       where: { id },
       data: dto,
       include: CLIENT_DETAIL_INCLUDE,
     });
+    this.emitClientEvent('clients.client.updated', updated);
+    return updated;
   }
 
   /**
@@ -246,11 +278,13 @@ export class ClientsService {
       );
     }
 
-    return this.prisma.client.update({
+    const deleted = await this.prisma.client.update({
       where: { id },
       data: { isActive: false },
       include: CLIENT_DETAIL_INCLUDE,
     });
+    this.emitClientEvent('clients.client.deleted', deleted);
+    return deleted;
   }
 
   // ── Adresses — Queries (toutes adresses) ──────────────────────────────────
