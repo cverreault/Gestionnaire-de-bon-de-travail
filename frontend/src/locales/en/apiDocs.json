@@ -1,0 +1,65 @@
+{
+  "title": "📚 API Documentation",
+  "subtitle": "Public v1 API — reserved to platform subscribers. Create keys from the « API keys » page in your tenant's admin portal.",
+  "tabs": {
+    "guide": "Getting started",
+    "reference": "Interactive reference (Swagger)"
+  },
+  "reference": {
+    "loading": "Loading specification…",
+    "loadFailed": "Load failed — check your session or retry.",
+    "initializing": "Initializing Swagger UI…"
+  },
+  "guide": {
+    "intro": {
+      "title": "1. What is the public API for?",
+      "p1": "The v1 public API lets an external system (CRM, form, orchestrator, BI) drive TaskMgr like an operator: create, update, transition work orders, manage clients and addresses, upload attachments.",
+      "p2": "It's distinct from the internal frontend API: dedicated /api/v1/* path, API-key auth (no JWT), tenant carried by the key (no subdomain), more generous rate limits."
+    },
+    "auth": {
+      "title": "2. Create an API key",
+      "p1": "Only a tenant ADMIN can create keys — from the « 🔑 API keys » page in the sidebar:",
+      "step1": "Pick a name (e.g. « Zapier integration »).",
+      "step2": "Pick a scope: read-only, read-write, or admin (see below).",
+      "step3": "Optionally set an expiration date.",
+      "warning": "⚠️ The plaintext (tkm_…) is shown ONLY ONCE at creation. Copy it to your vault immediately."
+    },
+    "header": {
+      "title": "3. Authenticate a request"
+    },
+    "scopes": {
+      "title": "4. Permission model (scopes)",
+      "p1": "Hierarchy: admin ⊇ read-write ⊇ read-only. Every endpoint documents its minimum scope.",
+      "readOnly": "GET only. Perfect for a BI dashboard or external reporting.",
+      "readWrite": "Create, update, delete on business resources. Recommended for most integrations.",
+      "admin": "Includes tenant settings changes. Reserve for internal orchestrators."
+    },
+    "examples": {
+      "title": "5. End-to-end examples",
+      "createWo": "Create a work order",
+      "transitionWo": "Change a work order status",
+      "transitionExplain": "The status field on PATCH is FORBIDDEN in the public API — transitions go through a dedicated endpoint validated by the process engine.",
+      "uploadAttachment": "Upload an attachment (multipart)"
+    },
+    "rateLimit": {
+      "title": "6. Rate limiting",
+      "p1": "Three named buckets in parallel. Every response includes X-RateLimit-* headers per bucket:",
+      "defaults": "Defaults per key: 30 req/s · 300 req/10s · 3000 req/min. A 429 includes a Retry-After header."
+    },
+    "security": {
+      "title": "7. Security",
+      "storage": "Only the SHA-256 hash is stored — the plaintext is never recoverable after creation.",
+      "revoke": "Revocation is instant — the next request receives 401.",
+      "tenant": "The tenant is carried by the key. No way for a tenant A's key to access tenant B's data.",
+      "audit": "All creations, revocations, and calls are audited and cross-tenant readable by the SA."
+    },
+    "notIncluded": {
+      "title": "8. Not exposed in v1",
+      "p1": "Some resources are intentionally kept out of the public perimeter:",
+      "users": "Users — create/update/delete (privilege escalation risk). Only GET /technicians is exposed.",
+      "templates": "Work order templates — CRUD reserved (internal system config).",
+      "processes": "Processes — CRUD reserved (sensitive state machine). GET /processes/:id/snapshot read-only is available.",
+      "webhooks": "Webhooks (outbound events) — deferred to v2. Poll the endpoints in the meantime."
+    }
+  }
+}

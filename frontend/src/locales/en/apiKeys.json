@@ -1,0 +1,63 @@
+{
+  "title": "🔑 API Keys",
+  "subtitle": "Create keys to let external systems (CRM, forms, orchestrators) drive TaskMgr through the v1 API.",
+  "docsLink": "📖 Swagger reference",
+  "gettingStartedLink": "🚀 Getting started guide",
+  "createButton": "➕ Create API key",
+  "loading": "Loading…",
+  "loadFailed": "Failed to load keys.",
+  "empty": "No API key",
+  "emptySubtitle": "Create your first key to connect an external system. The plaintext will be shown only once — copy it at creation time.",
+  "columns": {
+    "name": "Name",
+    "prefix": "Prefix",
+    "scope": "Permissions",
+    "created": "Created",
+    "lastUsed": "Last used",
+    "expires": "Expires",
+    "actions": "Actions"
+  },
+  "scope": {
+    "readOnly": "Read only",
+    "readWrite": "Read-write",
+    "admin": "Admin"
+  },
+  "status": {
+    "active": "Active",
+    "revoked": "Revoked",
+    "expired": "Expired",
+    "never": "Never used",
+    "noExpiry": "Never expires"
+  },
+  "actions": {
+    "revoke": "🗑 Revoke",
+    "revokeConfirm": "Revoke this key? Any integration using it will lose access immediately. Cannot be undone."
+  },
+  "createModal": {
+    "title": "Create a new API key",
+    "name": "Name",
+    "namePlaceholder": "e.g. Zapier integration, Internal CRM, …",
+    "scope": "Permissions",
+    "scopeReadOnly": "Read only — perfect for a dashboard or external reporting.",
+    "scopeReadWrite": "Read-write — create and update work orders, clients, addresses. Recommended.",
+    "scopeAdmin": "Admin — includes tenant settings. Reserve for integrations that truly need it.",
+    "expiresAt": "Expiration (optional)",
+    "expiresAtHint": "Leave empty for a key that never expires.",
+    "cancel": "Cancel",
+    "submit": "Create key",
+    "submitting": "Creating…"
+  },
+  "revealModal": {
+    "title": "✅ Key created",
+    "warning": "⚠️ Copy this key now — it will never be shown again. If lost, revoke it and create a new one.",
+    "copy": "📋 Copy",
+    "copied": "✓ Copied",
+    "done": "I saved the key"
+  },
+  "toasts": {
+    "created": "Key « {{name}} » created",
+    "revoked": "Key « {{name}} » revoked",
+    "revokeFailed": "Revoke failed: {{msg}}",
+    "createFailed": "Create failed: {{msg}}"
+  }
+}

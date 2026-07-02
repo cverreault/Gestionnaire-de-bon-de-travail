@@ -62,9 +62,32 @@ export class HttpExceptionFilter implements ExceptionFilter {
         },
       });
     } else {
-      this.logger.warn(`${request.method} ${request.url} → ${status}: ${JSON.stringify(message)}`);
+      // Include the request body for 4xx errors so validation failures are
+      // debuggable from the log (the client only sees the message). The
+      // password field is redacted before dumping — `password`, `oldPassword`
+      // and `newPassword` are all masked recursively.
+      const redactedBody = redactSecrets(request.body);
+      this.logger.warn(
+        `${request.method} ${request.url} → ${status}: ${JSON.stringify(message)} — body=${JSON.stringify(redactedBody)}`,
+      );
     }
 
     response.status(status).json(errorBody);
   }
+}
+
+const SECRET_KEYS = new Set(['password', 'oldPassword', 'newPassword', 'token']);
+
+function redactSecrets(value: unknown): unknown {
+  if (value === null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) return value.map(redactSecrets);
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    out[k] = SECRET_KEYS.has(k)
+      ? typeof v === 'string' && v.length > 0
+        ? '••••••••'
+        : v
+      : redactSecrets(v);
+  }
+  return out;
 }

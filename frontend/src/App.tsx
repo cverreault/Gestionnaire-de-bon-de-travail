@@ -40,6 +40,11 @@ import SuperAdminStatsPage from './pages/SuperAdminStatsPage';
 import SuperAdminAuditPage from './pages/SuperAdminAuditPage';
 import SuperAdminUsersPage from './pages/SuperAdminUsersPage';
 import SuperAdminAllUsersPage from './pages/SuperAdminAllUsersPage';
+import SuperAdminPlatformUsersPage from './pages/SuperAdminPlatformUsersPage';
+import SuperAdminPlansPage from './pages/SuperAdminPlansPage';
+import MySubscriptionPage from './pages/MySubscriptionPage';
+import ApiKeysPage from './pages/ApiKeysPage';
+import ApiDocsPage from './pages/ApiDocsPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ReleaseNotesPage from './pages/ReleaseNotesPage';
 import ReportsPage from './pages/ReportsPage';
@@ -157,11 +162,12 @@ export default function App() {
     return () => mq.removeEventListener('change', apply);
   }, [themeMode]);
 
-  // Roles that access the admin/dispatcher UI (SUPER_ADMIN inherits)
+  // Roles that access the admin/dispatcher UI. SUPER_ADMIN is NOT here —
+  // the platform admin has its own portal under /super-admin and never
+  // touches a tenant's UI directly (impersonation is the path in).
   const isAdminOrDispatcher =
-    user?.role === Role.ADMIN ||
-    user?.role === Role.DISPATCHER ||
-    user?.role === Role.SUPER_ADMIN;
+    user?.role === Role.ADMIN || user?.role === Role.DISPATCHER;
+  const isSuperAdmin = user?.role === Role.SUPER_ADMIN;
 
   return (
     <Routes>
@@ -177,7 +183,9 @@ export default function App() {
           <Route
             path="/"
             element={
-              isAdminOrDispatcher
+              isSuperAdmin
+                ? <Navigate to="/super-admin/stats" replace />
+                : isAdminOrDispatcher
                 ? <Navigate to="/dashboard" replace />
                 : <Navigate to="/mes-bons" replace />
             }
@@ -186,6 +194,7 @@ export default function App() {
           {/* ── Profile & Release Notes — accessible to ALL authenticated roles ── */}
           <Route path="/profil" element={<ProfilePage />} />
           <Route path="/release-notes" element={<ReleaseNotesPage />} />
+          <Route path="/documentation-api" element={<ApiDocsPage />} />
 
           {/* ── Technician (mobile-first) ────────────────────────────── */}
           <Route path="/mes-bons" element={<TechnicianWorkOrdersPage />} />
@@ -211,6 +220,8 @@ export default function App() {
             <Route path="/parametres/templates" element={<TemplatesSettingsPage />} />
             <Route path="/sauvegarde" element={<BackupPage />} />
             <Route path="/audit" element={<AuditPage />} />
+            <Route path="/mon-abonnement" element={<MySubscriptionPage />} />
+            <Route path="/parametres/api-keys" element={<ApiKeysPage />} />
           </Route>
 
           {/* ── Super-admin only ──────────────────────────────────────── */}
@@ -222,6 +233,8 @@ export default function App() {
             <Route path="/super-admin/audit" element={<SuperAdminAuditPage />} />
             <Route path="/super-admin/users" element={<SuperAdminUsersPage />} />
             <Route path="/super-admin/all-users" element={<SuperAdminAllUsersPage />} />
+            <Route path="/super-admin/platform-users" element={<SuperAdminPlatformUsersPage />} />
+            <Route path="/super-admin/plans" element={<SuperAdminPlansPage />} />
           </Route>
 
         </Route>

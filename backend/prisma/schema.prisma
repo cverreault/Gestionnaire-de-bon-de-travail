@@ -128,9 +128,117 @@ model Tenant {
   notifications       Notification[]
   pushSubscriptions   PushSubscription[]
   systemConfigs       SystemConfig[]
+  monthlyPeaks        TenantMonthlyPeak[]
+  apiKeys             ApiKey[]
 
   @@index([isActive], map: "idx_tenants_is_active")
   @@map("tenants")
+}
+
+/// SaaS plan catalog — DB-backed so the SA can edit prices, quotas and
+/// features from the UI without a redeploy (B7.8). Codes mirror the
+/// `TenantPlan` enum and are the stable handle that `tenant.plan` joins on.
+///
+/// Adding a new code requires extending the enum in this schema first.
+/// Editing existing rows is fully runtime — single source of truth lives
+/// in `plans`.
+model Plan {
+  id                   String   @id @default(uuid())
+  /// Stable handle. Must match a `TenantPlan` enum value.
+  code                 TenantPlan @unique
+  displayName          String   @map("display_name")
+  tagline              String   @default("")
+  description          String   @default("")
+
+  /// Monthly base fee, billed regardless of seat count.
+  priceMonthly         Decimal  @db.Decimal(10, 2) @default(0) @map("price_monthly")
+  /// Additional charge per active user — e.g. 20 $/user/month. Total
+  /// monthly = `priceMonthly + activeUsers * pricePerUserMonthly`.
+  pricePerUserMonthly  Decimal  @db.Decimal(10, 2) @default(0) @map("price_per_user_monthly")
+  currency             String   @default("CAD")
+
+  /// Default quotas applied to a tenant when it lands on this plan.
+  /// A tenant can have explicit overrides — the plan values are only
+  /// templates, not enforced caps on the tenant row.
+  maxUsers              Int     @map("max_users")
+  maxWorkOrdersPerMonth Int     @map("max_work_orders_per_month")
+  maxStorageMb          Int     @map("max_storage_mb")
+  maxClients            Int     @map("max_clients")
+
+  features             String[] @default([])
+  recommended          Boolean  @default(false)
+  sortOrder            Int      @default(0) @map("sort_order")
+  isActive             Boolean  @default(true) @map("is_active")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  @@map("plans")
+}
+
+/// Monthly usage peak per tenant per category (B7.12).
+///
+/// Tracks the HIGH-WATER MARK of each counter within a calendar month so
+/// per-seat pricing can bill fairly on the month's peak, not on the count
+/// at invoice time. A tenant that grew from 2 → 4 → 2 users pays for 4.
+///
+/// Rows are UPSERTed via `INSERT ... ON CONFLICT DO UPDATE SET max_X =
+/// GREATEST(existing, EXCLUDED.max_X)` from `PeakTrackerService`. Peaks
+/// only ever increase within a month; the next month gets a fresh row.
+model TenantMonthlyPeak {
+  id                     String   @id @default(uuid())
+  tenantId               String   @map("tenant_id")
+  tenant                 Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  /// Format `YYYY-MM` (kept as a fixed-length string for cheap indexing).
+  yearMonth              String   @db.Char(7) @map("year_month")
+  maxUsers               Int      @default(0) @map("max_users")
+  maxClients             Int      @default(0) @map("max_clients")
+  maxWorkOrdersThisMonth Int      @default(0) @map("max_work_orders_this_month")
+  maxStorageBytes        BigInt   @default(0) @map("max_storage_bytes")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, yearMonth], map: "tenant_monthly_peaks_tenant_month_key")
+  @@index([yearMonth], map: "idx_tenant_monthly_peaks_year_month")
+  @@map("tenant_monthly_peaks")
+}
+
+/// Public-API authentication keys (B8).
+///
+/// Machine-to-machine access to the tenant's data through `/api/v1/*`.
+/// The plaintext key (`tkm_<env>_<32-b64url>`) is shown ONCE at creation;
+/// only its SHA-256 hash lives in the DB. Revocation is soft — we keep
+/// the row for audit and to display a "revoked at" state in the admin UI.
+///
+/// Scope is a coarse bundle : `read-only` ⊂ `read-write` ⊂ `admin`. Fine
+/// grained permissions are a v2 concern.
+model ApiKey {
+  id              String    @id @default(uuid())
+  tenantId        String    @map("tenant_id")
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  /// Human-facing label — "Zapier integration", "Internal CRM", …
+  name            String
+  /// SHA-256 hex of the full plaintext key. Lookup index for auth path.
+  keyHash         String    @unique @map("key_hash")
+  /// Visible prefix (first 16 chars) so admins can identify a key without
+  /// knowing the full plaintext — mirrors the Stripe / GitHub pattern.
+  keyPrefix       String    @map("key_prefix")
+  /// One of `read-only` | `read-write` | `admin`. Enforced by ApiScopeGuard.
+  scope           String
+  /// null = never expires.
+  expiresAt       DateTime? @map("expires_at")
+  /// Soft-revoke — the row stays for audit; auth path rejects when set.
+  revokedAt       DateTime? @map("revoked_at")
+  /// Fire-and-forget bump on every successful request. Not indexed — read
+  /// only in the admin UI, not on the hot path.
+  lastUsedAt      DateTime? @map("last_used_at")
+  /// User who minted the key (the ADMIN in most cases).
+  createdByUserId String    @map("created_by_user_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([tenantId], map: "idx_api_keys_tenant_id")
+  @@index([keyHash], map: "idx_api_keys_key_hash")
+  @@map("api_keys")
 }
 
 model User {

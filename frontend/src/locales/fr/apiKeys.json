@@ -1,0 +1,63 @@
+{
+  "title": "🔑 Clés API",
+  "subtitle": "Créez des clés pour permettre à des systèmes externes (CRM, formulaires, orchestrateurs) de piloter TaskMgr via l'API v1.",
+  "docsLink": "📖 Documentation Swagger (référence)",
+  "gettingStartedLink": "🚀 Guide de démarrage",
+  "createButton": "➕ Créer une clé API",
+  "loading": "Chargement…",
+  "loadFailed": "Échec du chargement des clés.",
+  "empty": "Aucune clé API",
+  "emptySubtitle": "Créez votre première clé pour connecter un système externe. Le plaintext ne sera visible qu'une seule fois — copiez-le au moment de la création.",
+  "columns": {
+    "name": "Nom",
+    "prefix": "Préfixe",
+    "scope": "Permissions",
+    "created": "Créée le",
+    "lastUsed": "Dernière utilisation",
+    "expires": "Expire le",
+    "actions": "Actions"
+  },
+  "scope": {
+    "readOnly": "Lecture seule",
+    "readWrite": "Lecture-écriture",
+    "admin": "Admin"
+  },
+  "status": {
+    "active": "Active",
+    "revoked": "Révoquée",
+    "expired": "Expirée",
+    "never": "Jamais utilisée",
+    "noExpiry": "Pas d'expiration"
+  },
+  "actions": {
+    "revoke": "🗑 Révoquer",
+    "revokeConfirm": "Révoquer cette clé ? Toute intégration qui l'utilise perdra l'accès immédiatement. Action irréversible."
+  },
+  "createModal": {
+    "title": "Créer une nouvelle clé API",
+    "name": "Nom",
+    "namePlaceholder": "Ex : Intégration Zapier, CRM interne, …",
+    "scope": "Permissions",
+    "scopeReadOnly": "Lecture seule — parfait pour un dashboard ou un reporting externe.",
+    "scopeReadWrite": "Lecture-écriture — création et modification de BTs, clients, adresses. Recommandé.",
+    "scopeAdmin": "Admin — inclut la modification des paramètres tenant. À réserver aux intégrations qui en ont vraiment besoin.",
+    "expiresAt": "Expiration (optionnelle)",
+    "expiresAtHint": "Laissez vide pour une clé qui n'expire jamais.",
+    "cancel": "Annuler",
+    "submit": "Créer la clé",
+    "submitting": "Création…"
+  },
+  "revealModal": {
+    "title": "✅ Clé créée",
+    "warning": "⚠️ Copiez cette clé maintenant — elle ne sera plus jamais affichée. En cas de perte, révoquez-la et créez-en une nouvelle.",
+    "copy": "📋 Copier",
+    "copied": "✓ Copié",
+    "done": "J'ai sauvegardé la clé"
+  },
+  "toasts": {
+    "created": "Clé « {{name}} » créée",
+    "revoked": "Clé « {{name}} » révoquée",
+    "revokeFailed": "Échec de la révocation : {{msg}}",
+    "createFailed": "Échec de la création : {{msg}}"
+  }
+}

@@ -83,7 +83,11 @@ export default function AdminSidebar() {
   const { user } = useAuthStore();
   const logout = useLogout();
   const { t } = useTranslation();
-  const isAdmin = user?.role === Role.ADMIN || user?.role === Role.SUPER_ADMIN;
+  // SUPER_ADMIN is intentionally NOT in `isAdmin` — its portal lives under
+  // /super-admin and must never expose tenant data (BTs, clients, etc.).
+  // The SA acts on a tenant via impersonation, which swaps the role to
+  // ADMIN client-side and re-renders this sidebar with the full ADMIN nav.
+  const isAdmin = user?.role === Role.ADMIN;
   const isSuperAdmin = user?.role === Role.SUPER_ADMIN;
 
   // Per-tenant branding resolved from the subdomain (B7.5). Generic TaskMgr
@@ -105,20 +109,24 @@ export default function AdminSidebar() {
   ];
 
   const adminOnlyNavItems = [
-    { to: '/utilisateurs', label: `👥 ${t('nav:users')}` },
-    { to: '/parametres',   label: `⚙️ ${t('nav:settings')}` },
-    { to: '/audit',        label: `📜 ${t('nav:audit', { defaultValue: 'Audit' })}` },
-    { to: '/sauvegarde',   label: `💾 ${t('nav:backup')}` },
+    { to: '/utilisateurs',    label: `👥 ${t('nav:users')}` },
+    { to: '/parametres',      label: `⚙️ ${t('nav:settings')}` },
+    { to: '/audit',           label: `📜 ${t('nav:audit', { defaultValue: 'Audit' })}` },
+    { to: '/sauvegarde',      label: `💾 ${t('nav:backup')}` },
+    { to: '/mon-abonnement',  label: `💳 ${t('nav:mySubscription', { defaultValue: 'Mon abonnement' })}` },
+    { to: '/parametres/api-keys', label: `🔑 ${t('nav:apiKeys', { defaultValue: 'Clés API' })}` },
   ];
 
   const superAdminNavItems = [
-    { to: '/super-admin',          label: `👑 ${t('nav:saConfig', { defaultValue: 'Configuration' })}` },
+    { to: '/super-admin/stats',    label: `📊 ${t('nav:saDashboard', { defaultValue: 'Tableau de bord' })}` },
     { to: '/super-admin/tenants',  label: `🌍 ${t('nav:saTenants', { defaultValue: 'Tenants' })}` },
     { to: '/super-admin/tenants/nouveau', label: `➕ ${t('nav:saTenantCreate', { defaultValue: 'Créer un tenant' })}` },
-    { to: '/super-admin/stats',    label: `📊 ${t('nav:saStats', { defaultValue: 'Stats globales' })}` },
+    { to: '/super-admin/plans',    label: `💳 ${t('nav:saPlans', { defaultValue: 'Plans & tarifs' })}` },
     { to: '/super-admin/audit',    label: `📜 ${t('nav:saAudit', { defaultValue: 'Audit cross-tenant' })}` },
     { to: '/super-admin/users',    label: `🔍 ${t('nav:saUsers', { defaultValue: 'Rechercher utilisateur' })}` },
     { to: '/super-admin/all-users', label: `👥 ${t('nav:saAllUsers', { defaultValue: 'Tous les utilisateurs' })}` },
+    { to: '/super-admin/platform-users', label: `🛡️ ${t('nav:saPlatformUsers', { defaultValue: 'SUPER_ADMINs' })}` },
+    { to: '/super-admin',          label: `⚙️ ${t('nav:saConfig', { defaultValue: 'Configuration plateforme' })}` },
   ];
 
   // ── Pending dispatch state (modal) ───────────────────────────────────────
@@ -128,10 +136,16 @@ export default function AdminSidebar() {
   const [dragOverTechId, setDragOverTechId] = useState<string | null>(null);
 
   // ── Data ────────────────────────────────────────────────────────────────
-  const { data: technicians = [] } = useTechnicians();
+  // SA never touches tenant data — skip these fetches so its console stays
+  // clean of 401s (its JWT.tenantId may not even match the request scope on
+  // IP-based access) and we don't pull other tenants' counts into its view.
+  const { data: technicians = [] } = useTechnicians({ enabled: !isSuperAdmin });
 
   // Fetch work orders (large limit, cached) to build per-technician active counts
-  const { data: woPage } = useWorkOrders({ limit: 100, page: 1 });
+  const { data: woPage } = useWorkOrders(
+    { limit: 100, page: 1 },
+    { enabled: !isSuperAdmin },
+  );
   const allWOs = woPage?.data ?? [];
 
   const activeCounts = useMemo(() => {
@@ -194,14 +208,17 @@ export default function AdminSidebar() {
           <span>{branding?.name ?? 'TaskMgr'}</span>
         </div>
 
-        {/* Main navigation */}
-        <nav>
-          {sharedNavItems.map((item) => (
-            <NavLink key={item.to} to={item.to} style={navLinkStyle}>
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
+        {/* Main navigation — hidden for SUPER_ADMIN (no tenant data in the
+            SA portal). The SA console is the super-admin nav block below. */}
+        {!isSuperAdmin && (
+          <nav>
+            {sharedNavItems.map((item) => (
+              <NavLink key={item.to} to={item.to} style={navLinkStyle}>
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+        )}
 
         {/* Admin-only nav items */}
         {isAdmin && (
@@ -233,8 +250,8 @@ export default function AdminSidebar() {
           </>
         )}
 
-        {/* Technicians DnD section */}
-        {technicians.length > 0 && (
+        {/* Technicians DnD section — irrelevant for SA (no tenant scope) */}
+        {!isSuperAdmin && technicians.length > 0 && (
           <div style={{ marginTop: '0.5rem' }}>
             <div style={sectionLabelStyle}>
               {t('nav:techniciansDragHint', 'Techniciens — glisser un BT')}
@@ -354,6 +371,25 @@ export default function AdminSidebar() {
             })}
           >
             📋 {t('nav:releaseNotes')}
+          </NavLink>
+
+          {/* API documentation link — visible to any signed-in user */}
+          <NavLink
+            to="/documentation-api"
+            style={({ isActive }) => ({
+              display: 'block',
+              marginBottom: '0.5rem',
+              padding: '0.35rem 0.75rem',
+              borderRadius: theme.radius.sm,
+              background: isActive ? theme.colors.sidebarActive : 'rgba(255,255,255,0.06)',
+              border: `1px solid ${theme.colors.sidebarBorder}`,
+              color: theme.colors.sidebarText,
+              textDecoration: 'none',
+              fontSize: theme.font.sizeSm,
+              transition: 'background 0.15s ease',
+            })}
+          >
+            📚 {t('nav:apiDocs', { defaultValue: 'Documentation API' })}
           </NavLink>
 
           {/* Mon profil link */}

@@ -28,6 +28,7 @@ import { ROLES_KEY } from '../decorators/roles.decorator';
 
 import { WorkOrdersController } from '../../modules/work-orders/work-orders.controller';
 import { ClientsController } from '../../modules/clients/clients.controller';
+import { ClientsCsvController } from '../../modules/clients/clients-csv.controller';
 import { UsersController } from '../../modules/users/users.controller';
 import { CalendarController } from '../../modules/calendar/calendar.controller';
 import { AuditController } from '../../modules/audit/api/audit.controller';
@@ -42,6 +43,10 @@ import { SuperAdminStatsController } from '../../modules/tenants/api/super-admin
 import { SuperAdminAuditController } from '../../modules/tenants/api/super-admin-audit.controller';
 import { SuperAdminUsersController } from '../../modules/tenants/api/super-admin-users.controller';
 import { SuperAdminAllUsersController } from '../../modules/tenants/api/super-admin-all-users.controller';
+import { SuperAdminPlatformUsersController } from '../../modules/tenants/api/super-admin-platform-users.controller';
+import { SuperAdminPlansController } from '../../modules/tenants/api/super-admin-plans.controller';
+import { TenantSubscriptionController } from '../../modules/tenants/api/tenant-subscription.controller';
+import { TenantApiKeysController } from '../../modules/tenants/api/tenant-api-keys.controller';
 import { LocationsController } from '../../modules/locations/api/locations.controller';
 
 // ─── Matrix rows ─────────────────────────────────────────────────────────────
@@ -192,7 +197,8 @@ const ALL_ROWS: { name: string; rows: MatrixRow[] }[] = [
   {
     name: 'SuperAdminStatsController',
     rows: [
-      { controller: SuperAdminStatsController, method: 'snapshot', expectedRoles: [Role.SUPER_ADMIN], note: 'GET /super-admin/stats' },
+      { controller: SuperAdminStatsController, method: 'snapshot',  expectedRoles: [Role.SUPER_ADMIN], note: 'GET /super-admin/stats' },
+      { controller: SuperAdminStatsController, method: 'perTenant', expectedRoles: [Role.SUPER_ADMIN], note: 'GET /super-admin/stats/tenants' },
     ],
   },
   {
@@ -212,6 +218,47 @@ const ALL_ROWS: { name: string; rows: MatrixRow[] }[] = [
     rows: [
       { controller: SuperAdminAllUsersController, method: 'list',   expectedRoles: [Role.SUPER_ADMIN], note: 'GET /super-admin/all-users' },
       { controller: SuperAdminAllUsersController, method: 'update', expectedRoles: [Role.SUPER_ADMIN], note: 'PATCH /super-admin/all-users/:id' },
+    ],
+  },
+  {
+    name: 'SuperAdminPlatformUsersController',
+    rows: [
+      { controller: SuperAdminPlatformUsersController, method: 'list',   expectedRoles: [Role.SUPER_ADMIN], note: 'GET /super-admin/platform-users' },
+      { controller: SuperAdminPlatformUsersController, method: 'create', expectedRoles: [Role.SUPER_ADMIN], note: 'POST /super-admin/platform-users' },
+    ],
+  },
+  {
+    name: 'SuperAdminPlansController',
+    rows: [
+      { controller: SuperAdminPlansController, method: 'list',   expectedRoles: [Role.SUPER_ADMIN], note: 'GET /super-admin/plans' },
+      { controller: SuperAdminPlansController, method: 'update', expectedRoles: [Role.SUPER_ADMIN], note: 'PATCH /super-admin/plans/:code' },
+    ],
+  },
+  {
+    name: 'TenantSubscriptionController',
+    rows: [
+      { controller: TenantSubscriptionController, method: 'mySubscription', expectedRoles: [Role.ADMIN], note: 'GET /tenant/subscription (+ PrimaryAdminGuard)' },
+      { controller: TenantSubscriptionController, method: 'requestChange',  expectedRoles: [Role.ADMIN], note: 'POST /tenant/subscription/change-request (+ PrimaryAdminGuard)' },
+      { controller: TenantSubscriptionController, method: 'history',        expectedRoles: [Role.ADMIN], note: 'GET /tenant/subscription/history (+ PrimaryAdminGuard)' },
+    ],
+  },
+  {
+    name: 'TenantApiKeysController',
+    rows: [
+      { controller: TenantApiKeysController, method: 'list',   expectedRoles: [Role.ADMIN], note: 'GET /tenant/api-keys' },
+      { controller: TenantApiKeysController, method: 'create', expectedRoles: [Role.ADMIN], note: 'POST /tenant/api-keys' },
+      { controller: TenantApiKeysController, method: 'revoke', expectedRoles: [Role.ADMIN], note: 'DELETE /tenant/api-keys/:id' },
+    ],
+  },
+  {
+    name: 'ClientsCsvController',
+    rows: [
+      { controller: ClientsCsvController, method: 'clientsTemplate',    expectedRoles: [Role.ADMIN], note: 'GET /clients/csv/template' },
+      { controller: ClientsCsvController, method: 'addressesTemplate',  expectedRoles: [Role.ADMIN], note: 'GET /clients/csv/addresses/template' },
+      { controller: ClientsCsvController, method: 'exportClients',      expectedRoles: [Role.ADMIN], note: 'GET /clients/csv/export' },
+      { controller: ClientsCsvController, method: 'exportAddresses',    expectedRoles: [Role.ADMIN], note: 'GET /clients/csv/addresses/export' },
+      { controller: ClientsCsvController, method: 'importClients',      expectedRoles: [Role.ADMIN], note: 'POST /clients/csv/import' },
+      { controller: ClientsCsvController, method: 'importAddresses',    expectedRoles: [Role.ADMIN], note: 'POST /clients/csv/addresses/import' },
     ],
   },
 ];

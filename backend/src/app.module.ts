@@ -13,6 +13,8 @@ import { StorageModule } from './common/storage/storage.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { UserScopedThrottlerGuard } from './common/guards/user-scoped-throttler.guard';
+import { ApiKeyAuthGuard } from './common/guards/api-key-auth.guard';
+import { ApiScopeGuard } from './common/guards/api-scope.guard';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { HealthModule } from './modules/health/health.module';
@@ -34,6 +36,8 @@ import { LocationsModule } from './modules/locations/locations.module';
 import { TenantResolverMiddleware } from './common/middleware/tenant-resolver.middleware';
 import { RequestContextModule } from './common/context/request-context.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
+import { ApiKeysModule } from './modules/api-keys/api-keys.module';
+import { PublicApiModule } from './modules/public-api/public-api.module';
 
 @Module({
   imports: [
@@ -65,9 +69,13 @@ import { TenantsModule } from './modules/tenants/tenants.module';
     ScheduleModule.forRoot(),
 
     // ── Rate limiting ──────────────────────────────────────────────────────
-    // Integration tests set THROTTLER_DISABLE=1 — every bucket gets a
-    // very high limit so the cumulative requests of a multi-test run
-    // don't trip the cap. Production keeps the tight defaults.
+    // Three named buckets fired in parallel — a request must fit under all
+    // three or gets throttled. Naming lets @Throttle() decorators target
+    // one bucket at a time for per-route overrides (public API v1 uses
+    // higher limits configured via env — see PublicApiThrottleGuard).
+    //
+    // Integration tests set THROTTLER_DISABLE=1 → all buckets get an
+    // effectively infinite limit so multi-test runs don't trip the cap.
     ThrottlerModule.forRoot(
       process.env.THROTTLER_DISABLE === '1'
         ? [
@@ -101,6 +109,8 @@ import { TenantsModule } from './modules/tenants/tenants.module';
     StorageModule,
     RequestContextModule,
     TenantsModule,
+    ApiKeysModule,
+    PublicApiModule,
 
     // ── Feature modules ────────────────────────────────────────────────────
     HealthModule,
@@ -124,13 +134,27 @@ import { TenantsModule } from './modules/tenants/tenants.module';
   ],
   providers: [
     // ── Guards globaux ─────────────────────────────────────────────────────
-    // Ordre important : JwtAuthGuard d'abord (authentification),
-    // puis RolesGuard (autorisation), puis Throttler (rate limiting).
-    // Le guard JWT bypass les routes @Public(). Le throttler scope par userId
-    // si l'auth a réussi, sinon par IP (cas login/refresh anonymes).
+    // Ordre important — chaque guard runs BEFORE the next :
+    //   1. JwtAuthGuard         — internal UI (bypassed on @Public + /api/v1/*)
+    //   2. ApiKeyAuthGuard      — public API v1 (short-circuits on non-v1)
+    //   3. ApiScopeGuard        — scope check on v1 (short-circuits on non-v1)
+    //   4. RolesGuard           — @Roles on internal UI (no-op on v1)
+    //   5. UserScopedThrottler  — rate limit (apiKey → user → ip)
+    //
+    // Registering ApiKey + ApiScope globally is defence-in-depth : even if
+    // a new /api/v1/* controller forgets @UseGuards, the global pipeline
+    // still enforces auth + scope. See ADR-011 § "Guards & pipeline".
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ApiKeyAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ApiScopeGuard,
     },
     {
       provide: APP_GUARD,
