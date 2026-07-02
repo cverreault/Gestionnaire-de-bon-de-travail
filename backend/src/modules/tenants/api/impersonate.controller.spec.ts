@@ -17,14 +17,34 @@ import { Role } from '@prisma/client';
 import { ImpersonateController } from './impersonate.controller';
 
 function makePrisma() {
+  // B7 — both resolveByUserId + resolveByTenantId now use $queryRawUnsafe
+  // to bypass the tenant-scope middleware. The mock returns rows in
+  // snake_case to match the controller's mapping back to camelCase.
   return {
-    user: {
-      findUnique: jest.fn(),
-      findFirst: jest.fn(),
-    },
+    $queryRawUnsafe: jest.fn(),
     tenant: {
       findUnique: jest.fn(),
     },
+  };
+}
+
+function snakeRow(row: {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: Role;
+  tenantId: string;
+  isActive: boolean;
+}) {
+  return {
+    id: row.id,
+    email: row.email,
+    first_name: row.firstName,
+    last_name: row.lastName,
+    role: row.role,
+    tenant_id: row.tenantId,
+    is_active: row.isActive,
   };
 }
 
@@ -65,15 +85,17 @@ describe('ImpersonateController', () => {
   describe('userId mode', () => {
     it('returns signed access token + user + tenant on the happy path', async () => {
       const prisma = makePrisma();
-      prisma.user.findUnique.mockResolvedValueOnce({
-        id: 'u-target',
-        email: 'jean@x.io',
-        firstName: 'Jean',
-        lastName: 'Tremblay',
-        role: Role.ADMIN,
-        tenantId: 't-1',
-        isActive: true,
-      });
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([
+        snakeRow({
+          id: 'u-target',
+          email: 'jean@x.io',
+          firstName: 'Jean',
+          lastName: 'Tremblay',
+          role: Role.ADMIN,
+          tenantId: 't-1',
+          isActive: true,
+        }),
+      ]);
       prisma.tenant.findUnique.mockResolvedValueOnce({
         id: 't-1',
         slug: 'aco',
@@ -98,7 +120,7 @@ describe('ImpersonateController', () => {
 
     it('throws 404 when the user id does not exist', async () => {
       const prisma = makePrisma();
-      prisma.user.findUnique.mockResolvedValueOnce(null);
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([]);
       await expect(
         make(prisma, makeJwt()).impersonate(sa, { userId: 'u-ghost' }),
       ).rejects.toThrow(NotFoundException);
@@ -106,15 +128,17 @@ describe('ImpersonateController', () => {
 
     it('rejects impersonating self', async () => {
       const prisma = makePrisma();
-      prisma.user.findUnique.mockResolvedValueOnce({
-        id: 'sa-1',
-        email: 'sa@x.io',
-        firstName: 'SA',
-        lastName: 'One',
-        role: Role.SUPER_ADMIN,
-        tenantId: 't-1',
-        isActive: true,
-      });
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([
+        snakeRow({
+          id: 'sa-1',
+          email: 'sa@x.io',
+          firstName: 'SA',
+          lastName: 'One',
+          role: Role.SUPER_ADMIN,
+          tenantId: 't-1',
+          isActive: true,
+        }),
+      ]);
       await expect(
         make(prisma, makeJwt()).impersonate(sa, { userId: 'sa-1' }),
       ).rejects.toThrow(/déjà connecté/);
@@ -122,15 +146,17 @@ describe('ImpersonateController', () => {
 
     it('rejects impersonating another SUPER_ADMIN', async () => {
       const prisma = makePrisma();
-      prisma.user.findUnique.mockResolvedValueOnce({
-        id: 'sa-2',
-        email: 'sa2@x.io',
-        firstName: 'SA',
-        lastName: 'Two',
-        role: Role.SUPER_ADMIN,
-        tenantId: 't-1',
-        isActive: true,
-      });
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([
+        snakeRow({
+          id: 'sa-2',
+          email: 'sa2@x.io',
+          firstName: 'SA',
+          lastName: 'Two',
+          role: Role.SUPER_ADMIN,
+          tenantId: 't-1',
+          isActive: true,
+        }),
+      ]);
       await expect(
         make(prisma, makeJwt()).impersonate(sa, { userId: 'sa-2' }),
       ).rejects.toThrow(/Impossible d'imiter/);
@@ -138,15 +164,17 @@ describe('ImpersonateController', () => {
 
     it('rejects inactive target', async () => {
       const prisma = makePrisma();
-      prisma.user.findUnique.mockResolvedValueOnce({
-        id: 'u-target',
-        email: 'jean@x.io',
-        firstName: 'Jean',
-        lastName: 'X',
-        role: Role.ADMIN,
-        tenantId: 't-1',
-        isActive: false,
-      });
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([
+        snakeRow({
+          id: 'u-target',
+          email: 'jean@x.io',
+          firstName: 'Jean',
+          lastName: 'X',
+          role: Role.ADMIN,
+          tenantId: 't-1',
+          isActive: false,
+        }),
+      ]);
       await expect(
         make(prisma, makeJwt()).impersonate(sa, { userId: 'u-target' }),
       ).rejects.toThrow(/Compte cible inactif/);
@@ -154,17 +182,19 @@ describe('ImpersonateController', () => {
   });
 
   describe('tenantId mode (B7)', () => {
-    it('picks the first active ADMIN ordered by createdAt ASC', async () => {
+    it('picks the first active ADMIN — raw SQL bypasses tenant-scope middleware', async () => {
       const prisma = makePrisma();
-      prisma.user.findFirst.mockResolvedValueOnce({
-        id: 'u-admin',
-        email: 'admin@aco.io',
-        firstName: 'Admin',
-        lastName: 'Aco',
-        role: Role.ADMIN,
-        tenantId: 't-aco',
-        isActive: true,
-      });
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([
+        snakeRow({
+          id: 'u-admin',
+          email: 'admin@aco.io',
+          firstName: 'Admin',
+          lastName: 'Aco',
+          role: Role.ADMIN,
+          tenantId: 't-aco',
+          isActive: true,
+        }),
+      ]);
       prisma.tenant.findUnique.mockResolvedValueOnce({
         id: 't-aco',
         slug: 'aco',
@@ -175,18 +205,21 @@ describe('ImpersonateController', () => {
         tenantId: 't-aco',
       });
 
-      expect(prisma.user.findFirst).toHaveBeenCalledWith({
-        where: { tenantId: 't-aco', role: Role.ADMIN, isActive: true },
-        orderBy: { createdAt: 'asc' },
-        select: expect.objectContaining({ id: true, email: true, role: true }),
-      });
+      // Raw SQL : assert the WHERE clause hits the right tenant + ADMIN
+      // role + isActive filter. The middleware bypass is the whole
+      // point of using $queryRawUnsafe here.
+      const call = prisma.$queryRawUnsafe.mock.calls[0];
+      expect(call[0]).toMatch(/tenant_id\s*=\s*\$1/i);
+      expect(call[0]).toMatch(/role\s*=\s*'ADMIN'/i);
+      expect(call[0]).toMatch(/is_active\s*=\s*true/i);
+      expect(call[1]).toBe('t-aco');
       expect(result.user.id).toBe('u-admin');
       expect(result.tenant.slug).toBe('aco');
     });
 
     it('throws 404 when no active ADMIN exists in the tenant', async () => {
       const prisma = makePrisma();
-      prisma.user.findFirst.mockResolvedValueOnce(null);
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([]);
       await expect(
         make(prisma, makeJwt()).impersonate(sa, { tenantId: 't-empty' }),
       ).rejects.toThrow(NotFoundException);

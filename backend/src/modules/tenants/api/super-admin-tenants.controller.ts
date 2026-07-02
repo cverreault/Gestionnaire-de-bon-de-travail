@@ -17,7 +17,8 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
-import { Role } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
+import { PlansService } from '../application/plans.service';
 import { i18nValidationMessage } from 'nestjs-i18n';
 import { PrismaService } from '../../../common/prisma/prisma.service';
 import { MinioService } from '../../../common/storage/minio.service';
@@ -66,6 +67,7 @@ export class SuperAdminTenantsController {
     private readonly prisma: PrismaService,
     private readonly tenantService: SuperAdminTenantService,
     private readonly minio: MinioService,
+    private readonly plans: PlansService,
   ) {}
 
   @Post()
@@ -134,15 +136,34 @@ export class SuperAdminTenantsController {
   async update(@Param('id') id: string, @Body() dto: UpdateTenantDto) {
     const existing = await this.prisma.tenant.findUnique({
       where: { id },
-      select: { id: true },
+      select: { id: true, plan: true },
     });
     if (!existing) {
       throw new NotFoundException(`Tenant ${id} introuvable`);
     }
 
+    // Plan change → snap missing quota fields to the new plan's defaults.
+    // The SA can still override any of the four caps in the same PATCH;
+    // in that case the explicit value wins (grandfathered customers, demo
+    // accounts, etc.). If the plan field isn't in the PATCH, leave the
+    // quotas alone — a quota-only update should not retroactively reset
+    // the others.
+    let data: Prisma.TenantUpdateInput = { ...dto };
+    if (dto.plan && dto.plan !== existing.plan) {
+      const plan = await this.plans.getByCode(dto.plan);
+      data = {
+        ...data,
+        maxUsers: dto.maxUsers ?? plan.quotas.maxUsers,
+        maxWorkOrdersPerMonth:
+          dto.maxWorkOrdersPerMonth ?? plan.quotas.maxWorkOrdersPerMonth,
+        maxStorageMb: dto.maxStorageMb ?? plan.quotas.maxStorageMb,
+        maxClients: dto.maxClients ?? plan.quotas.maxClients,
+      };
+    }
+
     const updated = await this.prisma.tenant.update({
       where: { id },
-      data: dto,
+      data,
     });
     return this.withLogoUrl(updated);
   }
@@ -214,6 +235,9 @@ export class SuperAdminTenantsController {
   /**
    * Enriches a tenant row with a fresh presigned `logoUrl` (1 h TTL) when it
    * has a stored logo. Returns the row untouched (logoUrl = null) otherwise.
+   *
+   * BigInt fields (e.g. `currentStorageBytes`) are serialised globally via
+   * `BigInt.prototype.toJSON` in main.ts — no per-handler coercion needed.
    */
   private async withLogoUrl<T extends { logoStorageKey?: string | null }>(
     tenant: T,

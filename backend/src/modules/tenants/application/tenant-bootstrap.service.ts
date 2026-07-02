@@ -2,22 +2,19 @@ import { Injectable, Logger } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 
 /**
- * Seeds the minimum catalog every new tenant needs to be operable
- * right after signup (B6.7).
+ * Minimal catalog every new tenant needs to be operable right after
+ * signup (B6.7 → refined B7.6 to a true blank slate).
  *
- * Run inside the same transaction as the Tenant + ADMIN user creation
- * — if any step fails, the whole signup rolls back and the user can
- * retry without orphaned rows.
+ * Seeded :
+ *   1. A default process (CREATED → ASSIGNED → IN_PROGRESS → COMPLETED)
+ *   2. A default WO template (1 empty "Notes" section) so the admin
+ *      can create their first BT before customizing the catalog.
  *
- * Order :
- *   1. Default process (CREATED → ASSIGNED → IN_PROGRESS → COMPLETED)
- *   2. Default task types (Installation / Réparation / Maintenance / Inspection / Autre)
- *   3. Default client types (RESIDENTIAL / COMMERCIAL)
- *   4. Default address types (RESIDENCE / OFFICE / WORKSITE)
+ * NOT seeded (admin creates them on demand) :
+ *   - Task types, client types, address types
  *
- * The defaults match what the global seed (`prisma/seed.ts`) created
- * for the DEFAULT tenant — a brand new tenant starts on the same
- * footing as the self-hosted single-tenant baseline.
+ * Runs inside the same transaction as Tenant + ADMIN creation — if any
+ * step fails, signup rolls back cleanly with no orphans.
  */
 @Injectable()
 export class TenantBootstrapService {
@@ -28,10 +25,8 @@ export class TenantBootstrapService {
     tenantId: string,
   ): Promise<void> {
     await this.seedProcess(tx, tenantId);
-    await this.seedTaskTypes(tx, tenantId);
-    await this.seedClientTypes(tx, tenantId);
-    await this.seedAddressTypes(tx, tenantId);
-    this.logger.log(`✅ Seeded catalog for tenant ${tenantId}`);
+    await this.seedDefaultTemplate(tx, tenantId);
+    this.logger.log(`✅ Seeded minimal catalog for tenant ${tenantId}`);
   }
 
   private async seedProcess(
@@ -48,7 +43,6 @@ export class TenantBootstrapService {
       },
     });
 
-    // 4 status nodes matching the legacy WorkOrderStatus mapping.
     const statuses = [
       { code: 0, name: 'Créé', color: '#6B7280', position: 1, isInitial: true },
       { code: 100, name: 'Assigné', color: '#3B82F6', position: 2 },
@@ -63,53 +57,27 @@ export class TenantBootstrapService {
     }
   }
 
-  private async seedTaskTypes(
+  private async seedDefaultTemplate(
     tx: Prisma.TransactionClient,
     tenantId: string,
   ): Promise<void> {
-    const types = [
-      { name: 'Installation', prefix: 'INST', description: 'Installation de nouveaux équipements', color: '#3B82F6', icon: 'tool' },
-      { name: 'Réparation',   prefix: 'REP',  description: 'Réparation d\'équipements défectueux', color: '#EF4444', icon: 'wrench' },
-      { name: 'Maintenance',  prefix: 'MNT',  description: 'Entretien préventif', color: '#F59E0B', icon: 'settings' },
-      { name: 'Inspection',   prefix: 'INSP', description: 'Inspection et vérification', color: '#8B5CF6', icon: 'search' },
-      { name: 'Autre',        prefix: 'AUT',  description: 'Autre type de tâche', color: '#6B7280', icon: 'more-horizontal' },
-    ];
+    const template = await tx.workOrderTemplate.create({
+      data: {
+        tenantId,
+        name: 'Standard',
+        description:
+          'Template par défaut — ajoutez sections et champs personnalisés au besoin',
+        isActive: true,
+      },
+    });
 
-    for (const t of types) {
-      await tx.taskType.create({
-        data: { tenantId, ...t, isActive: true },
-      });
-    }
-  }
-
-  private async seedClientTypes(
-    tx: Prisma.TransactionClient,
-    tenantId: string,
-  ): Promise<void> {
-    const types = [
-      { code: 'RESIDENTIAL', name: 'Résidentiel', color: '#3B82F6', icon: 'home', sortOrder: 1 },
-      { code: 'COMMERCIAL',  name: 'Commercial',  color: '#10B981', icon: 'building', sortOrder: 2 },
-    ];
-    for (const t of types) {
-      await tx.clientTypeConfig.create({
-        data: { tenantId, ...t, isActive: true },
-      });
-    }
-  }
-
-  private async seedAddressTypes(
-    tx: Prisma.TransactionClient,
-    tenantId: string,
-  ): Promise<void> {
-    const types = [
-      { code: 'RESIDENCE', name: 'Résidence', color: '#3B82F6', icon: 'home', sortOrder: 1 },
-      { code: 'OFFICE',    name: 'Bureau',    color: '#10B981', icon: 'building', sortOrder: 2 },
-      { code: 'WORKSITE',  name: 'Chantier',  color: '#F59E0B', icon: 'hard-hat', sortOrder: 3 },
-    ];
-    for (const t of types) {
-      await tx.addressTypeConfig.create({
-        data: { tenantId, ...t, isActive: true },
-      });
-    }
+    await tx.templateSection.create({
+      data: {
+        tenantId,
+        templateId: template.id,
+        name: 'Notes',
+        sortOrder: 1,
+      },
+    });
   }
 }

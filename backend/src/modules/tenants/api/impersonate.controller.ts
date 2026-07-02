@@ -165,46 +165,78 @@ export class ImpersonateController {
   }
 
   private async resolveByUserId(userId: string) {
-    const target = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        tenantId: true,
-        isActive: true,
-      },
-    });
-    if (!target) {
+    // Raw SQL so the tenant-scope middleware (B6.4) doesn't filter the
+    // lookup down to the SA's own tenant — the whole point of
+    // impersonation is to reach across tenants.
+    type Row = {
+      id: string;
+      email: string;
+      first_name: string;
+      last_name: string;
+      role: Role;
+      tenant_id: string;
+      is_active: boolean;
+    };
+    const rows = await this.prisma.$queryRawUnsafe<Row[]>(
+      `SELECT id, email, first_name, last_name, role, tenant_id, is_active
+       FROM users WHERE id = $1`,
+      userId,
+    );
+    if (rows.length === 0) {
       throw new NotFoundException(`Utilisateur ${userId} introuvable`);
     }
-    return target;
+    const r = rows[0];
+    return {
+      id: r.id,
+      email: r.email,
+      firstName: r.first_name,
+      lastName: r.last_name,
+      role: r.role,
+      tenantId: r.tenant_id,
+      isActive: r.is_active,
+    };
   }
 
   private async resolveByTenantId(tenantId: string) {
     // 1st active ADMIN by created_at ASC = the original / founding admin
     // of the tenant. Stable choice, not dependent on the alphabetical
     // order of names.
-    const target = await this.prisma.user.findFirst({
-      where: { tenantId, role: Role.ADMIN, isActive: true },
-      orderBy: { createdAt: 'asc' },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        tenantId: true,
-        isActive: true,
-      },
-    });
-    if (!target) {
+    //
+    // Raw SQL : the tenant-scope middleware (B6.4) would otherwise
+    // overwrite our explicit where.tenantId with the SA's own tenant,
+    // breaking the cross-tenant lookup. This is the SA equivalent of a
+    // service-account read — it has to bypass the per-request filter.
+    type Row = {
+      id: string;
+      email: string;
+      first_name: string;
+      last_name: string;
+      role: Role;
+      tenant_id: string;
+      is_active: boolean;
+    };
+    const rows = await this.prisma.$queryRawUnsafe<Row[]>(
+      `SELECT id, email, first_name, last_name, role, tenant_id, is_active
+       FROM users
+       WHERE tenant_id = $1 AND role = 'ADMIN' AND is_active = true
+       ORDER BY created_at ASC
+       LIMIT 1`,
+      tenantId,
+    );
+    if (rows.length === 0) {
       throw new NotFoundException(
         `Aucun ADMIN actif dans ce tenant — impossible d'imiter`,
       );
     }
-    return target;
+    const r = rows[0];
+    return {
+      id: r.id,
+      email: r.email,
+      firstName: r.first_name,
+      lastName: r.last_name,
+      role: r.role,
+      tenantId: r.tenant_id,
+      isActive: r.is_active,
+    };
   }
 }

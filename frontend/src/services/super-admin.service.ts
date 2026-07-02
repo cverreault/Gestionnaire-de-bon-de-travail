@@ -102,6 +102,94 @@ export async function getStats(): Promise<SuperAdminStats> {
   return data.data;
 }
 
+// ─── Per-tenant usage (B7.7) ────────────────────────────────────────
+
+export interface TenantUsageRow {
+  id: string;
+  slug: string;
+  name: string;
+  plan: TenantPlan;
+  isActive: boolean;
+  users: { active: number; max: number; sessions: number };
+  workOrders: { thisMonth: number; max: number; total: number };
+  storage: { bytes: number; maxMb: number };
+  clients: { count: number; max: number };
+  createdAt: string;
+  lastLoginAt: string | null;
+  lastWorkOrderAt: string | null;
+}
+
+export async function getPerTenantUsage(): Promise<{ data: TenantUsageRow[] }> {
+  const { data } = await api.get<ApiResponse<{ data: TenantUsageRow[] }>>(
+    '/super-admin/stats/tenants',
+  );
+  return data.data;
+}
+
+// ─── Plan catalog (B7.7) ────────────────────────────────────────────
+
+export interface PlanQuotas {
+  maxUsers: number;
+  maxWorkOrdersPerMonth: number;
+  maxStorageMb: number;
+  maxClients: number;
+}
+
+export interface PlanDefinition {
+  /** Now named `code` server-side (matches DB column). Kept aliased to
+   * `plan` for transitional UI bits — they fall back to `code` if unset. */
+  code: TenantPlan;
+  /** Legacy alias — older UI bits still read `plan` instead of `code`. */
+  plan?: TenantPlan;
+  displayName: string;
+  tagline: string;
+  description: string;
+  priceMonthly: number;
+  /** Per-active-user surcharge — billed monthly on top of `priceMonthly`. */
+  pricePerUserMonthly: number;
+  currency: 'CAD' | 'USD' | 'EUR';
+  quotas: PlanQuotas;
+  features: string[];
+  recommended?: boolean;
+  sortOrder?: number;
+  isActive?: boolean;
+}
+
+export async function getPlanCatalog(): Promise<{ data: PlanDefinition[] }> {
+  const { data } = await api.get<ApiResponse<{ data: PlanDefinition[] }>>(
+    '/super-admin/plans',
+  );
+  return data.data;
+}
+
+export interface UpdatePlanInput {
+  displayName?: string;
+  tagline?: string;
+  description?: string;
+  priceMonthly?: number;
+  pricePerUserMonthly?: number;
+  currency?: 'CAD' | 'USD' | 'EUR';
+  maxUsers?: number;
+  maxWorkOrdersPerMonth?: number;
+  maxStorageMb?: number;
+  maxClients?: number;
+  features?: string[];
+  recommended?: boolean;
+  sortOrder?: number;
+  isActive?: boolean;
+}
+
+export async function updatePlan(
+  code: TenantPlan,
+  patch: UpdatePlanInput,
+): Promise<PlanDefinition> {
+  const { data } = await api.patch<ApiResponse<PlanDefinition>>(
+    `/super-admin/plans/${code}`,
+    patch,
+  );
+  return data.data;
+}
+
 // ─── Audit cross-tenant (B7) ────────────────────────────────────────
 
 export interface AuditRow {
@@ -307,6 +395,45 @@ export async function createUserBySuperAdmin(
 ): Promise<AllUsersRow> {
   const { data } = await api.post<ApiResponse<AllUsersRow>>(
     '/super-admin/all-users',
+    input,
+  );
+  return data.data;
+}
+
+// ─── Platform SUPER_ADMINs (B7.6) ───────────────────────────────────
+
+export interface PlatformSuperAdminRow {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface CreatePlatformSuperAdminInput {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+}
+
+export async function listPlatformSuperAdmins(): Promise<{
+  data: PlatformSuperAdminRow[];
+}> {
+  const { data } = await api.get<ApiResponse<{ data: PlatformSuperAdminRow[] }>>(
+    '/super-admin/platform-users',
+  );
+  return data.data;
+}
+
+export async function createPlatformSuperAdmin(
+  input: CreatePlatformSuperAdminInput,
+): Promise<PlatformSuperAdminRow> {
+  const { data } = await api.post<ApiResponse<PlatformSuperAdminRow>>(
+    '/super-admin/platform-users',
     input,
   );
   return data.data;

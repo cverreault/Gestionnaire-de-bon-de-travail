@@ -13,6 +13,13 @@ export interface ImpersonationState {
   impersonatedTenantSlug: string | null;
   impersonatedTenantName: string | null;
   impersonatedUserEmail: string | null;
+  /**
+   * Epoch ms at which the impersonation access token expires (T+15 min
+   * from start). The banner reads it to drive a countdown and auto-stop
+   * the session when it hits zero — without it the SA would only learn
+   * the token expired via the next 401.
+   */
+  expiresAt: number | null;
 }
 
 interface AuthState {
@@ -55,7 +62,11 @@ const EMPTY_IMPERSONATION: ImpersonationState = {
   impersonatedTenantSlug: null,
   impersonatedTenantName: null,
   impersonatedUserEmail: null,
+  expiresAt: null,
 };
+
+/** Backend signs impersonation tokens with a 15-min TTL — mirror it here. */
+const IMPERSONATION_TTL_MS = 15 * 60 * 1000;
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -130,6 +141,7 @@ export const useAuthStore = create<AuthState>()(
             impersonatedTenantSlug: targetTenantSlug,
             impersonatedTenantName: targetTenantName,
             impersonatedUserEmail: targetUserEmail,
+            expiresAt: Date.now() + IMPERSONATION_TTL_MS,
           },
         });
       },

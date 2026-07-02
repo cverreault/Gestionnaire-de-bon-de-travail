@@ -4,10 +4,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { theme, cardStyles, layoutStyles, buttonStyles, formStyles } from '../theme';
 import {
   createTenant,
+  getPlanCatalog,
   uploadTenantLogo,
   type CreateTenantInput,
   type TenantPlan,
 } from '../services/super-admin.service';
+import { useQuery } from '@tanstack/react-query';
 
 const PLANS: TenantPlan[] = ['FREE', 'PRO', 'ENTERPRISE'];
 
@@ -87,10 +89,18 @@ export default function SuperAdminCreateTenantPage() {
     },
   });
 
-  const apiError =
-    (create.error as { response?: { data?: { message?: string | string[] } } } | undefined)
-      ?.response?.data?.message;
-  const errorText = Array.isArray(apiError) ? apiError.join(', ') : apiError;
+  // The backend's validation error response has three possible shapes :
+  //   1. `message: string`                    — simple errors
+  //   2. `message: string[]`                  — legacy class-validator
+  //   3. `message: ValidationError[]`         — nestjs-i18n with `detailedErrors: true`
+  // Shape 3 carries objects like `{ property, constraints, children }` —
+  // rendering them raw crashes React ("Objects are not valid as a React
+  // child"), so we flatten to `"property: constraint message"` strings.
+  const rawMessage = (
+    create.error as { response?: { data?: { message?: unknown } } } | undefined
+  )?.response?.data?.message;
+  const errorMessages: string[] = flattenValidationMessage(rawMessage);
+  const errorText = errorMessages.join(', ');
 
   return (
     <div style={layoutStyles.page}>
@@ -152,6 +162,7 @@ export default function SuperAdminCreateTenantPage() {
                 </option>
               ))}
             </select>
+            <PlanPreview plan={plan} />
           </Field>
         </Stack>
 
@@ -244,10 +255,31 @@ export default function SuperAdminCreateTenantPage() {
           </Field>
         </Stack>
 
-        {errorText && (
-          <p style={{ color: theme.colors.danger, marginTop: 16, fontSize: 13 }}>
-            Échec : {errorText}
-          </p>
+        {errorMessages.length > 0 && (
+          <div
+            role="alert"
+            style={{
+              marginTop: 16,
+              padding: '10px 12px',
+              borderRadius: 6,
+              background: theme.colors.dangerLight,
+              border: `1px solid ${theme.colors.danger}`,
+              color: theme.colors.danger,
+              fontSize: 13,
+              lineHeight: 1.5,
+            }}
+          >
+            <strong>Échec de la création :</strong>
+            {errorMessages.length > 1 ? (
+              <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+                {errorMessages.map((m, i) => (
+                  <li key={i}>{m}</li>
+                ))}
+              </ul>
+            ) : (
+              <span> {errorMessages[0]}</span>
+            )}
+          </div>
         )}
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}>
@@ -304,6 +336,74 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+function PlanPreview({ plan }: { plan: TenantPlan }) {
+  const { data } = useQuery({
+    queryKey: ['superAdmin', 'plans'],
+    queryFn: getPlanCatalog,
+    staleTime: 5 * 60_000,
+  });
+  const def = data?.data.find((p) => p.code === plan);
+  if (!def) return null;
+  const hasBase = def.priceMonthly > 0;
+  const hasPerUser = def.pricePerUserMonthly > 0;
+  const isFree = !hasBase && !hasPerUser;
+  return (
+    <div
+      style={{
+        marginTop: 4,
+        padding: '10px 12px',
+        borderRadius: 6,
+        background: theme.colors.surfaceAlt,
+        border: `1px solid ${theme.colors.border}`,
+        display: 'grid',
+        gridTemplateColumns: '1fr auto',
+        gap: 12,
+        alignItems: 'center',
+      }}
+    >
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: theme.colors.text }}>
+          {def.displayName}
+        </div>
+        <div style={{ fontSize: 11, color: theme.colors.textMuted, marginTop: 2 }}>
+          👥 {def.quotas.maxUsers} users · 📋 {def.quotas.maxWorkOrdersPerMonth.toLocaleString('fr-CA')} BTs/mois ·
+          🧑‍🤝‍🧑 {def.quotas.maxClients.toLocaleString('fr-CA')} clients ·
+          💾 {def.quotas.maxStorageMb >= 1000 ? `${(def.quotas.maxStorageMb / 1000).toFixed(0)} Go` : `${def.quotas.maxStorageMb} Mo`}
+        </div>
+      </div>
+      <div
+        style={{
+          fontSize: 14,
+          fontWeight: 800,
+          color: theme.colors.primary,
+          whiteSpace: 'nowrap',
+          textAlign: 'right',
+          lineHeight: 1.3,
+        }}
+      >
+        {isFree && <span>Gratuit</span>}
+        {hasBase && (
+          <div>
+            {def.priceMonthly} {def.currency}
+            <span style={{ fontSize: 11, color: theme.colors.textMuted, fontWeight: 500 }}>
+              {' '}/ mois
+            </span>
+          </div>
+        )}
+        {hasPerUser && (
+          <div>
+            {hasBase && <span style={{ color: theme.colors.textMuted, fontWeight: 500 }}>+ </span>}
+            {def.pricePerUserMonthly} {def.currency}
+            <span style={{ fontSize: 11, color: theme.colors.textMuted, fontWeight: 500 }}>
+              {' '}/ user / mois
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function NumField({
   label,
   value,
@@ -327,4 +427,51 @@ function NumField({
       />
     </Field>
   );
+}
+
+
+// ─── Validation error flattening ───────────────────────────────────
+
+interface ValidationErrorNode {
+  property?: string;
+  constraints?: Record<string, string>;
+  children?: ValidationErrorNode[];
+}
+
+/**
+ * Recursively walks a `ValidationError[]` tree returned by nestjs-i18n
+ * (detailedErrors: true) and produces `"property: message"` strings, one
+ * per failed constraint. Accepts any of the three shapes the backend may
+ * emit so shape drift never crashes React.
+ */
+function flattenValidationMessage(raw: unknown): string[] {
+  if (raw == null) return [];
+  if (typeof raw === "string") return [raw];
+  if (!Array.isArray(raw)) return [String(raw)];
+  const out: string[] = [];
+  const walk = (nodes: unknown[], path: string) => {
+    for (const n of nodes) {
+      if (typeof n === "string") {
+        out.push(n);
+        continue;
+      }
+      if (n == null || typeof n !== "object") continue;
+      const node = n as ValidationErrorNode;
+      const nextPath = path
+        ? node.property
+          ? `${path}.${node.property}`
+          : path
+        : node.property ?? "";
+      if (node.constraints) {
+        for (const msg of Object.values(node.constraints)) {
+          out.push(nextPath ? `${nextPath}: ${msg}` : msg);
+        }
+      }
+      if (Array.isArray(node.children) && node.children.length > 0) {
+        walk(node.children, nextPath);
+      }
+    }
+  };
+  walk(raw, "");
+  return out;
 }

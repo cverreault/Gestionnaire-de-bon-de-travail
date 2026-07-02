@@ -12,6 +12,7 @@ import { MinioService } from '../../../common/storage/minio.service';
 import { DEFAULT_TENANT_ID } from '../../../common/contracts/tenant-context.contract';
 import { TenantBootstrapService } from './tenant-bootstrap.service';
 import { CreateTenantDto } from '../api/dto/create-tenant.dto';
+import { PlansService } from './plans.service';
 
 /**
  * SUPER_ADMIN-driven tenant provisioning (B7.5).
@@ -33,6 +34,7 @@ export class SuperAdminTenantService {
     private readonly prisma: PrismaService,
     private readonly bootstrap: TenantBootstrapService,
     private readonly minio: MinioService,
+    private readonly plans: PlansService,
   ) {}
 
   async createTenant(dto: CreateTenantDto): Promise<{
@@ -58,18 +60,22 @@ export class SuperAdminTenantService {
 
     const passwordHash = await bcrypt.hash(dto.admin.password, 10);
 
-    // Only forward quota overrides the SA actually set — undefined fields
-    // fall back to the Prisma schema defaults (which track the plan).
-    const quotaOverrides: Pick<
+    // Resolve the four quotas — for each field, the SA's explicit DTO
+    // value wins; otherwise we fall back to the plan's defaults (read
+    // from the `plans` table). This way a brand-new tenant inherits
+    // coherent caps right away instead of the bare Prisma schema
+    // defaults (which still target the FREE tier).
+    const plan = await this.plans.getByCode(dto.plan ?? 'FREE');
+    const resolvedQuotas: Pick<
       Prisma.TenantCreateInput,
       'maxUsers' | 'maxWorkOrdersPerMonth' | 'maxStorageMb' | 'maxClients'
-    > = {};
-    if (dto.maxUsers !== undefined) quotaOverrides.maxUsers = dto.maxUsers;
-    if (dto.maxWorkOrdersPerMonth !== undefined)
-      quotaOverrides.maxWorkOrdersPerMonth = dto.maxWorkOrdersPerMonth;
-    if (dto.maxStorageMb !== undefined)
-      quotaOverrides.maxStorageMb = dto.maxStorageMb;
-    if (dto.maxClients !== undefined) quotaOverrides.maxClients = dto.maxClients;
+    > = {
+      maxUsers: dto.maxUsers ?? plan.quotas.maxUsers,
+      maxWorkOrdersPerMonth:
+        dto.maxWorkOrdersPerMonth ?? plan.quotas.maxWorkOrdersPerMonth,
+      maxStorageMb: dto.maxStorageMb ?? plan.quotas.maxStorageMb,
+      maxClients: dto.maxClients ?? plan.quotas.maxClients,
+    };
 
     const result = await this.prisma.$transaction(async (tx) => {
       const tenant = await tx.tenant.create({
@@ -78,7 +84,7 @@ export class SuperAdminTenantService {
           name: dto.name,
           plan: dto.plan ?? 'FREE',
           ownerEmail: dto.admin.email,
-          ...quotaOverrides,
+          ...resolvedQuotas,
         },
       });
 
@@ -164,11 +170,17 @@ export class SuperAdminTenantService {
 
     // Refuse if the tenant owns a SUPER_ADMIN — deleting it would remove an
     // operator account. SA accounts must be moved out first.
-    const sa = await this.prisma.user.findFirst({
-      where: { tenantId: id, role: Role.SUPER_ADMIN },
-      select: { id: true },
-    });
-    if (sa) {
+    //
+    // Raw SQL : the tenant-scope middleware (B6.4) would otherwise rewrite
+    // where.tenantId with the calling SA's own tenant, turning this into a
+    // self-check that always trips (the SA always lives somewhere) and
+    // making delete impossible for any tenant that isn't the SA's own.
+    type Row = { id: string };
+    const saRows = await this.prisma.$queryRawUnsafe<Row[]>(
+      `SELECT id FROM users WHERE tenant_id = $1 AND role = 'SUPER_ADMIN' LIMIT 1`,
+      id,
+    );
+    if (saRows.length > 0) {
       throw new BadRequestException(
         'Ce tenant contient un SUPER_ADMIN — déplacez-le avant de supprimer.',
       );
@@ -185,39 +197,49 @@ export class SuperAdminTenantService {
     if (tenant.logoStorageKey) objectKeys.push(tenant.logoStorageKey);
 
     await this.prisma.$transaction(async (tx) => {
-      // Belt-and-suspenders: neutralise the RLS GUC for this tx so the
-      // cross-tenant deletes can never be narrowed by an active tenant scope.
+      // Neutralise BOTH the Postgres RLS GUC and the Prisma tenant-scope
+      // middleware (B6.4) for this tx. The middleware rewrites
+      // `where.tenantId` on every Prisma call to the calling SA's own
+      // tenant — that would mean we silently delete DEFAULT's children
+      // (not the target tenant's) and then fail FK when removing the
+      // tenant row. Using $executeRawUnsafe sidesteps the middleware
+      // entirely (it only intercepts model calls, not raw SQL).
       await tx.$executeRawUnsafe(`SET LOCAL app.tenant_id = ''`);
 
-      const where = { tenantId: id };
+      const del = (table: string) =>
+        tx.$executeRawUnsafe(
+          `DELETE FROM ${table} WHERE tenant_id = $1`,
+          id,
+        );
+
       // ── Leaf rows first (respecting the 3 RESTRICT inter-FKs) ──
-      await tx.attachment.deleteMany({ where });
-      await tx.note.deleteMany({ where });
-      await tx.appointment.deleteMany({ where });
-      await tx.technicianLocation.deleteMany({ where });
-      await tx.pushSubscription.deleteMany({ where });
-      await tx.notification.deleteMany({ where });
-      await tx.refreshToken.deleteMany({ where });
-      await tx.auditLog.deleteMany({ where });
-      await tx.workOrder.deleteMany({ where }); // before users (createdBy RESTRICT)
-      await tx.processTransition.deleteMany({ where }); // before processStatus
-      await tx.processStatus.deleteMany({ where });
-      await tx.processDefinition.deleteMany({ where });
-      await tx.taskType.deleteMany({ where });
-      await tx.templateField.deleteMany({ where });
-      await tx.templateSection.deleteMany({ where });
-      await tx.workOrderTemplate.deleteMany({ where });
-      await tx.addressTypeField.deleteMany({ where });
-      await tx.addressTypeConfig.deleteMany({ where });
-      await tx.clientTypeConfig.deleteMany({ where });
-      await tx.clientAddress.deleteMany({ where });
-      await tx.client.deleteMany({ where });
-      await tx.temporaryClient.deleteMany({ where });
-      await tx.systemConfig.deleteMany({ where });
-      // Users last among children — emailVerifications cascade off the user.
-      await tx.user.deleteMany({ where });
+      await del('attachments');
+      await del('notes');
+      await del('appointments');
+      await del('technician_locations');
+      await del('push_subscriptions');
+      await del('notifications');
+      await del('refresh_tokens');
+      await del('audit_logs');
+      await del('work_orders');           // before users (createdBy RESTRICT)
+      await del('process_transitions');   // before process_statuses
+      await del('process_statuses');
+      await del('process_definitions');
+      await del('task_types');
+      await del('template_fields');
+      await del('template_sections');
+      await del('work_order_templates');
+      await del('address_type_fields');
+      await del('address_type_configs');
+      await del('client_type_configs');
+      await del('client_addresses');
+      await del('clients');
+      await del('temporary_clients');
+      await del('system_configs');
+      // Users last among children — email_verifications cascade off the user.
+      await del('users');
       // Finally the tenant row itself.
-      await tx.tenant.delete({ where: { id } });
+      await tx.$executeRawUnsafe(`DELETE FROM tenants WHERE id = $1`, id);
     });
 
     // Best-effort object-storage cleanup — failures are logged, not fatal.

@@ -23,8 +23,17 @@ function makePrisma() {
 
 type MockPrisma = ReturnType<typeof makePrisma>;
 
+/** Stub peak tracker — swallow every call, we're testing quota logic only. */
+function makePeakTracker() {
+  return { record: jest.fn().mockResolvedValue(undefined) };
+}
+
 function makeService(prisma: MockPrisma): QuotaService {
-  return new QuotaService(prisma as unknown as never);
+  const peak = makePeakTracker();
+  return new QuotaService(
+    prisma as unknown as never,
+    peak as unknown as never,
+  );
 }
 
 describe('QuotaService.checkAndConsume', () => {

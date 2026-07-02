@@ -1,18 +1,25 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { theme, cardStyles, layoutStyles, buttonStyles, formStyles } from '../theme';
 import {
   listTenants,
   updateTenant,
   deleteTenant,
   impersonate,
+  getPlanCatalog,
   type TenantRow,
   type TenantPlan,
   type UpdateTenantInput,
 } from '../services/super-admin.service';
 import { useAuthStore } from '../context/auth.store';
+import { toast } from '../context/toast.store';
 import { Role } from '../types';
+import EmptyState from '../components/EmptyState';
+import SkeletonList from '../components/SkeletonList';
+import { useNavigate } from 'react-router-dom';
+import { useMemo } from 'react';
 
 const PLANS: TenantPlan[] = ['FREE', 'PRO', 'ENTERPRISE'];
 
@@ -28,70 +35,131 @@ export default function SuperAdminTenantsPage() {
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<TenantRow | null>(null);
   const [deleting, setDeleting] = useState<TenantRow | null>(null);
+  const [search, setSearch] = useState('');
+  const navigate = useNavigate();
+  const { t } = useTranslation('superAdmin');
 
-  const { data, isFetching } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['superAdmin', 'tenants', page],
     queryFn: () => listTenants(page, 20),
   });
+
+  // Client-side substring filter (list is at most 20 rows per page — cheap).
+  const filtered = useMemo(() => {
+    if (!data) return [];
+    const q = search.trim().toLowerCase();
+    if (!q) return data.data;
+    return data.data.filter(
+      (t) =>
+        t.name.toLowerCase().includes(q) ||
+        t.slug.toLowerCase().includes(q) ||
+        (t.ownerEmail?.toLowerCase().includes(q) ?? false),
+    );
+  }, [data, search]);
 
   return (
     <div style={layoutStyles.page}>
       <header style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
         <div>
-          <h1 style={{ margin: 0 }}>🌍 Gestion des tenants</h1>
+          <h1 style={{ margin: 0 }}>{t('tenants.title')}</h1>
           <p style={{ color: theme.colors.textMuted, margin: '4px 0 0', fontSize: 13 }}>
-            Liste de tous les espaces de travail. Clique « Entrer » pour
-            accéder à un tenant en tant que son 1er ADMIN.
+            {t('tenants.subtitle')}
           </p>
         </div>
         <Link to="/super-admin/tenants/nouveau" style={{ textDecoration: 'none' }}>
-          <button style={buttonStyles.primary}>➕ Créer un tenant</button>
+          <button style={buttonStyles.primary}>{t('tenants.createButton')}</button>
         </Link>
       </header>
 
-      {isFetching && <p>Chargement…</p>}
+      <div style={{ marginBottom: 12, position: 'relative' }}>
+        <span
+          style={{
+            position: 'absolute',
+            left: 12,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            color: theme.colors.textMuted,
+            fontSize: 14,
+            pointerEvents: 'none',
+          }}
+        >
+          🔎
+        </span>
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={t('tenants.searchPlaceholder')}
+          style={{ ...formStyles.input, paddingLeft: 34 }}
+        />
+      </div>
 
-      {data && (
+      {isLoading && <SkeletonList rows={5} />}
+
+      {data && data.pagination.total === 0 && (
+        <EmptyState
+          icon="🌍"
+          title={t('tenants.empty')}
+          subtitle={t('tenants.emptySubtitle')}
+          actionLabel={t('tenants.createButton')}
+          onAction={() => navigate('/super-admin/tenants/nouveau')}
+        />
+      )}
+
+      {data && data.pagination.total > 0 && filtered.length === 0 && (
+        <EmptyState
+          icon="🔎"
+          title={t('tenants.noResults')}
+          subtitle={t('tenants.noResultsSub', { q: search })}
+          actionLabel={t('tenants.clearSearch')}
+          onAction={() => setSearch('')}
+        />
+      )}
+
+      {data && filtered.length > 0 && (
         <div style={{ ...cardStyles.card, padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: 12, borderBottom: `1px solid ${theme.colors.border}`, fontSize: 13, color: theme.colors.textMuted }}>
-            {data.pagination.total} tenant{data.pagination.total > 1 ? 's' : ''} — page {data.pagination.page} / {Math.max(1, Math.ceil(data.pagination.total / data.pagination.limit))}
+            {search
+              ? t('tenants.countFiltered', { shown: filtered.length, count: data.pagination.total, total: data.pagination.total })
+              : t('tenants.countAll', { count: data.pagination.total, page: data.pagination.page, total: Math.max(1, Math.ceil(data.pagination.total / data.pagination.limit)) })}
           </div>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead style={{ background: theme.colors.surfaceAlt }}>
               <tr>
-                <th style={th}>Slug</th>
-                <th style={th}>Nom</th>
-                <th style={th}>Plan</th>
-                <th style={th}>Statut</th>
-                <th style={th}>Users</th>
-                <th style={th}>BTs/mois</th>
-                <th style={th}>Stockage</th>
-                <th style={th}>Action</th>
+                <th style={th}>{t('tenants.column.slug')}</th>
+                <th style={th}>{t('tenants.column.name')}</th>
+                <th style={th}>{t('tenants.column.plan')}</th>
+                <th style={th}>{t('tenants.column.status')}</th>
+                <th style={th}>{t('tenants.column.users')}</th>
+                <th style={th}>{t('tenants.column.workOrders')}</th>
+                <th style={th}>{t('tenants.column.storage')}</th>
+                <th style={th}>{t('tenants.column.action')}</th>
               </tr>
             </thead>
             <tbody>
-              {data.data.map((t) => (
+              {filtered.map((row) => (
                 <TenantRowDisplay
-                  key={t.id}
-                  tenant={t}
-                  onEdit={() => setEditing(t)}
-                  onDelete={() => setDeleting(t)}
+                  key={row.id}
+                  tenant={row}
+                  onEdit={() => setEditing(row)}
+                  onDelete={() => setDeleting(row)}
                 />
               ))}
             </tbody>
           </table>
-          <div style={{ display: 'flex', justifyContent: 'space-between', padding: 12, borderTop: `1px solid ${theme.colors.border}` }}>
-            <button disabled={page <= 1} onClick={() => setPage(page - 1)} style={buttonStyles.secondary}>
-              ◀ Précédent
-            </button>
-            <button
-              disabled={page * (data.pagination.limit ?? 20) >= data.pagination.total}
-              onClick={() => setPage(page + 1)}
-              style={buttonStyles.secondary}
-            >
-              Suivant ▶
-            </button>
-          </div>
+          {!search && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: 12, borderTop: `1px solid ${theme.colors.border}` }}>
+              <button disabled={page <= 1} onClick={() => setPage(page - 1)} style={buttonStyles.secondary}>
+                {t('tenants.prev')}
+              </button>
+              <button
+                disabled={page * (data.pagination.limit ?? 20) >= data.pagination.total}
+                onClick={() => setPage(page + 1)}
+                style={buttonStyles.secondary}
+              >
+                {t('tenants.next')}
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -112,10 +180,28 @@ function TenantRowDisplay({
 }) {
   const qc = useQueryClient();
   const startImpersonation = useAuthStore((s) => s.startImpersonation);
+  const { t } = useTranslation('superAdmin');
 
   const toggleActive = useMutation({
     mutationFn: () => updateTenant(tenant.id, { isActive: !tenant.isActive }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['superAdmin', 'tenants'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['superAdmin', 'tenants'] });
+      toast.success(
+        tenant.isActive
+          ? t('tenants.toasts.suspended', { slug: tenant.slug })
+          : t('tenants.toasts.reactivated', { slug: tenant.slug }),
+      );
+    },
+    onError: (err) => {
+      const msg =
+        (err as { response?: { data?: { message?: string | string[] } } })
+          ?.response?.data?.message ?? '';
+      toast.error(
+        t('tenants.toasts.toggleFailed', {
+          msg: Array.isArray(msg) ? msg.join(', ') : msg,
+        }),
+      );
+    },
   });
 
   const enter = useMutation({
@@ -165,9 +251,9 @@ function TenantRowDisplay({
       </td>
       <td style={td}>
         {tenant.isActive ? (
-          <span style={{ color: theme.colors.success }}>✓ actif</span>
+          <span style={{ color: theme.colors.success }}>{t('tenants.status.active')}</span>
         ) : (
-          <span style={{ color: theme.colors.danger }}>✗ suspendu</span>
+          <span style={{ color: theme.colors.danger }}>{t('tenants.status.suspended')}</span>
         )}
       </td>
       <td style={td}>
@@ -183,15 +269,15 @@ function TenantRowDisplay({
         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
           <button
             onClick={onEdit}
-            title="Éditer"
+            title={t('tenants.actions.editTitle')}
             style={{ ...buttonStyles.secondary, fontSize: 11, padding: '3px 6px' }}
           >
-            ✏️
+            {t('tenants.actions.edit')}
           </button>
           <button
             onClick={() => toggleActive.mutate()}
             disabled={toggleActive.isPending}
-            title={tenant.isActive ? 'Suspendre (rend inaccessible)' : 'Réactiver'}
+            title={tenant.isActive ? t('tenants.actions.suspendTitle') : t('tenants.actions.reactivateTitle')}
             style={{
               ...buttonStyles.secondary,
               fontSize: 11,
@@ -199,19 +285,23 @@ function TenantRowDisplay({
               color: tenant.isActive ? theme.colors.warning : theme.colors.success,
             }}
           >
-            {toggleActive.isPending ? '…' : tenant.isActive ? '⏸ Suspendre' : '▶ Réactiver'}
+            {toggleActive.isPending
+              ? t('tenants.actions.loading')
+              : tenant.isActive
+              ? t('tenants.actions.suspend')
+              : t('tenants.actions.reactivate')}
           </button>
           <button
             onClick={() => enter.mutate()}
             disabled={!tenant.isActive || enter.isPending}
-            title={!tenant.isActive ? 'Tenant suspendu' : 'Entrer en tant qu\'ADMIN'}
+            title={!tenant.isActive ? t('tenants.actions.enterDisabledTitle') : t('tenants.actions.enterTitle')}
             style={{ ...buttonStyles.primary, fontSize: 11, padding: '3px 6px' }}
           >
-            {enter.isPending ? '…' : 'Entrer 🎭'}
+            {enter.isPending ? t('tenants.actions.loading') : t('tenants.actions.enter')}
           </button>
           <button
             onClick={onDelete}
-            title="Supprimer définitivement"
+            title={t('tenants.actions.deleteTitle')}
             style={{
               ...buttonStyles.secondary,
               fontSize: 11,
@@ -297,6 +387,10 @@ function EditModal({
                 </option>
               ))}
             </select>
+            <PlanPreview
+              plan={form.plan as TenantPlan}
+              currentPlan={tenant.plan}
+            />
           </Field>
           <Field label="Actif">
             <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -469,6 +563,78 @@ function NumField({
         style={formStyles.input}
       />
     </Field>
+  );
+}
+
+function PlanPreview({
+  plan,
+  currentPlan,
+}: {
+  plan: TenantPlan;
+  currentPlan: TenantPlan;
+}) {
+  const { data } = useQuery({
+    queryKey: ['superAdmin', 'plans'],
+    queryFn: getPlanCatalog,
+    staleTime: 5 * 60_000,
+  });
+  const def = data?.data.find((p) => p.code === plan);
+  if (!def) return null;
+  const hasBase = def.priceMonthly > 0;
+  const hasPerUser = def.pricePerUserMonthly > 0;
+  const isFree = !hasBase && !hasPerUser;
+  const isChanging = plan !== currentPlan;
+  return (
+    <div
+      style={{
+        marginTop: 4,
+        padding: '8px 10px',
+        borderRadius: 6,
+        background: theme.colors.surfaceAlt,
+        border: `1px solid ${isChanging ? theme.colors.warning : theme.colors.border}`,
+        display: 'grid',
+        gridTemplateColumns: '1fr auto',
+        gap: 8,
+        alignItems: 'center',
+      }}
+    >
+      <div>
+        <div style={{ fontSize: 12, fontWeight: 700 }}>
+          {def.displayName}
+          {isChanging && (
+            <span style={{ marginLeft: 6, fontSize: 10, color: theme.colors.warning }}>
+              ⚠ quotas snap au save
+            </span>
+          )}
+        </div>
+        <div style={{ fontSize: 10, color: theme.colors.textMuted, marginTop: 2 }}>
+          👥 {def.quotas.maxUsers} · 📋 {def.quotas.maxWorkOrdersPerMonth.toLocaleString('fr-CA')} · 🧑‍🤝‍🧑 {def.quotas.maxClients.toLocaleString('fr-CA')} · 💾{' '}
+          {def.quotas.maxStorageMb >= 1000
+            ? `${(def.quotas.maxStorageMb / 1000).toFixed(0)} Go`
+            : `${def.quotas.maxStorageMb} Mo`}
+        </div>
+      </div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: theme.colors.primary, textAlign: 'right', lineHeight: 1.3 }}>
+        {isFree && 'Gratuit'}
+        {hasBase && (
+          <div>
+            {def.priceMonthly} {def.currency}
+            <span style={{ fontSize: 10, color: theme.colors.textMuted, fontWeight: 500 }}>
+              {' '}/ mois
+            </span>
+          </div>
+        )}
+        {hasPerUser && (
+          <div>
+            {hasBase && <span style={{ color: theme.colors.textMuted, fontWeight: 500 }}>+ </span>}
+            {def.pricePerUserMonthly} {def.currency}
+            <span style={{ fontSize: 10, color: theme.colors.textMuted, fontWeight: 500 }}>
+              {' '}/ user / mois
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 

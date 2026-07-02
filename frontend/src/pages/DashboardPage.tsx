@@ -10,6 +10,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import WorkOrderStatusBadge from '../components/WorkOrderStatusBadge';
 import AuditActivityChart from '../components/AuditActivityChart';
 import TechnicianLocationsMap from '../components/TechnicianLocationsMap';
+import OnboardingWizard from '../components/OnboardingWizard';
 import type { ApiResponse, AdminStats, TechnicianStats, WorkOrder } from '../types';
 import { Role, WorkOrderStatus } from '../types';
 import { theme, tableStyles, cardStyles, layoutStyles, getRowStyle } from '../theme';
@@ -542,5 +543,13 @@ export default function DashboardPage() {
     return <TechnicianDashboard />;
   }
 
-  return <AdminDashboard />;
+  // Admin / Dispatcher path — the wizard renders itself as a modal only
+  // when the tenant is empty AND the caller is an ADMIN. See the guard
+  // inside OnboardingWizard for the exact conditions.
+  return (
+    <>
+      <OnboardingWizard />
+      <AdminDashboard />
+    </>
+  );
 }

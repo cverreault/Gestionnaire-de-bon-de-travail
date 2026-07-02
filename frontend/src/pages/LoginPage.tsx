@@ -34,13 +34,15 @@ export default function LoginPage() {
   } = useForm<LoginCredentials>();
 
   // Already authenticated → redirect to the right home for the role.
-  // SUPER_ADMIN / ADMIN / DISPATCHER all get the desktop dashboard ;
-  // TECHNICIAN goes straight to their work-orders list.
+  // SUPER_ADMIN lands on its own portal (no tenant data); ADMIN /
+  // DISPATCHER get the desktop dashboard; TECHNICIAN gets its mobile
+  // work-orders list.
   if (isAuthenticated && user) {
+    if (user.role === 'SUPER_ADMIN') {
+      return <Navigate to="/super-admin/stats" replace />;
+    }
     const goesToDashboard =
-      user.role === 'SUPER_ADMIN' ||
-      user.role === 'ADMIN' ||
-      user.role === 'DISPATCHER';
+      user.role === 'ADMIN' || user.role === 'DISPATCHER';
     return <Navigate to={goesToDashboard ? '/dashboard' : '/mes-bons'} replace />;
   }
 

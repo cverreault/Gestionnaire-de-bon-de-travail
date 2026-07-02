@@ -1,0 +1,193 @@
+{
+  "dashboard": {
+    "title": "📊 Tableau de bord",
+    "subtitle": "Vue d'ensemble de la plateforme — snapshot cross-tenant rafraîchi toutes les 30 s.",
+    "loadingStats": "Chargement des stats globales…",
+    "loadingUsage": "Chargement de l'usage par tenant…",
+    "usageLoadFailed": "Échec du chargement de l'usage par tenant.",
+    "usageSection": "🌍 Utilisation par tenant",
+    "kpi": {
+      "mrr": "MRR estimé",
+      "mrrHint": "Total facturé par mois (base + utilisateurs)",
+      "tenants": "Tenants",
+      "tenantsHint_one": "+{{count}} ce mois",
+      "tenantsHint_other": "+{{count}} ce mois",
+      "activeUsers": "Utilisateurs actifs",
+      "activeUsersHint_one": "+{{count}} ce mois",
+      "activeUsersHint_other": "+{{count}} ce mois",
+      "workOrders": "BTs ce mois",
+      "workOrdersHint_one": "{{count}} complété",
+      "workOrdersHint_other": "{{count}} complétés",
+      "storage": "Stockage total",
+      "storageHint": "Tous tenants confondus"
+    },
+    "table": {
+      "tenant": "Tenant",
+      "plan": "Plan",
+      "billing": "Facturation / mois",
+      "users": "Utilisateurs",
+      "sessions": "Sessions actives",
+      "workOrders": "BTs ce mois",
+      "clients": "Clients",
+      "storage": "Stockage",
+      "lastActivity": "Dernière activité",
+      "suspended": "SUSPENDU",
+      "connected_one": "connecté",
+      "connected_other": "connectés",
+      "noOne": "personne",
+      "totalCumulative": "{{count}} au total",
+      "empty": "Aucun tenant sur la plateforme.",
+      "free": "Gratuit",
+      "billingBase": "{{amount}} {{currency}} base",
+      "billingPerUser": "{{count}} × {{amount}} {{currency}}"
+    },
+    "relative": {
+      "justNow": "à l'instant",
+      "minutes_one": "il y a {{count}} min",
+      "minutes_other": "il y a {{count}} min",
+      "hours_one": "il y a {{count}} h",
+      "hours_other": "il y a {{count}} h",
+      "days_one": "il y a {{count}} j",
+      "days_other": "il y a {{count}} j"
+    }
+  },
+  "tenants": {
+    "title": "🌍 Gestion des tenants",
+    "subtitle": "Liste de tous les espaces de travail. Clique « Entrer » pour accéder à un tenant en tant que son 1er ADMIN.",
+    "createButton": "➕ Créer un tenant",
+    "searchPlaceholder": "Filtrer par nom, slug ou email propriétaire…",
+    "empty": "Aucun tenant sur la plateforme",
+    "emptySubtitle": "Créez votre premier espace de travail pour démarrer. Chaque tenant est isolé et facturé selon son plan.",
+    "noResults": "Aucun résultat",
+    "noResultsSub": "Aucun tenant ne correspond à « {{q}} ».",
+    "clearSearch": "Effacer la recherche",
+    "countAll_one": "{{count}} tenant — page {{page}} / {{total}}",
+    "countAll_other": "{{count}} tenants — page {{page}} / {{total}}",
+    "countFiltered_one": "{{shown}} sur {{total}} tenant",
+    "countFiltered_other": "{{shown}} sur {{total}} tenants",
+    "prev": "◀ Précédent",
+    "next": "Suivant ▶",
+    "column": {
+      "slug": "Slug",
+      "name": "Nom",
+      "plan": "Plan",
+      "status": "Statut",
+      "users": "Users",
+      "workOrders": "BTs/mois",
+      "storage": "Stockage",
+      "action": "Action"
+    },
+    "status": {
+      "active": "✓ actif",
+      "suspended": "✗ suspendu"
+    },
+    "actions": {
+      "edit": "✏️",
+      "editTitle": "Éditer",
+      "suspend": "⏸ Suspendre",
+      "reactivate": "▶ Réactiver",
+      "suspendTitle": "Suspendre (rend inaccessible)",
+      "reactivateTitle": "Réactiver",
+      "enter": "Entrer 🎭",
+      "enterTitle": "Entrer en tant qu'ADMIN",
+      "enterDisabledTitle": "Tenant suspendu",
+      "delete": "🗑",
+      "deleteTitle": "Supprimer définitivement",
+      "loading": "…"
+    },
+    "toasts": {
+      "suspended": "Tenant « {{slug}} » suspendu",
+      "reactivated": "Tenant « {{slug}} » réactivé",
+      "toggleFailed": "Impossible de changer l'état du tenant : {{msg}}"
+    }
+  },
+  "plans": {
+    "title": "💳 Plans & tarifs",
+    "subtitle": "Tarification SaaS éditable depuis cette page. Les modifications prennent effet immédiatement pour les nouveaux tenants et pour les changements de plan ; les tenants existants gardent leurs quotas en place tant qu'ils ne changent pas de plan.",
+    "loading": "Chargement du catalogue…",
+    "loadFailed": "Échec du chargement du catalogue.",
+    "recommended": "RECOMMANDÉ",
+    "free": "Gratuit",
+    "perMonth": "/ mois",
+    "perUserPerMonth": "/ utilisateur / mois",
+    "quotasIncluded": "Quotas inclus",
+    "included": "Inclus",
+    "editButton": "✏️ Éditer",
+    "toasts": {
+      "updated": "Plan {{name}} mis à jour"
+    },
+    "editModal": {
+      "eyebrow": "ÉDITER LE PLAN",
+      "close": "Fermer",
+      "sections": {
+        "presentation": "Présentation",
+        "pricing": "Tarification",
+        "quotas": "Quotas inclus",
+        "features": "Features (une par ligne)",
+        "availability": "Disponibilité"
+      },
+      "fields": {
+        "displayName": "Nom affiché",
+        "tagline": "Tagline (sous-titre)",
+        "description": "Description longue",
+        "baseMonthly": "Prix de base / mois",
+        "perUserMonthly": "Prix par utilisateur / mois",
+        "currency": "Devise",
+        "maxUsers": "Utilisateurs max",
+        "maxBts": "BTs / mois",
+        "maxClients": "Clients max",
+        "maxStorage": "Stockage (Mo)"
+      },
+      "pricingHint": "Total mensuel = prix de base + (utilisateurs actifs × prix par utilisateur).",
+      "recommended": "Mettre en avant comme « Recommandé »",
+      "active": "Plan actif (visible pour les nouveaux tenants)",
+      "cancel": "Annuler",
+      "save": "💾 Enregistrer",
+      "saving": "Enregistrement…"
+    },
+    "columns": {
+      "users": "Utilisateurs",
+      "btsPerMonth": "BTs / mois",
+      "clients": "Clients",
+      "storage": "Stockage"
+    }
+  },
+  "config": {
+    "title": "Configuration plateforme",
+    "subtitle": "Réglages globaux de TaskMgr. Laissez un champ vide pour utiliser la variable d'environnement ou la valeur par défaut.",
+    "loading": "Chargement de la configuration…",
+    "footerDirty": "● Modifications non sauvegardées",
+    "footerClean": "✓ À jour avec le serveur",
+    "cancel": "Annuler",
+    "save": "💾 Enregistrer",
+    "saving": "Enregistrement…",
+    "modifiedTag": "modifié",
+    "status": {
+      "configured": "Configuré",
+      "partial": "Partiel",
+      "off": "Désactivé"
+    },
+    "sections": {
+      "smtp": {
+        "title": "Email SMTP",
+        "description": "Identifiants du serveur sortant pour les notifications par email. Laissez vide pour utiliser la console (mode dev)."
+      },
+      "vapid": {
+        "title": "Web Push (VAPID)",
+        "description": "Clés VAPID pour les notifications push web. Générez une paire avec « npx web-push generate-vapid-keys »."
+      },
+      "sentry": {
+        "title": "Sentry",
+        "description": "DSN Sentry pour l'observabilité. Laissez vide pour désactiver la remontée d'erreurs."
+      },
+      "audit": {
+        "title": "Rétention audit",
+        "description": "Combien de jours conserver les audit logs avant suppression automatique."
+      }
+    },
+    "toasts": {
+      "saved": "{{icon}} {{title}} — modifications enregistrées",
+      "saveFailed": "Échec : {{msg}}"
+    }
+  }
+}
