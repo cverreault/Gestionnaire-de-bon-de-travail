@@ -7,6 +7,8 @@ import AdminSidebar from './AdminSidebar';
 import TechnicianNav from './TechnicianNav';
 import OfflineBanner from '../OfflineBanner';
 import ImpersonationBanner from '../ImpersonationBanner';
+import QuotaWarningBanner from '../QuotaWarningBanner';
+import ToastHost from '../ToastHost';
 import GlobalSearchBar from '../GlobalSearchBar';
 import NotificationsBell from '../NotificationsBell';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
@@ -54,6 +56,8 @@ export default function AppLayout() {
     <>
       {!isOnline && <OfflineBanner />}
       <ImpersonationBanner />
+      <QuotaWarningBanner />
+      <ToastHost />
       <div
         style={{
           display: 'flex',

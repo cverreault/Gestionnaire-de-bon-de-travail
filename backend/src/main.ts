@@ -5,11 +5,14 @@ import * as Sentry from '@sentry/node';
 import { NestFactory } from '@nestjs/core';
 import { I18nValidationPipe, I18nValidationExceptionFilter } from 'nestjs-i18n';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { JwtService } from '@nestjs/jwt';
 import compression from 'compression';
 import helmet from 'helmet';
+import type { Request, Response, NextFunction } from 'express';
 import { Logger as PinoLogger } from 'nestjs-pino';
 import type { INestApplication } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { PublicApiModule } from './modules/public-api/public-api.module';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { DatabaseHealthIndicator } from './modules/health/indicators/database.health';
@@ -96,6 +99,16 @@ async function runBootSmokeTest(
   logger.log('✅ Boot smoke test passed (DB + MinIO)');
 }
 
+// Postgres BIGINT columns (e.g. `current_storage_bytes` on tenants) come
+// back as native BigInt from Prisma. `JSON.stringify` does not know how
+// to serialise BigInt and throws "Do not know how to serialize a BigInt",
+// which surfaces as a silent 500 on the client. We coerce to Number once,
+// globally — values stay well under Number.MAX_SAFE_INTEGER for our use
+// case (storage bytes max out around 100 GB = ~10^11).
+(BigInt.prototype as unknown as { toJSON: () => number }).toJSON = function () {
+  return Number(this);
+};
+
 async function bootstrap() {
   // Booter avec bufferLogs pour que les premiers logs (avant que Pino
   // soit prêt) soient stockés et flushés via Pino une fois disponible.
@@ -113,11 +126,24 @@ async function bootstrap() {
   app.use(compression());
 
   // ── CORS ──────────────────────────────────────────────────────────────────
-  const corsOrigin = process.env.CORS_ORIGIN ?? 'http://localhost:8088';
+  // The frontend UI is served from `CORS_ORIGIN` — a single trusted host.
+  // Third-party public-API integrations use `PUBLIC_API_CORS_ORIGINS`
+  // (comma-separated) — they don't share cookies (auth is `X-API-Key`)
+  // so `credentials` stays off for that origin set.
+  const uiOrigin = process.env.CORS_ORIGIN ?? 'http://localhost:8088';
+  const publicOrigins = (process.env.PUBLIC_API_CORS_ORIGINS ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const allowedOrigins = new Set<string>([uiOrigin, ...publicOrigins]);
   app.enableCors({
-    origin: corsOrigin,
+    origin: (origin, callback) => {
+      // Allow same-origin (no `Origin` header) + whitelisted origins.
+      if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+      return callback(new Error(`Origin ${origin} not allowed by CORS`), false);
+    },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
     credentials: true,
   });
 
@@ -128,9 +154,18 @@ async function bootstrap() {
   app.useGlobalInterceptors(new TransformInterceptor());
   // Order matters: i18n filter first (handles I18nValidationException), then
   // the generic HTTP filter for everything else.
+  // Filter order — NestJS runs `useGlobalFilters` in REVERSE order for
+  // matching, so the LAST filter registered wins for compatible exception
+  // types. `I18nValidationExceptionFilter` must run *after* our generic
+  // `HttpExceptionFilter` otherwise the generic one swallows validation
+  // errors and the client only sees "Bad Request".
+  //
+  // `detailedErrors: true` → the 400 response carries a `message` array
+  // enumerating every field that failed validation (with the translated
+  // message from `i18nValidationMessage`).
   app.useGlobalFilters(
-    new I18nValidationExceptionFilter({ detailedErrors: false }),
     new HttpExceptionFilter(),
+    new I18nValidationExceptionFilter({ detailedErrors: true }),
   );
 
   // ── Validation ────────────────────────────────────────────────────────────
@@ -145,7 +180,52 @@ async function bootstrap() {
     }),
   );
 
-  // ── Swagger (désactivé en production) ────────────────────────────────────
+  // ── Docs gate ─────────────────────────────────────────────────────────────
+  // `/api/v1/docs*` is our public-API reference (Swagger UI + JSON spec).
+  // `SwaggerModule.setup()` mounts express handlers directly on the HTTP
+  // adapter, so NestJS's global JwtAuthGuard never sees these requests.
+  // We add an express middleware that requires a valid access-token JWT
+  // before those handlers run — subscribers of the platform reach the
+  // docs from the authenticated frontend page (which forwards the JWT
+  // via axios). Anonymous curls / browser navigations get 401.
+  {
+    const jwt = app.get(JwtService);
+    const docsGate = (req: Request, res: Response, next: NextFunction) => {
+      // Match `/api/v1/docs`, `/api/v1/docs/*`, and `/api/v1/docs-json`.
+      // Query strings are stripped by Express before matching req.path.
+      const path = req.path;
+      const isDocsPath =
+        path === '/api/v1/docs' ||
+        path.startsWith('/api/v1/docs/') ||
+        path === '/api/v1/docs-json';
+      if (!isDocsPath) {
+        return next();
+      }
+      const auth = req.headers.authorization ?? '';
+      const [scheme, token] = auth.split(' ');
+      if (scheme !== 'Bearer' || !token) {
+        res.status(401).json({
+          statusCode: 401,
+          message: 'Authentication required to access the API docs.',
+          error: 'Unauthorized',
+        });
+        return;
+      }
+      try {
+        jwt.verify(token);
+        next();
+      } catch {
+        res.status(401).json({
+          statusCode: 401,
+          message: 'Invalid or expired token.',
+          error: 'Unauthorized',
+        });
+      }
+    };
+    app.use(docsGate);
+  }
+
+  // ── Swagger — internal docs (désactivé en production) ────────────────────
   if (process.env.NODE_ENV !== 'production') {
     const swaggerConfig = new DocumentBuilder()
       .setTitle('TaskMgr API')
@@ -162,6 +242,40 @@ async function bootstrap() {
       swaggerOptions: {
         persistAuthorization: true,
       },
+    });
+  }
+
+  // ── Swagger — public v1 API docs (available in production too, B8) ──────
+  // Documents only controllers whose route starts with `v1/`. External
+  // integrators need this reachable to build their integrations; the doc
+  // itself never exposes data, only the schema.
+  {
+    const publicConfig = new DocumentBuilder()
+      .setTitle('TaskMgr Public API v1')
+      .setDescription(
+        'API publique pour piloter TaskMgr depuis un système externe. ' +
+        'Authentification par en-tête `X-API-Key` — créer une clé depuis ' +
+        '/parametres/api-keys dans le portail admin du tenant. ' +
+        'Chaque endpoint documente le scope requis (read-only, read-write, admin).',
+      )
+      .setVersion('1.0')
+      .addApiKey(
+        { type: 'apiKey', in: 'header', name: 'X-API-Key' },
+        'api-key',
+      )
+      .build();
+
+    // `include: [PublicApiModule]` tells NestJS's Swagger scanner to only
+    // pick up controllers from the public-api module — the doc will not
+    // even mention internal endpoints, no filtering needed.
+    const document = SwaggerModule.createDocument(app, publicConfig, {
+      include: [PublicApiModule],
+      operationIdFactory: (controllerKey, methodKey) =>
+        `${controllerKey}_${methodKey}`,
+    });
+
+    SwaggerModule.setup('api/v1/docs', app, document, {
+      swaggerOptions: { persistAuthorization: true },
     });
   }
 

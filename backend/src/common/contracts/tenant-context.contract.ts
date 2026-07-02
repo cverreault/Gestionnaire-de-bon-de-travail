@@ -14,6 +14,18 @@
 /** DI / request key the middleware uses. */
 export const TENANT_REQUEST_KEY = 'tenant' as const;
 
+/**
+ * Request key for "was this tenant inferred from the URL or fallback?".
+ *
+ * `true`  → no slug derivable (IP / localhost / apex / reserved sub) — the
+ *           resolver used DEFAULT as a permissive placeholder, and the
+ *           JwtAuthGuard is allowed to swap it for the JWT's tenantId
+ *           (this is how IP-based self-hosted impersonation works).
+ * `false` → a subdomain pinned a specific tenant — the guard MUST enforce
+ *           `JWT.tenantId === request.tenant.id` (anti-spoofing).
+ */
+export const TENANT_IS_IMPLICIT_KEY = 'tenantIsImplicit' as const;
+
 /** Subdomain reserved for the login UI — bypasses tenant resolution. */
 export const TENANT_AUTH_SUBDOMAIN = 'auth' as const;
 

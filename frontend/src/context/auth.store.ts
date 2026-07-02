@@ -13,6 +13,13 @@ export interface ImpersonationState {
   impersonatedTenantSlug: string | null;
   impersonatedTenantName: string | null;
   impersonatedUserEmail: string | null;
+  /**
+   * Epoch ms at which the impersonation access token expires (T+15 min
+   * from start). The banner reads it to drive a countdown and auto-stop
+   * the session when it hits zero — without it the SA would only learn
+   * the token expired via the next 401.
+   */
+  expiresAt: number | null;
 }
 
 interface AuthState {
@@ -55,7 +62,11 @@ const EMPTY_IMPERSONATION: ImpersonationState = {
   impersonatedTenantSlug: null,
   impersonatedTenantName: null,
   impersonatedUserEmail: null,
+  expiresAt: null,
 };
+
+/** Backend signs impersonation tokens with a 15-min TTL — mirror it here. */
+const IMPERSONATION_TTL_MS = 15 * 60 * 1000;
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -108,12 +119,18 @@ export const useAuthStore = create<AuthState>()(
         if (state.impersonation.active) return;
 
         localStorage.setItem('accessToken', targetAccessToken);
-        // The impersonate endpoint doesn't issue a refresh token. We
-        // keep the SA's refresh in storage as a safety net — but the
-        // axios interceptor uses the access token primarily, and the
-        // 15-min TTL forces a re-impersonate before any refresh attempt.
+        // CRITICAL: the impersonate endpoint issues NO refresh token. We must
+        // NOT leave the SA's refresh token in the active slot — otherwise, when
+        // the 15-min impersonation access token expires, the axios interceptor
+        // would refresh using the SA token, ROTATE it (revoking the old one),
+        // and orphan `saOriginalRefreshToken`. On exit we'd then restore a
+        // revoked token → replay detection kills the family → full logout.
+        // So we stash the SA refresh ONLY in saOriginalRefreshToken and clear
+        // the active slot; the interceptor falls back to the SA session on 401.
+        localStorage.removeItem('refreshToken');
         set({
           accessToken: targetAccessToken,
+          refreshToken: null,
           user: targetUser,
           isAuthenticated: true,
           impersonation: {
@@ -124,6 +141,7 @@ export const useAuthStore = create<AuthState>()(
             impersonatedTenantSlug: targetTenantSlug,
             impersonatedTenantName: targetTenantName,
             impersonatedUserEmail: targetUserEmail,
+            expiresAt: Date.now() + IMPERSONATION_TTL_MS,
           },
         });
       },

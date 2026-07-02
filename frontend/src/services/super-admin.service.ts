@@ -1,4 +1,5 @@
 import api from './api';
+import type { ApiResponse } from '../types';
 
 // ─── Tenants list / detail / update (B6.10) ─────────────────────────
 
@@ -19,6 +20,9 @@ export interface TenantRow {
   currentStorageBytes: number;
   currentClients: number;
   ownerEmail: string | null;
+  logoStorageKey: string | null;
+  /** Fresh presigned URL (1 h TTL) resolved server-side, or null. */
+  logoUrl: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -42,26 +46,44 @@ export async function listTenants(
   page = 1,
   limit = 20,
 ): Promise<TenantsListResponse> {
-  const { data } = await api.get<TenantsListResponse>('/super-admin/tenants', {
-    params: { page, limit },
-  });
-  return data;
+  const { data } = await api.get<ApiResponse<TenantsListResponse>>(
+    '/super-admin/tenants',
+    { params: { page, limit } },
+  );
+  return data.data;
 }
 
 export async function getTenant(id: string): Promise<TenantRow> {
-  const { data } = await api.get<TenantRow>(`/super-admin/tenants/${id}`);
-  return data;
+  const { data } = await api.get<ApiResponse<TenantRow>>(
+    `/super-admin/tenants/${id}`,
+  );
+  return data.data;
+}
+
+/**
+ * Irreversible hard-delete. `confirmSlug` must equal the tenant slug — the UI
+ * makes the SA type it. Purges all tenant data + MinIO objects server-side.
+ */
+export async function deleteTenant(
+  id: string,
+  confirmSlug: string,
+): Promise<{ deleted: true; slug: string }> {
+  const { data } = await api.delete<ApiResponse<{ deleted: true; slug: string }>>(
+    `/super-admin/tenants/${id}`,
+    { data: { confirmSlug } },
+  );
+  return data.data;
 }
 
 export async function updateTenant(
   id: string,
   patch: UpdateTenantInput,
 ): Promise<TenantRow> {
-  const { data } = await api.patch<TenantRow>(
+  const { data } = await api.patch<ApiResponse<TenantRow>>(
     `/super-admin/tenants/${id}`,
     patch,
   );
-  return data;
+  return data.data;
 }
 
 // ─── Stats globales (B7) ────────────────────────────────────────────
@@ -74,8 +96,98 @@ export interface SuperAdminStats {
 }
 
 export async function getStats(): Promise<SuperAdminStats> {
-  const { data } = await api.get<SuperAdminStats>('/super-admin/stats');
-  return data;
+  const { data } = await api.get<ApiResponse<SuperAdminStats>>(
+    '/super-admin/stats',
+  );
+  return data.data;
+}
+
+// ─── Per-tenant usage (B7.7) ────────────────────────────────────────
+
+export interface TenantUsageRow {
+  id: string;
+  slug: string;
+  name: string;
+  plan: TenantPlan;
+  isActive: boolean;
+  users: { active: number; max: number; sessions: number };
+  workOrders: { thisMonth: number; max: number; total: number };
+  storage: { bytes: number; maxMb: number };
+  clients: { count: number; max: number };
+  createdAt: string;
+  lastLoginAt: string | null;
+  lastWorkOrderAt: string | null;
+}
+
+export async function getPerTenantUsage(): Promise<{ data: TenantUsageRow[] }> {
+  const { data } = await api.get<ApiResponse<{ data: TenantUsageRow[] }>>(
+    '/super-admin/stats/tenants',
+  );
+  return data.data;
+}
+
+// ─── Plan catalog (B7.7) ────────────────────────────────────────────
+
+export interface PlanQuotas {
+  maxUsers: number;
+  maxWorkOrdersPerMonth: number;
+  maxStorageMb: number;
+  maxClients: number;
+}
+
+export interface PlanDefinition {
+  /** Now named `code` server-side (matches DB column). Kept aliased to
+   * `plan` for transitional UI bits — they fall back to `code` if unset. */
+  code: TenantPlan;
+  /** Legacy alias — older UI bits still read `plan` instead of `code`. */
+  plan?: TenantPlan;
+  displayName: string;
+  tagline: string;
+  description: string;
+  priceMonthly: number;
+  /** Per-active-user surcharge — billed monthly on top of `priceMonthly`. */
+  pricePerUserMonthly: number;
+  currency: 'CAD' | 'USD' | 'EUR';
+  quotas: PlanQuotas;
+  features: string[];
+  recommended?: boolean;
+  sortOrder?: number;
+  isActive?: boolean;
+}
+
+export async function getPlanCatalog(): Promise<{ data: PlanDefinition[] }> {
+  const { data } = await api.get<ApiResponse<{ data: PlanDefinition[] }>>(
+    '/super-admin/plans',
+  );
+  return data.data;
+}
+
+export interface UpdatePlanInput {
+  displayName?: string;
+  tagline?: string;
+  description?: string;
+  priceMonthly?: number;
+  pricePerUserMonthly?: number;
+  currency?: 'CAD' | 'USD' | 'EUR';
+  maxUsers?: number;
+  maxWorkOrdersPerMonth?: number;
+  maxStorageMb?: number;
+  maxClients?: number;
+  features?: string[];
+  recommended?: boolean;
+  sortOrder?: number;
+  isActive?: boolean;
+}
+
+export async function updatePlan(
+  code: TenantPlan,
+  patch: UpdatePlanInput,
+): Promise<PlanDefinition> {
+  const { data } = await api.patch<ApiResponse<PlanDefinition>>(
+    `/super-admin/plans/${code}`,
+    patch,
+  );
+  return data.data;
 }
 
 // ─── Audit cross-tenant (B7) ────────────────────────────────────────
@@ -107,10 +219,11 @@ export interface AuditSearchResponse {
 }
 
 export async function searchAudit(q: AuditQuery): Promise<AuditSearchResponse> {
-  const { data } = await api.get<AuditSearchResponse>('/super-admin/audit', {
-    params: q,
-  });
-  return data;
+  const { data } = await api.get<ApiResponse<AuditSearchResponse>>(
+    '/super-admin/audit',
+    { params: q },
+  );
+  return data.data;
 }
 
 // ─── User search cross-tenant (B7) ──────────────────────────────────
@@ -128,11 +241,11 @@ export interface UserSearchRow {
 export async function searchUsers(
   email: string,
 ): Promise<{ data: UserSearchRow[] }> {
-  const { data } = await api.get<{ data: UserSearchRow[] }>(
+  const { data } = await api.get<ApiResponse<{ data: UserSearchRow[] }>>(
     '/super-admin/users',
     { params: { email } },
   );
-  return data;
+  return data.data;
 }
 
 // ─── All-users management (B7 follow-up) ────────────────────────────
@@ -161,10 +274,11 @@ export interface AllUsersQuery {
 }
 
 export async function listAllUsers(q: AllUsersQuery): Promise<AllUsersListResponse> {
-  const { data } = await api.get<AllUsersListResponse>('/super-admin/all-users', {
-    params: q,
-  });
-  return data;
+  const { data } = await api.get<ApiResponse<AllUsersListResponse>>(
+    '/super-admin/all-users',
+    { params: q },
+  );
+  return data.data;
 }
 
 export interface UpdateUserBySuperAdminInput {
@@ -177,11 +291,11 @@ export async function updateUserBySuperAdmin(
   id: string,
   patch: UpdateUserBySuperAdminInput,
 ): Promise<AllUsersRow> {
-  const { data } = await api.patch<AllUsersRow>(
+  const { data } = await api.patch<ApiResponse<AllUsersRow>>(
     `/super-admin/all-users/${id}`,
     patch,
   );
-  return data;
+  return data.data;
 }
 
 // ─── Impersonate (B6.11 + B7) ───────────────────────────────────────
@@ -202,9 +316,145 @@ export interface ImpersonateResponse {
 export async function impersonate(
   payload: { userId: string } | { tenantId: string },
 ): Promise<ImpersonateResponse> {
-  const { data } = await api.post<ImpersonateResponse>(
+  const { data } = await api.post<ApiResponse<ImpersonateResponse>>(
     '/super-admin/impersonate',
     payload,
   );
-  return data;
+  return data.data;
+}
+
+// ─── Create tenant (B7.5) ───────────────────────────────────────────
+
+export type AssignableRole = 'ADMIN' | 'DISPATCHER' | 'TECHNICIAN';
+
+export interface CreateTenantInput {
+  slug: string;
+  name: string;
+  plan?: TenantPlan;
+  maxUsers?: number;
+  maxWorkOrdersPerMonth?: number;
+  maxStorageMb?: number;
+  maxClients?: number;
+  admin: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+export interface CreateTenantResponse {
+  tenant: { id: string; slug: string; name: string; plan: TenantPlan };
+  admin: { id: string; email: string };
+}
+
+export async function createTenant(
+  input: CreateTenantInput,
+): Promise<CreateTenantResponse> {
+  const { data } = await api.post<ApiResponse<CreateTenantResponse>>(
+    '/super-admin/tenants',
+    input,
+  );
+  return data.data;
+}
+
+export interface TenantLogoResponse {
+  logoStorageKey: string;
+  logoUrl: string;
+}
+
+export async function uploadTenantLogo(
+  tenantId: string,
+  file: File,
+): Promise<TenantLogoResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const { data } = await api.post<ApiResponse<TenantLogoResponse>>(
+    `/super-admin/tenants/${tenantId}/logo`,
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  );
+  return data.data;
+}
+
+// ─── Create user in a tenant (B7.5) ─────────────────────────────────
+
+export interface CreateUserInput {
+  tenantId: string;
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  role: AssignableRole;
+  phone?: string;
+  isActive?: boolean;
+}
+
+export async function createUserBySuperAdmin(
+  input: CreateUserInput,
+): Promise<AllUsersRow> {
+  const { data } = await api.post<ApiResponse<AllUsersRow>>(
+    '/super-admin/all-users',
+    input,
+  );
+  return data.data;
+}
+
+// ─── Platform SUPER_ADMINs (B7.6) ───────────────────────────────────
+
+export interface PlatformSuperAdminRow {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface CreatePlatformSuperAdminInput {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+}
+
+export async function listPlatformSuperAdmins(): Promise<{
+  data: PlatformSuperAdminRow[];
+}> {
+  const { data } = await api.get<ApiResponse<{ data: PlatformSuperAdminRow[] }>>(
+    '/super-admin/platform-users',
+  );
+  return data.data;
+}
+
+export async function createPlatformSuperAdmin(
+  input: CreatePlatformSuperAdminInput,
+): Promise<PlatformSuperAdminRow> {
+  const { data } = await api.post<ApiResponse<PlatformSuperAdminRow>>(
+    '/super-admin/platform-users',
+    input,
+  );
+  return data.data;
+}
+
+// ─── Public tenant branding (B7.5) ──────────────────────────────────
+
+export interface TenantBranding {
+  /** null on the apex / auth / reserved subdomains (no tenant in play). */
+  slug: string | null;
+  name: string;
+  logoUrl: string | null;
+}
+
+/**
+ * Public — resolves the tenant from the request Host (subdomain) and returns
+ * the name + logo to brand the login screen. Safe to call unauthenticated.
+ */
+export async function getBranding(): Promise<TenantBranding> {
+  const { data } = await api.get<ApiResponse<TenantBranding>>(
+    '/tenants/branding',
+  );
+  return data.data;
 }

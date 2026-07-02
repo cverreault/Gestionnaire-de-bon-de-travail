@@ -1,0 +1,74 @@
+{
+  "title": "My subscription",
+  "subtitle": "Current plan, quota usage and estimated monthly billing.",
+  "loading": "Loading…",
+  "loadFailed": "Failed to load the subscription.",
+  "billing": {
+    "currentPlan": "Current plan",
+    "estimatedThisMonth": "Estimated billing this month",
+    "free": "Free",
+    "baseFee": "{{amount}} {{currency}} base fee",
+    "perUserFee": "{{count}} × {{amount}} {{currency}} (billed users)",
+    "plus": " + ",
+    "peakBadge": "⚠ Billed on this month's peak: {{peak}} users (currently {{current}})",
+    "peakExplanation": "Per-user billing uses the highest active-user count recorded during the month — mid-month decreases do not reduce the bill."
+  },
+  "peaks": {
+    "title": "📈 Usage peaks this month",
+    "subtitle": "Highest values recorded since the 1st of the month ({{yearMonth}}). These values drive end-of-month billing.",
+    "users": "Users (billed)",
+    "clients": "Clients",
+    "workOrders": "Work orders",
+    "storage": "Storage"
+  },
+  "history": {
+    "title": "📅 Peak history",
+    "subtitle": "Last 12 months of peaks per category. Values represent the maximum reached each month.",
+    "loadFailed": "Failed to load the history.",
+    "empty": "No history available yet. Previous months' peaks will appear here starting next month.",
+    "month": "Month",
+    "users": "Users",
+    "clients": "Clients",
+    "workOrders": "Work orders",
+    "storage": "Storage"
+  },
+  "quotas": {
+    "title": "📊 Usage vs. quotas",
+    "users": "Users",
+    "workOrdersThisMonth": "Work orders this month",
+    "clients": "Clients",
+    "storage": "Storage"
+  },
+  "changePlan": {
+    "title": "🔀 Change plan",
+    "subtitle": "Send a change request to the platform team. An administrator will review it within 24 business hours.",
+    "noneAvailable": "No other plan is currently available.",
+    "newPlan": "New plan",
+    "select": "— Select —",
+    "message": "Message (optional)",
+    "messagePlaceholder": "Add context / preferred date…",
+    "submit": "📨 Send request",
+    "submitting": "Sending…"
+  },
+  "forbidden": {
+    "title": "🔒 This page is reserved for the tenant's primary administrator.",
+    "subtitle": "Contact the primary administrator for any plan or billing question."
+  },
+  "quotaBanner": {
+    "sentence": "of your {{kind}} quota used",
+    "sentenceDanger": "of your {{kind}} quota used — you are close to the limit.",
+    "sentenceExceeded": "of your {{kind}} quota used — action required to continue operating.",
+    "plusOthers_one": " (+{{count}} more)",
+    "plusOthers_other": " (+{{count}} more)",
+    "cta": "View my subscription →"
+  },
+  "quotaKind": {
+    "users": "users",
+    "workOrders": "work orders this month",
+    "clients": "clients",
+    "storage": "storage"
+  },
+  "toasts": {
+    "changeRequested": "Your request was sent to the platform team. You will be notified once it is processed."
+  }
+}

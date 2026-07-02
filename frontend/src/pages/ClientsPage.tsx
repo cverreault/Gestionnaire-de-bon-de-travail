@@ -15,6 +15,12 @@ import type { Client, ClientAddress } from '../types';
 import { ClientType, AddressType } from '../types';
 import type { CreateV3ClientDto, CreateClientAddressDto } from '../services/clients.service';
 import LoadingSpinner from '../components/LoadingSpinner';
+import CsvImportExportPanel from '../components/CsvImportExportPanel';
+import {
+  downloadClientTemplate,
+  exportClientsCsv,
+  importClientsCsv,
+} from '../services/clients-csv.service';
 import {
   theme,
   tableStyles,
@@ -694,6 +700,16 @@ export default function ClientsPage() {
           {t('create')}
         </button>
       </div>
+
+      {/* CSV import / export — ADMIN only, hidden for other roles */}
+      <CsvImportExportPanel
+        title={t('csv:clients.title', 'Import / export clients')}
+        helpText={t('csv:clients.help')}
+        onDownloadTemplate={downloadClientTemplate}
+        onExport={exportClientsCsv}
+        onImport={importClientsCsv}
+        invalidateKeys={[['clients']]}
+      />
 
       {/* Filters */}
       <div style={{ ...layoutStyles.filterBar }}>

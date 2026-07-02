@@ -1,9 +1,11 @@
 import { useForm } from 'react-hook-form';
 import { Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 import { useLogin } from '../hooks/useAuth';
 import { useAuthStore } from '../context/auth.store';
 import { useUiStore, type Locale } from '../context/ui.store';
+import { getBranding } from '../services/super-admin.service';
 import type { LoginCredentials } from '../types';
 import { theme, cardStyles, formStyles, buttonStyles } from '../theme';
 
@@ -14,6 +16,17 @@ export default function LoginPage() {
   const { t: tCommon } = useTranslation('common');
   const locale = useUiStore((s) => s.locale);
   const setLocale = useUiStore((s) => s.setLocale);
+
+  // Per-tenant branding resolved from the subdomain (B7.5). On the apex /
+  // auth subdomain this returns the generic TaskMgr branding.
+  const { data: branding } = useQuery({
+    queryKey: ['branding'],
+    queryFn: getBranding,
+    staleTime: Infinity,
+    retry: false,
+  });
+  const brandName = branding?.name ?? 'TaskMgr';
+  const brandLogo = branding?.logoUrl ?? null;
   const {
     register,
     handleSubmit,
@@ -21,13 +34,15 @@ export default function LoginPage() {
   } = useForm<LoginCredentials>();
 
   // Already authenticated → redirect to the right home for the role.
-  // SUPER_ADMIN / ADMIN / DISPATCHER all get the desktop dashboard ;
-  // TECHNICIAN goes straight to their work-orders list.
+  // SUPER_ADMIN lands on its own portal (no tenant data); ADMIN /
+  // DISPATCHER get the desktop dashboard; TECHNICIAN gets its mobile
+  // work-orders list.
   if (isAuthenticated && user) {
+    if (user.role === 'SUPER_ADMIN') {
+      return <Navigate to="/super-admin/stats" replace />;
+    }
     const goesToDashboard =
-      user.role === 'SUPER_ADMIN' ||
-      user.role === 'ADMIN' ||
-      user.role === 'DISPATCHER';
+      user.role === 'ADMIN' || user.role === 'DISPATCHER';
     return <Navigate to={goesToDashboard ? '/dashboard' : '/mes-bons'} replace />;
   }
 
@@ -57,11 +72,24 @@ export default function LoginPage() {
           overflow: 'visible',
         }}
       >
-        {/* Logo / Title */}
+        {/* Logo / Title — per-tenant when on a tenant subdomain */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🔧</div>
+          {brandLogo ? (
+            <img
+              src={brandLogo}
+              alt={brandName}
+              style={{
+                maxHeight: '4rem',
+                maxWidth: '80%',
+                marginBottom: '0.5rem',
+                objectFit: 'contain',
+              }}
+            />
+          ) : (
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🔧</div>
+          )}
           <h1 style={{ fontSize: theme.font.size2xl, color: theme.colors.text, margin: 0, fontWeight: theme.font.weightBold }}>
-            TaskMgr
+            {brandName}
           </h1>
           <p style={{ color: theme.colors.textMuted, margin: '0.25rem 0 0', fontSize: theme.font.sizeSm }}>
             {t('login.subtitle')}

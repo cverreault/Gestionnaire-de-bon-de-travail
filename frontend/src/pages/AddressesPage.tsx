@@ -6,6 +6,12 @@ import { useAddressTypes } from '../hooks/useSettings';
 import { AddressType, ClientType } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import AddressCreateModal from '../components/AddressCreateModal';
+import CsvImportExportPanel from '../components/CsvImportExportPanel';
+import {
+  downloadAddressTemplate,
+  exportAddressesCsv,
+  importAddressesCsv,
+} from '../services/clients-csv.service';
 import {
   theme,
   buttonStyles,
@@ -88,6 +94,16 @@ export default function AddressesPage() {
           {t('create')}
         </button>
       </div>
+
+      {/* CSV import / export — ADMIN only */}
+      <CsvImportExportPanel
+        title={t('csv:addresses.title', 'Import / export addresses')}
+        helpText={t('csv:addresses.help')}
+        onDownloadTemplate={downloadAddressTemplate}
+        onExport={exportAddressesCsv}
+        onImport={importAddressesCsv}
+        invalidateKeys={[['clients'], ['addresses']]}
+      />
 
       {/* Filters */}
       <div style={{ ...layoutStyles.filterBar }}>

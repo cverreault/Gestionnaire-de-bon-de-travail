@@ -1,5 +1,6 @@
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../common/prisma/prisma.service';
+import { PeakTrackerService } from './peak-tracker.service';
 import {
   QuotaExceededException,
   QuotaType,
@@ -29,7 +30,10 @@ import {
 export class QuotaService {
   private readonly logger = new Logger(QuotaService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly peakTracker: PeakTrackerService,
+  ) {}
 
   /**
    * Atomic check + consume. Throws QuotaExceededException (HTTP 403)
@@ -50,11 +54,14 @@ export class QuotaService {
         ? `"${maxCol}" * 1024 * 1024`
         : `"${maxCol}"`;
 
-    const rows = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+    // Increment + return the post-increment counter value so we can feed
+    // the monthly-peak tracker without a second SELECT.
+    type Row = { id: string; new_value: bigint };
+    const rows = await this.prisma.$queryRawUnsafe<Row[]>(
       `UPDATE tenants
          SET "${currentCol}" = "${currentCol}" + $1
          WHERE id = $2 AND "${currentCol}" + $1 <= ${ceilingExpr}
-       RETURNING id`,
+       RETURNING id, "${currentCol}" AS new_value`,
       amount,
       tenantId,
     );
@@ -67,6 +74,11 @@ export class QuotaService {
         new QuotaExceededException(quota, tenantId).message,
       );
     }
+
+    // Bookkeeping — never blocks the caller. Errors are logged inside
+    // PeakTrackerService.record() (bookkeeping isn't allowed to trip
+    // resource creation the counter has already succeeded on).
+    await this.peakTracker.record(tenantId, quota, Number(rows[0].new_value));
   }
 
   /**

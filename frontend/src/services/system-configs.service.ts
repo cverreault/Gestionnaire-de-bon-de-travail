@@ -15,8 +15,13 @@ export interface ConfigListResponse {
 
 export interface ConfigValueResponse {
   key: string;
-  value: string;
-  source: 'db' | 'env';
+  /**
+   * `null` when `source === 'unset'` — key is neither in the DB nor an
+   * env var. The UI renders an empty input in that case; on save, it
+   * either upserts a fresh row or leaves the fallback in place.
+   */
+  value: string | null;
+  source: 'db' | 'env' | 'unset';
   encrypted: boolean;
   updatedAt: string | null;
   updatedBy: string | null;

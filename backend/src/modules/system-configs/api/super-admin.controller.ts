@@ -7,7 +7,6 @@ import {
   Body,
   HttpCode,
   HttpStatus,
-  NotFoundException,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
@@ -61,16 +60,27 @@ export class SuperAdminController {
   @ApiOperation({
     summary: 'Récupère la valeur résolue (DB > env)',
     description:
-      'Pour les configs chiffrées, le serveur déchiffre avant de renvoyer. 404 si la clé n\'existe ni en DB ni en env.',
+      'Pour les configs chiffrées, le serveur déchiffre avant de renvoyer. ' +
+      'Retourne `{ value: null, source: "unset" }` avec un 200 si la clé n\'est ni en DB ni en env — ' +
+      'un 404 serait sémantiquement correct mais pollue la console du navigateur pour un cas ' +
+      'très courant (config vide au premier boot).',
   })
   @ApiParam({ name: 'key', description: 'ex: smtp.host, vapid.public-key, audit.retentionDays' })
   async getOne(@Param('key') key: string) {
     const value = await this.configs.resolve(key);
-    if (value === undefined) {
-      throw new NotFoundException(`Config "${key}" introuvable (DB ni env)`);
-    }
     const dbRow = await this.configs.list();
     const meta = dbRow.find((r) => r.key === key);
+
+    if (value === undefined) {
+      return {
+        key,
+        value: null,
+        source: 'unset' as const,
+        encrypted: false,
+        updatedAt: null,
+        updatedBy: null,
+      };
+    }
     return {
       key,
       value,

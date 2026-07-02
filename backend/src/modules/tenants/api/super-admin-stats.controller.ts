@@ -93,4 +93,106 @@ export class SuperAdminStatsController {
       },
     };
   }
+
+  /**
+   * Per-tenant usage snapshot (B7.7).
+   *
+   * One row per tenant : identity, plan, current counters vs. quotas, and
+   * activity signals (active sessions, last login, last BT). Powers the
+   * SA dashboard's per-tenant breakdown so the SA can see at a glance who
+   * is close to quota, who is dormant, and where storage is concentrated.
+   *
+   * "Active sessions" = distinct users with at least one valid (not revoked,
+   * not expired) refresh token — the closest proxy we have for "currently
+   * connected" without adding a websocket presence layer.
+   *
+   * A single SQL with subqueries — N tenants is small (<100 in any realistic
+   * self-hosted or SaaS deployment), so the N+1 cost is fine and keeps the
+   * code obvious. If the SaaS grows past that, switch to materialized
+   * counters refreshed by the quota service.
+   */
+  @Get('tenants')
+  @ApiOperation({
+    summary: 'Snapshot per-tenant — ressources / utilisateurs / sessions',
+  })
+  async perTenant() {
+    type Row = {
+      id: string;
+      slug: string;
+      name: string;
+      plan: string;
+      is_active: boolean;
+      max_users: number;
+      max_work_orders_per_month: number;
+      max_storage_mb: number;
+      max_clients: number;
+      current_storage_bytes: bigint;
+      created_at: Date;
+      active_users: bigint;
+      active_sessions: bigint;
+      clients_count: bigint;
+      work_orders_this_month: bigint;
+      work_orders_total: bigint;
+      last_login_at: Date | null;
+      last_work_order_at: Date | null;
+    };
+
+    const rows = await this.prisma.$queryRawUnsafe<Row[]>(
+      `SELECT
+         t.id, t.slug, t.name, t.plan::text AS plan, t.is_active,
+         t.max_users, t.max_work_orders_per_month, t.max_storage_mb,
+         t.max_clients, t.current_storage_bytes, t.created_at,
+         (SELECT count(*)::bigint FROM users u
+            WHERE u.tenant_id = t.id AND u.is_active = true) AS active_users,
+         (SELECT count(DISTINCT r.user_id)::bigint FROM refresh_tokens r
+            WHERE r.tenant_id = t.id
+              AND r.revoked_at IS NULL
+              AND r.expires_at > NOW()) AS active_sessions,
+         (SELECT count(*)::bigint FROM clients c
+            WHERE c.tenant_id = t.id) AS clients_count,
+         (SELECT count(*)::bigint FROM work_orders w
+            WHERE w.tenant_id = t.id
+              AND w.created_at >= date_trunc('month', CURRENT_TIMESTAMP))
+              AS work_orders_this_month,
+         (SELECT count(*)::bigint FROM work_orders w
+            WHERE w.tenant_id = t.id) AS work_orders_total,
+         (SELECT MAX(r.created_at) FROM refresh_tokens r
+            WHERE r.tenant_id = t.id) AS last_login_at,
+         (SELECT MAX(w.created_at) FROM work_orders w
+            WHERE w.tenant_id = t.id) AS last_work_order_at
+       FROM tenants t
+       ORDER BY t.created_at ASC`,
+    );
+
+    return {
+      data: rows.map((r) => ({
+        id: r.id,
+        slug: r.slug,
+        name: r.name,
+        plan: r.plan,
+        isActive: r.is_active,
+        users: {
+          active: Number(r.active_users),
+          max: r.max_users,
+          sessions: Number(r.active_sessions),
+        },
+        workOrders: {
+          thisMonth: Number(r.work_orders_this_month),
+          max: r.max_work_orders_per_month,
+          total: Number(r.work_orders_total),
+        },
+        storage: {
+          bytes: Number(r.current_storage_bytes),
+          maxMb: r.max_storage_mb,
+        },
+        clients: {
+          count: Number(r.clients_count),
+          max: r.max_clients,
+        },
+        createdAt: r.created_at,
+        lastLoginAt: r.last_login_at,
+        lastWorkOrderAt: r.last_work_order_at,
+      })),
+    };
+  }
 }

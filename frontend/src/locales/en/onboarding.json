@@ -1,0 +1,42 @@
+{
+  "welcome": {
+    "title": "Welcome{{name}}!",
+    "body": "Three quick steps to set up your TaskMgr workspace:",
+    "steps": "1. Create a task type · 2. Add a first client · 3. Create your first work order",
+    "later": "Later",
+    "start": "Start →"
+  },
+  "step": "STEP {{current}} / {{total}}",
+  "skip": "Skip",
+  "next": "Create and continue →",
+  "submitting": "Creating…",
+  "taskType": {
+    "title": "Create a task type",
+    "subtitle": "Work orders are classified by type. You can add more later from Settings → Task types.",
+    "name": "Name",
+    "prefix": "Prefix",
+    "prefixHint": "The prefix is used as a tag in work-order numbers — e.g. REP-2026-0001.",
+    "errorGeneric": "Failed to create the task type"
+  },
+  "client": {
+    "title": "Add a first client",
+    "subtitle": "A client is the recipient of work orders. You can add more on the fly during work-order creation.",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "company": "Company (optional)",
+    "type": "Type",
+    "types": {
+      "RESIDENTIAL": "Residential",
+      "COMMERCIAL": "Commercial",
+      "INDUSTRIAL": "Industrial",
+      "INSTITUTIONAL": "Institutional"
+    },
+    "errorGeneric": "Failed to create the client"
+  },
+  "done": {
+    "title": "All set!",
+    "subtitle": "Your workspace is configured. Create your first work order to see the complete flow.",
+    "back": "Back to dashboard",
+    "createBt": "➕ Create a first work order"
+  }
+}

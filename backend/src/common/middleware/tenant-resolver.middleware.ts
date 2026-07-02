@@ -9,6 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequestContextService } from '../context/request-context.service';
 import {
   DEFAULT_TENANT_ID,
+  TENANT_IS_IMPLICIT_KEY,
   TENANT_REQUEST_KEY,
   TenantContext,
   extractTenantSlug,
@@ -85,6 +86,14 @@ export class TenantResolverMiddleware implements NestMiddleware {
     (req as Request & { [TENANT_REQUEST_KEY]: TenantContext })[
       TENANT_REQUEST_KEY
     ] = tenant;
+
+    // Flag whether this tenant was inferred from the URL (slug) or is a
+    // permissive DEFAULT fallback (IP / localhost / apex). The JwtAuthGuard
+    // uses this to decide between strict anti-spoofing (slug→tenant) and
+    // "trust the JWT" (no slug → admin tooling / self-hosted IP access).
+    (req as Request & { [TENANT_IS_IMPLICIT_KEY]: boolean })[
+      TENANT_IS_IMPLICIT_KEY
+    ] = slug === null;
 
     // Open the AsyncLocalStorage scope so deep services can read the
     // tenant without threading it through every signature. userId is

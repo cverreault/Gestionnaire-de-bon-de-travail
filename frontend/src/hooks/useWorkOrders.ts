@@ -11,10 +11,14 @@ import type { WorkOrderFilters, WorkOrderStatus } from '../types';
 
 export const WORK_ORDERS_KEY = 'work-orders';
 
-export function useWorkOrders(filters?: WorkOrderFilters) {
+export function useWorkOrders(
+  filters?: WorkOrderFilters,
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: [WORK_ORDERS_KEY, filters],
     queryFn: () => workOrdersService.findAll(filters),
+    enabled: options?.enabled ?? true,
   });
 }
 

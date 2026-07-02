@@ -1,0 +1,42 @@
+{
+  "welcome": {
+    "title": "Bienvenue{{name}} !",
+    "body": "Trois étapes rapides pour préparer votre espace TaskMgr :",
+    "steps": "1. Créer un type de tâche · 2. Ajouter un premier client · 3. Créer votre premier BT",
+    "later": "Plus tard",
+    "start": "Commencer →"
+  },
+  "step": "ÉTAPE {{current}} / {{total}}",
+  "skip": "Ignorer",
+  "next": "Créer et continuer →",
+  "submitting": "Création…",
+  "taskType": {
+    "title": "Créez un type de tâche",
+    "subtitle": "Les BTs sont classés par type. Vous pourrez en ajouter d'autres plus tard depuis Paramètres → Types de tâche.",
+    "name": "Nom",
+    "prefix": "Préfixe",
+    "prefixHint": "Le préfixe sert de tag dans les numéros de BT — ex. REP-2026-0001.",
+    "errorGeneric": "Échec de création du type de tâche"
+  },
+  "client": {
+    "title": "Ajoutez un premier client",
+    "subtitle": "Un client est le destinataire des BTs. Vous en ajouterez d'autres à la volée pendant la création de BTs.",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "company": "Entreprise (optionnel)",
+    "type": "Type",
+    "types": {
+      "RESIDENTIAL": "Résidentiel",
+      "COMMERCIAL": "Commercial",
+      "INDUSTRIAL": "Industriel",
+      "INSTITUTIONAL": "Institutionnel"
+    },
+    "errorGeneric": "Échec de création du client"
+  },
+  "done": {
+    "title": "C'est prêt !",
+    "subtitle": "Votre espace est configuré. Créez votre premier bon de travail pour voir le flux complet.",
+    "back": "Retour au dashboard",
+    "createBt": "➕ Créer un premier BT"
+  }
+}

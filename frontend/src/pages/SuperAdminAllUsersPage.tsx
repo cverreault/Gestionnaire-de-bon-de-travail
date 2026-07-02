@@ -5,8 +5,10 @@ import {
   listAllUsers,
   listTenants,
   updateUserBySuperAdmin,
+  createUserBySuperAdmin,
   type AllUsersRow,
   type UpdateUserBySuperAdminInput,
+  type CreateUserInput,
 } from '../services/super-admin.service';
 
 const EDITABLE_ROLES = ['ADMIN', 'DISPATCHER', 'TECHNICIAN'] as const;
@@ -24,6 +26,7 @@ export default function SuperAdminAllUsersPage() {
   const [emailFilter, setEmailFilter] = useState('');
   const [tenantFilter, setTenantFilter] = useState('');
   const [editing, setEditing] = useState<AllUsersRow | null>(null);
+  const [creating, setCreating] = useState(false);
 
   const { data: usersData, isFetching } = useQuery({
     queryKey: ['superAdmin', 'all-users', page, emailFilter, tenantFilter],
@@ -44,11 +47,16 @@ export default function SuperAdminAllUsersPage() {
 
   return (
     <div style={layoutStyles.page}>
-      <header style={{ marginBottom: 16 }}>
-        <h1 style={{ margin: 0 }}>👥 Tous les utilisateurs</h1>
-        <p style={{ color: theme.colors.textMuted, margin: '4px 0 0', fontSize: 13 }}>
-          Liste cross-tenant. Cliquez sur une ligne pour changer son tenant ou son rôle.
-        </p>
+      <header style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+        <div>
+          <h1 style={{ margin: 0 }}>👥 Tous les utilisateurs</h1>
+          <p style={{ color: theme.colors.textMuted, margin: '4px 0 0', fontSize: 13 }}>
+            Liste cross-tenant. Cliquez sur une ligne pour changer son tenant ou son rôle.
+          </p>
+        </div>
+        <button onClick={() => setCreating(true)} style={buttonStyles.primary}>
+          ➕ Ajouter un utilisateur
+        </button>
       </header>
 
       <div style={{ ...cardStyles.card, padding: 12, marginBottom: 16, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -158,6 +166,193 @@ export default function SuperAdminAllUsersPage() {
           onClose={() => setEditing(null)}
         />
       )}
+
+      {creating && (
+        <CreateUserModal
+          tenants={tenantsData?.data ?? []}
+          defaultTenantId={tenantFilter || tenantsData?.data?.[0]?.id || ''}
+          onClose={() => setCreating(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function CreateUserModal({
+  tenants,
+  defaultTenantId,
+  onClose,
+}: {
+  tenants: Array<{ id: string; slug: string; name: string }>;
+  defaultTenantId: string;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const [form, setForm] = useState<CreateUserInput>({
+    tenantId: defaultTenantId,
+    email: '',
+    password: '',
+    firstName: '',
+    lastName: '',
+    role: 'TECHNICIAN',
+    phone: '',
+    isActive: true,
+  });
+
+  const canSubmit =
+    form.tenantId &&
+    /^\S+@\S+\.\S+$/.test(form.email) &&
+    form.password.length >= 8 &&
+    form.firstName.trim() &&
+    form.lastName.trim();
+
+  const create = useMutation({
+    mutationFn: () =>
+      createUserBySuperAdmin({
+        ...form,
+        phone: form.phone?.trim() || undefined,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['superAdmin', 'all-users'] });
+      onClose();
+    },
+  });
+
+  const apiError =
+    (create.error as { response?: { data?: { message?: string | string[] } } } | undefined)
+      ?.response?.data?.message;
+  const errorText = Array.isArray(apiError) ? apiError.join(', ') : apiError;
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.45)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+        zIndex: 100,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{ ...cardStyles.card, padding: 24, maxWidth: 480, width: '100%' }}
+      >
+        <h2 style={{ margin: '0 0 16px' }}>➕ Nouvel utilisateur</h2>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <Field label="Tenant">
+            <select
+              value={form.tenantId}
+              onChange={(e) => setForm({ ...form, tenantId: e.target.value })}
+              style={formStyles.input}
+            >
+              {tenants.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.slug} — {t.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <Field label="Prénom">
+              <input
+                value={form.firstName}
+                onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+                style={formStyles.input}
+              />
+            </Field>
+            <Field label="Nom">
+              <input
+                value={form.lastName}
+                onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                style={formStyles.input}
+              />
+            </Field>
+          </div>
+
+          <Field label="Email">
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              style={formStyles.input}
+            />
+          </Field>
+
+          <Field label="Mot de passe (≥ 8 caractères)">
+            <input
+              type="password"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              style={formStyles.input}
+            />
+          </Field>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <Field label="Rôle">
+              <select
+                value={form.role}
+                onChange={(e) =>
+                  setForm({ ...form, role: e.target.value as CreateUserInput['role'] })
+                }
+                style={formStyles.input}
+              >
+                {EDITABLE_ROLES.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Téléphone (optionnel)">
+              <input
+                value={form.phone ?? ''}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                style={formStyles.input}
+              />
+            </Field>
+          </div>
+
+          <Field label="Statut">
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="checkbox"
+                checked={form.isActive}
+                onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
+              />
+              <span style={{ fontSize: 13 }}>Compte actif</span>
+            </label>
+          </Field>
+        </div>
+
+        {errorText && (
+          <p style={{ color: theme.colors.danger, marginTop: 12, fontSize: 13 }}>
+            Échec : {errorText}
+          </p>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+          <button onClick={onClose} style={buttonStyles.secondary}>
+            Annuler
+          </button>
+          <button
+            onClick={() => create.mutate()}
+            disabled={!canSubmit || create.isPending}
+            style={{
+              ...buttonStyles.primary,
+              opacity: !canSubmit || create.isPending ? 0.6 : 1,
+              cursor: !canSubmit || create.isPending ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {create.isPending ? 'Création…' : 'Créer'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

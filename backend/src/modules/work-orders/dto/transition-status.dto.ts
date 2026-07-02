@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiHideProperty, ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsDateString,
   IsEnum,
@@ -47,6 +47,7 @@ export class TransitionStatusDto {
    * - La validation `@Validate` s'exécute toujours côté HTTP grâce au
    *   `ValidationPipe` (skipMissingProperties=false par défaut dans NestJS).
    */
+  @ApiHideProperty()
   @Validate(AtLeastOneTargetConstraint)
   readonly _atLeastOneTarget?: undefined;
 

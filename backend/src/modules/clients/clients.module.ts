@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ClientsController } from './clients.controller';
+import { ClientsCsvController } from './clients-csv.controller';
 import { ClientsService } from './clients.service';
 import { ExternalClientService } from './external-client.service';
 
@@ -12,7 +13,7 @@ import { ExternalClientService } from './external-client.service';
  * ConfigModule est @Global() donc ConfigService est injecté automatiquement.
  */
 @Module({
-  controllers: [ClientsController],
+  controllers: [ClientsController, ClientsCsvController],
   providers: [ClientsService, ExternalClientService],
   exports: [ClientsService, ExternalClientService],
 })

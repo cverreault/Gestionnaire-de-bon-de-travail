@@ -1,0 +1,74 @@
+{
+  "title": "Mon abonnement",
+  "subtitle": "Plan actuel, quotas consommés et facturation estimée du mois.",
+  "loading": "Chargement…",
+  "loadFailed": "Échec du chargement de l'abonnement.",
+  "billing": {
+    "currentPlan": "Plan actuel",
+    "estimatedThisMonth": "Facturation estimée ce mois",
+    "free": "Gratuit",
+    "baseFee": "{{amount}} {{currency}} de base",
+    "perUserFee": "{{count}} × {{amount}} {{currency}} (utilisateurs facturés)",
+    "plus": " + ",
+    "peakBadge": "⚠ Facturé sur le pic du mois : {{peak}} utilisateurs (actuellement {{current}})",
+    "peakExplanation": "La facturation par utilisateur utilise le nombre maximum d'utilisateurs actifs enregistré durant le mois — les baisses en cours de mois ne réduisent pas la facture."
+  },
+  "peaks": {
+    "title": "📈 Pics d'usage ce mois",
+    "subtitle": "Maximums enregistrés depuis le 1er du mois ({{yearMonth}}). Ces valeurs déterminent la facturation à la fin du mois.",
+    "users": "Utilisateurs (facturés)",
+    "clients": "Clients",
+    "workOrders": "BTs",
+    "storage": "Stockage"
+  },
+  "history": {
+    "title": "📅 Historique des pics",
+    "subtitle": "12 derniers mois de pics par catégorie. Les valeurs représentent le maximum atteint chaque mois.",
+    "loadFailed": "Échec du chargement de l'historique.",
+    "empty": "Aucun historique disponible pour l'instant. Les pics des mois précédents apparaîtront ici à partir du prochain mois.",
+    "month": "Mois",
+    "users": "Utilisateurs",
+    "clients": "Clients",
+    "workOrders": "BTs",
+    "storage": "Stockage"
+  },
+  "quotas": {
+    "title": "📊 Utilisation vs. quotas",
+    "users": "Utilisateurs",
+    "workOrdersThisMonth": "BTs ce mois",
+    "clients": "Clients",
+    "storage": "Stockage"
+  },
+  "changePlan": {
+    "title": "🔀 Changer de plan",
+    "subtitle": "Envoyez une demande de changement à l'équipe plateforme. Un administrateur traitera votre demande sous 24 h ouvrées.",
+    "noneAvailable": "Aucun autre plan disponible actuellement.",
+    "newPlan": "Nouveau plan",
+    "select": "— Sélectionner —",
+    "message": "Message (optionnel)",
+    "messagePlaceholder": "Précisez le contexte / date souhaitée…",
+    "submit": "📨 Envoyer la demande",
+    "submitting": "Envoi…"
+  },
+  "forbidden": {
+    "title": "🔒 Cette page est réservée à l'administrateur principal du tenant.",
+    "subtitle": "Contactez l'administrateur principal pour toute question de plan ou de facturation."
+  },
+  "quotaBanner": {
+    "sentence": "de votre quota {{kind}} atteint",
+    "sentenceDanger": "de votre quota {{kind}} atteint — vous êtes proche de la limite.",
+    "sentenceExceeded": "de votre quota {{kind}} atteint — action requise pour continuer à opérer.",
+    "plusOthers_one": " (+{{count}} autre)",
+    "plusOthers_other": " (+{{count}} autres)",
+    "cta": "Voir mon abonnement →"
+  },
+  "quotaKind": {
+    "users": "utilisateurs",
+    "workOrders": "BTs ce mois",
+    "clients": "clients",
+    "storage": "stockage"
+  },
+  "toasts": {
+    "changeRequested": "Votre demande a été transmise à l'équipe plateforme. Vous serez notifié lorsqu'elle sera traitée."
+  }
+}

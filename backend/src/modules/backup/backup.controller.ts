@@ -28,7 +28,7 @@ import { Role } from '@prisma/client';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { BackupService } from './backup.service';
 import { BackupInfoDto, RestoreResultDto } from './dto/backup-info.dto';
-import { MinioService } from '../attachments/minio.service';
+import { MinioService } from '../../common/storage/minio.service';
 
 const MAX_RESTORE_SIZE = 5 * 1024 * 1024 * 1024; // 5 GB
 

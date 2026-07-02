@@ -1,0 +1,193 @@
+{
+  "dashboard": {
+    "title": "📊 Dashboard",
+    "subtitle": "Platform overview — cross-tenant snapshot refreshed every 30 s.",
+    "loadingStats": "Loading global stats…",
+    "loadingUsage": "Loading per-tenant usage…",
+    "usageLoadFailed": "Failed to load per-tenant usage.",
+    "usageSection": "🌍 Usage per tenant",
+    "kpi": {
+      "mrr": "Estimated MRR",
+      "mrrHint": "Total billed per month (base + users)",
+      "tenants": "Tenants",
+      "tenantsHint_one": "+{{count}} this month",
+      "tenantsHint_other": "+{{count}} this month",
+      "activeUsers": "Active users",
+      "activeUsersHint_one": "+{{count}} this month",
+      "activeUsersHint_other": "+{{count}} this month",
+      "workOrders": "Work orders this month",
+      "workOrdersHint_one": "{{count}} completed",
+      "workOrdersHint_other": "{{count}} completed",
+      "storage": "Total storage",
+      "storageHint": "All tenants combined"
+    },
+    "table": {
+      "tenant": "Tenant",
+      "plan": "Plan",
+      "billing": "Billing / month",
+      "users": "Users",
+      "sessions": "Active sessions",
+      "workOrders": "WOs this month",
+      "clients": "Clients",
+      "storage": "Storage",
+      "lastActivity": "Last activity",
+      "suspended": "SUSPENDED",
+      "connected_one": "connected",
+      "connected_other": "connected",
+      "noOne": "no one",
+      "totalCumulative": "{{count}} total",
+      "empty": "No tenant on the platform.",
+      "free": "Free",
+      "billingBase": "{{amount}} {{currency}} base",
+      "billingPerUser": "{{count}} × {{amount}} {{currency}}"
+    },
+    "relative": {
+      "justNow": "just now",
+      "minutes_one": "{{count}} min ago",
+      "minutes_other": "{{count}} min ago",
+      "hours_one": "{{count}} h ago",
+      "hours_other": "{{count}} h ago",
+      "days_one": "{{count}} d ago",
+      "days_other": "{{count}} d ago"
+    }
+  },
+  "tenants": {
+    "title": "🌍 Tenants management",
+    "subtitle": "List of all workspaces. Click « Enter » to access a tenant as its 1st ADMIN.",
+    "createButton": "➕ Create a tenant",
+    "searchPlaceholder": "Filter by name, slug or owner email…",
+    "empty": "No tenant on the platform",
+    "emptySubtitle": "Create your first workspace to get started. Each tenant is isolated and billed according to its plan.",
+    "noResults": "No result",
+    "noResultsSub": "No tenant matches « {{q}} ».",
+    "clearSearch": "Clear search",
+    "countAll_one": "{{count}} tenant — page {{page}} / {{total}}",
+    "countAll_other": "{{count}} tenants — page {{page}} / {{total}}",
+    "countFiltered_one": "{{shown}} of {{total}} tenant",
+    "countFiltered_other": "{{shown}} of {{total}} tenants",
+    "prev": "◀ Previous",
+    "next": "Next ▶",
+    "column": {
+      "slug": "Slug",
+      "name": "Name",
+      "plan": "Plan",
+      "status": "Status",
+      "users": "Users",
+      "workOrders": "WOs/month",
+      "storage": "Storage",
+      "action": "Action"
+    },
+    "status": {
+      "active": "✓ active",
+      "suspended": "✗ suspended"
+    },
+    "actions": {
+      "edit": "✏️",
+      "editTitle": "Edit",
+      "suspend": "⏸ Suspend",
+      "reactivate": "▶ Reactivate",
+      "suspendTitle": "Suspend (makes it unreachable)",
+      "reactivateTitle": "Reactivate",
+      "enter": "Enter 🎭",
+      "enterTitle": "Enter as ADMIN",
+      "enterDisabledTitle": "Tenant suspended",
+      "delete": "🗑",
+      "deleteTitle": "Delete permanently",
+      "loading": "…"
+    },
+    "toasts": {
+      "suspended": "Tenant « {{slug}} » suspended",
+      "reactivated": "Tenant « {{slug}} » reactivated",
+      "toggleFailed": "Cannot change tenant state: {{msg}}"
+    }
+  },
+  "plans": {
+    "title": "💳 Plans & pricing",
+    "subtitle": "SaaS pricing editable from this page. Changes apply immediately for new tenants and plan changes; existing tenants keep their quotas until they change plan.",
+    "loading": "Loading catalog…",
+    "loadFailed": "Failed to load the catalog.",
+    "recommended": "RECOMMENDED",
+    "free": "Free",
+    "perMonth": "/ month",
+    "perUserPerMonth": "/ user / month",
+    "quotasIncluded": "Quotas included",
+    "included": "Included",
+    "editButton": "✏️ Edit",
+    "toasts": {
+      "updated": "Plan {{name}} updated"
+    },
+    "editModal": {
+      "eyebrow": "EDIT PLAN",
+      "close": "Close",
+      "sections": {
+        "presentation": "Presentation",
+        "pricing": "Pricing",
+        "quotas": "Quotas included",
+        "features": "Features (one per line)",
+        "availability": "Availability"
+      },
+      "fields": {
+        "displayName": "Display name",
+        "tagline": "Tagline (subtitle)",
+        "description": "Long description",
+        "baseMonthly": "Base price / month",
+        "perUserMonthly": "Price per user / month",
+        "currency": "Currency",
+        "maxUsers": "Max users",
+        "maxBts": "WOs / month",
+        "maxClients": "Max clients",
+        "maxStorage": "Storage (MB)"
+      },
+      "pricingHint": "Monthly total = base price + (active users × price per user).",
+      "recommended": "Highlight as « Recommended »",
+      "active": "Plan active (visible for new tenants)",
+      "cancel": "Cancel",
+      "save": "💾 Save",
+      "saving": "Saving…"
+    },
+    "columns": {
+      "users": "Users",
+      "btsPerMonth": "WOs / month",
+      "clients": "Clients",
+      "storage": "Storage"
+    }
+  },
+  "config": {
+    "title": "Platform configuration",
+    "subtitle": "TaskMgr's global settings. Leave a field empty to use the environment variable or the default value.",
+    "loading": "Loading configuration…",
+    "footerDirty": "● Unsaved changes",
+    "footerClean": "✓ In sync with the server",
+    "cancel": "Cancel",
+    "save": "💾 Save",
+    "saving": "Saving…",
+    "modifiedTag": "modified",
+    "status": {
+      "configured": "Configured",
+      "partial": "Partial",
+      "off": "Off"
+    },
+    "sections": {
+      "smtp": {
+        "title": "SMTP email",
+        "description": "Outgoing server credentials for email notifications. Leave empty to use the console (dev mode)."
+      },
+      "vapid": {
+        "title": "Web Push (VAPID)",
+        "description": "VAPID keys for web push notifications. Generate a pair with « npx web-push generate-vapid-keys »."
+      },
+      "sentry": {
+        "title": "Sentry",
+        "description": "Sentry DSN for observability. Leave empty to disable error reporting."
+      },
+      "audit": {
+        "title": "Audit retention",
+        "description": "How many days to keep audit logs before automatic deletion."
+      }
+    },
+    "toasts": {
+      "saved": "{{icon}} {{title}} — changes saved",
+      "saveFailed": "Failed: {{msg}}"
+    }
+  }
+}

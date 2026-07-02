@@ -1,0 +1,38 @@
+{
+  "clients": {
+    "title": "Clients import / export",
+    "help": "Download a CSV template, fill it in your spreadsheet, then import it to create multiple clients at once. The export pulls the tenant's complete list."
+  },
+  "addresses": {
+    "title": "Addresses import / export",
+    "help": "The addresses CSV references clients by email (column Client email). Make sure clients already exist before importing addresses."
+  },
+  "buttons": {
+    "template": "CSV template",
+    "templateBusy": "Downloading…",
+    "templateTooltip": "Download an empty CSV file with the right columns",
+    "export": "Export",
+    "exportBusy": "Exporting…",
+    "exportTooltip": "Export all current data as CSV",
+    "import": "Import a CSV",
+    "importBusy": "Importing…",
+    "importTooltip": "Upload a CSV to create multiple entries at once"
+  },
+  "resultSuccess_one": "✓ {{count}} row imported successfully.",
+  "resultSuccess_other": "✓ {{count}} rows imported successfully.",
+  "resultAborted_one": "Import aborted — {{count}} error:",
+  "resultAborted_other": "Import aborted — {{count}} errors:",
+  "resultLine": "Line {{line}}: {{message}}",
+  "resultMore_one": "… and {{count}} more.",
+  "resultMore_other": "… and {{count}} more.",
+  "resultFix": "No row was created — fix the file and try again.",
+  "toasts": {
+    "importedOne": "1 row imported",
+    "imported": "{{count}} rows imported",
+    "errorCountOne": "Import aborted: 1 error to fix",
+    "errorCount": "Import aborted: {{count}} errors to fix",
+    "importFailed": "Import failed",
+    "templateFailed": "Template download failed",
+    "exportFailed": "Export failed"
+  }
+}

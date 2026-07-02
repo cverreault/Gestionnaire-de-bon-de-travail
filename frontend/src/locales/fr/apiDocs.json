@@ -1,0 +1,65 @@
+{
+  "title": "📚 Documentation API",
+  "subtitle": "API publique v1 — accessible aux abonnés de la plateforme. Créez des clés depuis la page « Clés API » de l'admin de votre tenant.",
+  "tabs": {
+    "guide": "Guide de démarrage",
+    "reference": "Référence interactive (Swagger)"
+  },
+  "reference": {
+    "loading": "Chargement de la spécification…",
+    "loadFailed": "Échec du chargement — vérifiez votre session ou réessayez.",
+    "initializing": "Initialisation de l'interface Swagger…"
+  },
+  "guide": {
+    "intro": {
+      "title": "1. À quoi sert l'API publique ?",
+      "p1": "L'API publique v1 permet à un système externe (CRM, formulaire client, orchestrateur, BI) de piloter TaskMgr comme un opérateur : créer, modifier, transitionner des bons de travail, gérer clients et adresses, uploader des pièces jointes.",
+      "p2": "Elle est distincte de l'API interne du frontend : chemin dédié /api/v1/*, authentification par clé (pas de JWT), tenant porté par la clé (pas de sous-domaine), rate limits plus généreux."
+    },
+    "auth": {
+      "title": "2. Créer une clé API",
+      "p1": "Seul l'ADMIN d'un tenant peut créer des clés — depuis la page « 🔑 Clés API » dans le menu latéral :",
+      "step1": "Choisir un nom (ex. « Intégration Zapier »).",
+      "step2": "Choisir le scope : read-only, read-write, ou admin (voir plus bas).",
+      "step3": "Optionnellement, définir une date d'expiration.",
+      "warning": "⚠️ Le plaintext de la clé (tkm_…) est affiché UNE SEULE FOIS à la création. Copiez-le dans votre coffre immédiatement."
+    },
+    "header": {
+      "title": "3. Authentifier une requête"
+    },
+    "scopes": {
+      "title": "4. Modèle de permissions (scopes)",
+      "p1": "Hiérarchie : admin ⊇ read-write ⊇ read-only. Chaque endpoint documente son scope minimum.",
+      "readOnly": "GET uniquement. Parfait pour un dashboard BI, un reporting externe.",
+      "readWrite": "Création, modification, suppression sur les ressources métier. Recommandé pour la majorité des intégrations.",
+      "admin": "Inclut la modification des paramètres du tenant. À réserver aux orchestrateurs internes."
+    },
+    "examples": {
+      "title": "5. Exemples end-to-end",
+      "createWo": "Créer un bon de travail",
+      "transitionWo": "Changer le statut d'un BT",
+      "transitionExplain": "Le champ status du PATCH est INTERDIT dans l'API publique — les transitions passent par un endpoint dédié qui valide via le moteur de processus.",
+      "uploadAttachment": "Uploader une pièce jointe (multipart)"
+    },
+    "rateLimit": {
+      "title": "6. Rate limiting",
+      "p1": "Trois buckets nommés en parallèle. Chaque réponse inclut les headers X-RateLimit-* de chaque bucket :",
+      "defaults": "Défauts par clé : 30 req/s · 300 req/10s · 3000 req/min. Un 429 inclut un header Retry-After."
+    },
+    "security": {
+      "title": "7. Sécurité",
+      "storage": "Seul le hash SHA-256 est stocké — la clé plaintext n'est jamais récupérable après création.",
+      "revoke": "La révocation prend effet immédiatement — la prochaine requête reçoit 401.",
+      "tenant": "Le tenant est porté par la clé. Aucun moyen pour la clé du tenant A d'accéder aux données du tenant B.",
+      "audit": "Toutes les créations, révocations et appels sont audités et consultables par le SA cross-tenant."
+    },
+    "notIncluded": {
+      "title": "8. Ce qui n'est pas exposé en v1",
+      "p1": "Certaines ressources sont volontairement gardées hors du périmètre public :",
+      "users": "Users — création/modification/suppression (risque d'escalade). Seul GET /technicians est exposé.",
+      "templates": "Templates de BT — CRUD réservé (config système interne).",
+      "processes": "Processus — CRUD réservé (state machine sensible). GET /processes/:id/snapshot en lecture seule est disponible.",
+      "webhooks": "Webhooks (événements sortants) — reportés à v2. Pour l'instant, polling recommandé."
+    }
+  }
+}

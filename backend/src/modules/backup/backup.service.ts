@@ -21,7 +21,7 @@ import {
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { extract as tarExtract, pack as tarPack } from 'tar-stream';
-import { MinioService } from '../attachments/minio.service';
+import { MinioService } from '../../common/storage/minio.service';
 
 export interface BackupManifest {
   version: string;
