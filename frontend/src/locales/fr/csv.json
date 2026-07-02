@@ -1,0 +1,38 @@
+{
+  "clients": {
+    "title": "Import / export clients",
+    "help": "Téléchargez un modèle CSV, remplissez-le dans votre tableur, puis importez-le pour créer plusieurs clients d'un coup. L'export récupère la liste complète du tenant."
+  },
+  "addresses": {
+    "title": "Import / export adresses",
+    "help": "Le CSV d'adresses réfère au client par son courriel (colonne Courriel client). Assurez-vous que les clients existent déjà avant d'importer les adresses."
+  },
+  "buttons": {
+    "template": "Modèle CSV",
+    "templateBusy": "Téléchargement…",
+    "templateTooltip": "Télécharger un fichier CSV vide avec les bonnes colonnes",
+    "export": "Exporter",
+    "exportBusy": "Export…",
+    "exportTooltip": "Exporter toutes les données actuelles en CSV",
+    "import": "Importer un CSV",
+    "importBusy": "Import…",
+    "importTooltip": "Envoyer un CSV pour créer plusieurs entrées d'un coup"
+  },
+  "resultSuccess_one": "✓ {{count}} ligne importée avec succès.",
+  "resultSuccess_other": "✓ {{count}} lignes importées avec succès.",
+  "resultAborted_one": "Import annulé — {{count}} erreur :",
+  "resultAborted_other": "Import annulé — {{count}} erreurs :",
+  "resultLine": "Ligne {{line}} : {{message}}",
+  "resultMore_one": "… et {{count}} autre.",
+  "resultMore_other": "… et {{count}} autres.",
+  "resultFix": "Aucune ligne n'a été créée — corrigez le fichier et retentez.",
+  "toasts": {
+    "importedOne": "1 ligne importée",
+    "imported": "{{count}} lignes importées",
+    "errorCountOne": "Import annulé : 1 erreur à corriger",
+    "errorCount": "Import annulé : {{count}} erreurs à corriger",
+    "importFailed": "Import échoué",
+    "templateFailed": "Téléchargement du modèle échoué",
+    "exportFailed": "Export échoué"
+  }
+}

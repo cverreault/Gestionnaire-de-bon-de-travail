@@ -18,10 +18,11 @@ export function useUsers() {
   });
 }
 
-export function useTechnicians() {
+export function useTechnicians(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: [USERS_KEY, 'technicians'],
     queryFn: () => usersService.findTechnicians(),
+    enabled: options?.enabled ?? true,
   });
 }
 
