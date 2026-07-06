@@ -190,7 +190,10 @@ async function bootstrap() {
     origin: (origin, callback) => {
       // Allow same-origin (no `Origin` header) + whitelisted origins.
       if (!origin || originAllowed(origin)) return callback(null, true);
-      return callback(new Error(`Origin ${origin} not allowed by CORS`), false);
+      // Disallowed origin: answer WITHOUT CORS headers (browser blocks the
+      // response) instead of erroring — an Error here surfaces as a 500 on
+      // every request from the stray origin, which reads as a server bug.
+      return callback(null, false);
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
