@@ -59,6 +59,25 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.6.0',
+    name: 'Connecteur SMS Twilio + paiements Stripe (B22)',
+    date: 'Juillet 2026',
+    entries: [
+      {
+        type: 'new',
+        text: "💬 Connecteur SMS Twilio : le canal SMS des alertes et rappels envoie maintenant pour vrai — fournisseur, Account SID, Auth Token (chiffré) et numéro expéditeur se configurent dans Configuration plateforme (SA), avec bouton d'envoi de test. Sans configuration, le mode stub (log console) demeure",
+      },
+      {
+        type: 'new',
+        text: "💳 Paiements en ligne Stripe pour les abonnements : l'admin principal d'un compte paie son plan par Stripe Checkout depuis Mon abonnement et gère sa facturation (factures, carte, annulation) via le portail Stripe. Le webhook signé bascule automatiquement le plan et les quotas du compte — clés dans Configuration plateforme, price_ Stripe par plan dans la page Plans",
+      },
+      {
+        type: 'improvement',
+        text: "⚙️ Configuration plateforme : nouvelles sections « SMS (Twilio) » et « Paiements (Stripe) » avec secrets chiffrés au repos (AES-256-GCM)",
+      },
+    ],
+  },
+  {
     version: '2.5.0',
     name: 'Portail client (B21)',
     date: 'Juillet 2026',

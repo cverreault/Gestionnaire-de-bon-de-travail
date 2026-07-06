@@ -322,6 +322,7 @@ function EditPlanModal({
     maxStorageMb: plan.quotas.maxStorageMb,
     maxClients: plan.quotas.maxClients,
     features: plan.features,
+    stripePriceId: plan.stripePriceId ?? '',
     recommended: plan.recommended ?? false,
     isActive: plan.isActive ?? true,
   });
@@ -444,6 +445,17 @@ function EditPlanModal({
             <div style={{ fontSize: 11, color: theme.colors.textMuted, marginTop: 4 }}>
               {t('plans.editModal.pricingHint')}
             </div>
+            <Field label={t('plans.editModal.fields.stripePriceId', { defaultValue: 'Stripe Price ID (price_…)' })}>
+              <input
+                value={form.stripePriceId ?? ''}
+                onChange={(e) => setForm({ ...form, stripePriceId: e.target.value })}
+                placeholder="price_1Qxxxxxxxxxxxx"
+                style={{ ...formStyles.input, fontFamily: 'monospace' }}
+              />
+              <p style={{ margin: '0.25rem 0 0', fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>
+                {t('plans.editModal.fields.stripePriceIdHint', { defaultValue: 'Prix récurrent créé dans le dashboard Stripe. Vide = plan non achetable en ligne.' })}
+              </p>
+            </Field>
           </Section>
 
           <Section title={t('plans.editModal.sections.quotas')}>

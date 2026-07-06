@@ -1,5 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { NotificationsController } from './api/notifications.controller';
+import { SmsAdminController } from './api/sms-admin.controller';
 import { NotificationsService } from './application/notifications.service';
 import { NotificationsListener } from './application/notifications.listener';
 import { EmailChannelService } from './infrastructure/channels/email-channel.service';
@@ -26,7 +27,7 @@ import { SmsChannelService } from './infrastructure/channels/sms-channel.service
  */
 @Global()
 @Module({
-  controllers: [NotificationsController],
+  controllers: [NotificationsController, SmsAdminController],
   providers: [
     NotificationsService,
     NotificationsListener,

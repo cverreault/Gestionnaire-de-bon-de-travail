@@ -89,6 +89,31 @@ const SECTIONS: ConfigSection[] = [
     ],
   },
   {
+    id: 'twilio',
+    title: 'SMS (Twilio)',
+    icon: '💬',
+    description:
+      'Connecteur SMS pour les alertes et rappels. Mettez "twilio" comme fournisseur et collez les identifiants de votre console Twilio. Laissez le fournisseur vide pour rester en mode stub (les SMS sont seulement loggés).',
+    fields: [
+      { key: 'sms.provider', label: 'Fournisseur', placeholder: 'twilio', hint: '"twilio" pour activer l\'envoi réel ; vide = stub (log console)', required: true },
+      { key: 'twilio.account-sid', label: 'Account SID', placeholder: 'ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', hint: 'Console Twilio → Account Info', required: true },
+      { key: 'twilio.auth-token', label: 'Auth Token', placeholder: '••••••••', hint: 'Stocké chiffré. Console Twilio → Account Info.', secret: true, required: true },
+      { key: 'twilio.from-number', label: 'Numéro expéditeur', placeholder: '+15145551234', hint: 'Numéro Twilio au format E.164 (+1…)', required: true },
+    ],
+  },
+  {
+    id: 'stripe',
+    title: 'Paiements (Stripe)',
+    icon: '💳',
+    description:
+      'Paiement en ligne des abonnements. Créez les prix récurrents dans le dashboard Stripe puis collez leur price_… dans la page Plans. Webhook à enregistrer chez Stripe : https://<domaine>/api/billing/webhook (événements : checkout.session.completed, customer.subscription.updated, customer.subscription.deleted).',
+    fields: [
+      { key: 'stripe.secret-key', label: 'Clé secrète (sk_…)', placeholder: 'sk_live_…', hint: 'Stockée chiffrée. Dashboard Stripe → Developers → API keys.', secret: true, required: true },
+      { key: 'stripe.webhook-secret', label: 'Secret du webhook (whsec_…)', placeholder: 'whsec_…', hint: 'Stocké chiffré. Fourni par Stripe à la création de l\'endpoint webhook.', secret: true, required: true },
+      { key: 'stripe.publishable-key', label: 'Clé publiable (pk_…)', placeholder: 'pk_live_…', hint: 'Optionnelle pour l\'instant (Checkout hébergé). Réservée aux évolutions.' },
+    ],
+  },
+  {
     id: 'audit',
     title: 'Rétention audit',
     icon: '📦',

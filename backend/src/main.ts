@@ -128,7 +128,9 @@ async function runBootSmokeTest(
 async function bootstrap() {
   // Booter avec bufferLogs pour que les premiers logs (avant que Pino
   // soit prêt) soient stockés et flushés via Pino une fois disponible.
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  // rawBody: the Stripe webhook (B22) must verify its signature against
+  // the UNPARSED request body — Nest keeps it on req.rawBody.
+  const app = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true });
 
   // Remplacer le Logger NestJS par notre instance Pino. Tous les `Logger`
   // existants dans le code (via `new Logger(name)`) héritent du provider

@@ -44,6 +44,7 @@ import { RecurringModule } from './modules/recurring/recurring.module';
 import { DispatchMapModule } from './modules/dispatch-map/dispatch-map.module';
 import { RemindersModule } from './modules/reminders/reminders.module';
 import { PortalModule } from './modules/portal/portal.module';
+import { BillingModule } from './modules/billing/billing.module';
 
 @Module({
   imports: [
@@ -122,6 +123,7 @@ import { PortalModule } from './modules/portal/portal.module';
     DispatchMapModule,
     RemindersModule,
     PortalModule,
+    BillingModule,
     PublicApiModule,
 
     // ── Feature modules ────────────────────────────────────────────────────

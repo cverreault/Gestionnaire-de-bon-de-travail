@@ -6,6 +6,9 @@ import {
   getMySubscription,
   getSubscriptionHistory,
   requestPlanChange,
+  getBillingStatus,
+  createCheckoutSession,
+  createBillingPortalSession,
   type MonthlyPeakRow,
   type MySubscription,
   type PlanCode,
@@ -494,6 +497,42 @@ function ChangePlanCard({ sub }: { sub: MySubscription }) {
     },
   });
 
+  // B22 — Stripe online payment (shown only when the SA configured it)
+  const billing = useQuery({
+    queryKey: ['billing', 'status'],
+    queryFn: getBillingStatus,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+  const checkout = useMutation({
+    mutationFn: (planCode: string) => createCheckoutSession(planCode),
+    onSuccess: (res) => {
+      if (res.url) window.location.href = res.url;
+      else toast.error('Stripe n\'a pas retourné d\'URL de paiement.');
+    },
+    onError: (err) => {
+      const msg =
+        (err as { response?: { data?: { message?: string | string[] } } })
+          ?.response?.data?.message ?? String(err);
+      toast.error(Array.isArray(msg) ? msg.join(', ') : String(msg));
+    },
+  });
+  const portal = useMutation({
+    mutationFn: createBillingPortalSession,
+    onSuccess: (res) => {
+      window.location.href = res.url;
+    },
+    onError: (err) => {
+      const msg =
+        (err as { response?: { data?: { message?: string | string[] } } })
+          ?.response?.data?.message ?? String(err);
+      toast.error(Array.isArray(msg) ? msg.join(', ') : String(msg));
+    },
+  });
+  const stripeEnabled = billing.data?.enabled === true;
+  const canPayOnline =
+    stripeEnabled && !!targetPlan && (billing.data?.purchasablePlans ?? []).includes(targetPlan);
+
   const availablePlans =
     plans.data?.data.filter(
       (p) => p.code !== sub.plan.code && p.isActive !== false,
@@ -547,12 +586,33 @@ function ChangePlanCard({ sub }: { sub: MySubscription }) {
 
           {selectedDef && <PlanTargetPreview plan={selectedDef} />}
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
+            {stripeEnabled && (
+              <button
+                onClick={() => portal.mutate()}
+                disabled={portal.isPending}
+                style={{ ...buttonStyles.secondary, opacity: portal.isPending ? 0.5 : 1 }}
+                title={t('billing.portalHint', { defaultValue: 'Factures, carte de paiement, annulation' })}
+              >
+                🧾 {t('billing.portal', { defaultValue: 'Gérer ma facturation' })}
+              </button>
+            )}
+            {canPayOnline && (
+              <button
+                onClick={() => checkout.mutate(targetPlan as string)}
+                disabled={checkout.isPending}
+                style={{ ...buttonStyles.primary, opacity: checkout.isPending ? 0.5 : 1 }}
+              >
+                {checkout.isPending
+                  ? t('billing.redirecting', { defaultValue: 'Redirection…' })
+                  : `💳 ${t('billing.payOnline', { defaultValue: 'Payer en ligne' })}`}
+              </button>
+            )}
             <button
               onClick={() => request.mutate()}
               disabled={!targetPlan || request.isPending}
               style={{
-                ...buttonStyles.primary,
+                ...(canPayOnline ? buttonStyles.secondary : buttonStyles.primary),
                 opacity: !targetPlan || request.isPending ? 0.5 : 1,
                 cursor: !targetPlan || request.isPending ? 'not-allowed' : 'pointer',
               }}

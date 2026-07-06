@@ -105,3 +105,28 @@ export async function requestPlanChange(
   );
   return data.data;
 }
+
+// ─── B22 — Stripe billing ─────────────────────────────────────────────────────
+
+export interface BillingStatus {
+  enabled: boolean;
+  purchasablePlans: string[];
+}
+
+export async function getBillingStatus(): Promise<BillingStatus> {
+  const { data } = await api.get<ApiResponse<BillingStatus>>('/billing/status');
+  return data.data;
+}
+
+export async function createCheckoutSession(planCode: string): Promise<{ url: string | null }> {
+  const { data } = await api.post<ApiResponse<{ url: string | null }>>(
+    '/billing/checkout-session',
+    { planCode },
+  );
+  return data.data;
+}
+
+export async function createBillingPortalSession(): Promise<{ url: string }> {
+  const { data } = await api.post<ApiResponse<{ url: string }>>('/billing/portal-session', {});
+  return data.data;
+}

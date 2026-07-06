@@ -102,6 +102,11 @@ model Tenant {
 
   ownerEmail String? @map("owner_email")
 
+  /// B22 — Stripe billing linkage (set by the billing webhook once the
+  /// tenant completes a Checkout). Null = never paid online.
+  stripeCustomerId     String? @unique @map("stripe_customer_id")
+  stripeSubscriptionId String? @map("stripe_subscription_id")
+
   /// Branding (B7.5) — MinIO object key of the tenant logo (e.g.
   /// `tenants/<id>/logo.png`). Null = no custom logo, the UI falls back
   /// to the generic TaskMgr mark. The presigned URL is resolved on read.
@@ -176,6 +181,11 @@ model Plan {
   maxWorkOrdersPerMonth Int     @map("max_work_orders_per_month")
   maxStorageMb          Int     @map("max_storage_mb")
   maxClients            Int     @map("max_clients")
+
+  /// B22 — Stripe billing binding. The SA creates the recurring Price in
+  /// the Stripe dashboard and pastes its id here (price_…). Null = this
+  /// plan can't be bought online (manual/free flow only).
+  stripePriceId        String?  @map("stripe_price_id")
 
   features             String[] @default([])
   recommended          Boolean  @default(false)

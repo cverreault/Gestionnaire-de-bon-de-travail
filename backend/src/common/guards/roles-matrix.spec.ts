@@ -35,6 +35,8 @@ import { AuditController } from '../../modules/audit/api/audit.controller';
 import { BackupController } from '../../modules/backup/backup.controller';
 import { SearchController } from '../../modules/search/api/search.controller';
 import { NotificationsController } from '../../modules/notifications/api/notifications.controller';
+import { SmsAdminController } from '../../modules/notifications/api/sms-admin.controller';
+import { BillingController } from '../../modules/billing/api/billing.controller';
 import { SuperAdminController } from '../../modules/system-configs/api/super-admin.controller';
 import { TenantConfigsController } from '../../modules/system-configs/api/tenant-configs.controller';
 import { SuperAdminTenantsController } from '../../modules/tenants/api/super-admin-tenants.controller';
@@ -163,6 +165,18 @@ const NOTIFICATIONS_MATRIX: MatrixRow[] = [
   { controller: NotificationsController, method: 'unsubscribePush',    expectedRoles: 'ANY', note: 'DELETE /me/notifications/push/subscribe' },
 ];
 
+const SMS_ADMIN_MATRIX: MatrixRow[] = [
+  { controller: SmsAdminController, method: 'test', expectedRoles: [Role.SUPER_ADMIN], note: 'POST /super-admin/sms/test — B22 Twilio validation' },
+];
+
+const BILLING_MATRIX: MatrixRow[] = [
+  { controller: BillingController, method: 'status',         expectedRoles: [Role.ADMIN], note: 'GET /billing/status — B22' },
+  { controller: BillingController, method: 'createCheckout', expectedRoles: [Role.ADMIN], note: 'POST /billing/checkout-session — B22, + PrimaryAdminGuard' },
+  { controller: BillingController, method: 'createPortal',   expectedRoles: [Role.ADMIN], note: 'POST /billing/portal-session — B22, + PrimaryAdminGuard' },
+  // Webhook is @Public — auth = Stripe signature over the raw body, not JWT.
+  { controller: BillingController, method: 'webhook',        expectedRoles: 'ANY',        note: 'POST /billing/webhook — B22, Stripe-signed' },
+];
+
 const BACKUP_MATRIX: MatrixRow[] = [
   // Backup controller has class-level @Roles(ADMIN) — every method inherits.
   { controller: BackupController, method: 'info',    expectedRoles: [Role.ADMIN], note: 'GET /backup/info' },
@@ -184,6 +198,8 @@ const ALL_ROWS: { name: string; rows: MatrixRow[] }[] = [
   { name: 'BackupController',     rows: BACKUP_MATRIX },
   { name: 'SearchController',     rows: SEARCH_MATRIX },
   { name: 'NotificationsController', rows: NOTIFICATIONS_MATRIX },
+  { name: 'SmsAdminController',      rows: SMS_ADMIN_MATRIX },
+  { name: 'BillingController',       rows: BILLING_MATRIX },
   { name: 'SuperAdminController',    rows: SUPER_ADMIN_MATRIX },
   { name: 'LocationsController',     rows: LOCATIONS_MATRIX },
   { name: 'TenantConfigsController', rows: TENANT_CONFIGS_MATRIX },
