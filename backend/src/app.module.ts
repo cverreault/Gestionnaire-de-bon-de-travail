@@ -45,6 +45,7 @@ import { DispatchMapModule } from './modules/dispatch-map/dispatch-map.module';
 import { RemindersModule } from './modules/reminders/reminders.module';
 import { PortalModule } from './modules/portal/portal.module';
 import { BillingModule } from './modules/billing/billing.module';
+import { PartsModule } from './modules/parts/parts.module';
 
 @Module({
   imports: [
@@ -124,6 +125,7 @@ import { BillingModule } from './modules/billing/billing.module';
     RemindersModule,
     PortalModule,
     BillingModule,
+    PartsModule,
     PublicApiModule,
 
     // ── Feature modules ────────────────────────────────────────────────────

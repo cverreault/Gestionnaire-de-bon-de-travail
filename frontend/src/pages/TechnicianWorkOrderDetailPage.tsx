@@ -10,6 +10,7 @@ import { useAddressTypes } from '../hooks/useSettings';
 import { getPredominantDisplay } from '../utils/addressPredominant';
 import { formatStreet } from '../utils/addressFormat';
 import WorkOrderStatusBadge from '../components/WorkOrderStatusBadge';
+import WorkOrderPartsSection from '../components/WorkOrderPartsSection';
 import TransitionActionBar from '../components/transitions/TransitionActionBar';
 import WorkOrderAuditTimeline from '../components/WorkOrderAuditTimeline';
 import EnRouteTimer from '../components/EnRouteTimer';
@@ -437,6 +438,14 @@ export default function TechnicianWorkOrderDetailPage() {
           <TransitionActionBar workOrderId={id!} />
         </div>
       )}
+
+      {/* ── Parts used (B24) ─────────────────────────────────────────────── */}
+      <WorkOrderPartsSection
+        workOrderId={id!}
+        readOnly={wo.status === WorkOrderStatus.COMPLETED_POSITIVE || wo.status === WorkOrderStatus.COMPLETED_NEGATIVE}
+        cardStyle={sectionStyle}
+        titleStyle={sectionTitleStyle}
+      />
 
       {/* ── Photos / Attachments ─────────────────────────────────────────── */}
       <div style={sectionStyle}>

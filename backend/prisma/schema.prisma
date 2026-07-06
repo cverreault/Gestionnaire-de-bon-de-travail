@@ -45,6 +45,23 @@ enum WorkOrderType {
   OTHER
 }
 
+/// B24 — direction/nature of a stock movement. Quantities are always
+/// positive; the type carries the sign.
+enum StockMovementType {
+  RECEIPT
+  ADJUSTMENT
+  TRANSFER_TO_TECH
+  TRANSFER_TO_WAREHOUSE
+  USAGE
+  USAGE_REVERT
+}
+
+/// B24 — where a part used on a work order was taken from.
+enum PartSource {
+  WAREHOUSE
+  TECHNICIAN_STOCK
+}
+
 enum ClientType {
   RESIDENTIAL
   COMMERCIAL
@@ -147,6 +164,10 @@ model Tenant {
   recurringWorkOrders RecurringWorkOrder[]
   reminders           WorkOrderReminder[]
   portalInvitations   PortalInvitation[]
+  parts               Part[]
+  technicianPartStocks TechnicianPartStock[]
+  stockMovements      StockMovement[]
+  workOrderParts      WorkOrderPart[]
 
   @@index([isActive], map: "idx_tenants_is_active")
   @@map("tenants")
@@ -594,6 +615,10 @@ model User {
   locations            TechnicianLocation[]
   emailVerifications   EmailVerification[]
   portalInvitations    PortalInvitation[]
+  technicianPartStocks TechnicianPartStock[] @relation("TechnicianPartStocks")
+  technicianStockMovements StockMovement[]   @relation("TechnicianStockMovements")
+  createdStockMovements    StockMovement[]   @relation("CreatedStockMovements")
+  addedWorkOrderParts      WorkOrderPart[]   @relation("AddedWorkOrderParts")
 
   @@unique([tenantId, email], map: "idx_users_tenant_email")
   @@index([tenantId], map: "idx_users_tenant_id")
@@ -640,6 +665,123 @@ model PortalInvitation {
   @@index([userId], map: "idx_portal_invitations_user_id")
   @@index([tenantId], map: "idx_portal_invitations_tenant_id")
   @@map("portal_invitations")
+}
+
+/// B24 — parts catalog. `quantityOnHand` is the WAREHOUSE aggregate;
+/// truck quantities live in TechnicianPartStock. All stock math goes
+/// through StockMovement rows inside a single transaction.
+model Part {
+  id       String @id @default(uuid())
+  tenantId String @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  sku         String
+  /// Bilingual pair (B10.2) — legacy `name` synced from FR by middleware.
+  name        String
+  nameFr      String  @default("") @map("name_fr")
+  nameEn      String  @default("") @map("name_en")
+  description String?
+  /// Unité de mesure affichée (un, m, kg, boîte…).
+  unit        String  @default("un")
+
+  costPrice Decimal @db.Decimal(10, 2) @default(0) @map("cost_price")
+  salePrice Decimal @db.Decimal(10, 2) @default(0) @map("sale_price")
+
+  quantityOnHand Int @default(0) @map("quantity_on_hand")
+  /// Low-stock alert threshold on the warehouse quantity. 0 = no alert.
+  minStock       Int @default(0) @map("min_stock")
+
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  technicianStocks TechnicianPartStock[]
+  movements        StockMovement[]
+  workOrderParts   WorkOrderPart[]
+
+  @@unique([tenantId, sku], map: "uq_parts_tenant_sku")
+  @@index([tenantId], map: "idx_parts_tenant_id")
+  @@index([isActive], map: "idx_parts_is_active")
+  @@map("parts")
+}
+
+/// B24 — per-technician (truck) stock. Separate table rather than a
+/// nullable location column: Postgres unique constraints treat NULLs as
+/// distinct, which would allow duplicate warehouse rows.
+model TechnicianPartStock {
+  id           String @id @default(uuid())
+  tenantId     String @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant       Tenant @relation(fields: [tenantId], references: [id])
+  partId       String @map("part_id")
+  part         Part   @relation(fields: [partId], references: [id], onDelete: Cascade)
+  technicianId String @map("technician_id")
+  technician   User   @relation("TechnicianPartStocks", fields: [technicianId], references: [id], onDelete: Cascade)
+  quantity     Int    @default(0)
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([partId, technicianId], map: "uq_tech_part_stock")
+  @@index([technicianId], map: "idx_tech_part_stock_technician")
+  @@index([tenantId], map: "idx_tech_part_stock_tenant_id")
+  @@map("technician_part_stocks")
+}
+
+/// B24 — append-only stock journal. Every quantity change (receipt,
+/// adjustment, transfer, usage on a WO, usage revert) writes one row in
+/// the same transaction that updates the aggregates.
+model StockMovement {
+  id       String @id @default(uuid())
+  tenantId String @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  partId   String @map("part_id")
+  part     Part   @relation(fields: [partId], references: [id], onDelete: Cascade)
+
+  type     StockMovementType
+  /// Always > 0 — the type carries the direction. ADJUSTMENT may be
+  /// negative (delta stored as-is for that type only).
+  quantity Int
+
+  technicianId String? @map("technician_id")
+  technician   User?   @relation("TechnicianStockMovements", fields: [technicianId], references: [id], onDelete: SetNull)
+  workOrderId  String? @map("work_order_id")
+  workOrder    WorkOrder? @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+
+  note        String?
+  createdById String   @map("created_by_id")
+  createdBy   User     @relation("CreatedStockMovements", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([partId, createdAt(sort: Desc)], map: "idx_stock_movements_part_created")
+  @@index([tenantId], map: "idx_stock_movements_tenant_id")
+  @@map("stock_movements")
+}
+
+/// B24 — part consumed on a work order. Prices are SNAPSHOTS taken at
+/// insert time so the future invoicing module bills what was agreed,
+/// not today's catalog price.
+model WorkOrderPart {
+  id          String    @id @default(uuid())
+  tenantId    String    @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  workOrderId String    @map("work_order_id")
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  partId      String    @map("part_id")
+  part        Part      @relation(fields: [partId], references: [id])
+
+  quantity      Int
+  source        PartSource @default(WAREHOUSE)
+  /// Truck the part came from when source = TECHNICIAN_STOCK — needed to
+  /// credit the right stock back on delete.
+  technicianId  String?    @map("technician_id")
+  unitCostPrice Decimal    @db.Decimal(10, 2) @default(0) @map("unit_cost_price")
+  unitSalePrice Decimal    @db.Decimal(10, 2) @default(0) @map("unit_sale_price")
+
+  addedById String   @map("added_by_id")
+  addedBy   User     @relation("AddedWorkOrderParts", fields: [addedById], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([workOrderId], map: "idx_work_order_parts_wo")
+  @@index([tenantId], map: "idx_work_order_parts_tenant_id")
+  @@map("work_order_parts")
 }
 
 /// Time-series of technician positions for live dispatch view (B5).
@@ -1051,6 +1193,8 @@ model WorkOrder {
   attachments  Attachment[]
   appointments Appointment[]
   reminders    WorkOrderReminder[]
+  partsUsed    WorkOrderPart[]
+  stockMovements StockMovement[]
 
   @@index([status])
   @@index([assignedToId])

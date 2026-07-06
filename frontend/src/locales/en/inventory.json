@@ -1,0 +1,93 @@
+{
+  "title": "Inventory",
+  "subtitle": "Parts catalog, warehouse and truck stock",
+  "searchPlaceholder": "Search (SKU, name)…",
+  "showInactive": "Show deactivated parts",
+  "newPart": "New part",
+  "empty": "No parts in the catalog yet. Create the first one!",
+  "columns": {
+    "sku": "SKU",
+    "name": "Part",
+    "cost": "Cost",
+    "sale": "Sale",
+    "warehouse": "Warehouse",
+    "trucks": "Trucks",
+    "minStock": "Min",
+    "actions": ""
+  },
+  "lowStock": "Low stock",
+  "inactive": "Inactive",
+  "actions": {
+    "receive": "Receive",
+    "adjust": "Adjust",
+    "transfer": "Transfer",
+    "history": "History",
+    "edit": "Edit",
+    "deactivate": "Deactivate"
+  },
+  "modal": {
+    "createTitle": "New part",
+    "editTitle": "Edit part",
+    "sku": "SKU (unique code)",
+    "nameFr": "Name (French)",
+    "nameEn": "Name (English)",
+    "description": "Description",
+    "unit": "Unit",
+    "unitHint": "un, m, kg, box…",
+    "costPrice": "Cost price (CAD)",
+    "salePrice": "Sale price (CAD)",
+    "minStock": "Low-stock alert threshold (0 = disabled)",
+    "active": "Active part",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "stockModal": {
+    "receiveTitle": "Warehouse receipt",
+    "adjustTitle": "Inventory adjustment",
+    "transferTitle": "Warehouse ↔ truck transfer",
+    "quantity": "Quantity",
+    "delta": "Delta (signed ±)",
+    "note": "Note",
+    "notePlaceholder": "Purchase order, physical count…",
+    "technician": "Technician (truck)",
+    "warehouseTarget": "— Warehouse —",
+    "direction": "Direction",
+    "toTech": "Warehouse → truck",
+    "toWarehouse": "Truck → warehouse",
+    "submit": "Apply",
+    "success": "Stock updated"
+  },
+  "history": {
+    "title": "Movement history",
+    "empty": "No movements",
+    "types": {
+      "RECEIPT": "Receipt",
+      "ADJUSTMENT": "Adjustment",
+      "TRANSFER_TO_TECH": "→ Truck",
+      "TRANSFER_TO_WAREHOUSE": "→ Warehouse",
+      "USAGE": "Used (WO)",
+      "USAGE_REVERT": "Returned (WO)"
+    }
+  },
+  "byTechnician": {
+    "title": "Stock by truck",
+    "empty": "No stock in trucks"
+  },
+  "woSection": {
+    "title": "Parts used",
+    "empty": "No parts used",
+    "selectPart": "Select a part…",
+    "quantity": "Qty",
+    "source": "Source",
+    "warehouse": "Warehouse",
+    "truck": "Truck",
+    "add": "Add",
+    "remove": "Remove",
+    "added": "Part added",
+    "removed": "Part removed"
+  },
+  "myStock": {
+    "title": "My truck stock",
+    "empty": "Your truck is empty — ask the office for a transfer."
+  }
+}

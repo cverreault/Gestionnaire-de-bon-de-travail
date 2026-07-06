@@ -32,5 +32,7 @@
   "releaseNotes": "Notes de version",
   "reports": "Rapports",
   "admin": "Administration",
-  "techniciansDragHint": "Techniciens — glisser un BT"
+  "techniciansDragHint": "Techniciens — glisser un BT",
+  "inventory": "Inventaire",
+  "myStock": "Mon stock"
 }

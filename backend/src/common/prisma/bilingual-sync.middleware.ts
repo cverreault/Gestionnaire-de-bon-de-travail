@@ -33,6 +33,7 @@ const MODEL_FIELDS: Record<string, FieldMap> = {
   AddressTypeField: { label: true },
   ProcessStatus: { name: true },
   ProcessTransition: { label: true },
+  Part: { name: true },
 };
 
 type WriteAction = 'create' | 'update' | 'upsert' | 'createMany' | 'updateMany';

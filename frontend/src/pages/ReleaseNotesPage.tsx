@@ -59,6 +59,33 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.7.0',
+    name: 'Inventaire & pièces + politique de confidentialité (B24)',
+    date: 'Juillet 2026',
+    entries: [
+      {
+        type: 'new',
+        text: "📦 Module Inventaire : catalogue de pièces bilingue (SKU, coûtant + prix de vente CAD, unité), stock entrepôt ET stock par camion/technicien avec transferts, réceptions et ajustements — chaque changement passe par un journal de mouvements horodaté",
+      },
+      {
+        type: 'new',
+        text: "🔩 Pièces utilisées sur les BT : les techniciens (leur camion) et le bureau (l'entrepôt) ajoutent les pièces consommées sur un bon de travail — le stock se décrémente automatiquement, les prix sont figés au moment de l'ajout (prêt pour la facturation) et la liste apparaît dans le rapport PDF",
+      },
+      {
+        type: 'new',
+        text: "🔻 Alertes de stock bas : quand l'entrepôt passe sous le seuil d'une pièce, tous les admins/dispatchers reçoivent une notification in-app + courriel (une seule fois par franchissement)",
+      },
+      {
+        type: 'new',
+        text: "📦 « Mon stock » pour les techniciens : nouvelle entrée dans la navigation mobile montrant le contenu de leur camion",
+      },
+      {
+        type: 'improvement',
+        text: "🔒 Page publique de politique de confidentialité (/confidentialite) bilingue — Télécommunication Carl Verreault inc., conforme Loi 25/LPRPDE, liée depuis la connexion, l'inscription et le portail client",
+      },
+    ],
+  },
+  {
     version: '2.6.1',
     name: 'Suivi client par courriel + approbation en un geste (B23)',
     date: 'Juillet 2026',

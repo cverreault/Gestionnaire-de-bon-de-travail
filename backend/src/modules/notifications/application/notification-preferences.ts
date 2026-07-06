@@ -29,6 +29,7 @@ export const NOTIFIABLE_EVENTS = [
   'workOrder.completed',
   'workOrder.slaBreached',
   'workOrder.requested',
+  'inventory.lowStock',
 ] as const;
 
 export type NotifiableEvent = (typeof NOTIFIABLE_EVENTS)[number];
@@ -48,6 +49,8 @@ export const DEFAULT_PREFERENCES: Record<NotifiableEvent, PerEventPrefs> = {
   'workOrder.slaBreached': { inApp: true, email: true,  push: true  },
   // B21 — a client asked for work: the dispatch team should see it fast.
   'workOrder.requested':   { inApp: true, email: true,  push: true  },
+  // B24 — warehouse stock crossed a part's minimum threshold.
+  'inventory.lowStock':    { inApp: true, email: true,  push: false },
 };
 
 /**

@@ -110,6 +110,7 @@ export default function AdminSidebar() {
     { to: '/carte-dispatch',   label: `🗺️ ${t('nav:dispatchMap', { defaultValue: 'Carte dispatch' })}` },
     { to: '/clients',          label: `🧑‍🤝‍🧑 ${t('nav:clients')}` },
     { to: '/adresses',         label: `📍 ${t('nav:addresses')}` },
+{ to: '/inventaire', label: `📦 ${t('nav:inventory')}` },
     { to: '/rapports',         label: `📈 ${t('nav:reports', { defaultValue: 'Rapports' })}` },
   ];
 

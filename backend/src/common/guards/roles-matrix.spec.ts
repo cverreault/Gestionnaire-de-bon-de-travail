@@ -37,6 +37,9 @@ import { SearchController } from '../../modules/search/api/search.controller';
 import { NotificationsController } from '../../modules/notifications/api/notifications.controller';
 import { SmsAdminController } from '../../modules/notifications/api/sms-admin.controller';
 import { BillingController } from '../../modules/billing/api/billing.controller';
+import { PartsController } from '../../modules/parts/api/parts.controller';
+import { WorkOrderPartsController } from '../../modules/parts/api/work-order-parts.controller';
+import { MyStockController } from '../../modules/parts/api/my-stock.controller';
 import { SuperAdminController } from '../../modules/system-configs/api/super-admin.controller';
 import { TenantConfigsController } from '../../modules/system-configs/api/tenant-configs.controller';
 import { SuperAdminTenantsController } from '../../modules/tenants/api/super-admin-tenants.controller';
@@ -177,6 +180,23 @@ const BILLING_MATRIX: MatrixRow[] = [
   { controller: BillingController, method: 'webhook',        expectedRoles: 'ANY',        note: 'POST /billing/webhook — B22, Stripe-signed' },
 ];
 
+const PARTS_MATRIX: MatrixRow[] = [
+  { controller: PartsController, method: 'catalog',           expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'GET /parts/catalog — B24 part selector' },
+  { controller: PartsController, method: 'stockByTechnician', expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'GET /parts/stock-by-technician — B24' },
+  { controller: PartsController, method: 'findAll',           expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'GET /parts — B24' },
+  { controller: PartsController, method: 'create',            expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'POST /parts — B24' },
+  { controller: PartsController, method: 'update',            expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'PATCH /parts/:id — B24' },
+  { controller: PartsController, method: 'remove',            expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'DELETE /parts/:id — B24 soft delete' },
+  { controller: PartsController, method: 'movements',         expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'GET /parts/:id/movements — B24' },
+  { controller: PartsController, method: 'receive',           expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'POST /parts/:id/receive — B24' },
+  { controller: PartsController, method: 'adjust',            expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'POST /parts/:id/adjust — B24' },
+  { controller: PartsController, method: 'transfer',          expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'POST /parts/:id/transfer — B24' },
+  { controller: WorkOrderPartsController, method: 'list',   expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'GET /work-orders/:id/parts — B24, IDOR in service' },
+  { controller: WorkOrderPartsController, method: 'add',    expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'POST /work-orders/:id/parts — B24' },
+  { controller: WorkOrderPartsController, method: 'remove', expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'DELETE /work-orders/:id/parts/:rowId — B24, author-or-staff in service' },
+  { controller: MyStockController, method: 'myStock', expectedRoles: [Role.TECHNICIAN], note: 'GET /me/parts-stock — B24' },
+];
+
 const BACKUP_MATRIX: MatrixRow[] = [
   // Backup controller has class-level @Roles(ADMIN) — every method inherits.
   { controller: BackupController, method: 'info',    expectedRoles: [Role.ADMIN], note: 'GET /backup/info' },
@@ -200,6 +220,7 @@ const ALL_ROWS: { name: string; rows: MatrixRow[] }[] = [
   { name: 'NotificationsController', rows: NOTIFICATIONS_MATRIX },
   { name: 'SmsAdminController',      rows: SMS_ADMIN_MATRIX },
   { name: 'BillingController',       rows: BILLING_MATRIX },
+  { name: 'PartsControllers',        rows: PARTS_MATRIX },
   { name: 'SuperAdminController',    rows: SUPER_ADMIN_MATRIX },
   { name: 'LocationsController',     rows: LOCATIONS_MATRIX },
   { name: 'TenantConfigsController', rows: TENANT_CONFIGS_MATRIX },

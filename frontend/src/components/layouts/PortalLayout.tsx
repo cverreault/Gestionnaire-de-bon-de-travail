@@ -99,6 +99,12 @@ export default function PortalLayout() {
       <main style={{ flex: 1, padding: '1.25rem', maxWidth: 960, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
         <Outlet />
       </main>
+
+      <footer style={{ textAlign: 'center', padding: '0.75rem', fontSize: theme.font.sizeXs }}>
+        <a href="/confidentialite" style={{ color: theme.colors.textMuted, textDecoration: 'underline' }}>
+          {locale === 'fr' ? 'Politique de confidentialité' : 'Privacy policy'}
+        </a>
+      </footer>
     </div>
   );
 }

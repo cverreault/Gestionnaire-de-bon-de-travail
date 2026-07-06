@@ -32,5 +32,7 @@
   "releaseNotes": "Release notes",
   "reports": "Reports",
   "admin": "Administration",
-  "techniciansDragHint": "Technicians — drag a work order"
+  "techniciansDragHint": "Technicians — drag a work order",
+  "inventory": "Inventory",
+  "myStock": "My stock"
 }

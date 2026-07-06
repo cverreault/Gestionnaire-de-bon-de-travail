@@ -19,6 +19,9 @@ import AppLayout from './components/layouts/AppLayout';
 // ── Pages ─────────────────────────────────────────────────────────────────────
 import LoginPage from './pages/LoginPage';
 import PortalActivationPage from './pages/PortalActivationPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import InventoryPage from './pages/InventoryPage';
+import MyStockPage from './pages/MyStockPage';
 import PortalWorkOrdersPage from './pages/PortalWorkOrdersPage';
 import PortalWorkOrderDetailPage from './pages/PortalWorkOrderDetailPage';
 import PortalRequestPage from './pages/PortalRequestPage';
@@ -186,6 +189,7 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/portail/activation" element={<PortalActivationPage />} />
+      <Route path="/confidentialite" element={<PrivacyPolicyPage />} />
 
       {/* ── Protected ─────────────────────────────────────────────────── */}
       <Route element={<ProtectedRoute />}>
@@ -213,6 +217,7 @@ export default function App() {
           {/* ── Technician (mobile-first) ────────────────────────────── */}
           <Route path="/mes-bons" element={<TechnicianWorkOrdersPage />} />
           <Route path="/mes-bons/:id" element={<TechnicianWorkOrderDetailPage />} />
+          <Route path="/mon-stock" element={<MyStockPage />} />
 
           {/* ── Admin + Dispatcher ────────────────────────────────────── */}
           <Route element={<AdminRoute />}>
@@ -223,6 +228,7 @@ export default function App() {
             <Route path="/calendrier" element={<CalendarPage />} />
             <Route path="/carte-dispatch" element={<DispatchMapPage />} />
             <Route path="/clients" element={<ClientsPage />} />
+            <Route path="/inventaire" element={<InventoryPage />} />
             <Route path="/adresses" element={<AddressesPage />} />
             <Route path="/rapports" element={<ReportsPage />} />
           </Route>

@@ -49,6 +49,10 @@ const TENANT_SCOPED_MODELS = new Set<string>([
   'Notification',
   'PushSubscription',
   'PortalInvitation',
+  'Part',
+  'TechnicianPartStock',
+  'StockMovement',
+  'WorkOrderPart',
 ]);
 
 // Actions that take args.where — we inject tenantId there.

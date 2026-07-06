@@ -38,6 +38,7 @@ const baseData: WorkOrderPdfData = {
   attachments: [
     { filename: 'photo-fuite.jpg', uploadedAt: new Date('2026-01-15T15:30:00Z') },
   ],
+  partsUsed: [],
 };
 
 describe('renderWorkOrderPdfHtml', () => {
@@ -87,6 +88,25 @@ describe('renderWorkOrderPdfHtml', () => {
     expect(html).toContain('SLA target');
     expect(html).toContain('Assigned to');
     expect(html).not.toContain('Bon de travail');
+  });
+
+  it('renders the parts-used table (B24) with localized names and no prices', () => {
+    const html = renderWorkOrderPdfHtml(
+      {
+        ...baseData,
+        partsUsed: [{ name: 'Câble RG6 30m', quantity: 2, unit: 'un' }],
+      },
+      'fr',
+    );
+    expect(html).toContain('Pièces utilisées');
+    expect(html).toContain('Câble RG6 30m');
+    expect(html).toContain('Qté');
+    expect(html).not.toContain('24.99'); // prices stay internal until invoicing
+  });
+
+  it('omits the parts-used section entirely when empty', () => {
+    const html = renderWorkOrderPdfHtml(baseData, 'fr');
+    expect(html).not.toContain('Pièces utilisées');
   });
 
   it('shows muted placeholders when client / address / assignee are missing', () => {
