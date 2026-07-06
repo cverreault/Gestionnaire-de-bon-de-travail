@@ -18,8 +18,8 @@ import { PrismaService } from '../../../common/prisma/prisma.service';
  *                   audit log entries mentioning the client's id.
  *   • `anonymize()` — the « right to be forgotten » path. Scrubs personal
  *                   info in-place (name → `Client anonymisé <shortId>`,
- *                   email/phone → null, notes stripped). Related WOs and
- *                   invoices are KEPT (business record) but their client
+ *                   email/phone → null, notes stripped). Related WOs
+ *                   are KEPT (business record) but their client
  *                   reference is preserved to the anonymized row.
  *
  * The service refuses to anonymize a client with active (non-terminal) BTs

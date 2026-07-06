@@ -756,8 +756,9 @@ model StockMovement {
 }
 
 /// B24 — part consumed on a work order. Prices are SNAPSHOTS taken at
-/// insert time so the future invoicing module bills what was agreed,
-/// not today's catalog price.
+/// insert time so cost reports reflect what the part was worth when it
+/// was used, not today's catalog price. (Internal cost data only —
+/// Dispatch2Go does no invoicing.)
 model WorkOrderPart {
   id          String    @id @default(uuid())
   tenantId    String    @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
