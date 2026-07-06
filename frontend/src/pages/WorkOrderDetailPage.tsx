@@ -13,6 +13,7 @@ import TemplateValuesView from '../components/TemplateValuesView';
 import WorkOrderStatusBadge from '../components/WorkOrderStatusBadge';
 import TransitionActionBar from '../components/transitions/TransitionActionBar';
 import WorkOrderAuditTimeline from '../components/WorkOrderAuditTimeline';
+import SignaturePad from '../components/SignaturePad';
 import SlaBadge from '../components/SlaBadge';
 import PrintWorkOrder from '../components/PrintWorkOrder';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -649,6 +650,18 @@ export default function WorkOrderDetailPage() {
             {addNote.isPending ? '...' : tCommon('actions.add')}
           </button>
         </div>
+      </div>
+
+      {/* Signatures (B12) */}
+      <div style={cardStyle}>
+        <h2 style={{ fontSize: theme.font.sizeMd, marginBottom: '1rem', color: theme.colors.text }}>
+          ✍️ Signatures
+        </h2>
+        <SignaturePad
+          workOrderId={wo.id}
+          initialTechnician={(wo as unknown as { signatureTechnician?: string | null }).signatureTechnician ?? null}
+          initialClient={(wo as unknown as { signatureClient?: string | null }).signatureClient ?? null}
+        />
       </div>
 
       {/* Attachments */}

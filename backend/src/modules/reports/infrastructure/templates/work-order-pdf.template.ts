@@ -19,6 +19,9 @@ export interface WorkOrderPdfData {
   slaBreachedAt: Date | null;
   completionNotes: string | null;
   negativeReason: string | null;
+  signatureClient?: string | null;
+  signatureTechnician?: string | null;
+  signedAt?: Date | null;
   client: {
     name: string;
     email: string | null;
@@ -63,6 +66,11 @@ interface TemplateStrings {
   attachments: string;
   completionNotes: string;
   negativeReason: string;
+  signatures: string;
+  signatureClient: string;
+  signatureTechnician: string;
+  signedAt: string;
+  noSignature: string;
   noClient: string;
   noAddress: string;
   noAssignee: string;
@@ -90,6 +98,11 @@ const STRINGS: Record<'fr' | 'en', TemplateStrings> = {
     noClient: 'Aucun client',
     noAddress: 'Aucune adresse',
     noAssignee: 'Non assigné',
+    signatures: 'Signatures',
+    signatureClient: 'Signature du client',
+    signatureTechnician: 'Signature du technicien',
+    signedAt: 'Signé le',
+    noSignature: 'Non signé',
     generated: 'Document généré le',
   },
   en: {
@@ -112,6 +125,11 @@ const STRINGS: Record<'fr' | 'en', TemplateStrings> = {
     noClient: 'No client',
     noAddress: 'No address',
     noAssignee: 'Unassigned',
+    signatures: 'Signatures',
+    signatureClient: 'Client signature',
+    signatureTechnician: 'Technician signature',
+    signedAt: 'Signed on',
+    noSignature: 'Unsigned',
     generated: 'Document generated on',
   },
 };
@@ -185,6 +203,30 @@ export function renderWorkOrderPdfHtml(
     ? `<section><h2>${esc(t.negativeReason)}</h2><p>${esc(data.negativeReason)}</p></section>`
     : '';
 
+  // Signatures — render as inline PNGs (data URLs from the DB). If neither
+  // is present, skip the block entirely.
+  const signaturesBlock =
+    data.signatureClient || data.signatureTechnician
+      ? `<section class="signatures">
+    <h2>${esc(t.signatures)}</h2>
+    ${data.signedAt ? `<p class="muted" style="margin:0 0 8px">${esc(t.signedAt)} ${esc(fmtDate(data.signedAt, locale))}</p>` : ''}
+    <div class="sig-grid">
+      <div class="sig-cell">
+        <div class="sig-label">${esc(t.signatureTechnician)}</div>
+        ${data.signatureTechnician
+          ? `<img alt="signature technicien" src="${esc(data.signatureTechnician)}" />`
+          : `<div class="sig-empty">${esc(t.noSignature)}</div>`}
+      </div>
+      <div class="sig-cell">
+        <div class="sig-label">${esc(t.signatureClient)}</div>
+        ${data.signatureClient
+          ? `<img alt="signature client" src="${esc(data.signatureClient)}" />`
+          : `<div class="sig-empty">${esc(t.noSignature)}</div>`}
+      </div>
+    </div>
+  </section>`
+      : '';
+
   return `<!doctype html>
 <html lang="${esc(locale)}">
 <head>
@@ -208,6 +250,12 @@ export function renderWorkOrderPdfHtml(
   ul.notes li { border-left: 3px solid #2563eb; padding-left: 10px; margin-bottom: 10px; }
   ul.notes .meta { color: #6b7280; font-size: 9pt; margin-bottom: 4px; }
   footer { margin-top: 32px; padding-top: 8px; border-top: 1px solid #e5e7eb; color: #9ca3af; font-size: 8pt; text-align: center; }
+  .signatures { page-break-inside: avoid; margin-top: 20px; }
+  .sig-grid { display: flex; gap: 24px; margin-top: 8px; }
+  .sig-cell { flex: 1; border: 1px solid #d1d5db; border-radius: 6px; padding: 10px; background: #fafafa; min-height: 120px; }
+  .sig-label { font-size: 9pt; color: #6b7280; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  .sig-cell img { max-width: 100%; max-height: 100px; display: block; margin: 4px auto; }
+  .sig-empty { color: #9ca3af; font-style: italic; text-align: center; padding: 30px 0; font-size: 10pt; }
 </style>
 </head>
 <body>
@@ -251,6 +299,7 @@ ${data.description ? `<section><h2>${esc(t.description)}</h2><p>${esc(data.descr
 
 ${closeBlock}
 ${negativeBlock}
+${signaturesBlock}
 
 <footer>${esc(t.generated)} ${esc(fmtDate(new Date(), locale))}</footer>
 </body>

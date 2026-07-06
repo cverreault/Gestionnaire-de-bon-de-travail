@@ -25,8 +25,8 @@ describe('VALID_TRANSITIONS — map completeness', () => {
     }
   });
 
-  it('contains exactly 7 status entries (including EN_ROUTE)', () => {
-    expect(Object.keys(VALID_TRANSITIONS)).toHaveLength(7);
+  it('contains exactly 8 status entries (including EN_ROUTE and REQUESTED)', () => {
+    expect(Object.keys(VALID_TRANSITIONS)).toHaveLength(8);
   });
 });
 

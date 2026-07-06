@@ -405,6 +405,7 @@ export class ProcessEngineService {
    */
   mapToLegacyStatus(step: CachedStatus): WorkOrderStatus | null {
     // Flag-based (canonical — works for every process)
+    if (step.isRequested) return WorkOrderStatus.REQUESTED;
     if (step.isInitial) return WorkOrderStatus.CREATED;
     if (step.isDispatch) return WorkOrderStatus.DISPATCHED;
     if (step.isStart) return WorkOrderStatus.IN_PROGRESS;

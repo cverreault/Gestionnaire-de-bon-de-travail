@@ -211,21 +211,28 @@ function FieldFormBlock({
   isPending: boolean;
   onSubmit: (payload: {
     label: string;
+    labelFr: string;
+    labelEn: string;
     fieldType: TemplateFieldType;
     required: boolean;
     options?: string[];
   }) => void | Promise<void>;
   onCancel: () => void;
 }) {
-  const [label, setLabel] = useState(initial?.label ?? '');
+  const [labelFr, setLabelFr] = useState(initial?.labelFr ?? initial?.label ?? '');
+  const [labelEn, setLabelEn] = useState(initial?.labelEn ?? initial?.label ?? '');
   const [fieldType, setFieldType] = useState<TemplateFieldType>(initial?.fieldType ?? TemplateFieldType.TEXT);
   const [required, setRequired] = useState(initial?.required ?? false);
   const [optionsText, setOptionsText] = useState((initial?.options ?? []).join('\n'));
 
   async function handleSubmit() {
-    if (!label.trim()) return;
-    const payload: { label: string; fieldType: TemplateFieldType; required: boolean; options?: string[] } = {
-      label: label.trim(),
+    const fr = labelFr.trim();
+    const en = labelEn.trim();
+    if (!fr && !en) return;
+    const payload: { label: string; labelFr: string; labelEn: string; fieldType: TemplateFieldType; required: boolean; options?: string[] } = {
+      label: fr || en, // canonical (backend middleware will sync anyway)
+      labelFr: fr,
+      labelEn: en,
       fieldType,
       required,
     };
@@ -237,13 +244,22 @@ function FieldFormBlock({
 
   return (
     <div style={{ padding: '0.75rem', background: theme.colors.primaryLight, border: `1px solid ${theme.colors.primary}40`, borderRadius: theme.radius.md, marginTop: '0.25rem' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: '0.5rem', alignItems: 'end' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '0.5rem', alignItems: 'end' }}>
         <div>
-          <label style={{ ...formStyles.label }}>Libellé</label>
+          <label style={{ ...formStyles.label }}>Libellé FR</label>
           <input
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
+            value={labelFr}
+            onChange={(e) => setLabelFr(e.target.value)}
             placeholder="Ex: N° de terrain"
+            style={{ ...formStyles.input, boxSizing: 'border-box' }}
+          />
+        </div>
+        <div>
+          <label style={{ ...formStyles.label }}>Libellé EN</label>
+          <input
+            value={labelEn}
+            onChange={(e) => setLabelEn(e.target.value)}
+            placeholder="Ex: Site number"
             style={{ ...formStyles.input, boxSizing: 'border-box' }}
           />
         </div>
@@ -280,7 +296,7 @@ function FieldFormBlock({
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={!label.trim() || isPending}
+          disabled={(!labelFr.trim() && !labelEn.trim()) || isPending}
           style={{ ...buttonStyles.primary, ...buttonStyles.sm }}
         >
           {initial ? '✓ Enregistrer' : '✓ Ajouter'}

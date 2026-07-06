@@ -187,6 +187,11 @@ export class DashboardService {
         status: r.status,
         count: r._count.id,
       })),
+      // B21 — client-portal work requests awaiting approval (front shows
+      // a dedicated card so they don't rot unnoticed).
+      pendingRequests:
+        workOrdersByStatusRaw.find((r) => r.status === WorkOrderStatus.REQUESTED)
+          ?._count.id ?? 0,
       workOrdersToday,
       workOrdersThisWeek,
       overdueWorkOrders,

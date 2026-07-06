@@ -21,6 +21,7 @@ const ROLE_LABELS: Record<Role, string> = {
   [Role.ADMIN]: 'Admin',
   [Role.DISPATCHER]: 'Dispatcher',
   [Role.TECHNICIAN]: 'Technicien',
+  [Role.CLIENT]: 'Client',
 };
 
 // SUPER_ADMIN is platform-level, not part of the template RBAC matrix.
@@ -109,6 +110,7 @@ function PermissionsMatrix({
   );
 }
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 import {
   theme,
   buttonStyles,
@@ -165,6 +167,7 @@ const TYPES_WITH_OPTIONS = new Set<TemplateFieldType>([
 
 export default function TemplatesSettingsPage() {
   const { t } = useTranslation('settings');
+  const { isMobile } = useBreakpoint();
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
 
   return (
@@ -178,7 +181,8 @@ export default function TemplatesSettingsPage() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.5rem' }}>
+      {/* B20 — mobile : liste au-dessus du détail. Desktop inchangé. */}
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '320px 1fr', gap: '1.5rem' }}>
         <TemplateList
           activeId={activeTemplateId}
           onSelect={setActiveTemplateId}
@@ -209,14 +213,22 @@ function TemplateList({
   const delTpl = useDeleteTemplate();
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
+  const [newNameEn, setNewNameEn] = useState('');
   const [createError, setCreateError] = useState<string | null>(null);
 
   async function handleCreate() {
-    if (!newName.trim()) return;
+    const fr = newName.trim();
+    const en = newNameEn.trim();
+    if (!fr && !en) return;
     setCreateError(null);
     try {
-      const tpl = await createTpl.mutateAsync({ name: newName.trim() });
+      const tpl = await createTpl.mutateAsync({
+        name: fr || en,
+        nameFr: fr,
+        nameEn: en,
+      });
       setNewName('');
+      setNewNameEn('');
       setShowCreate(false);
       onSelect((tpl as { id: string }).id);
     } catch (err: unknown) {
@@ -244,21 +256,29 @@ function TemplateList({
 
       {showCreate && (
         <div style={{ marginBottom: '0.75rem', padding: '0.75rem', background: theme.colors.surfaceAlt, borderRadius: theme.radius.md }}>
-          <input
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="Nom du template"
-            style={{ ...formStyles.input, boxSizing: 'border-box', marginBottom: '0.5rem' }}
-            autoFocus
-          />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            <input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="FR Nom du template"
+              style={{ ...formStyles.input, boxSizing: 'border-box' }}
+              autoFocus
+            />
+            <input
+              value={newNameEn}
+              onChange={(e) => setNewNameEn(e.target.value)}
+              placeholder="EN Template name"
+              style={{ ...formStyles.input, boxSizing: 'border-box' }}
+            />
+          </div>
           {createError && (
             <p style={{ color: theme.colors.danger, fontSize: theme.font.sizeXs, margin: '0 0 0.5rem' }}>{createError}</p>
           )}
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button onClick={handleCreate} disabled={!newName.trim() || createTpl.isPending} style={{ ...buttonStyles.primary, ...buttonStyles.sm }}>
+            <button onClick={handleCreate} disabled={(!newName.trim() && !newNameEn.trim()) || createTpl.isPending} style={{ ...buttonStyles.primary, ...buttonStyles.sm }}>
               {createTpl.isPending ? '...' : '✓ Créer'}
             </button>
-            <button onClick={() => { setShowCreate(false); setNewName(''); setCreateError(null); }} style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}>
+            <button onClick={() => { setShowCreate(false); setNewName(''); setNewNameEn(''); setCreateError(null); }} style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}>
               Annuler
             </button>
           </div>
@@ -321,31 +341,51 @@ function TemplateBuilder({ templateId }: { templateId: string }) {
   const addSection = useAddSection();
 
   const [editName, setEditName] = useState('');
+  const [editNameEn, setEditNameEn] = useState('');
   const [editDesc, setEditDesc] = useState('');
+  const [editDescEn, setEditDescEn] = useState('');
   const [editing, setEditing] = useState(false);
   const [newSection, setNewSection] = useState('');
+  const [newSectionEn, setNewSectionEn] = useState('');
 
   // Sync local state when template loads/changes
   function startEditing() {
     if (!tpl) return;
-    setEditName(tpl.name);
-    setEditDesc(tpl.description ?? '');
+    setEditName(tpl.nameFr ?? tpl.name);
+    setEditNameEn(tpl.nameEn ?? tpl.name);
+    setEditDesc(tpl.descriptionFr ?? tpl.description ?? '');
+    setEditDescEn(tpl.descriptionEn ?? tpl.description ?? '');
     setEditing(true);
   }
 
   async function handleSaveMeta() {
-    if (!editName.trim()) return;
+    const fr = editName.trim();
+    const en = editNameEn.trim();
+    if (!fr && !en) return;
     await updateTpl.mutateAsync({
       id: templateId,
-      data: { name: editName.trim(), description: editDesc.trim() || undefined },
+      data: {
+        name: fr || en,
+        nameFr: fr,
+        nameEn: en,
+        description: editDesc.trim() || editDescEn.trim() || undefined,
+        descriptionFr: editDesc.trim() || undefined,
+        descriptionEn: editDescEn.trim() || undefined,
+      },
     });
     setEditing(false);
   }
 
   async function handleAddSection() {
-    if (!newSection.trim()) return;
-    await addSection.mutateAsync({ templateId, data: { name: newSection.trim() } });
+    const fr = newSection.trim();
+    const en = newSectionEn.trim();
+    if (!fr && !en) return;
+    await addSection.mutateAsync({
+      templateId,
+      data: { name: fr || en, nameFr: fr, nameEn: en },
+    });
     setNewSection('');
+    setNewSectionEn('');
   }
 
   if (isLoading) return <LoadingSpinner />;
@@ -364,18 +404,34 @@ function TemplateBuilder({ templateId }: { templateId: string }) {
         </div>
       ) : (
         <div style={{ marginBottom: '1.25rem', padding: '0.75rem', background: theme.colors.surfaceAlt, borderRadius: theme.radius.md }}>
-          <input
-            value={editName}
-            onChange={(e) => setEditName(e.target.value)}
-            placeholder="Nom"
-            style={{ ...formStyles.input, boxSizing: 'border-box', marginBottom: '0.5rem' }}
-          />
-          <input
-            value={editDesc}
-            onChange={(e) => setEditDesc(e.target.value)}
-            placeholder="Description (optionnel)"
-            style={{ ...formStyles.input, boxSizing: 'border-box', marginBottom: '0.5rem' }}
-          />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            <input
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              placeholder="FR Nom"
+              style={{ ...formStyles.input, boxSizing: 'border-box' }}
+            />
+            <input
+              value={editNameEn}
+              onChange={(e) => setEditNameEn(e.target.value)}
+              placeholder="EN Name"
+              style={{ ...formStyles.input, boxSizing: 'border-box' }}
+            />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            <input
+              value={editDesc}
+              onChange={(e) => setEditDesc(e.target.value)}
+              placeholder="FR Description (optionnel)"
+              style={{ ...formStyles.input, boxSizing: 'border-box' }}
+            />
+            <input
+              value={editDescEn}
+              onChange={(e) => setEditDescEn(e.target.value)}
+              placeholder="EN Description (optional)"
+              style={{ ...formStyles.input, boxSizing: 'border-box' }}
+            />
+          </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button onClick={handleSaveMeta} disabled={updateTpl.isPending} style={{ ...buttonStyles.primary, ...buttonStyles.sm }}>
               ✓ Enregistrer
@@ -400,17 +456,24 @@ function TemplateBuilder({ templateId }: { templateId: string }) {
         )}
       </div>
 
-      {/* Add section */}
-      <div style={{ display: 'flex', gap: '0.5rem' }}>
+      {/* Add section — bilingual FR + EN (B10.2) */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '0.5rem' }}>
         <input
           value={newSection}
           onChange={(e) => setNewSection(e.target.value)}
-          placeholder="Nom de la nouvelle section (ex: Avant intervention)"
-          style={{ ...formStyles.input, boxSizing: 'border-box', flex: 1 }}
+          placeholder="FR Nom de la section (ex: Avant intervention)"
+          style={{ ...formStyles.input, boxSizing: 'border-box' }}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddSection(); } }}
         />
-        <button onClick={handleAddSection} disabled={!newSection.trim() || addSection.isPending} style={{ ...buttonStyles.primary }}>
-          + Ajouter une section
+        <input
+          value={newSectionEn}
+          onChange={(e) => setNewSectionEn(e.target.value)}
+          placeholder="EN Section name (e.g. Before service)"
+          style={{ ...formStyles.input, boxSizing: 'border-box' }}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddSection(); } }}
+        />
+        <button onClick={handleAddSection} disabled={(!newSection.trim() && !newSectionEn.trim()) || addSection.isPending} style={{ ...buttonStyles.primary }}>
+          + Ajouter
         </button>
       </div>
     </div>
@@ -424,13 +487,20 @@ function SectionEditor({ templateId, section }: { templateId: string; section: T
   const deleteSection = useDeleteSection();
   const addField = useAddField();
   const [editingName, setEditingName] = useState(false);
-  const [name, setName] = useState(section.name);
+  const [name, setName] = useState(section.nameFr ?? section.name);
+  const [nameEn, setNameEn] = useState(section.nameEn ?? section.name);
   const [showAddField, setShowAddField] = useState(false);
   const [showPerms, setShowPerms] = useState(false);
 
   async function handleRename() {
-    if (!name.trim()) return;
-    await updateSection.mutateAsync({ templateId, sectionId: section.id, data: { name: name.trim() } });
+    const fr = name.trim();
+    const en = nameEn.trim();
+    if (!fr && !en) return;
+    await updateSection.mutateAsync({
+      templateId,
+      sectionId: section.id,
+      data: { name: fr || en, nameFr: fr, nameEn: en },
+    });
     setEditingName(false);
   }
 
@@ -458,15 +528,22 @@ function SectionEditor({ templateId, section }: { templateId: string; section: T
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
         {editingName ? (
-          <div style={{ display: 'flex', gap: '0.5rem', flex: 1 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto auto', gap: '0.5rem', flex: 1 }}>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              style={{ ...formStyles.input, boxSizing: 'border-box', flex: 1 }}
+              placeholder="FR Nom"
+              style={{ ...formStyles.input, boxSizing: 'border-box' }}
               autoFocus
             />
+            <input
+              value={nameEn}
+              onChange={(e) => setNameEn(e.target.value)}
+              placeholder="EN Name"
+              style={{ ...formStyles.input, boxSizing: 'border-box' }}
+            />
             <button onClick={handleRename} style={{ ...buttonStyles.primary, ...buttonStyles.sm }}>✓</button>
-            <button onClick={() => { setEditingName(false); setName(section.name); }} style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}>✕</button>
+            <button onClick={() => { setEditingName(false); setName(section.nameFr ?? section.name); setNameEn(section.nameEn ?? section.name); }} style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}>✕</button>
           </div>
         ) : (
           <>
@@ -597,7 +674,8 @@ function AddFieldForm({
   isPending: boolean;
 }) {
   const addField = useAddField();
-  const [label, setLabel] = useState('');
+  const [labelFr, setLabelFr] = useState('');
+  const [labelEn, setLabelEn] = useState('');
   const [fieldType, setFieldType] = useState<TemplateFieldType>(TemplateFieldType.TEXT);
   const [optionsText, setOptionsText] = useState('');
   const [viewRoles, setViewRoles] = useState<Role[]>([Role.DISPATCHER, Role.TECHNICIAN]);
@@ -605,16 +683,22 @@ function AddFieldForm({
   const [requiredRoles, setRequiredRoles] = useState<Role[]>([]);
 
   async function handleAdd() {
-    if (!label.trim()) return;
+    const fr = labelFr.trim();
+    const en = labelEn.trim();
+    if (!fr && !en) return;
     const payload: {
       label: string;
+      labelFr: string;
+      labelEn: string;
       fieldType: TemplateFieldType;
       options?: string[];
       viewRoles: Role[];
       editRoles: Role[];
       requiredRoles: Role[];
     } = {
-      label: label.trim(),
+      label: fr || en,
+      labelFr: fr,
+      labelEn: en,
       fieldType,
       viewRoles,
       editRoles,
@@ -630,8 +714,10 @@ function AddFieldForm({
   return (
     <div style={{ padding: '0.625rem', background: theme.colors.primaryLight, border: `1px solid ${theme.colors.primary}40`, borderRadius: theme.radius.sm, marginTop: '0.25rem' }}>
       <FieldFormFields
-        label={label}
-        setLabel={setLabel}
+        labelFr={labelFr}
+        setLabelFr={setLabelFr}
+        labelEn={labelEn}
+        setLabelEn={setLabelEn}
         fieldType={fieldType}
         setFieldType={setFieldType}
         optionsText={optionsText}
@@ -649,7 +735,7 @@ function AddFieldForm({
         }}
       />
       <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-        <button onClick={handleAdd} disabled={!label.trim() || isPending} style={{ ...buttonStyles.primary, ...buttonStyles.sm }}>
+        <button onClick={handleAdd} disabled={(!labelFr.trim() && !labelEn.trim()) || isPending} style={{ ...buttonStyles.primary, ...buttonStyles.sm }}>
           ✓ Ajouter
         </button>
         <button onClick={onDone} style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}>Annuler</button>
@@ -672,7 +758,8 @@ function EditFieldForm({
   isPending: boolean;
 }) {
   const updateField = useUpdateField();
-  const [label, setLabel] = useState(field.label);
+  const [labelFr, setLabelFr] = useState(field.labelFr ?? field.label);
+  const [labelEn, setLabelEn] = useState(field.labelEn ?? field.label);
   const [fieldType, setFieldType] = useState<TemplateFieldType>(field.fieldType);
   const [optionsText, setOptionsText] = useState((field.options ?? []).join('\n'));
   const [viewRoles, setViewRoles] = useState<Role[]>(field.viewRoles.filter((r) => r !== Role.ADMIN));
@@ -680,16 +767,22 @@ function EditFieldForm({
   const [requiredRoles, setRequiredRoles] = useState<Role[]>(field.requiredRoles);
 
   async function handleSave() {
-    if (!label.trim()) return;
+    const fr = labelFr.trim();
+    const en = labelEn.trim();
+    if (!fr && !en) return;
     const payload: {
       label: string;
+      labelFr: string;
+      labelEn: string;
       fieldType: TemplateFieldType;
       options?: string[];
       viewRoles: Role[];
       editRoles: Role[];
       requiredRoles: Role[];
     } = {
-      label: label.trim(),
+      label: fr || en,
+      labelFr: fr,
+      labelEn: en,
       fieldType,
       viewRoles,
       editRoles,
@@ -705,8 +798,10 @@ function EditFieldForm({
   return (
     <div style={{ padding: '0.625rem', background: theme.colors.primaryLight, border: `1px solid ${theme.colors.primary}40`, borderRadius: theme.radius.sm }}>
       <FieldFormFields
-        label={label}
-        setLabel={setLabel}
+        labelFr={labelFr}
+        setLabelFr={setLabelFr}
+        labelEn={labelEn}
+        setLabelEn={setLabelEn}
         fieldType={fieldType}
         setFieldType={setFieldType}
         optionsText={optionsText}
@@ -724,7 +819,7 @@ function EditFieldForm({
         }}
       />
       <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-        <button onClick={handleSave} disabled={!label.trim() || isPending} style={{ ...buttonStyles.primary, ...buttonStyles.sm }}>
+        <button onClick={handleSave} disabled={(!labelFr.trim() && !labelEn.trim()) || isPending} style={{ ...buttonStyles.primary, ...buttonStyles.sm }}>
           ✓ Enregistrer
         </button>
         <button onClick={onDone} style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}>Annuler</button>
@@ -734,15 +829,19 @@ function EditFieldForm({
 }
 
 function FieldFormFields({
-  label,
-  setLabel,
+  labelFr,
+  setLabelFr,
+  labelEn,
+  setLabelEn,
   fieldType,
   setFieldType,
   optionsText,
   setOptionsText,
 }: {
-  label: string;
-  setLabel: (v: string) => void;
+  labelFr: string;
+  setLabelFr: (v: string) => void;
+  labelEn: string;
+  setLabelEn: (v: string) => void;
   fieldType: TemplateFieldType;
   setFieldType: (v: TemplateFieldType) => void;
   optionsText: string;
@@ -750,10 +849,14 @@ function FieldFormFields({
 }) {
   return (
     <>
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0.5rem', alignItems: 'end' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', alignItems: 'end' }}>
         <div>
-          <label style={{ ...formStyles.label }}>Libellé</label>
-          <input value={label} onChange={(e) => setLabel(e.target.value)} style={{ ...formStyles.input, boxSizing: 'border-box' }} placeholder="Ex: Marque du chauffe-eau" />
+          <label style={{ ...formStyles.label }}>Libellé FR</label>
+          <input value={labelFr} onChange={(e) => setLabelFr(e.target.value)} style={{ ...formStyles.input, boxSizing: 'border-box' }} placeholder="Ex: Marque du chauffe-eau" />
+        </div>
+        <div>
+          <label style={{ ...formStyles.label }}>Libellé EN</label>
+          <input value={labelEn} onChange={(e) => setLabelEn(e.target.value)} style={{ ...formStyles.input, boxSizing: 'border-box' }} placeholder="E.g. Water heater brand" />
         </div>
         <div>
           <label style={{ ...formStyles.label }}>Type</label>

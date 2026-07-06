@@ -4,6 +4,7 @@ import { badgeStyles } from '../theme';
 // ─── Legacy static map ────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<WorkOrderStatus, { label: string; bg: string; color: string; border: string }> = {
+  [WorkOrderStatus.REQUESTED]:          { label: 'Demandé',       bg: '#fef9c3', color: '#854d0e', border: '#fde047' },
   [WorkOrderStatus.CREATED]:            { label: 'Créé',          bg: '#dbeafe', color: '#1e40af', border: '#93c5fd' },
   [WorkOrderStatus.ASSIGNED]:           { label: 'Assigné',       bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
   [WorkOrderStatus.DISPATCHED]:         { label: 'Réparti',       bg: '#e0e7ff', color: '#3730a3', border: '#a5b4fc' },

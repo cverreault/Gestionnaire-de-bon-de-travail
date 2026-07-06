@@ -48,6 +48,7 @@ const TENANT_SCOPED_MODELS = new Set<string>([
   'RefreshToken',
   'Notification',
   'PushSubscription',
+  'PortalInvitation',
 ]);
 
 // Actions that take args.where — we inject tenantId there.

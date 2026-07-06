@@ -1,9 +1,10 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { NotificationsController } from './api/notifications.controller';
 import { NotificationsService } from './application/notifications.service';
 import { NotificationsListener } from './application/notifications.listener';
 import { EmailChannelService } from './infrastructure/channels/email-channel.service';
 import { PushChannelService } from './infrastructure/channels/push-channel.service';
+import { SmsChannelService } from './infrastructure/channels/sms-channel.service';
 
 /**
  * Notifications module (B1).
@@ -23,6 +24,7 @@ import { PushChannelService } from './infrastructure/channels/push-channel.servi
  * available to the channel services without an explicit import here.
  * The contract lives in `common/contracts/system-config-resolver.contract.ts`.
  */
+@Global()
 @Module({
   controllers: [NotificationsController],
   providers: [
@@ -30,7 +32,13 @@ import { PushChannelService } from './infrastructure/channels/push-channel.servi
     NotificationsListener,
     EmailChannelService,
     PushChannelService,
+    SmsChannelService,
   ],
-  exports: [NotificationsService],
+  exports: [
+    NotificationsService,
+    EmailChannelService,
+    PushChannelService,
+    SmsChannelService,
+  ],
 })
 export class NotificationsModule {}

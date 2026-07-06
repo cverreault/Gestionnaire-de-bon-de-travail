@@ -12,12 +12,24 @@ import {
 export class CreateAddressTypeDto {
   @ApiProperty({
     example: 'Bureau',
-    description: "Nom du type d'emplacement (unique, insensible à la casse)",
+    description: "Nom du type d'emplacement (unique, insensible à la casse). Legacy — écris de préférence nameFr + nameEn.",
   })
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
   name: string;
+
+  @ApiPropertyOptional({ description: 'Nom en français (B10.2)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  nameFr?: string;
+
+  @ApiPropertyOptional({ description: 'Nom en anglais (B10.2)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  nameEn?: string;
 
   @ApiProperty({
     example: 'OFFICE',
@@ -36,6 +48,18 @@ export class CreateAddressTypeDto {
   @IsString()
   @MaxLength(500)
   description?: string;
+
+  @ApiPropertyOptional({ description: 'Description en français (B10.2)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  descriptionFr?: string;
+
+  @ApiPropertyOptional({ description: 'Description en anglais (B10.2)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  descriptionEn?: string;
 
   @ApiPropertyOptional({
     example: '#3b82f6',

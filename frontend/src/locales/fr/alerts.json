@@ -1,0 +1,91 @@
+{
+  "title": "Alertes",
+  "subtitle": "Créez des règles qui déclenchent des notifications quand un événement se produit sur un bon de travail. Chaque règle définit qui reçoit quoi, sur quel canal, avec quel message.",
+  "empty": {
+    "title": "Aucune règle d'alerte",
+    "description": "Créez votre première règle pour recevoir des notifications automatiques sur les événements de vos BT."
+  },
+  "table": {
+    "name": "Nom",
+    "event": "Événement",
+    "recipients": "Destinataires",
+    "channels": "Canaux",
+    "status": "Statut",
+    "actions": "Actions"
+  },
+  "status": {
+    "active": "Active",
+    "paused": "En pause"
+  },
+  "actions": {
+    "create": "Nouvelle règle",
+    "edit": "Éditer",
+    "pause": "Pause",
+    "resume": "Réactiver",
+    "cancel": "Annuler",
+    "saving": "Sauvegarde…",
+    "confirmCreate": "Créer la règle",
+    "confirmUpdate": "Enregistrer",
+    "deleteConfirm": "Supprimer la règle « {{name}} » ?",
+    "toggleSuccess": "Règle mise à jour",
+    "createSuccess": "Règle créée",
+    "updateSuccess": "Règle mise à jour",
+    "deleteSuccess": "Règle supprimée"
+  },
+  "roles": {
+    "ADMIN": "👑 Admin",
+    "DISPATCHER": "🚑 Dispatcher",
+    "TECHNICIAN": "👷 Technicien"
+  },
+  "recipients": {
+    "assignedTech": "Technicien assigné",
+    "client": "Client",
+    "users": "utilisateurs choisis"
+  },
+  "events": {
+    "workOrders.workOrder.created": "BT créé",
+    "workOrders.workOrder.assigned": "BT assigné",
+    "workOrders.workOrder.dispatched": "BT confirmé",
+    "workOrders.workOrder.statusChanged": "BT — changement de statut",
+    "workOrders.workOrder.completed": "BT complété",
+    "workOrders.workOrder.slaBreached": "SLA dépassé",
+    "clients.client.created": "Client créé",
+    "clients.client.updated": "Client modifié",
+    "clients.client.deleted": "Client désactivé"
+  },
+  "validation": {
+    "required": "Nom, template et au moins un canal sont requis.",
+    "clientTemplateRequired": "Un template pour le client est requis quand la case « Client » est cochée."
+  },
+  "edit": {
+    "createTitle": "Créer une règle d'alerte",
+    "editTitle": "Éditer la règle",
+    "nameLabel": "Nom",
+    "namePlaceholder": "ex. Alerte BT complété négatif",
+    "descriptionLabel": "Description (facultatif)",
+    "eventLabel": "Événement déclencheur",
+    "filtersLabel": "Filtres (facultatif)",
+    "filtersHint": "Ne rien cocher = ne pas filtrer sur ce critère. Cocher plusieurs valeurs = OU logique.",
+    "priorityLabel": "Priorité",
+    "priorityHint": "Restreint aux BT dont la priorité correspond. Non coché = toutes priorités.",
+    "taskTypesLabel": "Types de tâche",
+    "taskTypesEmpty": "Aucun type de tâche configuré — voir Paramètres.",
+    "templatesLabel": "Modèles de formulaire",
+    "templatesEmpty": "Aucun modèle de formulaire configuré — voir Paramètres.",
+    "clientTypesLabel": "Types de client",
+    "clientTypesEmpty": "Aucun type de client configuré — voir Paramètres.",
+    "addressTypesLabel": "Types d'emplacement",
+    "addressTypesEmpty": "Aucun type d'emplacement configuré — voir Paramètres.",
+    "recipientsLabel": "Destinataires",
+    "channelsLabel": "Canaux",
+    "templateLabel": "Message interne",
+    "templateHint": "Utilisez {{workOrder.referenceNumber}}, {{workOrder.title}}, {{transition.toLabel}}, {{technician.name}}, {{client.name}}, {{tenant.name}}. Aperçu ci-dessous.",
+    "titleField": "Titre",
+    "bodyField": "Corps",
+    "previewLabel": "Aperçu",
+    "clientTemplateLabel": "Message client (obligatoire quand la case « Client » est cochée)",
+    "clientTemplateHint": "Version externe du message — n'exposez PAS d'IDs internes ou de statuts techniques.",
+    "clientTitlePlaceholder": "Suivi de votre demande {{workOrder.referenceNumber}}",
+    "clientBodyPlaceholder": "Bonjour {{client.name}}, votre demande de service a été traitée."
+  }
+}

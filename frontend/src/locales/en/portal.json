@@ -1,0 +1,62 @@
+{
+  "nav": {
+    "myWorkOrders": "My work orders",
+    "newRequest": "New request",
+    "logout": "Log out"
+  },
+  "common": {
+    "loading": "Loading…",
+    "loadError": "Failed to load. Please retry.",
+    "cancel": "Cancel"
+  },
+  "list": {
+    "title": "My work orders",
+    "empty": "No work orders yet. Submit a request to get started.",
+    "reference": "Reference",
+    "workOrder": "Work order",
+    "status": "Status",
+    "scheduledDate": "Scheduled date",
+    "toBeScheduled": "To be scheduled",
+    "report": "Report"
+  },
+  "detail": {
+    "back": "Back to my work orders",
+    "reference": "Reference",
+    "taskType": "Task type",
+    "scheduledDate": "Scheduled date",
+    "createdAt": "Created on",
+    "address": "Address",
+    "technician": "Technician",
+    "description": "Description",
+    "completionNotes": "Completion notes",
+    "negativeReason": "Reason",
+    "downloadReport": "Download report"
+  },
+  "request": {
+    "title": "New work request",
+    "subtitle": "Your request will be reviewed and approved by your provider before being scheduled.",
+    "taskType": "Task type",
+    "selectTaskType": "Select a task type…",
+    "address": "Address",
+    "selectAddress": "Select an address…",
+    "defaultAddress": "default",
+    "noAddress": "No address on file — please contact your provider.",
+    "description": "Description of the need",
+    "descriptionPlaceholder": "Describe the work to be done…",
+    "submit": "Submit request",
+    "submitting": "Submitting…",
+    "success": "Request {{reference}} submitted — it will be reviewed shortly."
+  },
+  "activation": {
+    "title": "Activate your access",
+    "subtitle": "Choose a password to access the client portal.",
+    "password": "Password (min. 8 characters)",
+    "confirm": "Confirm password",
+    "mismatch": "Passwords do not match.",
+    "submit": "Activate my account",
+    "submitting": "Activating…",
+    "success": "Account activated! You can now log in.",
+    "goToLogin": "Go to login",
+    "missingToken": "Invalid activation link — token is missing."
+  }
+}

@@ -41,15 +41,15 @@ export class PublicWebhooksController {
   @ApiOperation({
     summary: 'Liste des événements publiables auxquels un webhook peut souscrire',
   })
-  publishableEvents(): { data: string[] } {
-    return { data: [...WEBHOOK_PUBLISHABLE_EVENTS] };
+  publishableEvents(): string[] {
+    return [...WEBHOOK_PUBLISHABLE_EVENTS];
   }
 
   @Get()
   @Scope('admin')
   @ApiOperation({ summary: 'Lister les webhooks du tenant' })
   async list(@CurrentApiKey() key: ResolvedApiKey) {
-    return { data: await this.webhooks.list(key.tenantId) };
+    return this.webhooks.list(key.tenantId);
   }
 
   @Get(':id')
@@ -128,12 +128,10 @@ export class PublicWebhooksController {
     @Query('limit') limit?: string,
   ) {
     const parsed = limit ? Number(limit) : 50;
-    return {
-      data: await this.webhooks.listDeliveries(
-        key.tenantId,
-        id,
-        Number.isFinite(parsed) ? parsed : 50,
-      ),
-    };
+    return this.webhooks.listDeliveries(
+      key.tenantId,
+      id,
+      Number.isFinite(parsed) ? parsed : 50,
+    );
   }
 }

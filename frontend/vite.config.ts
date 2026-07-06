@@ -19,8 +19,8 @@ export default defineConfig({
       },
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'TaskMgr — Bons de Travail',
-        short_name: 'TaskMgr',
+        name: 'Dispatch2Go — Bons de Travail',
+        short_name: 'Dispatch2Go',
         description: 'Gestion et répartition des bons de travail pour techniciens terrain',
         theme_color: '#1e40af',
         background_color: '#ffffff',

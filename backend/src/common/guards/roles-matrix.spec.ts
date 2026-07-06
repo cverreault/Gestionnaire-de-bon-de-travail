@@ -62,17 +62,17 @@ type MatrixRow = {
 };
 
 const WORK_ORDERS_MATRIX: MatrixRow[] = [
-  { controller: WorkOrdersController, method: 'findAll',                 expectedRoles: 'ANY',                              note: 'GET /work-orders — service filters by assignedToId for TECH' },
-  { controller: WorkOrdersController, method: 'findOne',                 expectedRoles: 'ANY',                              note: 'GET /work-orders/:id — service enforces IDOR for TECH' },
-  { controller: WorkOrdersController, method: 'getAvailableTransitions', expectedRoles: 'ANY',                              note: 'GET /:id/available-transitions — TECH sees their own' },
+  { controller: WorkOrdersController, method: 'findAll',                 expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'GET /work-orders — B21: staff only (CLIENT uses /portal), service filters by assignedToId for TECH' },
+  { controller: WorkOrdersController, method: 'findOne',                 expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'GET /work-orders/:id — B21: staff only, service enforces IDOR for TECH' },
+  { controller: WorkOrdersController, method: 'getAvailableTransitions', expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'GET /:id/available-transitions — B21: staff only' },
   { controller: WorkOrdersController, method: 'exportCsv',               expectedRoles: [Role.ADMIN, Role.DISPATCHER],      note: 'GET /work-orders/export.csv — A3' },
   { controller: WorkOrdersController, method: 'create',                  expectedRoles: [Role.ADMIN, Role.DISPATCHER],      note: 'POST /work-orders' },
   { controller: WorkOrdersController, method: 'duplicate',               expectedRoles: [Role.ADMIN, Role.DISPATCHER],      note: 'POST /:id/duplicate — A7' },
-  { controller: WorkOrdersController, method: 'update',                  expectedRoles: 'ANY',                              note: 'PATCH /work-orders/:id — service whitelists fields per role' },
+  { controller: WorkOrdersController, method: 'update',                  expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'PATCH /work-orders/:id — B21: staff only, service whitelists fields per role' },
   { controller: WorkOrdersController, method: 'assignAndDispatch',       expectedRoles: [Role.ADMIN, Role.DISPATCHER],      note: 'POST /:id/assign-and-dispatch' },
-  { controller: WorkOrdersController, method: 'transition',              expectedRoles: 'ANY',                              note: 'POST /:id/transition — TECH transitions own BTs' },
-  { controller: WorkOrdersController, method: 'findNotes',               expectedRoles: 'ANY',                              note: 'GET /:id/notes — same IDOR rule as the BT' },
-  { controller: WorkOrdersController, method: 'createNote',              expectedRoles: 'ANY',                              note: 'POST /:id/notes — assignee or admin' },
+  { controller: WorkOrdersController, method: 'transition',              expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'POST /:id/transition — B21: staff only, TECH transitions own BTs' },
+  { controller: WorkOrdersController, method: 'findNotes',               expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'GET /:id/notes — B21: staff only, same IDOR rule as the BT' },
+  { controller: WorkOrdersController, method: 'createNote',              expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'POST /:id/notes — B21: staff only, assignee or admin' },
 ];
 
 const CLIENTS_MATRIX: MatrixRow[] = [
@@ -103,7 +103,7 @@ const USERS_MATRIX: MatrixRow[] = [
 ];
 
 const CALENDAR_MATRIX: MatrixRow[] = [
-  { controller: CalendarController, method: 'getEvents', expectedRoles: 'ANY',                              note: 'GET /calendar/events — service filters per role' },
+  { controller: CalendarController, method: 'getEvents', expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'GET /calendar/events — B21: staff only, service filters per role' },
   // 🚨 IDOR-protected by @Roles (calendar appointments may include sensitive client data)
   { controller: CalendarController, method: 'findOne',   expectedRoles: [Role.ADMIN, Role.DISPATCHER],      note: 'GET /calendar/appointments/:id — IDOR FIX' },
   { controller: CalendarController, method: 'create',    expectedRoles: [Role.ADMIN, Role.DISPATCHER],      note: 'POST /calendar/appointments' },

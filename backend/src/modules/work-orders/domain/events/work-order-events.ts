@@ -19,6 +19,10 @@ export const WO_EVENT_NAMES = {
   /// Emitted by SlaCheckService when an active BT crosses its slaTargetAt
   /// without being completed. Consumed by notifications (B4.c) and audit.
   SLA_BREACHED:    'workOrders.workOrder.slaBreached',
+  /// B21 — a client-portal user submitted a work request (WO created at
+  /// the pre-approval « Demandé » step). Consumed by notifications
+  /// (in-app fan-out to ADMIN/DISPATCHER) and the alerts engine.
+  REQUESTED:       'workOrders.workOrder.requested',
 } as const;
 
 export type WoEventName = typeof WO_EVENT_NAMES[keyof typeof WO_EVENT_NAMES];
@@ -67,6 +71,28 @@ export function workOrderCreated(
   data: WorkOrderCreatedData,
 ): WorkOrderCreatedEvent {
   return makeEvent({ name: WO_EVENT_NAMES.CREATED, workOrderId, actorUserId, data });
+}
+
+// ── Requested (B21) ────────────────────────────────────────────────────────
+
+export interface WorkOrderRequestedData {
+  referenceNumber: string;
+  title: string;
+  taskTypeId: string | null;
+  clientId: string | null;
+}
+
+export type WorkOrderRequestedEvent = IDomainEvent & {
+  name: typeof WO_EVENT_NAMES.REQUESTED;
+  data: WorkOrderRequestedData;
+};
+
+export function workOrderRequested(
+  workOrderId: string,
+  actorUserId: string | null,
+  data: WorkOrderRequestedData,
+): WorkOrderRequestedEvent {
+  return makeEvent({ name: WO_EVENT_NAMES.REQUESTED, workOrderId, actorUserId, data });
 }
 
 // ── Assigned ───────────────────────────────────────────────────────────────

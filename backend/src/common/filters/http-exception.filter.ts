@@ -55,10 +55,28 @@ export class HttpExceptionFilter implements ExceptionFilter {
       );
       // Forward 5xx to Sentry when SENTRY_DSN is configured. No-op
       // otherwise — captureException is a safe no-op without init().
+      // Enrich with the request's tenant + user so an incident on a
+      // specific tenant is grep-able in the Sentry UI.
+      const req = request as unknown as {
+        method: string;
+        url: string;
+        headers?: Record<string, string | string[] | undefined>;
+        tenant?: { id?: string; slug?: string };
+        user?: { id?: string; email?: string; role?: string };
+      };
       Sentry.captureException(exception, {
+        tags: {
+          tenantId: req.tenant?.id ?? 'unknown',
+          tenantSlug: req.tenant?.slug ?? 'unknown',
+          role: req.user?.role ?? 'anonymous',
+        },
+        user: req.user
+          ? { id: req.user.id, email: req.user.email }
+          : undefined,
         extra: {
-          method: request.method,
-          url: request.url,
+          method: req.method,
+          url: req.url,
+          requestId: req.headers?.['x-request-id'] as string | undefined,
         },
       });
     } else {

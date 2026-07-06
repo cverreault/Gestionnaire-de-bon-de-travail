@@ -14,6 +14,8 @@ import type { INestApplication } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { PublicApiModule } from './modules/public-api/public-api.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
+import { AlertsModule } from './modules/alerts/alerts.module';
+import { RecurringModule } from './modules/recurring/recurring.module';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { DatabaseHealthIndicator } from './modules/health/indicators/database.health';
@@ -32,18 +34,31 @@ import { MinioHealthIndicator } from './modules/health/indicators/minio.health';
  */
 function initSentry(): void {
   const dsn = process.env.SENTRY_DSN;
-  if (!dsn) return;
+  if (!dsn) {
+    // Deliberately noisy so the operator knows Sentry is inactive without
+    // having to grep the config.
+    // eslint-disable-next-line no-console
+    console.log('ℹ️  Sentry disabled — set SENTRY_DSN in env to enable error tracking.');
+    return;
+  }
   Sentry.init({
     dsn,
     environment: process.env.SENTRY_ENVIRONMENT ?? process.env.NODE_ENV ?? 'development',
     release: process.env.SENTRY_RELEASE,
     tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE ?? 0.1),
-    // Don't capture health endpoint pings.
+    // Don't capture health endpoint pings — they'd dominate the event feed.
     beforeSend(event) {
-      if (event.request?.url?.endsWith('/api/health')) return null;
+      const url = event.request?.url ?? '';
+      if (url.endsWith('/api/health') || url.endsWith('/api/health/detailed')) {
+        return null;
+      }
       return event;
     },
   });
+  // eslint-disable-next-line no-console
+  console.log(
+    `✅ Sentry initialised (env=${process.env.SENTRY_ENVIRONMENT ?? process.env.NODE_ENV ?? 'development'})`,
+  );
 }
 initSentry();
 
@@ -128,10 +143,10 @@ async function bootstrap() {
 
   // ── CORS ──────────────────────────────────────────────────────────────────
   // The frontend UI is served from `CORS_ORIGIN` — accepts a single origin
-  // OR a comma-separated list (useful when the same tenant is reachable via
-  // both a localhost dev URL and a LAN IP, or via multiple subdomains).
-  // Third-party public-API integrations use `PUBLIC_API_CORS_ORIGINS`
-  // (comma-separated).
+  // OR a comma-separated list. Entries support ONE leading wildcard label
+  // (`https://*.dispatch2go.com`) so multi-tenant subdomains don't have to
+  // be enumerated per tenant. Third-party public-API integrations use
+  // `PUBLIC_API_CORS_ORIGINS` (comma-separated, exact matches only).
   const uiOrigins = (process.env.CORS_ORIGIN ?? 'http://localhost:8088')
     .split(',')
     .map((s) => s.trim())
@@ -140,11 +155,39 @@ async function bootstrap() {
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
-  const allowedOrigins = new Set<string>([...uiOrigins, ...publicOrigins]);
+  const exactOrigins = new Set<string>();
+  const wildcardSuffixes: string[] = [];
+  for (const entry of [...uiOrigins, ...publicOrigins]) {
+    const m = entry.match(/^(https?:\/\/)\*\.(.+)$/);
+    if (m) {
+      // `https://*.example.com` matches any single-or-multi-label subdomain
+      // of example.com over that scheme, but NOT the apex itself (list it
+      // separately if needed).
+      wildcardSuffixes.push(`${m[1]}` + '|' + m[2]);
+    } else {
+      exactOrigins.add(entry);
+    }
+  }
+  const originAllowed = (origin: string): boolean => {
+    if (exactOrigins.has(origin)) return true;
+    for (const entry of wildcardSuffixes) {
+      const [scheme, domain] = entry.split('|');
+      if (
+        origin.startsWith(scheme) &&
+        origin.endsWith(`.${domain}`) &&
+        // No path/port smuggling: everything between scheme and the domain
+        // suffix must be subdomain labels only.
+        /^[a-z0-9.-]+$/i.test(origin.slice(scheme.length, origin.length - domain.length - 1))
+      ) {
+        return true;
+      }
+    }
+    return false;
+  };
   app.enableCors({
     origin: (origin, callback) => {
       // Allow same-origin (no `Origin` header) + whitelisted origins.
-      if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+      if (!origin || originAllowed(origin)) return callback(null, true);
       return callback(new Error(`Origin ${origin} not allowed by CORS`), false);
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -233,7 +276,7 @@ async function bootstrap() {
   // ── Swagger — internal docs (désactivé en production) ────────────────────
   if (process.env.NODE_ENV !== 'production') {
     const swaggerConfig = new DocumentBuilder()
-      .setTitle('TaskMgr API')
+      .setTitle('Dispatch2Go API')
       .setDescription('API pour la gestion des bons de travail (BT) et répartition des techniciens')
       .setVersion('1.0')
       .addBearerAuth(
@@ -256,9 +299,9 @@ async function bootstrap() {
   // itself never exposes data, only the schema.
   {
     const publicConfig = new DocumentBuilder()
-      .setTitle('TaskMgr Public API v1')
+      .setTitle('Dispatch2Go Public API v1')
       .setDescription(
-        'API publique pour piloter TaskMgr depuis un système externe. ' +
+        'API publique pour piloter Dispatch2Go depuis un système externe. ' +
         'Authentification par en-tête `X-API-Key` — créer une clé depuis ' +
         '/parametres/api-keys dans le portail admin du tenant. ' +
         'Chaque endpoint documente le scope requis (read-only, read-write, admin).',
@@ -274,7 +317,7 @@ async function bootstrap() {
     // pick up controllers from the public-api module — the doc will not
     // even mention internal endpoints, no filtering needed.
     const document = SwaggerModule.createDocument(app, publicConfig, {
-      include: [PublicApiModule, WebhooksModule],
+      include: [PublicApiModule, WebhooksModule, AlertsModule, RecurringModule],
       operationIdFactory: (controllerKey, methodKey) =>
         `${controllerKey}_${methodKey}`,
     });

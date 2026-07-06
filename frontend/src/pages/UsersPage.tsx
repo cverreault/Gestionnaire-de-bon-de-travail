@@ -15,6 +15,7 @@ const ROLE_LABELS: Record<Role, string> = {
   [Role.ADMIN]: 'Admin',
   [Role.DISPATCHER]: 'Dispatcher',
   [Role.TECHNICIAN]: 'Technicien',
+  [Role.CLIENT]: 'Client',
 };
 
 const ROLE_COLORS: Record<Role, string> = {
@@ -22,6 +23,7 @@ const ROLE_COLORS: Record<Role, string> = {
   [Role.ADMIN]: '#1e40af',
   [Role.DISPATCHER]: '#7c3aed',
   [Role.TECHNICIAN]: '#065f46',
+  [Role.CLIENT]: '#b45309',
 };
 
 // ─── Form field helper ────────────────────────────────────────────────────────

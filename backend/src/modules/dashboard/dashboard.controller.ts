@@ -60,6 +60,7 @@ export class DashboardController {
   // ── Technician personal KPIs ───────────────────────────────────────────────
 
   @Get('technician-stats')
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN) // B21 — explicit: CLIENT portal users must not reach staff routes
   @ApiOperation({
     summary: 'Statistiques personnelles du technicien connecté',
     description:

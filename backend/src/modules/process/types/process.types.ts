@@ -13,6 +13,8 @@ export interface CachedStatus {
   isStart: boolean;
   isTerminalPositive: boolean;
   isTerminalNegative: boolean;
+  /** B21 — pre-approval step for client-portal work requests. */
+  isRequested: boolean;
 }
 
 export interface CachedTransition {
@@ -33,6 +35,8 @@ export interface CachedProcess {
   statusByCode: Map<number, CachedStatus>;     // code      → status
   transitions: Map<string, CachedTransition[]>; // fromStatusId → transitions[]
   initialStatus: CachedStatus;
+  /** B21 — status flagged isRequested, when the process has one. */
+  requestedStatus?: CachedStatus;
   allStatuses: CachedStatus[];                  // ordered by position
 }
 

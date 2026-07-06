@@ -58,6 +58,17 @@ const CLIENT_DETAIL_INCLUDE = {
       { createdAt: 'asc' as const },
     ] as { isDefault?: 'asc' | 'desc'; createdAt?: 'asc' | 'desc' }[],
   },
+  // B21 — portal accounts linked to this client (admin UI shows access
+  // status + revoke button). Never expose password-adjacent fields.
+  portalUsers: {
+    select: {
+      id: true,
+      email: true,
+      isActive: true,
+      emailVerifiedAt: true,
+      createdAt: true,
+    },
+  },
   _count: { select: { workOrders: true } },
 };
 

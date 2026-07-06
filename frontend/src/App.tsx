@@ -12,10 +12,16 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';           // ADMIN + DISPATCHER
 import AdminOnlyRoute from './components/AdminOnlyRoute';  // ADMIN only (SA inherits)
 import SuperAdminRoute from './components/SuperAdminRoute'; // SUPER_ADMIN only
+import ClientRoute from './components/ClientRoute';         // CLIENT portal only (B21)
+import PortalLayout from './components/layouts/PortalLayout';
 import AppLayout from './components/layouts/AppLayout';
 
 // ── Pages ─────────────────────────────────────────────────────────────────────
 import LoginPage from './pages/LoginPage';
+import PortalActivationPage from './pages/PortalActivationPage';
+import PortalWorkOrdersPage from './pages/PortalWorkOrdersPage';
+import PortalWorkOrderDetailPage from './pages/PortalWorkOrderDetailPage';
+import PortalRequestPage from './pages/PortalRequestPage';
 import SignupPage from './pages/SignupPage';
 import DashboardPage from './pages/DashboardPage';
 import WorkOrdersPage from './pages/WorkOrdersPage';
@@ -46,6 +52,9 @@ import MySubscriptionPage from './pages/MySubscriptionPage';
 import ApiKeysPage from './pages/ApiKeysPage';
 import ApiDocsPage from './pages/ApiDocsPage';
 import WebhooksPage from './pages/WebhooksPage';
+import AlertsPage from './pages/AlertsPage';
+import RecurringPage from './pages/RecurringPage';
+import DispatchMapPage from './pages/DispatchMapPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ReleaseNotesPage from './pages/ReleaseNotesPage';
 import ReportsPage from './pages/ReportsPage';
@@ -169,12 +178,14 @@ export default function App() {
   const isAdminOrDispatcher =
     user?.role === Role.ADMIN || user?.role === Role.DISPATCHER;
   const isSuperAdmin = user?.role === Role.SUPER_ADMIN;
+  const isClient = user?.role === Role.CLIENT;
 
   return (
     <Routes>
       {/* ── Public ────────────────────────────────────────────────────── */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
+      <Route path="/portail/activation" element={<PortalActivationPage />} />
 
       {/* ── Protected ─────────────────────────────────────────────────── */}
       <Route element={<ProtectedRoute />}>
@@ -188,6 +199,8 @@ export default function App() {
                 ? <Navigate to="/super-admin/stats" replace />
                 : isAdminOrDispatcher
                 ? <Navigate to="/dashboard" replace />
+                : isClient
+                ? <Navigate to="/portail" replace />
                 : <Navigate to="/mes-bons" replace />
             }
           />
@@ -208,6 +221,7 @@ export default function App() {
             <Route path="/bons-de-travail/nouveau" element={<WorkOrderCreatePage />} />
             <Route path="/bons-de-travail/:id" element={<WorkOrderDetailPage />} />
             <Route path="/calendrier" element={<CalendarPage />} />
+            <Route path="/carte-dispatch" element={<DispatchMapPage />} />
             <Route path="/clients" element={<ClientsPage />} />
             <Route path="/adresses" element={<AddressesPage />} />
             <Route path="/rapports" element={<ReportsPage />} />
@@ -224,6 +238,8 @@ export default function App() {
             <Route path="/mon-abonnement" element={<MySubscriptionPage />} />
             <Route path="/parametres/api-keys" element={<ApiKeysPage />} />
             <Route path="/parametres/webhooks" element={<WebhooksPage />} />
+            <Route path="/parametres/alertes" element={<AlertsPage />} />
+            <Route path="/parametres/bons-recurrents" element={<RecurringPage />} />
           </Route>
 
           {/* ── Super-admin only ──────────────────────────────────────── */}
@@ -239,6 +255,15 @@ export default function App() {
             <Route path="/super-admin/plans" element={<SuperAdminPlansPage />} />
           </Route>
 
+        </Route>
+
+        {/* ── Client portal (B21) — own layout, never AppLayout ─────────── */}
+        <Route element={<ClientRoute />}>
+          <Route element={<PortalLayout />}>
+            <Route path="/portail" element={<PortalWorkOrdersPage />} />
+            <Route path="/portail/bons/:id" element={<PortalWorkOrderDetailPage />} />
+            <Route path="/portail/demande" element={<PortalRequestPage />} />
+          </Route>
         </Route>
       </Route>
 

@@ -62,7 +62,16 @@ function buildService(prisma: any): WorkOrdersService {
   // EventEmitter2 stub — domain events are fire-and-forget; we ignore them
   // in these unit tests since the assertions live on Prisma calls.
   const mockEventEmitter = { emit: jest.fn(), emitAsync: jest.fn() } as any;
-  return new WorkOrdersService(prisma as any, mockProcessEngine, mockProcessCache, mockEventEmitter);
+  // B15 — RemindersService stub. These tests don't exercise the reminder
+  // scheduling code path (transitions don't touch it), so a no-op is fine.
+  const mockReminders = { scheduleDefaultsForWorkOrder: jest.fn() } as any;
+  return new WorkOrdersService(
+    prisma as any,
+    mockProcessEngine,
+    mockProcessCache,
+    mockEventEmitter,
+    mockReminders,
+  );
 }
 
 // ─── Admin bypass tests ───────────────────────────────────────────────────────

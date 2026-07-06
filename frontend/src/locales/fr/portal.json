@@ -1,0 +1,62 @@
+{
+  "nav": {
+    "myWorkOrders": "Mes bons de travail",
+    "newRequest": "Nouvelle demande",
+    "logout": "Déconnexion"
+  },
+  "common": {
+    "loading": "Chargement…",
+    "loadError": "Erreur de chargement. Réessayez.",
+    "cancel": "Annuler"
+  },
+  "list": {
+    "title": "Mes bons de travail",
+    "empty": "Aucun bon de travail pour le moment. Soumettez une demande pour commencer.",
+    "reference": "Référence",
+    "workOrder": "Bon de travail",
+    "status": "Statut",
+    "scheduledDate": "Date prévue",
+    "toBeScheduled": "À planifier",
+    "report": "Rapport"
+  },
+  "detail": {
+    "back": "Retour à mes bons de travail",
+    "reference": "Référence",
+    "taskType": "Type de tâche",
+    "scheduledDate": "Date prévue",
+    "createdAt": "Créé le",
+    "address": "Adresse",
+    "technician": "Technicien",
+    "description": "Description",
+    "completionNotes": "Notes de complétion",
+    "negativeReason": "Motif",
+    "downloadReport": "Télécharger le rapport"
+  },
+  "request": {
+    "title": "Nouvelle demande de travail",
+    "subtitle": "Votre demande sera examinée et approuvée par votre fournisseur avant d'être planifiée.",
+    "taskType": "Type de tâche",
+    "selectTaskType": "Choisir un type de tâche…",
+    "address": "Adresse",
+    "selectAddress": "Choisir une adresse…",
+    "defaultAddress": "par défaut",
+    "noAddress": "Aucune adresse à votre dossier — contactez votre fournisseur.",
+    "description": "Description du besoin",
+    "descriptionPlaceholder": "Décrivez le travail à effectuer…",
+    "submit": "Soumettre la demande",
+    "submitting": "Envoi…",
+    "success": "Demande {{reference}} soumise — elle sera examinée sous peu."
+  },
+  "activation": {
+    "title": "Activer votre accès",
+    "subtitle": "Choisissez un mot de passe pour accéder au portail client.",
+    "password": "Mot de passe (min. 8 caractères)",
+    "confirm": "Confirmer le mot de passe",
+    "mismatch": "Les mots de passe ne correspondent pas.",
+    "submit": "Activer mon compte",
+    "submitting": "Activation…",
+    "success": "Compte activé ! Vous pouvez maintenant vous connecter.",
+    "goToLogin": "Aller à la connexion",
+    "missingToken": "Lien d'activation invalide — le jeton est manquant."
+  }
+}

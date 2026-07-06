@@ -35,6 +35,7 @@ export class CalendarController {
   // ── Events ─────────────────────────────────────────────────────────────────
 
   @Get('events')
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN) // B21 — explicit: CLIENT portal users must not reach staff routes
   @ApiOperation({
     summary: 'Récupérer les événements du calendrier',
     description:

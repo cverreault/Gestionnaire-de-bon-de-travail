@@ -35,8 +35,12 @@ import {
 
 interface TaskTypeFormValues {
   prefix: string;
-  name: string;
+  name: string;   // legacy — kept in the form for backwards compat; back-end syncs
+  nameFr: string;
+  nameEn: string;
   description: string;
+  descriptionFr: string;
+  descriptionEn: string;
   color: string;
   icon: string;
   templateId: string;
@@ -45,8 +49,12 @@ interface TaskTypeFormValues {
 
 interface ConfigTypeFormValues {
   name: string;
+  nameFr: string;
+  nameEn: string;
   code: string;
   description: string;
+  descriptionFr: string;
+  descriptionEn: string;
   color: string;
   icon: string;
   sortOrder: string;
@@ -110,7 +118,14 @@ function TaskTypeModal({
     defaultValues: {
       prefix: defaultValues?.prefix ?? '',
       name: defaultValues?.name ?? '',
+      // On edit, prefer explicit FR/EN if present; otherwise seed both from
+      // legacy `name` so admins don't start with a blank English side after
+      // migration backfill.
+      nameFr: defaultValues?.nameFr ?? defaultValues?.name ?? '',
+      nameEn: defaultValues?.nameEn ?? defaultValues?.name ?? '',
       description: defaultValues?.description ?? '',
+      descriptionFr: defaultValues?.descriptionFr ?? defaultValues?.description ?? '',
+      descriptionEn: defaultValues?.descriptionEn ?? defaultValues?.description ?? '',
       color: defaultValues?.color ?? '#3b82f6',
       icon: defaultValues?.icon ?? '',
       templateId: defaultValues?.templateId ?? '',
@@ -164,28 +179,46 @@ function TaskTypeModal({
               <p style={{ ...formStyles.fieldHint }}>{t('taskType.prefixHint')}</p>
             </div>
 
-            {/* Name */}
+            {/* Name — bilingual FR + EN (B10.2) */}
             <div style={{ ...formStyles.fieldGroup }}>
               <label style={{ ...formStyles.label }}>
                 {tCommon('labels.name')} <span style={{ color: theme.colors.danger }}>*</span>
               </label>
-              <input
-                style={{ ...formStyles.input }}
-                placeholder="Ex: Inspection réseau"
-                {...register('name', { required: 'Le nom est obligatoire' })}
-              />
-              {errors.name && <span style={{ ...formStyles.fieldError }}>{errors.name.message}</span>}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                <input
+                  style={{ ...formStyles.input }}
+                  placeholder="FR Français"
+                  {...register('nameFr', { required: 'Le nom (FR) est obligatoire' })}
+                />
+                <input
+                  style={{ ...formStyles.input }}
+                  placeholder="EN English"
+                  {...register('nameEn')}
+                />
+              </div>
+              {errors.nameFr && <span style={{ ...formStyles.fieldError }}>{errors.nameFr.message}</span>}
+              <p style={{ ...formStyles.fieldHint }}>
+                Le nom français est utilisé comme valeur canonique. Laisser l'anglais vide = fallback sur le FR.
+              </p>
             </div>
 
-            {/* Description */}
+            {/* Description — bilingual FR + EN (B10.2) */}
             <div style={{ ...formStyles.fieldGroup }}>
               <label style={{ ...formStyles.label }}>{tCommon('labels.description')}</label>
-              <textarea
-                style={{ ...formStyles.textarea }}
-                placeholder="Description du type de tâche..."
-                rows={3}
-                {...register('description')}
-              />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                <textarea
+                  style={{ ...formStyles.textarea }}
+                  placeholder="FR Français"
+                  rows={3}
+                  {...register('descriptionFr')}
+                />
+                <textarea
+                  style={{ ...formStyles.textarea }}
+                  placeholder="EN English"
+                  rows={3}
+                  {...register('descriptionEn')}
+                />
+              </div>
             </div>
 
             {/* Color + preview */}
@@ -355,8 +388,12 @@ function ConfigTypeModal({
   } = useForm<ConfigTypeFormValues>({
     defaultValues: {
       name: defaultValues?.name ?? '',
+      nameFr: defaultValues?.nameFr ?? defaultValues?.name ?? '',
+      nameEn: defaultValues?.nameEn ?? defaultValues?.name ?? '',
       code: defaultValues?.code ?? '',
       description: defaultValues?.description ?? '',
+      descriptionFr: defaultValues?.descriptionFr ?? defaultValues?.description ?? '',
+      descriptionEn: defaultValues?.descriptionEn ?? defaultValues?.description ?? '',
       color: defaultValues?.color ?? '#3b82f6',
       icon: defaultValues?.icon ?? '',
       sortOrder: defaultValues?.sortOrder ?? '0',
@@ -378,17 +415,24 @@ function ConfigTypeModal({
           style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}
         >
           <div style={{ ...modalStyles.body }}>
-            {/* Name */}
+            {/* Name — bilingual FR + EN (B10.2) */}
             <div style={{ ...formStyles.fieldGroup }}>
               <label style={{ ...formStyles.label }}>
                 {tCommon('labels.name')} <span style={{ color: theme.colors.danger }}>*</span>
               </label>
-              <input
-                style={{ ...formStyles.input }}
-                placeholder="Ex: Résidentiel"
-                {...register('name', { required: 'Le nom est obligatoire' })}
-              />
-              {errors.name && <span style={{ ...formStyles.fieldError }}>{errors.name.message}</span>}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                <input
+                  style={{ ...formStyles.input }}
+                  placeholder="FR Ex: Résidentiel"
+                  {...register('nameFr', { required: 'Le nom (FR) est obligatoire' })}
+                />
+                <input
+                  style={{ ...formStyles.input }}
+                  placeholder="EN Ex: Residential"
+                  {...register('nameEn')}
+                />
+              </div>
+              {errors.nameFr && <span style={{ ...formStyles.fieldError }}>{errors.nameFr.message}</span>}
             </div>
 
             {/* Code */}
@@ -412,15 +456,23 @@ function ConfigTypeModal({
               <p style={{ ...formStyles.fieldHint }}>Identifiant technique unique. Ex : RESIDENTIAL, COMMERCIAL</p>
             </div>
 
-            {/* Description */}
+            {/* Description — bilingual (B10.2) */}
             <div style={{ ...formStyles.fieldGroup }}>
               <label style={{ ...formStyles.label }}>{tCommon('labels.description')}</label>
-              <textarea
-                style={{ ...formStyles.textarea }}
-                placeholder="Description de ce type..."
-                rows={2}
-                {...register('description')}
-              />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                <textarea
+                  style={{ ...formStyles.textarea }}
+                  placeholder="FR Français"
+                  rows={2}
+                  {...register('descriptionFr')}
+                />
+                <textarea
+                  style={{ ...formStyles.textarea }}
+                  placeholder="EN English"
+                  rows={2}
+                  {...register('descriptionEn')}
+                />
+              </div>
             </div>
 
             {/* Color + preview */}
@@ -781,10 +833,18 @@ export default function SettingsPage() {
   // ── TaskType handlers ───────────────────────────────────────────────────────
 
   async function handleCreateTaskType(values: TaskTypeFormValues) {
+    // Bilingual payload — legacy `name`/`description` are auto-synced from FR
+    // by the backend's bilingual-sync Prisma middleware (B10.2).
+    const nameFr = values.nameFr.trim();
+    const nameEn = values.nameEn.trim();
     await createTaskType.mutateAsync({
       prefix: values.prefix,
-      name: values.name,
-      description: values.description || undefined,
+      name: nameFr || nameEn,
+      nameFr,
+      nameEn,
+      description: (values.descriptionFr || values.descriptionEn) || undefined,
+      descriptionFr: values.descriptionFr || undefined,
+      descriptionEn: values.descriptionEn || undefined,
       color: values.color || undefined,
       icon: values.icon || undefined,
       templateId: values.templateId || null,
@@ -795,12 +855,18 @@ export default function SettingsPage() {
 
   async function handleUpdateTaskType(values: TaskTypeFormValues) {
     if (!editingTaskType) return;
+    const nameFr = values.nameFr.trim();
+    const nameEn = values.nameEn.trim();
     await updateTaskType.mutateAsync({
       id: editingTaskType.id,
       data: {
         prefix: values.prefix,
-        name: values.name,
-        description: values.description || undefined,
+        name: nameFr || nameEn,
+        nameFr,
+        nameEn,
+        description: (values.descriptionFr || values.descriptionEn) || undefined,
+        descriptionFr: values.descriptionFr || undefined,
+        descriptionEn: values.descriptionEn || undefined,
         color: values.color || undefined,
         icon: values.icon || undefined,
         templateId: values.templateId || null,
@@ -822,10 +888,16 @@ export default function SettingsPage() {
   // ── ClientType handlers ─────────────────────────────────────────────────────
 
   async function handleCreateClientType(values: ConfigTypeFormValues) {
+    const nameFr = values.nameFr.trim();
+    const nameEn = values.nameEn.trim();
     await createClientType.mutateAsync({
-      name: values.name,
+      name: nameFr || nameEn,
+      nameFr,
+      nameEn,
       code: values.code,
-      description: values.description || undefined,
+      description: (values.descriptionFr || values.descriptionEn) || undefined,
+      descriptionFr: values.descriptionFr || undefined,
+      descriptionEn: values.descriptionEn || undefined,
       color: values.color || undefined,
       icon: values.icon || undefined,
       sortOrder: parseInt(values.sortOrder, 10) || 0,
@@ -835,12 +907,18 @@ export default function SettingsPage() {
 
   async function handleUpdateClientType(values: ConfigTypeFormValues) {
     if (!editingClientType) return;
+    const nameFr = values.nameFr.trim();
+    const nameEn = values.nameEn.trim();
     await updateClientType.mutateAsync({
       id: editingClientType.id,
       data: {
-        name: values.name,
+        name: nameFr || nameEn,
+        nameFr,
+        nameEn,
         code: values.code,
-        description: values.description || undefined,
+        description: (values.descriptionFr || values.descriptionEn) || undefined,
+        descriptionFr: values.descriptionFr || undefined,
+        descriptionEn: values.descriptionEn || undefined,
         color: values.color || undefined,
         icon: values.icon || undefined,
         sortOrder: parseInt(values.sortOrder, 10) || 0,
@@ -860,10 +938,16 @@ export default function SettingsPage() {
   // ── AddressType handlers ────────────────────────────────────────────────────
 
   async function handleCreateAddressType(values: ConfigTypeFormValues) {
+    const nameFr = values.nameFr.trim();
+    const nameEn = values.nameEn.trim();
     await createAddressType.mutateAsync({
-      name: values.name,
+      name: nameFr || nameEn,
+      nameFr,
+      nameEn,
       code: values.code,
-      description: values.description || undefined,
+      description: (values.descriptionFr || values.descriptionEn) || undefined,
+      descriptionFr: values.descriptionFr || undefined,
+      descriptionEn: values.descriptionEn || undefined,
       color: values.color || undefined,
       icon: values.icon || undefined,
       sortOrder: parseInt(values.sortOrder, 10) || 0,
@@ -873,12 +957,18 @@ export default function SettingsPage() {
 
   async function handleUpdateAddressType(values: ConfigTypeFormValues) {
     if (!editingAddressType) return;
+    const nameFr = values.nameFr.trim();
+    const nameEn = values.nameEn.trim();
     await updateAddressType.mutateAsync({
       id: editingAddressType.id,
       data: {
-        name: values.name,
+        name: nameFr || nameEn,
+        nameFr,
+        nameEn,
         code: values.code,
-        description: values.description || undefined,
+        description: (values.descriptionFr || values.descriptionEn) || undefined,
+        descriptionFr: values.descriptionFr || undefined,
+        descriptionEn: values.descriptionEn || undefined,
         color: values.color || undefined,
         icon: values.icon || undefined,
         sortOrder: parseInt(values.sortOrder, 10) || 0,
@@ -1252,8 +1342,12 @@ export default function SettingsPage() {
           title={`Modifier — ${editingClientType.name}`}
           defaultValues={{
             name: editingClientType.name,
+            nameFr: editingClientType.nameFr ?? editingClientType.name,
+            nameEn: editingClientType.nameEn ?? editingClientType.name,
             code: editingClientType.code,
             description: editingClientType.description ?? '',
+            descriptionFr: editingClientType.descriptionFr ?? editingClientType.description ?? '',
+            descriptionEn: editingClientType.descriptionEn ?? editingClientType.description ?? '',
             color: editingClientType.color ?? '#3b82f6',
             icon: editingClientType.icon ?? '',
             sortOrder: String(editingClientType.sortOrder),
@@ -1281,8 +1375,12 @@ export default function SettingsPage() {
           title={`Modifier — ${editingAddressType.name}`}
           defaultValues={{
             name: editingAddressType.name,
+            nameFr: editingAddressType.nameFr ?? editingAddressType.name,
+            nameEn: editingAddressType.nameEn ?? editingAddressType.name,
             code: editingAddressType.code,
             description: editingAddressType.description ?? '',
+            descriptionFr: editingAddressType.descriptionFr ?? editingAddressType.description ?? '',
+            descriptionEn: editingAddressType.descriptionEn ?? editingAddressType.description ?? '',
             color: editingAddressType.color ?? '#3b82f6',
             icon: editingAddressType.icon ?? '',
             sortOrder: String(editingAddressType.sortOrder),

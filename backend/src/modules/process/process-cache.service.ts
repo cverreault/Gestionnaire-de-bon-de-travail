@@ -16,6 +16,7 @@ type RawStatus = {
   isStart: boolean;
   isTerminalPositive: boolean;
   isTerminalNegative: boolean;
+  isRequested: boolean;
 };
 
 type RawTransition = {
@@ -189,6 +190,7 @@ export class ProcessCacheService {
     const statusByCode = new Map<number, CachedStatus>();
     const allStatuses: CachedStatus[] = [];
     let initialStatus: CachedStatus | undefined;
+    let requestedStatus: CachedStatus | undefined;
 
     // Build status maps (statuses are already ordered by position from the query)
     for (const s of definition.statuses) {
@@ -203,6 +205,7 @@ export class ProcessCacheService {
         isStart: s.isStart,
         isTerminalPositive: s.isTerminalPositive,
         isTerminalNegative: s.isTerminalNegative,
+        isRequested: s.isRequested,
       };
       statuses.set(cs.id, cs);
       statusByCode.set(cs.code, cs);
@@ -210,6 +213,9 @@ export class ProcessCacheService {
 
       if (cs.isInitial) {
         initialStatus = cs;
+      }
+      if (cs.isRequested && !requestedStatus) {
+        requestedStatus = cs;
       }
     }
 
@@ -249,6 +255,7 @@ export class ProcessCacheService {
       statusByCode,
       transitions,
       initialStatus: initialStatus!, // safe: fallback guarantees a value (or empty process)
+      requestedStatus,
       allStatuses,
     };
   }

@@ -28,6 +28,7 @@ import { UpdateWorkOrderDto } from './dto/update-work-order.dto';
 import { TransitionStatusDto } from './dto/transition-status.dto';
 import { WorkOrderFilterDto } from './dto/work-order-filter.dto';
 import { CreateNoteDto } from './dto/create-note.dto';
+import { SignaturesDto } from './dto/signatures.dto';
 import { AssignAndDispatchDto } from './dto/assign-and-dispatch.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -47,6 +48,7 @@ export class WorkOrdersController {
   // ── List ────────────────────────────────────────────────────────────────────
 
   @Get()
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN) // B21 — explicit: CLIENT portal users must not reach staff routes
   @ApiOperation({
     summary: 'Lister les bons de travail',
     description:
@@ -90,6 +92,7 @@ export class WorkOrdersController {
   // ── Detail ──────────────────────────────────────────────────────────────────
 
   @Get(':id')
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN) // B21 — explicit: CLIENT portal users must not reach staff routes
   @ApiOperation({
     summary: 'Détail d\'un bon de travail',
     description: 'Retourne le BT avec ses notes et pièces jointes.',
@@ -108,6 +111,7 @@ export class WorkOrdersController {
   // IMPORTANT : déclaré AVANT les routes POST /:id/* pour éviter toute ambiguïté
 
   @Get(':id/available-transitions')
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN) // B21 — explicit: CLIENT portal users must not reach staff routes
   @ApiOperation({ summary: 'Transitions de statut disponibles pour ce BT selon le rôle' })
   @ApiParam({ name: 'id', type: 'string' })
   @ApiResponse({ status: 200, description: 'Liste des transitions disponibles' })
@@ -166,6 +170,7 @@ export class WorkOrdersController {
   // ── Update ──────────────────────────────────────────────────────────────────
 
   @Patch(':id')
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN) // B21 — explicit: CLIENT portal users must not reach staff routes
   @ApiOperation({
     summary: 'Modifier un bon de travail',
     description:
@@ -213,6 +218,7 @@ export class WorkOrdersController {
   // ── Transition ──────────────────────────────────────────────────────────────
 
   @Post(':id/transition')
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN) // B21 — explicit: CLIENT portal users must not reach staff routes
   @HttpCode(HttpStatus.OK)
   // Tight rate limit (C7bis) — a legitimate tech transitions at most once
   // every few seconds. 20 per minute leaves room for retries on flaky
@@ -244,6 +250,7 @@ export class WorkOrdersController {
   // ── Notes ────────────────────────────────────────────────────────────────────
 
   @Get(':id/notes')
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN) // B21 — explicit: CLIENT portal users must not reach staff routes
   @ApiOperation({ summary: 'Lister les notes d\'un bon de travail' })
   @ApiParam({ name: 'id', description: 'UUID du bon de travail' })
   @ApiResponse({ status: 200, description: 'Liste des notes' })
@@ -256,6 +263,7 @@ export class WorkOrdersController {
   }
 
   @Post(':id/notes')
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN) // B21 — explicit: CLIENT portal users must not reach staff routes
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Ajouter une note à un bon de travail',
@@ -271,5 +279,23 @@ export class WorkOrdersController {
     @CurrentUser() currentUser: JwtUser,
   ) {
     return this.workOrdersService.createNote(id, dto, currentUser);
+  }
+
+  @Post(':id/signatures')
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN) // B21 — explicit: CLIENT portal users must not reach staff routes
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Enregistrer les signatures client + technicien (B12)',
+    description:
+      'Payload = { signatureClient?: dataUrl, signatureTechnician?: dataUrl }. ' +
+      'Les deux sont optionnels — envoyer null pour effacer. Data-URL PNG de max ~200 KB.',
+  })
+  @ApiParam({ name: 'id', description: 'UUID du bon de travail' })
+  saveSignatures(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SignaturesDto,
+    @CurrentUser() currentUser: JwtUser,
+  ) {
+    return this.workOrdersService.saveSignatures(id, dto, currentUser);
   }
 }

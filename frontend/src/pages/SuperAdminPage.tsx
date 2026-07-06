@@ -240,7 +240,7 @@ export default function SuperAdminPage() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '240px 1fr',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))',
             gap: 24,
             alignItems: 'start',
           }}
@@ -436,7 +436,7 @@ function FieldRow({
   const { t } = useTranslation('superAdmin');
   const dirty = value !== serverValue;
   return (
-    <label style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 16, alignItems: 'start' }}>
+    <label style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: 16, alignItems: 'start' }}>
       <div style={{ paddingTop: 7 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: theme.colors.text, display: 'flex', alignItems: 'center', gap: 6 }}>
           {field.label}

@@ -46,6 +46,7 @@ function makeStatus(overrides: Partial<CachedStatus> & { id: string; code: numbe
     isStart: false,
     isTerminalPositive: false,
     isTerminalNegative: false,
+    isRequested: false,
     ...overrides,
   };
 }

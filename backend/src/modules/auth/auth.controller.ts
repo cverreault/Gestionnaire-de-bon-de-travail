@@ -17,6 +17,7 @@ import { Throttle } from '@nestjs/throttler';
 import { IsString, IsNotEmpty } from 'class-validator';
 import { AuthService } from './auth.service';
 import { EmailVerificationService } from './application/email-verification.service';
+import { TotpService } from './totp/totp.service';
 import { LoginDto } from './dto/login.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { Public } from '../../common/decorators/public.decorator';
@@ -37,6 +38,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly emailVerification: EmailVerificationService,
+    private readonly totp: TotpService,
   ) {}
 
   // ── POST /api/auth/login ───────────────────────────────────────────────────
@@ -67,6 +69,27 @@ export class AuthController {
     @CurrentTenant() tenant: TenantContext,
   ) {
     return this.authService.login(dto, tenant.id);
+  }
+
+  // ── POST /api/auth/login/2fa ───────────────────────────────────────────────
+
+  @Public()
+  @Post('login/2fa')
+  @HttpCode(HttpStatus.OK)
+  @Throttle(
+    process.env.THROTTLER_DISABLE === '1'
+      ? { short: { ttl: 1000, limit: 1_000_000 } }
+      : { short: { ttl: 60000, limit: 10 } },
+  )
+  @ApiOperation({
+    summary: 'Étape 2 du login 2FA — vérifie le code TOTP et retourne les tokens',
+  })
+  async login2fa(@Body() dto: { pendingToken: string; code: string }) {
+    return this.authService.login2fa(
+      dto.pendingToken,
+      dto.code,
+      (userId, code) => this.totp.verify(userId, code).then(() => true),
+    );
   }
 
   // ── POST /api/auth/refresh ─────────────────────────────────────────────────

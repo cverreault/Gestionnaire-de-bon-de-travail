@@ -3,12 +3,19 @@ import type { TemplateFieldType, Role } from '../types';
 
 export interface CreateTemplatePayload {
   name: string;
+  /// B10.2 — bilingual pair (backend Prisma middleware keeps legacy in sync).
+  nameFr?: string;
+  nameEn?: string;
   description?: string;
+  descriptionFr?: string;
+  descriptionEn?: string;
   isActive?: boolean;
 }
 
 export interface CreateSectionPayload {
   name: string;
+  nameFr?: string;
+  nameEn?: string;
   sortOrder?: number;
   viewRoles?: Role[];
   editRoles?: Role[];
@@ -16,6 +23,8 @@ export interface CreateSectionPayload {
 
 export interface CreateFieldPayload {
   label: string;
+  labelFr?: string;
+  labelEn?: string;
   fieldType: TemplateFieldType;
   placeholder?: string;
   helpText?: string;

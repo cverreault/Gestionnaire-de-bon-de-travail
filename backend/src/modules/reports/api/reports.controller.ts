@@ -29,7 +29,7 @@ export class ReportsController {
   ) {}
 
   @Get('capabilities')
-  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN)
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN, Role.CLIENT)
   @ApiOperation({
     summary: 'PDF generation capabilities',
     description:
@@ -41,7 +41,8 @@ export class ReportsController {
   }
 
   @Get('work-orders/:id/pdf')
-  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN)
+  // B21 — CLIENT allowed: the service enforces ownership + terminal status.
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN, Role.CLIENT)
   @ApiOperation({
     summary: 'Download a work order as a PDF (fiche d\'intervention)',
     description:

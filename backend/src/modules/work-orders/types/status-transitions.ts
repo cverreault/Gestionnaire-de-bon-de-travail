@@ -19,6 +19,8 @@ import { WorkOrderStatus } from '@prisma/client';
 export type TransitionMap = Record<WorkOrderStatus, WorkOrderStatus[]>;
 
 export const VALID_TRANSITIONS: TransitionMap = {
+  // B21 — client-portal request: approve → CREATED, reject → COMPLETED_NEGATIVE
+  [WorkOrderStatus.REQUESTED]: [WorkOrderStatus.CREATED, WorkOrderStatus.COMPLETED_NEGATIVE],
   [WorkOrderStatus.CREATED]: [WorkOrderStatus.ASSIGNED],
   [WorkOrderStatus.ASSIGNED]: [WorkOrderStatus.DISPATCHED, WorkOrderStatus.CREATED],
   [WorkOrderStatus.DISPATCHED]: [WorkOrderStatus.EN_ROUTE],

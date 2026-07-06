@@ -56,6 +56,7 @@ export class AttachmentsController {
   // ── Upload ─────────────────────────────────────────────────────────────────
 
   @Post('work-orders/:workOrderId/attachments')
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN) // B21 — explicit: CLIENT portal users must not reach staff routes
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(
     FileInterceptor('file', {
@@ -111,6 +112,7 @@ export class AttachmentsController {
   // ── List by WorkOrder ──────────────────────────────────────────────────────
 
   @Get('work-orders/:workOrderId/attachments')
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN) // B21 — explicit: CLIENT portal users must not reach staff routes
   @ApiOperation({ summary: 'Lister les pièces jointes d\'un bon de travail' })
   @ApiParam({ name: 'workOrderId', description: 'UUID du bon de travail' })
   @ApiResponse({ status: 200, description: 'Liste des pièces jointes' })
@@ -125,6 +127,7 @@ export class AttachmentsController {
   // ── Download (pre-signed URL) ──────────────────────────────────────────────
 
   @Get('attachments/:id/download')
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN) // B21 — explicit: CLIENT portal users must not reach staff routes
   @ApiOperation({
     summary: 'Obtenir une URL de téléchargement pre-signée',
     description: 'Génère une URL MinIO pre-signée valide pendant 1 heure.',

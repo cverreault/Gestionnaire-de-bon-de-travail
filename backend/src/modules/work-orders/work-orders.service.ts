@@ -9,6 +9,7 @@ import {
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma, Role, WorkOrderStatus } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { RemindersService } from '../reminders/application/reminders.service';
 import { ProcessEngineService } from '../process/process-engine.service';
 import { ProcessCacheService } from '../process/process-cache.service';
 import { WORK_ORDER_DETAIL_INCLUDE } from './work-order-includes';
@@ -23,6 +24,7 @@ import { isValidTransition } from './types/status-transitions';
 import {
   WO_EVENT_NAMES,
   workOrderCreated,
+  workOrderRequested,
   workOrderAssigned,
   workOrderDispatched,
   workOrderStatusChanged,
@@ -69,6 +71,7 @@ export class WorkOrdersService {
     private readonly processEngine: ProcessEngineService,
     private readonly processCache: ProcessCacheService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly reminders: RemindersService,
   ) {}
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -371,7 +374,12 @@ export class WorkOrdersService {
     return applyTemplateRbac(workOrder, currentUser?.role);
   }
 
-  async create(dto: CreateWorkOrderDto, currentUser: CurrentUserRef) {
+  async create(
+    dto: CreateWorkOrderDto,
+    currentUser: CurrentUserRef,
+    options?: { asRequest?: boolean },
+  ) {
+    const asRequest = options?.asRequest === true;
     const referenceNumber = await this.generateReferenceNumber(dto.taskTypeId);
 
     // ── Resolve process engine initial step ──────────────────────────────────
@@ -387,12 +395,24 @@ export class WorkOrdersService {
         : await this.processCache.getDefaultProcess();
 
       processDefinitionId = resolvedProcess.id;
-      currentStepId = resolvedProcess.initialStatus.id;
-      engineLegacyStatus = this.processEngine.mapToLegacyStatus(resolvedProcess.initialStatus);
+      // B21 — portal work requests park at the pre-approval « Demandé »
+      // step; every other creation starts at the normal initial step.
+      if (asRequest) {
+        if (!resolvedProcess.requestedStatus) {
+          throw new ConflictException(
+            'Ce processus n\'a pas de statut « Demandé » — impossible de soumettre une demande.',
+          );
+        }
+        currentStepId = resolvedProcess.requestedStatus.id;
+        engineLegacyStatus = this.processEngine.mapToLegacyStatus(resolvedProcess.requestedStatus);
+      } else {
+        currentStepId = resolvedProcess.initialStatus.id;
+        engineLegacyStatus = this.processEngine.mapToLegacyStatus(resolvedProcess.initialStatus);
+      }
 
       // FIX 6: When assignedToId is provided, advance currentStepId to the ASSIGNED
       // step (code=100) so that status and currentStepId stay consistent.
-      if (dto.assignedToId) {
+      if (dto.assignedToId && !asRequest) {
         const assignedStep = resolvedProcess.statusByCode.get(100);
         if (assignedStep) {
           currentStepId = assignedStep.id;
@@ -400,11 +420,18 @@ export class WorkOrdersService {
         }
       }
     } catch (err: unknown) {
+      // A request without a « Demandé » step is a hard error, not a fallback.
+      if (err instanceof ConflictException) throw err;
       const message = err instanceof Error ? err.message : String(err);
       this.logger.warn(
         `Impossible de résoudre le processus à la création du BT (taskTypeId=${dto.taskTypeId ?? 'N/A'}): ${message}`,
       );
       // Fallback: no process data — columns stay null
+      if (asRequest) {
+        throw new ConflictException(
+          'Aucun processus configuré — impossible de soumettre une demande.',
+        );
+      }
     }
 
     // Legacy status: preserve the existing "jump to ASSIGNED when a technician
@@ -413,9 +440,11 @@ export class WorkOrdersService {
     // `currentStepId` (initial step) for BTs created with an assignedToId.
     // The process engine uses `currentStepId` for routing; the `status` column
     // is kept in sync for legacy API consumers.
-    const initialStatus = dto.assignedToId
-      ? WorkOrderStatus.ASSIGNED
-      : (engineLegacyStatus ?? WorkOrderStatus.CREATED);
+    const initialStatus = asRequest
+      ? WorkOrderStatus.REQUESTED
+      : dto.assignedToId
+        ? WorkOrderStatus.ASSIGNED
+        : (engineLegacyStatus ?? WorkOrderStatus.CREATED);
 
     // ── SLA target (B4) ─────────────────────────────────────────────────────
     // Computed once at create time from the resolved task type's slaHours.
@@ -476,6 +505,35 @@ export class WorkOrdersService {
       initialStatusId: workOrder.currentStepId,
     });
     this.eventEmitter.emit(WO_EVENT_NAMES.CREATED, created);
+
+    // B21 — signal the pre-approval request so admins get notified.
+    if (asRequest) {
+      const requested = workOrderRequested(workOrder.id, currentUser.id, {
+        referenceNumber: workOrder.referenceNumber,
+        title: workOrder.title,
+        taskTypeId: workOrder.taskTypeId,
+        clientId: workOrder.clientId,
+      });
+      this.eventEmitter.emit(WO_EVENT_NAMES.REQUESTED, requested);
+    }
+
+    // B15 — auto-schedule reminders when the WO has a scheduled date.
+    // Fire-and-forget: any error is logged, doesn't break the create call.
+    if (workOrder.scheduledDate) {
+      this.reminders
+        .scheduleDefaultsForWorkOrder(
+          workOrder.tenantId,
+          workOrder.id,
+          workOrder.scheduledDate,
+          currentUser.id,
+        )
+        .catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : String(err);
+          this.logger.warn(
+            `Failed to schedule default reminders for WO ${workOrder.id}: ${msg}`,
+          );
+        });
+    }
 
     // Si le BT démarre déjà sur le statut "Assigné" (shortcut createWithAssignment),
     // on émet aussi l'event assigned pour ne pas le rater côté consommateurs.
@@ -1108,6 +1166,75 @@ export class WorkOrdersService {
   }
 
   // ── Notes ──────────────────────────────────────────────────────────────────
+
+  /**
+   * B12 — Save one or both signatures on a WO. Same permission rules as
+   * notes : only the assigned technician (or ADMIN/DISPATCHER) can sign.
+   * Passing an explicit `null` on a field clears it. Passing `undefined`
+   * (omitted) leaves the existing value alone.
+   */
+  async saveSignatures(
+    workOrderId: string,
+    dto: import('./dto/signatures.dto').SignaturesDto,
+    currentUser: CurrentUserRef,
+  ) {
+    const workOrder = await this.prisma.workOrder.findUnique({
+      where: { id: workOrderId },
+      select: { id: true, assignedToId: true },
+    });
+    if (!workOrder) {
+      throw new NotFoundException(`Bon de travail #${workOrderId} introuvable`);
+    }
+    if (
+      currentUser.role === Role.TECHNICIAN &&
+      workOrder.assignedToId !== currentUser.id
+    ) {
+      throw new ForbiddenException(
+        'Seul le technicien assigné peut enregistrer les signatures',
+      );
+    }
+    const data: Record<string, unknown> = {};
+    if (dto.signatureClient !== undefined) {
+      data.signatureClient = dto.signatureClient;
+    }
+    if (dto.signatureTechnician !== undefined) {
+      data.signatureTechnician = dto.signatureTechnician;
+    }
+    // Refresh signedAt whenever we touch at least one field with a value.
+    if (dto.signatureClient || dto.signatureTechnician) {
+      data.signedAt = new Date();
+    } else if (
+      dto.signatureClient === null &&
+      dto.signatureTechnician === null
+    ) {
+      data.signedAt = null;
+    }
+
+    const updated = await this.prisma.workOrder.update({
+      where: { id: workOrderId },
+      data,
+      select: {
+        id: true,
+        signatureClient: true,
+        signatureTechnician: true,
+        signedAt: true,
+      },
+    });
+    this.eventEmitter.emit(WO_EVENT_NAMES.STATUS_CHANGED, {
+      // Piggyback the existing event for audit/webhooks — receivers can
+      // filter on data.signaturesUpdated=true if they care.
+      eventName: 'workOrders.workOrder.signaturesUpdated',
+      occurredAt: new Date(),
+      aggregateId: workOrderId,
+      actorUserId: currentUser.id,
+      data: {
+        signedAt: updated.signedAt,
+        hasClientSignature: !!updated.signatureClient,
+        hasTechnicianSignature: !!updated.signatureTechnician,
+      },
+    });
+    return updated;
+  }
 
   async createNote(
     workOrderId: string,

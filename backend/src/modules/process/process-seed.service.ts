@@ -20,11 +20,14 @@ export class ProcessSeedService implements OnModuleInit {
     if (existing) {
       this.logger.log('Default process already exists — checking backfill...');
       await this.backfillWorkOrders(existing.id);
+      await this.backfillRequestedStatus();
       return;
     }
 
     // Static definition data (no DB dependency)
     const statusDefs = [
+      // B21 — client-portal work requests park here until an admin approves.
+      { code: 50,  name: 'Demandé',            color: '#eab308', position: -1, isRequested: true },
       { code: 0,   name: 'Créé',              color: '#6b7280', position: 0, isInitial: true },
       { code: 100, name: 'Assigné',            color: '#3b82f6', position: 1 },
       { code: 200, name: 'Dispatché',          color: '#8b5cf6', position: 2, isDispatch: true },
@@ -35,6 +38,8 @@ export class ProcessSeedService implements OnModuleInit {
     ];
 
     const transitionDefs = [
+      { fromCode: 50,  toCode: 0,   label: 'Approuver la demande', roles: [Role.ADMIN, Role.DISPATCHER], required: [], sort: 0 },
+      { fromCode: 50,  toCode: 600, label: 'Rejeter la demande',   roles: [Role.ADMIN, Role.DISPATCHER], required: ['negativeReason'], sort: 1 },
       { fromCode: 0,   toCode: 100, label: 'Assigner',             roles: [Role.ADMIN, Role.DISPATCHER], required: ['assignedToId'], sort: 0 },
       { fromCode: 100, toCode: 200, label: 'Dispatcher',           roles: [Role.ADMIN, Role.DISPATCHER], required: [], sort: 0 },
       { fromCode: 200, toCode: 300, label: 'Partir en route',      roles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], required: [], sort: 0 },
@@ -76,6 +81,7 @@ export class ProcessSeedService implements OnModuleInit {
             isStart: def.isStart ?? false,
             isTerminalPositive: def.isTerminalPositive ?? false,
             isTerminalNegative: def.isTerminalNegative ?? false,
+            isRequested: def.isRequested ?? false,
           },
         });
         createdStatuses.push(status);
@@ -108,6 +114,7 @@ export class ProcessSeedService implements OnModuleInit {
 
     // 5. Backfill existing work orders
     await this.backfillWorkOrders(process.id);
+    await this.backfillRequestedStatus();
 
     // 6. Associate existing TaskTypes to default process
     const updated = await this.prisma.taskType.updateMany({
@@ -167,6 +174,91 @@ export class ProcessSeedService implements OnModuleInit {
       this.logger.log('No WorkOrders to backfill.');
     } else {
       this.logger.log(`Backfill complete: ${totalBackfilled} WorkOrders migrated.`);
+    }
+  }
+
+  /**
+   * B21 — every process definition (all tenants) must expose a
+   * pre-approval « Demandé » step so client-portal work requests have
+   * somewhere to land. Idempotent: definitions that already have an
+   * isRequested status are skipped. Runs at boot with no request
+   * context, so the tenant-scope middleware is a no-op here (wanted:
+   * this is a cross-tenant maintenance pass, like backfillWorkOrders).
+   */
+  private async backfillRequestedStatus(): Promise<void> {
+    const definitions = await this.prisma.processDefinition.findMany({
+      include: { statuses: true },
+    });
+
+    let patched = 0;
+    for (const def of definitions) {
+      if (def.statuses.some((st) => st.isRequested)) continue;
+
+      const initial =
+        def.statuses.find((st) => st.isInitial) ??
+        [...def.statuses].sort((a, b) => a.position - b.position)[0];
+      const terminalNegative = def.statuses.find((st) => st.isTerminalNegative);
+      if (!initial) {
+        this.logger.warn(
+          `Process "${def.name}" (${def.id}) has no statuses — skipping Requested backfill.`,
+        );
+        continue;
+      }
+
+      const minPosition = Math.min(...def.statuses.map((st) => st.position));
+      // Code 50 unless taken by a custom status — then fall below the minimum.
+      const code = def.statuses.some((st) => st.code === 50)
+        ? Math.min(...def.statuses.map((st) => st.code)) - 1
+        : 50;
+
+      await this.prisma.$transaction(async (tx) => {
+        const requested = await tx.processStatus.create({
+          data: {
+            processDefinitionId: def.id,
+            tenantId: def.tenantId,
+            code,
+            name: 'Demandé',
+            nameFr: 'Demandé',
+            nameEn: 'Requested',
+            color: '#eab308',
+            position: minPosition - 1,
+            isRequested: true,
+          },
+        });
+        await tx.processTransition.create({
+          data: {
+            processDefinitionId: def.id,
+            tenantId: def.tenantId,
+            fromStatusId: requested.id,
+            toStatusId: initial.id,
+            label: 'Approuver la demande',
+            allowedRoles: [Role.ADMIN, Role.DISPATCHER],
+            requiredFields: [],
+            sortOrder: 0,
+          },
+        });
+        if (terminalNegative) {
+          await tx.processTransition.create({
+            data: {
+              processDefinitionId: def.id,
+              tenantId: def.tenantId,
+              fromStatusId: requested.id,
+              toStatusId: terminalNegative.id,
+              label: 'Rejeter la demande',
+              allowedRoles: [Role.ADMIN, Role.DISPATCHER],
+              requiredFields: ['negativeReason'],
+              sortOrder: 1,
+            },
+          });
+        }
+      });
+      patched += 1;
+    }
+
+    if (patched > 0) {
+      this.logger.log(
+        `B21 — added « Demandé » status + approval transitions to ${patched} process definition(s).`,
+      );
     }
   }
 }

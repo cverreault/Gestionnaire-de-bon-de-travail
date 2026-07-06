@@ -69,8 +69,9 @@ describe('formatDate — French locale output', () => {
   });
 
   it('formats date using fr-CA locale (French output)', () => {
-    const result = formatDate('2025-03-01T00:00:00.000Z');
-    // March should appear as "mars" in French
+    // Mid-month + midday UTC: stays in March in every timezone (a
+    // 1st-at-midnight-UTC input renders as Feb 28 in UTC-5).
+    const result = formatDate('2025-03-15T12:00:00.000Z');
     expect(result.toLowerCase()).toContain('mars');
   });
 
@@ -85,7 +86,9 @@ describe('formatDate — French locale output', () => {
   });
 
   it('handles a date-only string (no time component)', () => {
-    const result = formatDate('2025-01-01');
+    // Date-only parses as UTC midnight — Jan 1 renders as Dec 31 in
+    // UTC-5, so pick a mid-year date to keep the year assertion stable.
+    const result = formatDate('2025-07-01');
     expect(result).toContain('2025');
   });
 });

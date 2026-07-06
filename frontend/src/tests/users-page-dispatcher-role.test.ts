@@ -19,6 +19,7 @@ const ROLE_LABELS: Record<Role, string> = {
   [Role.ADMIN]: 'Admin',
   [Role.DISPATCHER]: 'Dispatcher',
   [Role.TECHNICIAN]: 'Technicien',
+  [Role.CLIENT]: 'Client',
 };
 
 // ─── Mirror of ROLE_COLORS in UsersPage.tsx ───────────────────────────────────
@@ -28,6 +29,7 @@ const ROLE_COLORS: Record<Role, string> = {
   [Role.ADMIN]: '#1e40af',
   [Role.DISPATCHER]: '#7c3aed',
   [Role.TECHNICIAN]: '#065f46',
+  [Role.CLIENT]: '#b45309',
 };
 
 // ─── Mirror of dropdown options in CreateUserModal / EditUserModal ────────────
@@ -62,12 +64,14 @@ describe('Role enum — DISPATCHER membership', () => {
     expect(Role.DISPATCHER).toBe('DISPATCHER');
   });
 
-  it('Role enum has exactly 3 values: ADMIN, DISPATCHER, TECHNICIAN', () => {
+  it('Role enum has exactly 5 values: SUPER_ADMIN, ADMIN, DISPATCHER, TECHNICIAN, CLIENT', () => {
     const values = Object.values(Role);
-    expect(values).toHaveLength(3);
+    expect(values).toHaveLength(5);
+    expect(values).toContain('SUPER_ADMIN');
     expect(values).toContain('ADMIN');
     expect(values).toContain('DISPATCHER');
     expect(values).toContain('TECHNICIAN');
+    expect(values).toContain('CLIENT');
   });
 });
 
@@ -76,8 +80,8 @@ describe('Role enum — DISPATCHER membership', () => {
 describe('UsersPage ROLE_LABELS — completeness', () => {
   const ALL_ROLES = Object.values(Role);
 
-  it('has exactly 3 entries', () => {
-    expect(Object.keys(ROLE_LABELS)).toHaveLength(3);
+  it('has exactly 5 entries', () => {
+    expect(Object.keys(ROLE_LABELS)).toHaveLength(5);
   });
 
   it.each(ALL_ROLES)('has a label for role %s', (role) => {
@@ -99,8 +103,8 @@ describe('UsersPage ROLE_LABELS — completeness', () => {
 describe('UsersPage ROLE_COLORS — completeness and valid hex', () => {
   const ALL_ROLES = Object.values(Role);
 
-  it('has exactly 3 entries', () => {
-    expect(Object.keys(ROLE_COLORS)).toHaveLength(3);
+  it('has exactly 5 entries', () => {
+    expect(Object.keys(ROLE_COLORS)).toHaveLength(5);
   });
 
   it.each(ALL_ROLES)('has a valid hex color for role %s', (role) => {

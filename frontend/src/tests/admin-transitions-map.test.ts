@@ -25,6 +25,10 @@ type AdminTransition = {
 };
 
 const ADMIN_TRANSITIONS: Record<string, AdminTransition[]> = {
+  [WorkOrderStatus.REQUESTED]: [
+    { label: '✔ Approuver la demande', targetStatus: WorkOrderStatus.CREATED, color: '#10b981' },
+    { label: '✕ Rejeter la demande', targetStatus: WorkOrderStatus.COMPLETED_NEGATIVE, color: '#ef4444', needsReason: 'negative' },
+  ],
   [WorkOrderStatus.CREATED]: [
     { label: '→ Assigner', targetStatus: WorkOrderStatus.ASSIGNED, color: '#f59e0b' },
   ],
@@ -62,8 +66,8 @@ describe('ADMIN_TRANSITIONS — completeness', () => {
     }
   });
 
-  it('has exactly 7 entries (one per status)', () => {
-    expect(Object.keys(ADMIN_TRANSITIONS)).toHaveLength(7);
+  it('has exactly 8 entries (one per status)', () => {
+    expect(Object.keys(ADMIN_TRANSITIONS)).toHaveLength(8);
   });
 
   it('no entry has an empty transitions array', () => {

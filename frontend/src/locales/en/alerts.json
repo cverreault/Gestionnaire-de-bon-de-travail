@@ -1,0 +1,91 @@
+{
+  "title": "Alerts",
+  "subtitle": "Create rules that trigger notifications when an event happens on a work order. Each rule defines who is notified, over which channel, with which message.",
+  "empty": {
+    "title": "No alert rule",
+    "description": "Create your first rule to receive automatic notifications on your work-order events."
+  },
+  "table": {
+    "name": "Name",
+    "event": "Event",
+    "recipients": "Recipients",
+    "channels": "Channels",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "status": {
+    "active": "Active",
+    "paused": "Paused"
+  },
+  "actions": {
+    "create": "New rule",
+    "edit": "Edit",
+    "pause": "Pause",
+    "resume": "Resume",
+    "cancel": "Cancel",
+    "saving": "Saving…",
+    "confirmCreate": "Create rule",
+    "confirmUpdate": "Save",
+    "deleteConfirm": "Delete rule \"{{name}}\"?",
+    "toggleSuccess": "Rule updated",
+    "createSuccess": "Rule created",
+    "updateSuccess": "Rule updated",
+    "deleteSuccess": "Rule deleted"
+  },
+  "roles": {
+    "ADMIN": "👑 Admin",
+    "DISPATCHER": "🚑 Dispatcher",
+    "TECHNICIAN": "👷 Technician"
+  },
+  "recipients": {
+    "assignedTech": "Assigned technician",
+    "client": "Client",
+    "users": "selected users"
+  },
+  "events": {
+    "workOrders.workOrder.created": "Work order created",
+    "workOrders.workOrder.assigned": "Work order assigned",
+    "workOrders.workOrder.dispatched": "Work order dispatched",
+    "workOrders.workOrder.statusChanged": "Work order — status change",
+    "workOrders.workOrder.completed": "Work order completed",
+    "workOrders.workOrder.slaBreached": "SLA breached",
+    "clients.client.created": "Client created",
+    "clients.client.updated": "Client updated",
+    "clients.client.deleted": "Client deactivated"
+  },
+  "validation": {
+    "required": "Name, template and at least one channel are required.",
+    "clientTemplateRequired": "A client template is required when the \"Client\" checkbox is on."
+  },
+  "edit": {
+    "createTitle": "Create an alert rule",
+    "editTitle": "Edit rule",
+    "nameLabel": "Name",
+    "namePlaceholder": "e.g. Alert on negative completion",
+    "descriptionLabel": "Description (optional)",
+    "eventLabel": "Trigger event",
+    "filtersLabel": "Filters (optional)",
+    "filtersHint": "Leaving a section unchecked means no filter on that criterion. Multiple boxes checked = OR.",
+    "priorityLabel": "Priority",
+    "priorityHint": "Restricts to work orders matching one of these priorities. Unchecked = any priority.",
+    "taskTypesLabel": "Task types",
+    "taskTypesEmpty": "No task type configured — see Settings.",
+    "templatesLabel": "Form templates",
+    "templatesEmpty": "No form template configured — see Settings.",
+    "clientTypesLabel": "Client types",
+    "clientTypesEmpty": "No client type configured — see Settings.",
+    "addressTypesLabel": "Location types",
+    "addressTypesEmpty": "No location type configured — see Settings.",
+    "recipientsLabel": "Recipients",
+    "channelsLabel": "Channels",
+    "templateLabel": "Internal message",
+    "templateHint": "Use {{workOrder.referenceNumber}}, {{workOrder.title}}, {{transition.toLabel}}, {{technician.name}}, {{client.name}}, {{tenant.name}}. Preview below.",
+    "titleField": "Title",
+    "bodyField": "Body",
+    "previewLabel": "Preview",
+    "clientTemplateLabel": "Client message (required when \"Client\" is checked)",
+    "clientTemplateHint": "External-facing version — do NOT expose internal ids or technical statuses.",
+    "clientTitlePlaceholder": "Update on your request {{workOrder.referenceNumber}}",
+    "clientBodyPlaceholder": "Hello {{client.name}}, your service request has been handled."
+  }
+}

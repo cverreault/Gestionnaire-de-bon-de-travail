@@ -51,10 +51,12 @@ export default function SuperAdminPlansPage() {
         <p style={{ color: theme.colors.danger }}>{t('plans.loadFailed')}</p>
       )}
       {data && (
+        // B20 — colonnes min 240px : sur écran étroit les cartes de plans
+        // wrappent en pile au lieu de s'écraser.
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: `repeat(${data.data.length}, minmax(0, 1fr))`,
+            gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, 240px), 1fr))`,
             gap: 16,
           }}
         >

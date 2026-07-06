@@ -28,6 +28,7 @@ export const NOTIFIABLE_EVENTS = [
   'workOrder.assigned',
   'workOrder.completed',
   'workOrder.slaBreached',
+  'workOrder.requested',
 ] as const;
 
 export type NotifiableEvent = (typeof NOTIFIABLE_EVENTS)[number];
@@ -45,6 +46,8 @@ export const DEFAULT_PREFERENCES: Record<NotifiableEvent, PerEventPrefs> = {
   // out per channel but it's the kind of "we're about to disappoint a
   // client" event that warrants noise.
   'workOrder.slaBreached': { inApp: true, email: true,  push: true  },
+  // B21 — a client asked for work: the dispatch team should see it fast.
+  'workOrder.requested':   { inApp: true, email: true,  push: true  },
 };
 
 /**
