@@ -15,6 +15,16 @@ import {
   type PushState,
 } from '../utils/pushRegistration';
 import { theme, cardStyles, formStyles, buttonStyles, layoutStyles } from '../theme';
+import { FlagFr, FlagEn } from '../components/Flag';
+import { QRCodeSVG } from 'qrcode.react';
+import { toast } from '../context/toast.store';
+import {
+  beginTotpSetup,
+  disableTotp,
+  enableTotp,
+  getTotpStatus,
+  type TotpSetupResult,
+} from '../services/totp.service';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -376,6 +386,9 @@ export default function ProfilePage() {
       {/* ── Section : Préférences de notifications ── */}
       <NotificationPreferencesSection />
 
+      {/* ── Section : Sécurité — 2FA (B14) ── */}
+      <TotpSection />
+
       {/* ── Section : Suivi GPS (TECH only) ── */}
       <GpsTrackingSection />
 
@@ -482,9 +495,11 @@ function AppearanceSection() {
     { value: 'system', label: t('profile.themeSystem'), icon: '🖥️' },
   ];
 
-  const localeOptions: Array<{ value: Locale; label: string; flag: string }> = [
-    { value: 'fr', label: 'Français', flag: '🇫🇷' },
-    { value: 'en', label: 'English',  flag: '🇬🇧' },
+  // SVG flags — 🇫🇷/🇬🇧 emoji don't render on Windows and most Linux browsers,
+  // fall back to the letter pair « FR »/« GB ». Inline SVG works everywhere.
+  const localeOptions: Array<{ value: Locale; label: string; Flag: () => JSX.Element }> = [
+    { value: 'fr', label: 'Français', Flag: () => <FlagFr width={22} height={16} /> },
+    { value: 'en', label: 'English',  Flag: () => <FlagEn width={22} height={16} /> },
   ];
 
   return (
@@ -495,7 +510,7 @@ function AppearanceSection() {
       <div style={{ ...cardStyles.cardBody }}>
         {/* Theme */}
         <label style={{ ...formStyles.label }}>{t('profile.themeLabel')}</label>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginTop: '0.25rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '0.5rem', marginTop: '0.25rem' }}>
           {themeOptions.map((opt) => {
             const active = themeMode === opt.value;
             return (
@@ -555,7 +570,7 @@ function AppearanceSection() {
                   gap: '0.5rem',
                 }}
               >
-                <span style={{ fontSize: '1.4rem' }}>{opt.flag}</span>
+                <opt.Flag />
                 {opt.label}
               </button>
             );
@@ -829,4 +844,255 @@ function GpsTrackingSection() {
       </div>
     </div>
   );
+}
+
+// ─── B14 — 2FA/TOTP section ──────────────────────────────────────────────
+
+function TotpSection() {
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [setup, setSetup] = useState<TotpSetupResult | null>(null);
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [disableOpen, setDisableOpen] = useState(false);
+  const [disablePwd, setDisablePwd] = useState('');
+  const [disableCode, setDisableCode] = useState('');
+
+  useEffect(() => {
+    getTotpStatus()
+      .then((s) => setEnabled(s.enabled))
+      .catch(() => setEnabled(false));
+  }, []);
+
+  async function handleBeginSetup() {
+    setBusy(true);
+    try {
+      const r = await beginTotpSetup();
+      setSetup(r);
+    } catch (err) {
+      toast.error(extractErr(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleEnable() {
+    setBusy(true);
+    try {
+      await enableTotp(code);
+      setEnabled(true);
+      setSetup(null);
+      setCode('');
+      toast.success('2FA activé — les prochaines connexions demanderont un code.');
+    } catch (err) {
+      toast.error(extractErr(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDisable() {
+    setBusy(true);
+    try {
+      await disableTotp(disablePwd, disableCode);
+      setEnabled(false);
+      setDisableOpen(false);
+      setDisablePwd('');
+      setDisableCode('');
+      toast.success('2FA désactivé.');
+    } catch (err) {
+      toast.error(extractErr(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div style={{ ...cardStyles.card, marginBottom: '1.5rem' }}>
+      <div style={cardStyles.cardHeader}>
+        <h2 style={cardStyles.cardTitle}>🔐 Sécurité — Double authentification (2FA)</h2>
+      </div>
+      <div style={cardStyles.cardBody}>
+        {enabled === null && <p style={{ color: theme.colors.textMuted }}>Chargement…</p>}
+
+        {enabled === false && !setup && (
+          <>
+            <p style={{ marginTop: 0, fontSize: theme.font.sizeSm, color: theme.colors.textMuted }}>
+              Ajoute un deuxième facteur d'authentification via une application comme Google Authenticator, Authy, 1Password ou Bitwarden. Bloque 99 % des prises de compte.
+            </p>
+            <button style={buttonStyles.primary} onClick={handleBeginSetup} disabled={busy}>
+              Activer le 2FA
+            </button>
+          </>
+        )}
+
+        {enabled === false && setup && (
+          <div>
+            <p style={{ marginTop: 0, fontSize: theme.font.sizeSm }}>
+              1. Scanne ce QR code dans ton application d'authentification :
+            </p>
+            <div
+              style={{
+                background: '#fff',
+                padding: 12,
+                border: `1px solid ${theme.colors.border}`,
+                borderRadius: 6,
+                display: 'inline-block',
+                marginBottom: 12,
+              }}
+            >
+              <QRCodeSVG value={setup.otpauthUrl} size={180} />
+            </div>
+            <details style={{ marginBottom: 12 }}>
+              <summary style={{ cursor: 'pointer', fontSize: 12, color: theme.colors.textMuted }}>
+                Ou entre le secret manuellement
+              </summary>
+              <code
+                style={{
+                  display: 'block',
+                  marginTop: 6,
+                  padding: 8,
+                  background: theme.colors.surfaceAlt,
+                  borderRadius: 4,
+                  fontFamily: 'monospace',
+                  fontSize: 12,
+                  wordBreak: 'break-all',
+                }}
+              >
+                {setup.secret}
+              </code>
+            </details>
+
+            <div
+              style={{
+                padding: 12,
+                background: '#fef3c7',
+                border: '1px solid #fbbf24',
+                borderRadius: 6,
+                marginBottom: 12,
+              }}
+            >
+              <div style={{ fontWeight: 600, marginBottom: 6, fontSize: 13 }}>
+                ⚠️ Codes de secours — enregistre-les maintenant, ils ne seront plus jamais montrés
+              </div>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gap: 4,
+                  fontFamily: 'monospace',
+                  fontSize: 12,
+                }}
+              >
+                {setup.backupCodes.map((c) => (
+                  <span key={c}>{c}</span>
+                ))}
+              </div>
+              <button
+                style={{ ...buttonStyles.secondary, marginTop: 8, fontSize: 12 }}
+                onClick={() => {
+                  navigator.clipboard.writeText(setup.backupCodes.join('\n'));
+                  toast.success('Codes copiés');
+                }}
+              >
+                📋 Copier tous les codes
+              </button>
+            </div>
+
+            <p style={{ fontSize: theme.font.sizeSm, marginBottom: 6 }}>
+              2. Entre le code à 6 chiffres généré par ton application :
+            </p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="123456"
+                maxLength={6}
+                style={{
+                  ...formStyles.input,
+                  fontFamily: 'monospace',
+                  fontSize: 20,
+                  letterSpacing: 4,
+                  textAlign: 'center',
+                  maxWidth: 160,
+                }}
+              />
+              <button
+                style={buttonStyles.primary}
+                onClick={handleEnable}
+                disabled={busy || code.length !== 6}
+              >
+                Confirmer
+              </button>
+              <button
+                style={buttonStyles.secondary}
+                onClick={() => {
+                  setSetup(null);
+                  setCode('');
+                }}
+                disabled={busy}
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        )}
+
+        {enabled === true && !disableOpen && (
+          <>
+            <p style={{ marginTop: 0, fontSize: theme.font.sizeSm }}>
+              ✅ 2FA activé. Un code sera demandé à chaque connexion.
+            </p>
+            <button style={buttonStyles.secondary} onClick={() => setDisableOpen(true)}>
+              Désactiver le 2FA
+            </button>
+          </>
+        )}
+
+        {enabled === true && disableOpen && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 320 }}>
+            <p style={{ fontSize: theme.font.sizeSm, marginTop: 0 }}>
+              Confirme avec ton mot de passe + un code TOTP (ou un code de secours) :
+            </p>
+            <input
+              type="password"
+              value={disablePwd}
+              onChange={(e) => setDisablePwd(e.target.value)}
+              placeholder="Mot de passe actuel"
+              style={formStyles.input}
+            />
+            <input
+              value={disableCode}
+              onChange={(e) => setDisableCode(e.target.value)}
+              placeholder="Code TOTP (6 chiffres) ou code de secours"
+              style={formStyles.input}
+            />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                style={{ ...buttonStyles.primary, background: theme.colors.danger }}
+                onClick={handleDisable}
+                disabled={busy || !disablePwd || !disableCode}
+              >
+                Désactiver
+              </button>
+              <button
+                style={buttonStyles.secondary}
+                onClick={() => setDisableOpen(false)}
+                disabled={busy}
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function extractErr(err: unknown): string {
+  const ax = err as { response?: { data?: { message?: string | string[] } } };
+  const m = ax?.response?.data?.message;
+  if (Array.isArray(m)) return m.join(' · ');
+  if (typeof m === 'string') return m;
+  return err instanceof Error ? err.message : 'Erreur inconnue';
 }

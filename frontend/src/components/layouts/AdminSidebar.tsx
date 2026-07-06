@@ -4,6 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { getBranding } from '../../services/super-admin.service';
 import { useAuthStore } from '../../context/auth.store';
+import { useUiStore } from '../../context/ui.store';
+import logoHeaderFr from '../../assets/logo-header-fr.png';
+import logoHeaderEn from '../../assets/logo-header-en.png';
 import { useLogout } from '../../hooks/useAuth';
 import { useTechnicians } from '../../hooks/useUsers';
 import { useWorkOrders } from '../../hooks/useWorkOrders';
@@ -83,6 +86,7 @@ export default function AdminSidebar() {
   const { user } = useAuthStore();
   const logout = useLogout();
   const { t } = useTranslation();
+  const locale = useUiStore((s) => s.locale);
   // SUPER_ADMIN is intentionally NOT in `isAdmin` — its portal lives under
   // /super-admin and must never expose tenant data (BTs, clients, etc.).
   // The SA acts on a tenant via impersonation, which swaps the role to
@@ -103,6 +107,7 @@ export default function AdminSidebar() {
     { to: '/dashboard',        label: `📊 ${t('nav:dashboard')}` },
     { to: '/bons-de-travail',  label: `📋 ${t('nav:workOrders')}` },
     { to: '/calendrier',       label: `📅 ${t('nav:calendar')}` },
+    { to: '/carte-dispatch',   label: `🗺️ ${t('nav:dispatchMap', { defaultValue: 'Carte dispatch' })}` },
     { to: '/clients',          label: `🧑‍🤝‍🧑 ${t('nav:clients')}` },
     { to: '/adresses',         label: `📍 ${t('nav:addresses')}` },
     { to: '/rapports',         label: `📈 ${t('nav:reports', { defaultValue: 'Rapports' })}` },
@@ -116,6 +121,8 @@ export default function AdminSidebar() {
     { to: '/mon-abonnement',  label: `💳 ${t('nav:mySubscription', { defaultValue: 'Mon abonnement' })}` },
     { to: '/parametres/api-keys', label: `🔑 ${t('nav:apiKeys', { defaultValue: 'Clés API' })}` },
     { to: '/parametres/webhooks', label: `🔔 ${t('nav:webhooks', { defaultValue: 'Webhooks' })}` },
+    { to: '/parametres/alertes',  label: `🚨 ${t('nav:alerts', { defaultValue: 'Alertes' })}` },
+    { to: '/parametres/bons-recurrents',  label: `🔁 ${t('nav:recurring', { defaultValue: 'BT récurrents' })}` },
   ];
 
   const superAdminNavItems = [
@@ -195,19 +202,38 @@ export default function AdminSidebar() {
   return (
     <>
       <aside style={sidebarStyle}>
-        {/* Logo — per-tenant when on a tenant subdomain */}
-        <div style={{ ...logoStyle, display: 'flex', alignItems: 'center', gap: 8 }}>
-          {branding?.logoUrl ? (
+        {/* Logo — per-tenant when on a tenant subdomain, otherwise the
+            bilingual Dispatch2Go wordmark. The wordmark is dark navy on
+            transparent, so it sits on a white rounded chip to stay legible
+            against the dark sidebar. */}
+        {branding?.logoUrl ? (
+          <div style={{ ...logoStyle, display: 'flex', alignItems: 'center', gap: 8 }}>
             <img
               src={branding.logoUrl}
               alt={branding.name}
               style={{ maxHeight: 28, maxWidth: 120, objectFit: 'contain' }}
             />
-          ) : (
-            <span>🔧</span>
-          )}
-          <span>{branding?.name ?? 'TaskMgr'}</span>
-        </div>
+            <span>{branding.name}</span>
+          </div>
+        ) : (
+          <div style={{ ...logoStyle, padding: '0.75rem 1rem' }}>
+            <div
+              style={{
+                background: '#ffffff',
+                borderRadius: 8,
+                padding: '8px 12px',
+                display: 'flex',
+                justifyContent: 'center',
+              }}
+            >
+              <img
+                src={locale === 'fr' ? logoHeaderFr : logoHeaderEn}
+                alt="Dispatch2Go"
+                style={{ width: '100%', maxWidth: 180, height: 'auto', display: 'block' }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Main navigation — hidden for SUPER_ADMIN (no tenant data in the
             SA portal). The SA console is the super-admin nav block below. */}

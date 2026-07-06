@@ -13,11 +13,26 @@ import {
 import { TemplateFieldType } from '@prisma/client';
 
 export class CreateAddressTypeFieldDto {
-  @ApiProperty({ example: 'N° de terrain' })
+  @ApiProperty({
+    example: 'N° de terrain',
+    description: 'Legacy — écris de préférence labelFr + labelEn.',
+  })
   @IsString()
   @IsNotEmpty()
   @MaxLength(160)
   label: string;
+
+  @ApiPropertyOptional({ description: 'Libellé en français (B10.2)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  labelFr?: string;
+
+  @ApiPropertyOptional({ description: 'Libellé en anglais (B10.2)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  labelEn?: string;
 
   @ApiProperty({ enum: TemplateFieldType, example: TemplateFieldType.TEXT })
   @IsEnum(TemplateFieldType)

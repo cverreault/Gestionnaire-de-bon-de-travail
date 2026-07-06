@@ -36,14 +36,15 @@ export class WebhooksController {
   @ApiOperation({
     summary: 'Liste des événements qu\'un webhook peut souscrire',
   })
-  publishableEvents(): { data: string[] } {
-    return { data: [...WEBHOOK_PUBLISHABLE_EVENTS] };
+  publishableEvents(): string[] {
+    // TransformInterceptor wraps as { success, data, timestamp } — return raw.
+    return [...WEBHOOK_PUBLISHABLE_EVENTS];
   }
 
   @Get()
   @ApiOperation({ summary: 'Lister les webhooks du tenant' })
   async list(@CurrentUser() actor: { tenantId: string }) {
-    return { data: await this.webhooks.list(actor.tenantId) };
+    return this.webhooks.list(actor.tenantId);
   }
 
   @Get(':id')
@@ -125,13 +126,11 @@ export class WebhooksController {
     @Query('limit') limit?: string,
   ) {
     const parsed = limit ? Number(limit) : 50;
-    return {
-      data: await this.webhooks.listDeliveries(
-        actor.tenantId,
-        id,
-        Number.isFinite(parsed) ? parsed : 50,
-      ),
-    };
+    return this.webhooks.listDeliveries(
+      actor.tenantId,
+      id,
+      Number.isFinite(parsed) ? parsed : 50,
+    );
   }
 
   @Post('deliveries/:deliveryId/retry')

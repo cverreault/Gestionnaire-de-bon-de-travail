@@ -22,6 +22,9 @@ export default function AdminRoute() {
   if (user.role === Role.SUPER_ADMIN) {
     return <Navigate to="/super-admin/stats" replace />;
   }
+  if (user.role === Role.CLIENT) {
+    return <Navigate to="/portail" replace />;
+  }
   if (user.role !== Role.ADMIN && user.role !== Role.DISPATCHER) {
     return <Navigate to="/mes-bons" replace />;
   }

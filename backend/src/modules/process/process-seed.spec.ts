@@ -19,6 +19,7 @@ import { Role, WorkOrderStatus } from '@prisma/client';
 // these tests will fail and signal the change.
 
 const STATUS_DEFS = [
+  { code: 50,  name: 'Demandé',            color: '#eab308', position: -1, isRequested: true },
   { code: 0,   name: 'Créé',              color: '#6b7280', position: 0, isInitial: true  },
   { code: 100, name: 'Assigné',            color: '#3b82f6', position: 1 },
   { code: 200, name: 'Dispatché',          color: '#8b5cf6', position: 2, isDispatch: true },
@@ -29,6 +30,8 @@ const STATUS_DEFS = [
 ];
 
 const TRANSITION_DEFS = [
+  { fromCode: 50,  toCode: 0,   label: 'Approuver la demande', roles: [Role.ADMIN, Role.DISPATCHER],                               required: [], sort: 0 },
+  { fromCode: 50,  toCode: 600, label: 'Rejeter la demande',   roles: [Role.ADMIN, Role.DISPATCHER],                               required: ['negativeReason'], sort: 1 },
   { fromCode: 0,   toCode: 100, label: 'Assigner',             roles: [Role.ADMIN, Role.DISPATCHER],                               required: ['assignedToId'], sort: 0 },
   { fromCode: 100, toCode: 200, label: 'Dispatcher',           roles: [Role.ADMIN, Role.DISPATCHER],                               required: [], sort: 0 },
   { fromCode: 200, toCode: 300, label: 'Partir en route',      roles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN],              required: [], sort: 0 },
@@ -45,6 +48,7 @@ const ALLOWED_REQUIRED_FIELDS = ['assignedToId', 'negativeReason', 'completionNo
 
 // Legacy enum → expected ProcessStatus code mapping (used by backfill)
 const LEGACY_TO_CODE: Record<WorkOrderStatus, number> = {
+  [WorkOrderStatus.REQUESTED]:          50,
   [WorkOrderStatus.CREATED]:            0,
   [WorkOrderStatus.ASSIGNED]:           100,
   [WorkOrderStatus.DISPATCHED]:         200,
@@ -57,8 +61,8 @@ const LEGACY_TO_CODE: Record<WorkOrderStatus, number> = {
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe('Process Seed — status definitions', () => {
-  it('defines exactly 7 statuses', () => {
-    expect(STATUS_DEFS).toHaveLength(7);
+  it('defines exactly 8 statuses', () => {
+    expect(STATUS_DEFS).toHaveLength(8);
   });
 
   it('has no duplicate status codes', () => {
@@ -67,9 +71,9 @@ describe('Process Seed — status definitions', () => {
     expect(unique.size).toBe(codes.length);
   });
 
-  it('has statuses sorted by position (0 through 6)', () => {
+  it('has statuses sorted by position (-1 through 6)', () => {
     const positions = STATUS_DEFS.map((s) => s.position);
-    expect(positions).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    expect(positions).toEqual([-1, 0, 1, 2, 3, 4, 5, 6]);
   });
 
   it('has exactly one isInitial status (code 0)', () => {
@@ -113,8 +117,8 @@ describe('Process Seed — status definitions', () => {
 describe('Process Seed — transition definitions', () => {
   const codeSet = new Set(STATUS_DEFS.map((s) => s.code));
 
-  it('defines exactly 10 transitions', () => {
-    expect(TRANSITION_DEFS).toHaveLength(10);
+  it('defines exactly 12 transitions', () => {
+    expect(TRANSITION_DEFS).toHaveLength(12);
   });
 
   it('all fromCode values reference an existing status code', () => {
@@ -180,8 +184,8 @@ describe('Process Seed — backfill mapping', () => {
     }
   });
 
-  it('LEGACY_TO_CODE covers all 7 WorkOrderStatus values', () => {
-    expect(Object.keys(LEGACY_TO_CODE)).toHaveLength(7);
+  it('LEGACY_TO_CODE covers all 8 WorkOrderStatus values', () => {
+    expect(Object.keys(LEGACY_TO_CODE)).toHaveLength(8);
   });
 });
 
@@ -193,6 +197,16 @@ describe('Process Seed — idempotence mock', () => {
       processDefinition: {
         findFirst: jest.fn().mockResolvedValue({ id: 'existing-proc' }),
         create: mockCreate,
+        // backfillRequestedStatus (B21) scans every definition; an
+        // already-patched process carries an isRequested status.
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'existing-proc',
+            tenantId: 't-1',
+            name: 'Standard BT',
+            statuses: [{ id: 's-50', code: 50, position: -1, isInitial: false, isTerminalNegative: false, isRequested: true }],
+          },
+        ]),
       },
       processStatus: {
         create: jest.fn(),

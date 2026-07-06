@@ -82,6 +82,10 @@ export const deleteAddressType = (id: string) =>
 
 export interface AddressTypeFieldPayload {
   label: string;
+  /// B10.2 — bilingual pair (legacy `label` still accepted and synced by the
+  /// backend's Prisma middleware).
+  labelFr?: string;
+  labelEn?: string;
   fieldType: import('../types').TemplateFieldType;
   required?: boolean;
   options?: string[];

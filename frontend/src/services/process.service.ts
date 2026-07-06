@@ -25,6 +25,9 @@ export interface UpdateProcessDefinitionPayload {
 export interface CreateProcessStatusPayload {
   code: number;
   name: string;
+  /// B10.2 — bilingual pair (backend Prisma middleware keeps legacy in sync).
+  nameFr?: string;
+  nameEn?: string;
   color: string;
   position: number;
   isInitial?: boolean;
@@ -40,6 +43,8 @@ export interface CreateProcessTransitionPayload {
   fromStatusId: string;
   toStatusId: string;
   label: string;
+  labelFr?: string;
+  labelEn?: string;
   allowedRoles?: string[];
   requiredFields?: string[];
   sortOrder?: number;

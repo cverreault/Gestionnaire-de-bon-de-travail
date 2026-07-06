@@ -4,6 +4,7 @@ import { WorkOrderStatus, WorkOrderType } from '../types';
 // ─── Label maps ───────────────────────────────────────────────────────────────
 
 const STATUS_FR: Record<WorkOrderStatus, string> = {
+  [WorkOrderStatus.REQUESTED]: 'Demandé',
   [WorkOrderStatus.CREATED]: 'Créé',
   [WorkOrderStatus.ASSIGNED]: 'Assigné',
   [WorkOrderStatus.DISPATCHED]: 'Réparti',

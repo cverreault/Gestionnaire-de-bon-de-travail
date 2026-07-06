@@ -600,6 +600,7 @@ function ProcessEditor({
   const [showAddStatus, setShowAddStatus] = useState(false);
   const [nsCode, setNsCode] = useState('');
   const [nsName, setNsName] = useState('');
+  const [nsNameEn, setNsNameEn] = useState('');
   const [nsColor, setNsColor] = useState('#6366f1');
   const [nsPosition, setNsPosition] = useState('0');
   const [nsIsInitial, setNsIsInitial] = useState(false);
@@ -609,12 +610,16 @@ function ProcessEditor({
   const [nsIsTerminalNeg, setNsIsTerminalNeg] = useState(false);
 
   async function handleAddStatus() {
-    if (!nsName.trim() || !nsCode.trim()) return;
+    const fr = nsName.trim();
+    const en = nsNameEn.trim();
+    if ((!fr && !en) || !nsCode.trim()) return;
     await addStatus.mutateAsync({
       processId,
       data: {
         code: parseInt(nsCode, 10),
-        name: nsName.trim(),
+        name: fr || en,
+        nameFr: fr,
+        nameEn: en,
         color: nsColor,
         position: parseInt(nsPosition, 10) || 0,
         isInitial: nsIsInitial,
@@ -625,7 +630,7 @@ function ProcessEditor({
       },
     });
     setShowAddStatus(false);
-    setNsCode(''); setNsName(''); setNsColor('#6366f1'); setNsPosition('0');
+    setNsCode(''); setNsName(''); setNsNameEn(''); setNsColor('#6366f1'); setNsPosition('0');
     setNsIsInitial(false); setNsIsDispatch(false); setNsIsStart(false);
     setNsIsTerminalPos(false); setNsIsTerminalNeg(false);
   }
@@ -635,6 +640,7 @@ function ProcessEditor({
   const [ntFromId, setNtFromId] = useState('');
   const [ntToId, setNtToId] = useState('');
   const [ntLabel, setNtLabel] = useState('');
+  const [ntLabelEn, setNtLabelEn] = useState('');
   const [ntRoles, setNtRoles] = useState<string[]>([]);
   const [ntFields, setNtFields] = useState<string[]>([]);
   const [ntSortOrder, setNtSortOrder] = useState('0');
@@ -644,20 +650,24 @@ function ProcessEditor({
   }
 
   async function handleAddTransition() {
-    if (!ntFromId || !ntToId || !ntLabel.trim()) return;
+    const fr = ntLabel.trim();
+    const en = ntLabelEn.trim();
+    if (!ntFromId || !ntToId || (!fr && !en)) return;
     await addTransition.mutateAsync({
       processId,
       data: {
         fromStatusId: ntFromId,
         toStatusId: ntToId,
-        label: ntLabel.trim(),
+        label: fr || en,
+        labelFr: fr,
+        labelEn: en,
         allowedRoles: ntRoles,
         requiredFields: ntFields,
         sortOrder: parseInt(ntSortOrder, 10) || 0,
       },
     });
     setShowAddTransition(false);
-    setNtFromId(''); setNtToId(''); setNtLabel('');
+    setNtFromId(''); setNtToId(''); setNtLabel(''); setNtLabelEn('');
     setNtRoles([]); setNtFields([]); setNtSortOrder('0');
   }
 
@@ -808,7 +818,7 @@ function ProcessEditor({
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gridTemplateColumns: 'repeat(4, 1fr)',
                   gap: '0.75rem',
                   marginBottom: '0.75rem',
                 }}
@@ -824,12 +834,21 @@ function ProcessEditor({
                   />
                 </div>
                 <div>
-                  <label style={{ ...formStyles.label }}>Nom *</label>
+                  <label style={{ ...formStyles.label }}>Nom FR *</label>
                   <input
                     value={nsName}
                     onChange={(e) => setNsName(e.target.value)}
                     style={{ ...formStyles.input, boxSizing: 'border-box' }}
                     placeholder="Ex: Créé"
+                  />
+                </div>
+                <div>
+                  <label style={{ ...formStyles.label }}>Nom EN</label>
+                  <input
+                    value={nsNameEn}
+                    onChange={(e) => setNsNameEn(e.target.value)}
+                    style={{ ...formStyles.input, boxSizing: 'border-box' }}
+                    placeholder="E.g. Created"
                   />
                 </div>
                 <div>
@@ -913,7 +932,7 @@ function ProcessEditor({
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <button
                   onClick={handleAddStatus}
-                  disabled={!nsName.trim() || !nsCode.trim() || addStatus.isPending}
+                  disabled={(!nsName.trim() && !nsNameEn.trim()) || !nsCode.trim() || addStatus.isPending}
                   style={{
                     ...buttonStyles.primary,
                     opacity: (!nsName.trim() || !nsCode.trim() || addStatus.isPending) ? 0.6 : 1,
@@ -1033,15 +1052,23 @@ function ProcessEditor({
                     ))}
                   </select>
                 </div>
-                {/* Label */}
-                <div>
-                  <label style={{ ...formStyles.label }}>Label *</label>
-                  <input
-                    value={ntLabel}
-                    onChange={(e) => setNtLabel(e.target.value)}
-                    style={{ ...formStyles.input, boxSizing: 'border-box' }}
-                    placeholder="Ex: → Assigner"
-                  />
+                {/* Label — bilingual (B10.2) */}
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={{ ...formStyles.label }}>Label de la transition *</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                    <input
+                      value={ntLabel}
+                      onChange={(e) => setNtLabel(e.target.value)}
+                      style={{ ...formStyles.input, boxSizing: 'border-box' }}
+                      placeholder="FR → Assigner"
+                    />
+                    <input
+                      value={ntLabelEn}
+                      onChange={(e) => setNtLabelEn(e.target.value)}
+                      style={{ ...formStyles.input, boxSizing: 'border-box' }}
+                      placeholder="EN → Assign"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -1142,11 +1169,11 @@ function ProcessEditor({
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <button
                   onClick={handleAddTransition}
-                  disabled={!ntFromId || !ntToId || !ntLabel.trim() || ntRoles.length === 0 || addTransition.isPending}
+                  disabled={!ntFromId || !ntToId || (!ntLabel.trim() && !ntLabelEn.trim()) || ntRoles.length === 0 || addTransition.isPending}
                   style={{
                     ...buttonStyles.primary,
-                    opacity: (!ntFromId || !ntToId || !ntLabel.trim() || ntRoles.length === 0 || addTransition.isPending) ? 0.6 : 1,
-                    cursor: (!ntFromId || !ntToId || !ntLabel.trim() || ntRoles.length === 0 || addTransition.isPending) ? 'not-allowed' : 'pointer',
+                    opacity: (!ntFromId || !ntToId || (!ntLabel.trim() && !ntLabelEn.trim()) || ntRoles.length === 0 || addTransition.isPending) ? 0.6 : 1,
+                    cursor: (!ntFromId || !ntToId || (!ntLabel.trim() && !ntLabelEn.trim()) || ntRoles.length === 0 || addTransition.isPending) ? 'not-allowed' : 'pointer',
                   }}
                 >
                   {addTransition.isPending ? 'Ajout...' : '✓ Ajouter'}
@@ -1225,13 +1252,22 @@ function StatusRow({
   isDeleting: boolean;
 }) {
   const [editing, setEditing] = useState(false);
-  const [eName, setEName] = useState(status.name);
+  const [eName, setEName] = useState(status.nameFr ?? status.name);
+  const [eNameEn, setENameEn] = useState(status.nameEn ?? status.name);
   const [eColor, setEColor] = useState(status.color);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [hoveredRow, setHoveredRow] = useState(false);
 
   function handleSave() {
-    onUpdate(status.id, { name: eName.trim(), color: eColor });
+    const fr = eName.trim();
+    const en = eNameEn.trim();
+    if (!fr && !en) return;
+    onUpdate(status.id, {
+      name: fr || en,
+      nameFr: fr,
+      nameEn: en,
+      color: eColor,
+    });
     setEditing(false);
   }
 
@@ -1252,11 +1288,20 @@ function StatusRow({
           {status.code}
         </td>
         <td style={{ ...tableStyles.cell }}>
-          <input
-            value={eName}
-            onChange={(e) => setEName(e.target.value)}
-            style={{ ...formStyles.input, boxSizing: 'border-box', maxWidth: '180px', padding: '0.25rem 0.5rem' }}
-          />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            <input
+              value={eName}
+              onChange={(e) => setEName(e.target.value)}
+              placeholder="FR"
+              style={{ ...formStyles.input, boxSizing: 'border-box', maxWidth: '180px', padding: '0.2rem 0.4rem', fontSize: theme.font.sizeXs }}
+            />
+            <input
+              value={eNameEn}
+              onChange={(e) => setENameEn(e.target.value)}
+              placeholder="EN"
+              style={{ ...formStyles.input, boxSizing: 'border-box', maxWidth: '180px', padding: '0.2rem 0.4rem', fontSize: theme.font.sizeXs }}
+            />
+          </div>
         </td>
         <td style={{ ...tableStyles.cell, textAlign: 'center' }}>{status.position}</td>
         <td style={{ ...tableStyles.cell }}>
@@ -1272,7 +1317,7 @@ function StatusRow({
               ✓
             </button>
             <button
-              onClick={() => { setEditing(false); setEName(status.name); setEColor(status.color); }}
+              onClick={() => { setEditing(false); setEName(status.nameFr ?? status.name); setENameEn(status.nameEn ?? status.name); setEColor(status.color); }}
               style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}
             >
               ✕

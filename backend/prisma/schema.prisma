@@ -19,9 +19,15 @@ enum Role {
   ADMIN
   DISPATCHER
   TECHNICIAN
+  /// End-customer portal account (B21). Linked to a Client record via
+  /// User.clientId; sees only its own work orders through /portal/*.
+  CLIENT
 }
 
 enum WorkOrderStatus {
+  /// B21 — client-portal work request awaiting admin approval. Sits
+  /// BEFORE the normal pipeline: approve → CREATED, reject → terminal.
+  REQUESTED
   CREATED
   ASSIGNED
   DISPATCHED
@@ -96,6 +102,11 @@ model Tenant {
 
   ownerEmail String? @map("owner_email")
 
+  /// B22 — Stripe billing linkage (set by the billing webhook once the
+  /// tenant completes a Checkout). Null = never paid online.
+  stripeCustomerId     String? @unique @map("stripe_customer_id")
+  stripeSubscriptionId String? @map("stripe_subscription_id")
+
   /// Branding (B7.5) — MinIO object key of the tenant logo (e.g.
   /// `tenants/<id>/logo.png`). Null = no custom logo, the UI falls back
   /// to the generic TaskMgr mark. The presigned URL is resolved on read.
@@ -132,6 +143,10 @@ model Tenant {
   apiKeys             ApiKey[]
   webhookEndpoints    WebhookEndpoint[]
   webhookDeliveries   WebhookDelivery[]
+  alertRules          AlertRule[]
+  recurringWorkOrders RecurringWorkOrder[]
+  reminders           WorkOrderReminder[]
+  portalInvitations   PortalInvitation[]
 
   @@index([isActive], map: "idx_tenants_is_active")
   @@map("tenants")
@@ -166,6 +181,11 @@ model Plan {
   maxWorkOrdersPerMonth Int     @map("max_work_orders_per_month")
   maxStorageMb          Int     @map("max_storage_mb")
   maxClients            Int     @map("max_clients")
+
+  /// B22 — Stripe billing binding. The SA creates the recurring Price in
+  /// the Stripe dashboard and pastes its id here (price_…). Null = this
+  /// plan can't be bought online (manual/free flow only).
+  stripePriceId        String?  @map("stripe_price_id")
 
   features             String[] @default([])
   recommended          Boolean  @default(false)
@@ -335,9 +355,213 @@ model WebhookDelivery {
   @@map("webhook_deliveries")
 }
 
+/// Configurable alert rule (B10).
+///
+/// Tenant admins define « when event X on a work order matching filters Y,
+/// notify recipients Z via channels C with template T ». The AlertsListener
+/// catches every workOrders.** event, runs the rule engine to find matches,
+/// resolves recipients (internal users + optionally the client), renders the
+/// templates, and dispatches to each channel via the existing notifications
+/// module.
+///
+/// See ADR-013 for the design tradeoffs (event-name filtering over per-
+/// transition column, {{path}} templating over Handlebars, SMS stubbed for
+/// v1, distinct client-facing template pair).
+model AlertRule {
+  id          String  @id @default(uuid())
+  tenantId    String  @map("tenant_id")
+  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  description String  @default("")
+  isActive    Boolean @default(true) @map("is_active")
+
+  // ─── Trigger ────────────────────────────────────────────────────
+  /// The exact domain event name — see WO_EVENT_NAMES. On any workOrders.**
+  /// event, we match rules with this eventName equal to the fired event.
+  eventName   String  @map("event_name")
+
+  /// Scope (applies mainly to statusChanged — nulls = "any").
+  processDefinitionId String? @map("process_definition_id")
+  fromStatusId        String? @map("from_status_id")
+  toStatusId          String? @map("to_status_id")
+
+  /// Filters (empty array = no filter). Each acts as a whitelist — the
+  /// event must match one of the listed values.
+  taskTypeIds       String[] @default([]) @map("task_type_ids")
+  /// Workorder templates (`WorkOrderTemplate.id`).
+  templateIds       String[] @default([]) @map("template_ids")
+  /// Client types — codes matching the `ClientType` enum
+  /// (RESIDENTIAL / COMMERCIAL / INDUSTRIAL / INSTITUTIONAL).
+  clientTypeCodes   String[] @default([]) @map("client_type_codes")
+  /// Address types — string codes matching `ClientAddress.addressType`
+  /// (defined per-tenant via `AddressTypeConfig`).
+  addressTypeCodes  String[] @default([]) @map("address_type_codes")
+  priorityIn        String[] @default([]) @map("priority_in")
+
+  // ─── Recipients ─────────────────────────────────────────────────
+  recipientRoles              Role[]   @default([]) @map("recipient_roles")
+  recipientUserIds            String[] @default([]) @map("recipient_user_ids")
+  recipientAssignedTechnician Boolean  @default(false) @map("recipient_assigned_technician")
+  /// External — reads Client.email/phone at dispatch time.
+  recipientClient             Boolean  @default(false) @map("recipient_client")
+
+  // ─── Channels ───────────────────────────────────────────────────
+  /// Must contain ≥ 1 of: 'inApp' | 'email' | 'sms' | 'push'.
+  /// SMS is stubbed in v1 (see SmsChannelService).
+  channels String[] @default([]) @map("channels")
+
+  // ─── Templates ──────────────────────────────────────────────────
+  /// Supports {{workOrder.referenceNumber}}, {{workOrder.title}},
+  /// {{transition.from}}, {{transition.to}}, {{technician.name}},
+  /// {{client.name}}, {{tenant.name}}. Missing paths render as empty.
+  titleTemplate String @map("title_template")
+  bodyTemplate  String @map("body_template")
+  /// Distinct external-facing pair when recipientClient=true — never leak
+  /// internal identifiers or statuses to the customer.
+  clientTitleTemplate String? @map("client_title_template")
+  clientBodyTemplate  String? @map("client_body_template")
+
+  createdByUserId String   @map("created_by_user_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId, isActive], map: "idx_alert_rules_tenant_active")
+  @@index([tenantId, eventName], map: "idx_alert_rules_tenant_event")
+  @@map("alert_rules")
+}
+
+/// Recurring work-order definition (B11).
+///
+/// A « template » BT the system spawns on a schedule (weekly / monthly /
+/// custom). Used for maintenance contracts, periodic inspections, seasonal
+/// prep. Each occurrence is a normal WorkOrder that flows through the
+/// standard process — the recurrence only handles the spawning cadence.
+///
+/// Schedule model (simple, expressive):
+///   - `frequency`      DAILY | WEEKLY | MONTHLY | YEARLY
+///   - `interval`       Number of `frequency` units between runs
+///                      (e.g. WEEKLY interval=2 → every 2 weeks).
+///   - `byDayOfWeek`    Only for WEEKLY. Array of ints 0-6 (Sun-Sat).
+///                      Empty = anchor day = startDate's weekday.
+///   - `byDayOfMonth`   Only for MONTHLY. Array of ints 1-31.
+///                      Empty = anchor day = startDate's day.
+///   - `startDate`      Anchor. First occurrence is at/after this.
+///   - `endDate`        Nullable. If set, no run after this date.
+///   - `nextRunAt`      Materialised — the exact timestamp the Cron watches
+///                      to decide « spawn now? ». Recomputed on each spawn.
+///   - `lastRunAt`      Bookkeeping; also shown in the UI.
+///
+/// The Cron sweeper picks up rows where `isActive AND nextRunAt <= NOW()`,
+/// creates a WorkOrder, then advances `nextRunAt`. The spawner is
+/// idempotent-ish: two concurrent runs won't dupe because we update
+/// `nextRunAt` atomically before creating the WO.
+model RecurringWorkOrder {
+  id              String  @id @default(uuid())
+  tenantId        String  @map("tenant_id")
+  tenant          Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  /// Human-facing label — « Inspection annuelle chauffage acme ».
+  name            String
+  description     String  @default("")
+  isActive        Boolean @default(true) @map("is_active")
+
+  // ── Template inputs for the WOs to spawn ──────────────────────
+  /// Task type — required (drives prefix, template, SLA).
+  taskTypeId          String  @map("task_type_id")
+  clientId            String  @map("client_id")
+  clientAddressId     String? @map("client_address_id")
+  /// Default assignee (optional). If null, spawned WO starts unassigned.
+  assignedToId        String? @map("assigned_to_id")
+  /// Title for the spawned WO. Supports {{date}} placeholder → replaced
+  /// with the run date at spawn time.
+  workOrderTitle      String  @default("") @map("work_order_title")
+  workOrderDescription String @default("") @map("work_order_description")
+  priority            Int    @default(0)
+
+  // ── Schedule ──────────────────────────────────────────────────
+  /// DAILY | WEEKLY | MONTHLY | YEARLY.
+  frequency        String
+  /// e.g. WEEKLY interval=2 → every 2 weeks. Range [1, 366].
+  interval         Int      @default(1)
+  /// Applies only when frequency=WEEKLY. Empty = anchor's weekday.
+  byDayOfWeek      Int[]    @default([]) @map("by_day_of_week")
+  /// Applies only when frequency=MONTHLY. Empty = anchor's day of month.
+  byDayOfMonth     Int[]    @default([]) @map("by_day_of_month")
+  startDate        DateTime @map("start_date")
+  endDate          DateTime? @map("end_date")
+
+  nextRunAt        DateTime  @map("next_run_at")
+  lastRunAt        DateTime? @map("last_run_at")
+  /// Count of successful spawns.
+  spawnedCount     Int       @default(0) @map("spawned_count")
+
+  createdByUserId  String   @map("created_by_user_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId, isActive], map: "idx_recurring_wo_tenant_active")
+  @@index([isActive, nextRunAt], map: "idx_recurring_wo_next_run")
+  @@map("recurring_work_orders")
+}
+
+/// Scheduled reminder for a work order (B15).
+///
+/// One row per (WO × trigger). When `sendAt` comes due, the Cron sweeper
+/// picks the row up, renders the template, dispatches on the requested
+/// channels, marks the row as sent.
+///
+/// Two creation paths :
+///   1. Auto — WorkOrdersService, on WO create with `scheduledDate`, spawns
+///      N reminders at configurable offsets (default: 24 h and 1 h before).
+///   2. Manual — dispatcher schedules a one-off from the WO detail page
+///      via POST /work-orders/:id/reminders.
+model WorkOrderReminder {
+  id           String  @id @default(uuid())
+  tenantId     String  @map("tenant_id")
+  tenant       Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  workOrderId  String  @map("work_order_id")
+  workOrder    WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  /// When the reminder fires. UTC.
+  sendAt       DateTime @map("send_at")
+
+  /// Channels to fan out on when the reminder fires. Values from
+  /// `['inApp', 'email', 'sms']`. `push` intentionally omitted — reminders
+  /// go to the CLIENT most of the time, and the client doesn't have a
+  /// browser push subscription.
+  channels     String[] @default([])
+
+  /// Optional custom message. When null, a default template is rendered:
+  /// « Rappel : rendez-vous BT <reference> le <date> ».
+  bodyTemplate String?  @map("body_template")
+
+  /// `pending` | `sent` | `failed` | `cancelled`.
+  status       String   @default("pending")
+  sentAt       DateTime? @map("sent_at")
+  errorMessage String?  @map("error_message")
+
+  createdByUserId String?  @map("created_by_user_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@index([status, sendAt], map: "idx_wo_reminders_status_send_at")
+  @@index([workOrderId], map: "idx_wo_reminders_wo_id")
+  @@index([tenantId], map: "idx_wo_reminders_tenant_id")
+  @@map("wo_reminders")
+}
+
 model User {
   id        String  @id @default(uuid())
   tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  // B14 — 2FA/TOTP (RFC 6238). `totpSecret` = base32 secret encrypted at
+  // rest via `secret-crypto` (same helper as webhook signing secrets).
+  // `totpEnabled` flips true only after the user verifies the first code.
+  // `totpBackupCodesHash` = SHA-256 of one-time recovery codes (10 codes,
+  // one-line separated hashed) — used when the user loses their device.
+  totpSecret          String?   @map("totp_secret")
+  totpEnabled         Boolean   @default(false) @map("totp_enabled")
+  totpBackupCodesHash String?   @map("totp_backup_codes_hash")
+  totpEnabledAt       DateTime? @map("totp_enabled_at")
   tenant    Tenant  @relation(fields: [tenantId], references: [id])
   email     String
   password  String
@@ -346,6 +570,11 @@ model User {
   role      Role    @default(TECHNICIAN)
   isActive  Boolean @default(true) @map("is_active")
   phone     String?
+
+  /// B21 — set only for role=CLIENT portal accounts: the Client record
+  /// this login belongs to. One client can have several portal users.
+  clientId String? @map("client_id")
+  client   Client? @relation("ClientPortalUsers", fields: [clientId], references: [id], onDelete: SetNull)
 
   // Per-user UI preferences (column layouts, hidden filters, etc.) as free-form JSON.
   preferences Json?
@@ -364,10 +593,12 @@ model User {
   appointments         Appointment[]        @relation("TechnicianAppointments")
   locations            TechnicianLocation[]
   emailVerifications   EmailVerification[]
+  portalInvitations    PortalInvitation[]
 
   @@unique([tenantId, email], map: "idx_users_tenant_email")
   @@index([tenantId], map: "idx_users_tenant_id")
   @@index([email], map: "idx_users_email")
+  @@index([clientId], map: "idx_users_client_id")
   @@map("users")
 }
 
@@ -387,6 +618,28 @@ model EmailVerification {
 
   @@index([userId], map: "idx_email_verifications_user_id")
   @@map("email_verifications")
+}
+
+/// B21 — client-portal invitation token. Same posture as
+/// EmailVerification: the raw token travels by email only, the DB keeps
+/// a SHA-256 hash. Consuming the token sets the portal user's password.
+model PortalInvitation {
+  id         String    @id @default(uuid())
+  tenantId   String    @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant     Tenant    @relation(fields: [tenantId], references: [id])
+  clientId   String    @map("client_id")
+  client     Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  userId     String    @map("user_id")
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash  String    @unique @map("token_hash")
+  expiresAt  DateTime  @map("expires_at")
+  consumedAt DateTime? @map("consumed_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([clientId], map: "idx_portal_invitations_client_id")
+  @@index([userId], map: "idx_portal_invitations_user_id")
+  @@index([tenantId], map: "idx_portal_invitations_tenant_id")
+  @@map("portal_invitations")
 }
 
 /// Time-series of technician positions for live dispatch view (B5).
@@ -455,8 +708,10 @@ model Client {
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime   @updatedAt @map("updated_at")
 
-  addresses  ClientAddress[]
-  workOrders WorkOrder[]
+  addresses   ClientAddress[]
+  workOrders  WorkOrder[]
+  portalUsers User[]             @relation("ClientPortalUsers")
+  portalInvitations PortalInvitation[]
 
   @@index([clientType], map: "idx_clients_type")
   @@index([isActive], map: "idx_clients_is_active")
@@ -503,9 +758,16 @@ model TaskType {
   id          String  @id @default(uuid())
   tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
   tenant      Tenant  @relation(fields: [tenantId], references: [id])
+  /// B10.2 — legacy `name` kept for back-compat; new writes should populate
+  /// nameFr + nameEn. Reads pick based on Accept-Language with fallback.
   name        String
+  /// Bilingual name — FR canonical (used to backfill legacy `name`).
+  nameFr      String  @default("") @map("name_fr")
+  nameEn      String  @default("") @map("name_en")
   prefix      String
   description String?
+  descriptionFr String? @map("description_fr")
+  descriptionEn String? @map("description_en")
   color       String?
   icon        String?
   isActive    Boolean @default(true) @map("is_active")
@@ -574,7 +836,11 @@ model WorkOrderTemplate {
   tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
   name        String
+  nameFr      String   @default("") @map("name_fr")
+  nameEn      String   @default("") @map("name_en")
   description String?
+  descriptionFr String? @map("description_fr")
+  descriptionEn String? @map("description_en")
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
@@ -595,6 +861,8 @@ model TemplateSection {
   templateId String            @map("template_id")
   template   WorkOrderTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
   name       String
+  nameFr     String            @default("") @map("name_fr")
+  nameEn     String            @default("") @map("name_en")
   sortOrder  Int               @default(0) @map("sort_order")
   viewRoles  Role[]            @default([ADMIN, DISPATCHER, TECHNICIAN]) @map("view_roles")
   editRoles  Role[]            @default([ADMIN, DISPATCHER, TECHNICIAN]) @map("edit_roles")
@@ -615,6 +883,8 @@ model TemplateField {
   sectionId     String            @map("section_id")
   section       TemplateSection   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   label         String
+  labelFr       String            @default("") @map("label_fr")
+  labelEn       String            @default("") @map("label_en")
   fieldType     TemplateFieldType @default(TEXT) @map("field_type")
   placeholder   String?
   helpText      String?           @map("help_text")
@@ -636,8 +906,12 @@ model ClientTypeConfig {
   tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
   name        String
+  nameFr      String   @default("") @map("name_fr")
+  nameEn      String   @default("") @map("name_en")
   code        String
   description String?
+  descriptionFr String? @map("description_fr")
+  descriptionEn String? @map("description_en")
   color       String?  @default("#3b82f6")
   icon        String?
   isActive    Boolean  @default(true)
@@ -657,8 +931,12 @@ model AddressTypeConfig {
   tenantId   String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
   tenant             Tenant   @relation(fields: [tenantId], references: [id])
   name               String
+  nameFr             String   @default("") @map("name_fr")
+  nameEn             String   @default("") @map("name_en")
   code               String
   description        String?
+  descriptionFr      String?  @map("description_fr")
+  descriptionEn      String?  @map("description_en")
   color              String?  @default("#3b82f6")
   icon               String?
   isActive           Boolean  @default(true)
@@ -685,6 +963,8 @@ model AddressTypeField {
   addressTypeConfigId String            @map("address_type_config_id")
   addressTypeConfig   AddressTypeConfig @relation(fields: [addressTypeConfigId], references: [id], onDelete: Cascade)
   label               String
+  labelFr             String            @default("") @map("label_fr")
+  labelEn             String            @default("") @map("label_en")
   // Reuses the TemplateFieldType enum from the form-template feature.
   fieldType           TemplateFieldType @default(TEXT) @map("field_type")
   required            Boolean           @default(false)
@@ -747,6 +1027,13 @@ model WorkOrder {
   completionNotes String? @map("completion_notes")
   negativeReason  String? @map("negative_reason")
 
+  // B12 — Client + technician signatures captured at completion.
+  // Stored as data-URL strings (base64 PNG, ~5–20 KB each). Nullable —
+  // signature capture is optional and can happen after status change.
+  signatureClient       String?   @map("signature_client")
+  signatureTechnician   String?   @map("signature_technician")
+  signedAt              DateTime? @map("signed_at")
+
   // Form Template values — stored as { fieldId: value, ... }
   templateData Json? @map("template_data")
 
@@ -763,6 +1050,7 @@ model WorkOrder {
   notes        Note[]
   attachments  Attachment[]
   appointments Appointment[]
+  reminders    WorkOrderReminder[]
 
   @@index([status])
   @@index([assignedToId])
@@ -869,6 +1157,8 @@ model ProcessStatus {
 
   code     Int
   name     String
+  nameFr   String @default("") @map("name_fr")
+  nameEn   String @default("") @map("name_en")
   color    String @default("#6b7280")
   position Int
 
@@ -877,6 +1167,9 @@ model ProcessStatus {
   isStart            Boolean @default(false) @map("is_start")
   isTerminalPositive Boolean @default(false) @map("is_terminal_positive")
   isTerminalNegative Boolean @default(false) @map("is_terminal_negative")
+  /// B21 — pre-approval step for client-portal work requests. Work
+  /// orders created via the portal start here instead of isInitial.
+  isRequested        Boolean @default(false) @map("is_requested")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -906,6 +1199,8 @@ model ProcessTransition {
   toStatus   ProcessStatus @relation("ToStatus", fields: [toStatusId], references: [id])
 
   label          String
+  labelFr        String   @default("") @map("label_fr")
+  labelEn        String   @default("") @map("label_en")
   allowedRoles   Role[]
   requiredFields String[]
   sortOrder      Int      @default(0) @map("sort_order")

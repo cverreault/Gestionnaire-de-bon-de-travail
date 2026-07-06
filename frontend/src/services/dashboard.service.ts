@@ -11,6 +11,8 @@ export interface TechnicianStat {
 export interface AdminStats {
   workOrdersByStatus: { status: string; count: number }[];
   workOrdersToday: number;
+  /** B21 — client-portal requests awaiting approval. */
+  pendingRequests?: number;
   workOrdersThisWeek: number;
   overdueWorkOrders: number;
   technicianStats: TechnicianStat[];

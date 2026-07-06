@@ -6,6 +6,8 @@ export enum Role {
   ADMIN = 'ADMIN',
   DISPATCHER = 'DISPATCHER',
   TECHNICIAN = 'TECHNICIAN',
+  /** B21 — end-customer portal account, linked to a Client record. */
+  CLIENT = 'CLIENT',
 }
 
 export enum ClientType {
@@ -23,6 +25,8 @@ export enum AddressType {
 }
 
 export enum WorkOrderStatus {
+  /** B21 — client-portal work request awaiting admin approval. */
+  REQUESTED = 'REQUESTED',
   CREATED = 'CREATED',
   ASSIGNED = 'ASSIGNED',
   DISPATCHED = 'DISPATCHED',
@@ -121,6 +125,14 @@ export interface Client {
   notes?: string | null;
   isActive: boolean;
   addresses: ClientAddress[];
+  /** B21 — portal accounts linked to this client (detail endpoint only). */
+  portalUsers?: Array<{
+    id: string;
+    email: string;
+    isActive: boolean;
+    emailVerifiedAt: string | null;
+    createdAt: string;
+  }>;
   createdAt: string;
   updatedAt: string;
 }
@@ -128,13 +140,18 @@ export interface Client {
 export interface TaskType {
   id: string;
   name: string;
+  /// B10.2 — bilingual pair; legacy `name` kept for back-compat.
+  nameFr?: string;
+  nameEn?: string;
   prefix: string;
   description?: string | null;
+  descriptionFr?: string | null;
+  descriptionEn?: string | null;
   color?: string | null;
   icon?: string | null;
   isActive: boolean;
   templateId?: string | null;
-  template?: { id: string; name: string } | null;
+  template?: { id: string; name: string; nameFr?: string; nameEn?: string } | null;
   processDefinitionId?: string | null;
   processDefinition?: { id: string; name: string; isDefault?: boolean } | null;
   createdAt: string;
@@ -176,6 +193,9 @@ export interface TemplateField {
   id: string;
   sectionId: string;
   label: string;
+  /// B10.2 — bilingual pair; legacy `label` kept for back-compat.
+  labelFr?: string;
+  labelEn?: string;
   fieldType: TemplateFieldType;
   placeholder?: string | null;
   helpText?: string | null;
@@ -193,6 +213,8 @@ export interface TemplateSection {
   id: string;
   templateId: string;
   name: string;
+  nameFr?: string;
+  nameEn?: string;
   sortOrder: number;
   /** Roles allowed to see this section. If a role can't see the section, all of
    *  its fields are hidden as well (admin still bypasses). */
@@ -205,7 +227,11 @@ export interface TemplateSection {
 export interface WorkOrderTemplate {
   id: string;
   name: string;
+  nameFr?: string;
+  nameEn?: string;
   description?: string | null;
+  descriptionFr?: string | null;
+  descriptionEn?: string | null;
   isActive: boolean;
   sections: TemplateSection[];
   _count?: { sections: number; taskTypes: number };
@@ -216,8 +242,12 @@ export interface WorkOrderTemplate {
 export interface ClientTypeConfig {
   id: string;
   name: string;
+  nameFr?: string;
+  nameEn?: string;
   code: string;
   description?: string | null;
+  descriptionFr?: string | null;
+  descriptionEn?: string | null;
   color?: string | null;
   icon?: string | null;
   isActive: boolean;
@@ -230,6 +260,8 @@ export interface AddressTypeConfigField {
   id: string;
   addressTypeConfigId: string;
   label: string;
+  labelFr?: string;
+  labelEn?: string;
   fieldType: TemplateFieldType;
   required: boolean;
   options?: string[] | null;
@@ -241,8 +273,12 @@ export interface AddressTypeConfigField {
 export interface AddressTypeConfig {
   id: string;
   name: string;
+  nameFr?: string;
+  nameEn?: string;
   code: string;
   description?: string | null;
+  descriptionFr?: string | null;
+  descriptionEn?: string | null;
   color?: string | null;
   icon?: string | null;
   isActive: boolean;
@@ -401,6 +437,8 @@ export interface TechnicianStat {
 export interface AdminStats {
   workOrdersByStatus: { status: string; count: number }[];
   workOrdersToday: number;
+  /** B21 — client-portal requests awaiting approval. */
+  pendingRequests?: number;
   workOrdersThisWeek: number;
   overdueWorkOrders: number;
   technicianStats: TechnicianStat[];
@@ -448,6 +486,8 @@ export interface ProcessStatus {
   processDefinitionId: string;
   code: number;
   name: string;
+  nameFr?: string;
+  nameEn?: string;
   color: string;
   position: number;
   isInitial: boolean;
@@ -462,9 +502,11 @@ export interface ProcessTransitionDef {
   processDefinitionId: string;
   fromStatusId: string;
   toStatusId: string;
-  fromStatus?: { id: string; code: number; name: string; color: string };
-  toStatus?: { id: string; code: number; name: string; color: string };
+  fromStatus?: { id: string; code: number; name: string; nameFr?: string; nameEn?: string; color: string };
+  toStatus?: { id: string; code: number; name: string; nameFr?: string; nameEn?: string; color: string };
   label: string;
+  labelFr?: string;
+  labelEn?: string;
   allowedRoles: string[];
   requiredFields: string[];
   sortOrder: number;

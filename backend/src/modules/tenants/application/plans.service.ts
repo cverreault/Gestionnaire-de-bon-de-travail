@@ -59,6 +59,9 @@ export class PlansService {
         ...(patch.maxStorageMb !== undefined && { maxStorageMb: patch.maxStorageMb }),
         ...(patch.maxClients !== undefined && { maxClients: patch.maxClients }),
         ...(patch.features !== undefined && { features: patch.features }),
+        ...(patch.stripePriceId !== undefined && {
+          stripePriceId: patch.stripePriceId.trim() || null,
+        }),
         ...(patch.recommended !== undefined && { recommended: patch.recommended }),
         ...(patch.sortOrder !== undefined && { sortOrder: patch.sortOrder }),
         ...(patch.isActive !== undefined && { isActive: patch.isActive }),
@@ -87,6 +90,8 @@ export interface PlanDto {
   recommended: boolean;
   sortOrder: number;
   isActive: boolean;
+  /** B22 — Stripe Price id; null = not purchasable online. */
+  stripePriceId: string | null;
 }
 
 export interface PlanUpdateInput {
@@ -104,6 +109,8 @@ export interface PlanUpdateInput {
   recommended?: boolean;
   sortOrder?: number;
   isActive?: boolean;
+  /** B22 — Stripe Price id; empty string clears the binding. */
+  stripePriceId?: string;
 }
 
 function toDto(row: {
@@ -122,6 +129,7 @@ function toDto(row: {
   recommended: boolean;
   sortOrder: number;
   isActive: boolean;
+  stripePriceId: string | null;
 }): PlanDto {
   return {
     code: row.code,
@@ -138,6 +146,7 @@ function toDto(row: {
       maxClients: row.maxClients,
     },
     features: row.features,
+    stripePriceId: row.stripePriceId,
     recommended: row.recommended,
     sortOrder: row.sortOrder,
     isActive: row.isActive,

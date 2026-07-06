@@ -447,7 +447,7 @@ export default function TechnicianWorkOrderDetailPage() {
             {t('messages.noPhoto', { defaultValue: 'Aucune photo' })}
           </p>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginBottom: '0.75rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '0.5rem', marginBottom: '0.75rem' }}>
             {(wo.attachments ?? []).map((att) => (
               <div
                 key={att.id}

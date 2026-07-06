@@ -80,6 +80,10 @@ interface ClientFormValues {
 import AddressFormFields, { ADDRESS_FORM_DEFAULTS } from '../components/AddressFormFields';
 import type { AddressFormValues } from '../components/AddressFormFields';
 import AddressTypeCustomFields from '../components/AddressTypeCustomFields';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { invitePortalClient } from '../services/portal.service';
+import api from '../services/api';
+import { toast } from '../context/toast.store';
 import { useAddressTypes } from '../hooks/useSettings';
 import { formatStreet } from '../utils/addressFormat';
 
@@ -445,6 +449,80 @@ function ClientModal({
   );
 }
 
+// ─── Portal access (B21) ──────────────────────────────────────────────────────
+
+function PortalAccessSection({ client }: { client: Client }) {
+  const queryClient = useQueryClient();
+  const portalUser = client.portalUsers?.[0] ?? null;
+  const hasActiveAccess = !!portalUser?.isActive;
+
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['v3-clients'] });
+    queryClient.invalidateQueries({ queryKey: ['v3-client', client.id] });
+  };
+
+  const invite = useMutation({
+    mutationFn: () => invitePortalClient(client.id),
+    onSuccess: (res) => {
+      toast.success(`Invitation envoyée à ${res.email}`);
+      refresh();
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : String(err)),
+  });
+
+  const revoke = useMutation({
+    mutationFn: () => api.patch(`/users/${portalUser!.id}`, { isActive: false }),
+    onSuccess: () => {
+      toast.success("Accès au portail révoqué");
+      refresh();
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : String(err)),
+  });
+
+  return (
+    <div style={{ marginBottom: '1rem', padding: '0.75rem', background: theme.colors.surfaceAlt, borderRadius: theme.radius.md, border: theme.borders.light }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <div>
+          <p style={{ margin: 0, fontSize: theme.font.sizeXs, color: theme.colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Portail client
+          </p>
+          {portalUser ? (
+            <p style={{ margin: '0.2rem 0 0', fontSize: theme.font.sizeSm, color: hasActiveAccess ? theme.colors.success : theme.colors.danger }}>
+              {hasActiveAccess ? '✓ Accès actif' : '✗ Accès révoqué'} — {portalUser.email}
+              {portalUser.isActive && !portalUser.emailVerifiedAt && (
+                <span style={{ color: theme.colors.textMuted }}> (invitation en attente)</span>
+              )}
+            </p>
+          ) : (
+            <p style={{ margin: '0.2rem 0 0', fontSize: theme.font.sizeSm, color: theme.colors.textMuted }}>
+              Ce client n'a pas encore accès au portail.
+            </p>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button
+            onClick={() => invite.mutate()}
+            disabled={invite.isPending || (!client.email && !portalUser)}
+            title={!client.email && !portalUser ? 'Ajoutez un courriel à la fiche client' : undefined}
+            style={{ ...buttonStyles.secondary, ...buttonStyles.sm, opacity: invite.isPending || (!client.email && !portalUser) ? 0.6 : 1 }}
+          >
+            {invite.isPending ? 'Envoi…' : portalUser ? "🔁 Renvoyer l'invitation" : '✉️ Inviter au portail'}
+          </button>
+          {hasActiveAccess && (
+            <button
+              onClick={() => revoke.mutate()}
+              disabled={revoke.isPending}
+              style={{ ...buttonStyles.danger, ...buttonStyles.sm, opacity: revoke.isPending ? 0.6 : 1 }}
+            >
+              🚫 Révoquer
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Detail Modal (view only + addresses) ────────────────────────────────────
 
 function ClientDetailModal({
@@ -516,6 +594,9 @@ function ClientDetailModal({
               <p style={{ margin: 0, fontSize: theme.font.sizeSm, color: theme.colors.text }}>{client.notes}</p>
             </div>
           )}
+
+          {/* Portal access (B21) */}
+          <PortalAccessSection client={client} />
 
           {/* Addresses */}
           <div>

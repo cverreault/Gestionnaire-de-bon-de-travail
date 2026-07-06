@@ -33,6 +33,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import type { CalendarEvent, ApiResponse, User } from '../types';
 import { Role, WorkOrderType } from '../types';
 import { theme, cardStyles, formStyles, modalStyles, layoutStyles } from '../theme';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -769,7 +770,10 @@ function MonthView({
     events.filter((ev) => isSameDay(new Date(ev.startTime), day));
 
   return (
-    <div style={{ ...cardStyles.card, padding: '1rem' }}>
+    // B20 — sur téléphone la grille 7 colonnes garde une largeur minimale
+    // et scrolle horizontalement dans sa carte plutôt que de s'écraser.
+    <div style={{ ...cardStyles.card, padding: '1rem', overflowX: 'auto' }}>
+      <div style={{ minWidth: 640 }}>
       {/* Day headers */}
       <div
         style={{
@@ -905,6 +909,7 @@ function MonthView({
             </div>
           );
         })}
+      </div>
       </div>
     </div>
   );
@@ -1073,6 +1078,7 @@ function EventModal({ event, onClose }: { event: CalendarEvent; onClose: () => v
 export default function CalendarPage() {
   const { t: tNav } = useTranslation('nav');
   const { user } = useAuthStore();
+  const { isDesktop } = useBreakpoint();
   const isAdmin = user?.role === Role.ADMIN;
   const queryClient = useQueryClient();
 
@@ -1497,7 +1503,14 @@ export default function CalendarPage() {
         <>
           {/* Month view */}
           {view === 'month' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '1.25rem' }}>
+            // B20 — sous 1024px le panneau détail passe sous la grille.
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: isDesktop ? '1fr 300px' : '1fr',
+                gap: '1.25rem',
+              }}
+            >
               <MonthView
                 currentDate={currentDate}
                 events={events}

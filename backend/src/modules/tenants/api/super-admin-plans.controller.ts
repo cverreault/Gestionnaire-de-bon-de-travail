@@ -84,6 +84,11 @@ class UpdatePlanDto {
   @IsString({ each: true, message: i18nValidationMessage('validation.IS_STRING') })
   features?: string[];
 
+  /// B22 — recurring Stripe Price id (price_…). Empty string clears it.
+  @IsOptional()
+  @IsString({ message: i18nValidationMessage('validation.IS_STRING') })
+  stripePriceId?: string;
+
   @IsOptional()
   @IsBoolean({ message: i18nValidationMessage('validation.IS_BOOLEAN') })
   recommended?: boolean;

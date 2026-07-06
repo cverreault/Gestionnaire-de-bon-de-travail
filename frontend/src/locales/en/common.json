@@ -61,7 +61,8 @@
     "warning": "Warning",
     "info": "Information",
     "results": "results",
-    "result": "result"
+    "result": "result",
+    "pendingRequests": "Requests to approve"
   },
   "messages": {
     "saved": "Saved successfully",

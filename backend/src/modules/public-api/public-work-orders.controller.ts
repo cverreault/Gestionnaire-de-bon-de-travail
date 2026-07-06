@@ -8,7 +8,9 @@ import {
   Patch,
   Post,
   Query,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import {
   ApiOperation,
   ApiSecurity,
@@ -24,6 +26,8 @@ import { CreateWorkOrderDto } from '../work-orders/dto/create-work-order.dto';
 import { WorkOrderFilterDto } from '../work-orders/dto/work-order-filter.dto';
 import { TransitionStatusDto } from '../work-orders/dto/transition-status.dto';
 import { CreateNoteDto } from '../work-orders/dto/create-note.dto';
+import { SignaturesDto } from '../work-orders/dto/signatures.dto';
+import { ReportsService } from '../reports/application/reports.service';
 import { PublicUpdateWorkOrderDto } from './dto/public-update-work-order.dto';
 
 /**
@@ -50,7 +54,10 @@ import { PublicUpdateWorkOrderDto } from './dto/public-update-work-order.dto';
 @PublicApiThrottle()
 @Controller('v1/work-orders')
 export class PublicWorkOrdersController {
-  constructor(private readonly workOrders: WorkOrdersService) {}
+  constructor(
+    private readonly workOrders: WorkOrdersService,
+    private readonly reports: ReportsService,
+  ) {}
 
   @Get()
   @Scope('read-only')
@@ -129,6 +136,50 @@ export class PublicWorkOrdersController {
     @CurrentApiKey() key: ResolvedApiKey,
   ) {
     return this.workOrders.transition(id, dto, asCurrentUser(key));
+  }
+
+  @Post(':id/signatures')
+  @Scope('read-write')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Enregistrer les signatures client + technicien (B12)',
+    description:
+      'Payload = { signatureClient?: dataUrl, signatureTechnician?: dataUrl }. ' +
+      'Data-URL PNG de max ~200 KB. Passer null pour effacer une signature existante.',
+  })
+  saveSignatures(
+    @Param('id') id: string,
+    @Body() dto: SignaturesDto,
+    @CurrentApiKey() key: ResolvedApiKey,
+  ) {
+    return this.workOrders.saveSignatures(id, dto, asCurrentUser(key));
+  }
+
+  @Get(':id/report.pdf')
+  @Scope('read-only')
+  @ApiOperation({
+    summary: 'Télécharger le rapport PDF d\'un BT (fiche d\'intervention)',
+    description:
+      'Rendu HTML → PDF via Puppeteer. Contient les détails du BT, notes, ' +
+      'pièces jointes (référence uniquement) et les signatures si présentes. ' +
+      'Paramètre `locale=fr|en` — défaut FR.',
+  })
+  async workOrderReportPdf(
+    @Param('id') id: string,
+    @CurrentApiKey() key: ResolvedApiKey,
+    @Res() res: Response,
+    @Query('locale') locale?: string,
+  ) {
+    const lang: 'fr' | 'en' = locale === 'en' ? 'en' : 'fr';
+    const { buffer, filename } = await this.reports.renderWorkOrderPdf(
+      id,
+      asCurrentUser(key),
+      lang,
+    );
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', String(buffer.length));
+    res.end(buffer);
   }
 
   @Patch(':id')

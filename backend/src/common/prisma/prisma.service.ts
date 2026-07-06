@@ -7,6 +7,7 @@ import {
 import { PrismaClient } from '@prisma/client';
 import { RequestContextService } from '../context/request-context.service';
 import { buildTenantScopeMiddleware } from './tenant-scope.middleware';
+import { buildBilingualSyncMiddleware } from './bilingual-sync.middleware';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
@@ -31,8 +32,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     // TenantResolverMiddleware. Background hooks (cron, seed, SA
     // bootstrap) run without context and stay unscoped.
     this.$use(buildTenantScopeMiddleware(this.context));
+    this.$use(buildBilingualSyncMiddleware());
     this.logger.log('✅ Prisma connected to PostgreSQL');
     this.logger.log('🛡️  Tenant-scope middleware installed');
+    this.logger.log('🌐 Bilingual-sync middleware installed');
   }
 
   async onModuleDestroy() {

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User } from '../types';
+import { setSentryUser } from '../sentry';
 
 export interface ImpersonationState {
   /** True while the SA is acting as the first ADMIN of another tenant. */
@@ -82,6 +83,14 @@ export const useAuthStore = create<AuthState>()(
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
         set({ user, accessToken, refreshToken, isAuthenticated: true });
+        // Tag Sentry with the current user so any subsequent error is
+        // attributed properly. No-op when Sentry is disabled.
+        setSentryUser({
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          tenantId: (user as unknown as { tenantId?: string }).tenantId,
+        });
       },
 
       updateTokens: (accessToken, refreshToken) => {
@@ -95,6 +104,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
+        setSentryUser(null);
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         set({

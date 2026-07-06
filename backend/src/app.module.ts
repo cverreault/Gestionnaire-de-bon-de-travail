@@ -39,6 +39,12 @@ import { TenantsModule } from './modules/tenants/tenants.module';
 import { ApiKeysModule } from './modules/api-keys/api-keys.module';
 import { PublicApiModule } from './modules/public-api/public-api.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
+import { AlertsModule } from './modules/alerts/alerts.module';
+import { RecurringModule } from './modules/recurring/recurring.module';
+import { DispatchMapModule } from './modules/dispatch-map/dispatch-map.module';
+import { RemindersModule } from './modules/reminders/reminders.module';
+import { PortalModule } from './modules/portal/portal.module';
+import { BillingModule } from './modules/billing/billing.module';
 
 @Module({
   imports: [
@@ -112,6 +118,12 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module';
     TenantsModule,
     ApiKeysModule,
     WebhooksModule,
+    AlertsModule,
+    RecurringModule,
+    DispatchMapModule,
+    RemindersModule,
+    PortalModule,
+    BillingModule,
     PublicApiModule,
 
     // ── Feature modules ────────────────────────────────────────────────────

@@ -21,6 +21,8 @@ import {
 export interface CurrentUserRef {
   id: string;
   role: Role;
+  /** B21 — set for CLIENT portal accounts. */
+  clientId?: string | null;
 }
 
 function clientDisplayName(c: {
@@ -112,6 +114,24 @@ export class ReportsService {
       );
     }
 
+    // B21 — portal clients: own work orders only, and only once terminal
+    // (the report of an in-flight BT is an internal document).
+    if (currentUser.role === Role.CLIENT) {
+      if (!currentUser.clientId || wo.clientId !== currentUser.clientId) {
+        throw new ForbiddenException(
+          'Vous ne pouvez télécharger que vos propres bons de travail',
+        );
+      }
+      const terminal =
+        wo.status === WorkOrderStatus.COMPLETED_POSITIVE ||
+        wo.status === WorkOrderStatus.COMPLETED_NEGATIVE;
+      if (!terminal) {
+        throw new ForbiddenException(
+          'Le rapport est disponible une fois le bon de travail complété',
+        );
+      }
+    }
+
     const data: WorkOrderPdfData = {
       referenceNumber: wo.referenceNumber,
       title: wo.title,
@@ -124,6 +144,9 @@ export class ReportsService {
       slaBreachedAt: wo.slaBreachedAt,
       completionNotes: wo.completionNotes,
       negativeReason: wo.negativeReason,
+      signatureClient: (wo as unknown as { signatureClient: string | null }).signatureClient ?? null,
+      signatureTechnician: (wo as unknown as { signatureTechnician: string | null }).signatureTechnician ?? null,
+      signedAt: (wo as unknown as { signedAt: Date | null }).signedAt ?? null,
       client: wo.client
         ? {
             name: clientDisplayName(wo.client),

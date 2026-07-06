@@ -185,6 +185,14 @@ function AdminDashboard() {
           color={theme.colors.danger}
           icon="⏰"
         />
+        {(stats.pendingRequests ?? 0) > 0 && (
+          <StatCard
+            label={tCommon('labels.pendingRequests', { defaultValue: 'Demandes à approuver' })}
+            count={stats.pendingRequests ?? 0}
+            color="#b45309"
+            icon="📥"
+          />
+        )}
       </div>
 
       {/* ── BTs par statut ────────────────────────────────────────────────── */}

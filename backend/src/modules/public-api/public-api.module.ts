@@ -6,6 +6,7 @@ import { CalendarModule } from '../calendar/calendar.module';
 import { SettingsModule } from '../settings/settings.module';
 import { ProcessModule } from '../process/process.module';
 import { UsersModule } from '../users/users.module';
+import { ReportsModule } from '../reports/reports.module';
 import { PublicWorkOrdersController } from './public-work-orders.controller';
 import { PublicClientsController } from './public-clients.controller';
 import { PublicAttachmentsController } from './public-attachments.controller';
@@ -29,6 +30,7 @@ import { PublicCatalogController } from './public-catalog.controller';
     SettingsModule,
     ProcessModule,
     UsersModule,
+    ReportsModule,
   ],
   controllers: [
     PublicWorkOrdersController,

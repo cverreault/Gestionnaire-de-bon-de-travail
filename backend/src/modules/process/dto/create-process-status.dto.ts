@@ -22,13 +22,25 @@ export class CreateProcessStatusDto {
 
   @ApiProperty({
     example: 'Assigné',
-    description: 'Nom du statut',
+    description: 'Nom du statut. Legacy — écris de préférence nameFr + nameEn.',
     maxLength: 100,
   })
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
   name: string;
+
+  @ApiPropertyOptional({ description: 'Nom en français (B10.2)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  nameFr?: string;
+
+  @ApiPropertyOptional({ description: 'Nom en anglais (B10.2)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  nameEn?: string;
 
   @ApiProperty({
     example: '#3b82f6',

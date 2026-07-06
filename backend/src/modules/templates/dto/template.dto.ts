@@ -13,17 +13,44 @@ import {
 import { Role, TemplateFieldType } from '@prisma/client';
 
 export class CreateTemplateDto {
-  @ApiProperty({ example: 'Inspection chauffe-eau' })
+  @ApiProperty({
+    example: 'Inspection chauffe-eau',
+    description: 'Legacy — écris de préférence nameFr + nameEn.',
+  })
   @IsString()
   @IsNotEmpty()
   @MaxLength(120)
   name: string;
+
+  @ApiPropertyOptional({ description: 'Nom en français (B10.2)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  nameFr?: string;
+
+  @ApiPropertyOptional({ description: 'Nom en anglais (B10.2)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  nameEn?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   @MaxLength(500)
   description?: string;
+
+  @ApiPropertyOptional({ description: 'Description en français (B10.2)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  descriptionFr?: string;
+
+  @ApiPropertyOptional({ description: 'Description en anglais (B10.2)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  descriptionEn?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -34,11 +61,26 @@ export class CreateTemplateDto {
 export class UpdateTemplateDto extends PartialType(CreateTemplateDto) {}
 
 export class CreateSectionDto {
-  @ApiProperty({ example: 'Avant intervention' })
+  @ApiProperty({
+    example: 'Avant intervention',
+    description: 'Legacy — écris de préférence nameFr + nameEn.',
+  })
   @IsString()
   @IsNotEmpty()
   @MaxLength(120)
   name: string;
+
+  @ApiPropertyOptional({ description: 'Nom en français (B10.2)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  nameFr?: string;
+
+  @ApiPropertyOptional({ description: 'Nom en anglais (B10.2)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  nameEn?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -62,11 +104,26 @@ export class CreateSectionDto {
 export class UpdateSectionDto extends PartialType(CreateSectionDto) {}
 
 export class CreateFieldDto {
-  @ApiProperty({ example: 'Marque du chauffe-eau' })
+  @ApiProperty({
+    example: 'Marque du chauffe-eau',
+    description: 'Legacy — écris de préférence labelFr + labelEn.',
+  })
   @IsString()
   @IsNotEmpty()
   @MaxLength(160)
   label: string;
+
+  @ApiPropertyOptional({ description: 'Libellé en français (B10.2)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  labelFr?: string;
+
+  @ApiPropertyOptional({ description: 'Libellé en anglais (B10.2)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  labelEn?: string;
 
   @ApiProperty({ enum: TemplateFieldType, example: TemplateFieldType.TEXT })
   @IsEnum(TemplateFieldType)

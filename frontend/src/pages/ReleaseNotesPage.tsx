@@ -59,6 +59,127 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.6.0',
+    name: 'Connecteur SMS Twilio + paiements Stripe (B22)',
+    date: 'Juillet 2026',
+    entries: [
+      {
+        type: 'new',
+        text: "💬 Connecteur SMS Twilio : le canal SMS des alertes et rappels envoie maintenant pour vrai — fournisseur, Account SID, Auth Token (chiffré) et numéro expéditeur se configurent dans Configuration plateforme (SA), avec bouton d'envoi de test. Sans configuration, le mode stub (log console) demeure",
+      },
+      {
+        type: 'new',
+        text: "💳 Paiements en ligne Stripe pour les abonnements : l'admin principal d'un compte paie son plan par Stripe Checkout depuis Mon abonnement et gère sa facturation (factures, carte, annulation) via le portail Stripe. Le webhook signé bascule automatiquement le plan et les quotas du compte — clés dans Configuration plateforme, price_ Stripe par plan dans la page Plans",
+      },
+      {
+        type: 'improvement',
+        text: "⚙️ Configuration plateforme : nouvelles sections « SMS (Twilio) » et « Paiements (Stripe) » avec secrets chiffrés au repos (AES-256-GCM)",
+      },
+    ],
+  },
+  {
+    version: '2.5.0',
+    name: 'Portail client (B21)',
+    date: 'Juillet 2026',
+    entries: [
+      {
+        type: 'new',
+        text: "🌐 Portail client sous /portail : les clients invités consultent tous leurs bons de travail (demandes en attente, planifiés, en cours, complétés) avec badge de statut bilingue et téléchargent le rapport PDF des BT complétés",
+      },
+      {
+        type: 'new',
+        text: "📥 Demandes de travail : le client soumet une demande (type de tâche + une de ses adresses + description) qui crée un vrai BT sans date au nouveau statut « Demandé » — l'admin/dispatcher approuve (→ Créé) ou rejette (→ Complété négatif) via les boutons de transition habituels",
+      },
+      {
+        type: 'new',
+        text: "✉️ Invitations : bouton « Inviter au portail » sur la fiche client — courriel avec lien d'activation (valide 7 jours), le client choisit son mot de passe. Renvoi et révocation d'accès depuis la même fiche",
+      },
+      {
+        type: 'new',
+        text: "🔔 Notification automatique in-app + courriel à tous les admins/dispatchers à chaque nouvelle demande client ; événement workOrders.workOrder.requested disponible dans le module d'alertes configurables",
+      },
+      {
+        type: 'security',
+        text: "🔒 Nouveau rôle CLIENT étanche : durcissement @Roles sur 18 routes staff (BT, paramètres, calendrier, pièces jointes, dashboard) — un compte portail ne voit que SES bons de travail (champs restreints, jamais les notes internes) et son rapport PDF seulement une fois le BT complété",
+      },
+    ],
+  },
+  {
+    version: '2.4.0',
+    name: 'API publique + webhooks + facturation (B8/B9)',
+    date: 'Juillet 2026',
+    entries: [
+      {
+        type: 'new',
+        text: '🔑 API publique v1 sous /api/v1/* : ~30 endpoints (BT, clients, adresses, pièces jointes, calendrier, catalogue). Authentification par clé X-API-Key avec scope hiérarchique read-only ⊆ read-write ⊆ admin. Portail admin « 🔑 Clés API » pour créer/révoquer les clés — le plaintext est affiché une seule fois (pattern Stripe)',
+      },
+      {
+        type: 'new',
+        text: '📚 Documentation API interactive à /documentation-api derrière authentification. Deux onglets : guide de démarrage bilingue + référence Swagger UI générée à partir des endpoints publics. Extraits curl prêts à copier',
+      },
+      {
+        type: 'new',
+        text: '🔔 Webhooks sortants (B9) : abonnement à des événements TaskMgr (BT créé, statut changé, complété, client mis à jour…) avec URL de destination personnalisée. Signature HMAC-SHA256 Stripe-style avec timestamp anti-replay. Page « 🔔 Webhooks » avec log de livraisons rafraîchi toutes les 5s',
+      },
+      {
+        type: 'new',
+        text: 'Retry automatique des livraisons webhook : 30s → 2min → 10min → 1h → 6h → abandon après 6 tentatives. Auto-désactivation d\'un endpoint après 15 échecs consécutifs. Bouton « 🔁 Réessayer maintenant » sur les livraisons échouées',
+      },
+      {
+        type: 'new',
+        text: '💳 Catalogue de plans SaaS géré par le SUPER_ADMIN : page « Plans & tarifs » avec CRUD complet (prix mensuel, prix par utilisateur, quotas par défaut, fonctionnalités, ordre d\'affichage). Chaque tenant voit maintenant sa page « Mon abonnement » avec plan actuel + quotas + pic mensuel',
+      },
+      {
+        type: 'new',
+        text: '📈 Suivi du pic mensuel des quotas (peak tracking) : la facturation par siège utilise le high-water-mark du mois plutôt que la valeur instantanée. Un tenant qui passe de 2 → 4 → 2 utilisateurs paie pour 4',
+      },
+      {
+        type: 'new',
+        text: '📥 Import/export CSV des clients : bouton dans la page Clients pour uploader un CSV avec validation ligne par ligne (erreurs détaillées) et téléchargement de tous les clients au format tableur',
+      },
+      {
+        type: 'new',
+        text: '🚀 Wizard d\'onboarding au premier login ADMIN d\'un nouveau tenant : guide pas-à-pas pour créer les premiers types de tâches, importer des clients, inviter l\'équipe',
+      },
+      {
+        type: 'new',
+        text: '🛡️ Page « Utilisateurs de la plateforme » côté SA : gestion des SUPER_ADMIN eux-mêmes (promotion, démotion). Guard « primary admin » qui empêche de supprimer/démoter le dernier admin d\'un tenant',
+      },
+      {
+        type: 'new',
+        text: 'Composants UI partagés introduits : Toast pour notifications transverses, EmptyState avec CTA, SkeletonList pour les chargements. Utilisés maintenant sur toutes les pages CRUD',
+      },
+      {
+        type: 'improvement',
+        text: '🎨 Branding par tenant : chaque espace de travail peut téléverser son logo depuis « 🌍 Tenants » du SA (affiché dans la sidebar à la place du 🔧 générique). Stocké dans MinIO, URL présignée sur demande',
+      },
+      {
+        type: 'improvement',
+        text: 'Actions « Suspendre » et « Supprimer » un tenant depuis la page SA. La suppression est un soft-delete (audit trail préservé), la suspension bloque le login immédiatement',
+      },
+      {
+        type: 'fix',
+        text: 'Le SUPER_ADMIN reste connecté proprement en sortant d\'une session d\'impersonation (avant : re-login forcé)',
+      },
+      {
+        type: 'fix',
+        text: 'CORS_ORIGIN accepte maintenant une liste de valeurs séparées par des virgules (ex. « http://localhost:8088,http://192.168.1.10:8088 ») — utile pour tester depuis plusieurs adresses',
+      },
+      {
+        type: 'infra',
+        text: 'MinioService extrait en StorageModule global : plus une seule initialisation, réutilisable par n\'importe quel module sans import direct (ADR-010)',
+      },
+      {
+        type: 'infra',
+        text: 'Chaîne de guards globaux étendue à la nouvelle surface v1 : JwtAuthGuard → ApiKeyAuthGuard → ApiScopeGuard → RolesGuard → UserScopedThrottlerGuard. Fail-safe : @Scope() par défaut à admin si oublié',
+      },
+      {
+        type: 'infra',
+        text: 'Migration Prisma pour api_keys (SHA-256 hash) et webhook_endpoints/webhook_deliveries (secret AES-256-GCM chiffré au repos). Décisions consignées dans ADR-011 et ADR-012',
+      },
+    ],
+  },
+  {
     version: '2.3.0',
     name: 'Portail SuperAdmin enrichi + impersonation cross-tenant (B7)',
     date: 'Juin 2026',

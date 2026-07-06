@@ -124,6 +124,81 @@ export class NotificationsListener {
   }
 
   /**
+   * B21 — client-portal work request: in-app + email fan-out to every
+   * ADMIN and DISPATCHER so the request gets triaged quickly. The
+   * configurable Alerts engine also sees the event (rules on
+   * workOrders.workOrder.requested); this handler is the zero-config
+   * default.
+   */
+  @OnEvent('workOrders.workOrder.requested', { async: true, promisify: true })
+  async onWorkOrderRequested(event: WorkOrderEvent) {
+    try {
+      const data = event.data as {
+        referenceNumber?: string;
+        title?: string;
+      };
+      const recipients = await this.resolveSlaRecipients(null);
+      if (recipients.length === 0) return;
+
+      const title = '📥 Nouvelle demande de travail client';
+      const body =
+        `Un client a soumis la demande ${data.referenceNumber ?? ''} — « ${data.title ?? ''} ». ` +
+        'Elle attend votre approbation.';
+
+      for (const recipient of recipients) {
+        await this.dispatchOne(
+          recipient.id,
+          'workOrder.requested',
+          { title, body, aggregateId: event.aggregateId, data: event.data },
+          { subject: title, body, url: `/bons-de-travail/${event.aggregateId}` },
+        );
+      }
+    } catch (err) {
+      this.logger.error(
+        `Failed to handle requested event ${event.eventId}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+  }
+
+  /**
+   * B21 — portal invitation issued: send the set-password link to the
+   * client. Plain email (the recipient has no account preferences yet).
+   */
+  @OnEvent('portal.invitation.issued', { async: true, promisify: true })
+  async onPortalInvitationIssued(event: {
+    email: string;
+    link: string;
+    clientName: string;
+    tenantName?: string;
+    locale?: string;
+  }) {
+    try {
+      const en = event.locale === 'en';
+      const subject = en
+        ? `${event.tenantName ?? 'Dispatch2Go'} — your client portal access`
+        : `${event.tenantName ?? 'Dispatch2Go'} — votre accès au portail client`;
+      const text = en
+        ? `Hello ${event.clientName},\n\nYou have been invited to the client portal. ` +
+          `Set your password using the link below (valid 7 days):\n\n${event.link}\n\n` +
+          `You will then be able to track your work orders, download completed reports ` +
+          `and submit new work requests.`
+        : `Bonjour ${event.clientName},\n\nVous avez été invité au portail client. ` +
+          `Définissez votre mot de passe via le lien ci-dessous (valide 7 jours) :\n\n${event.link}\n\n` +
+          `Vous pourrez ensuite suivre vos bons de travail, télécharger les rapports complétés ` +
+          `et soumettre de nouvelles demandes de travail.`;
+      await this.email.send({ to: event.email, subject, text });
+    } catch (err) {
+      this.logger.error(
+        `Failed to send portal invitation email to ${event.email}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+  }
+
+  /**
    * SLA fan-out target list: the assigned tech (if any) + every ADMIN
    * and DISPATCHER. Deduped on id.
    */
@@ -144,7 +219,7 @@ export class NotificationsListener {
    */
   private async dispatchOne(
     userId: string,
-    eventType: 'workOrder.assigned' | 'workOrder.slaBreached',
+    eventType: 'workOrder.assigned' | 'workOrder.slaBreached' | 'workOrder.requested',
     notification: { title: string; body?: string; aggregateId?: string; data?: unknown },
     emailAndPush: { subject: string; body?: string; url?: string },
   ): Promise<void> {

@@ -68,6 +68,7 @@ const TYPE_LABELS: Record<WorkOrderType, string> = {
 };
 
 const STATUS_LABELS: Record<WorkOrderStatus, string> = {
+  [WorkOrderStatus.REQUESTED]: 'Demandé',
   [WorkOrderStatus.CREATED]: 'Créé',
   [WorkOrderStatus.ASSIGNED]: 'Assigné',
   [WorkOrderStatus.DISPATCHED]: 'Dispatché',

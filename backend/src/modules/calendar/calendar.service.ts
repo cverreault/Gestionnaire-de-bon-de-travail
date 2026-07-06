@@ -28,6 +28,7 @@ export interface CalendarEvent {
 
 /** WorkOrderStatus → hex color for calendar display */
 const STATUS_COLORS: Record<WorkOrderStatus, string> = {
+  [WorkOrderStatus.REQUESTED]:          '#eab308',
   [WorkOrderStatus.CREATED]:            '#9E9E9E',
   [WorkOrderStatus.ASSIGNED]:           '#2196F3',
   [WorkOrderStatus.DISPATCHED]:         '#FF9800',

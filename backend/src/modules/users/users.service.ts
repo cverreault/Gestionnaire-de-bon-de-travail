@@ -45,7 +45,9 @@ export class UsersService {
 
   async findAll(role?: Role) {
     return this.prisma.user.findMany({
-      where: role ? { role } : undefined,
+      // B21 — portal accounts (role CLIENT) are managed from the client
+      // record, not the staff Users page: hide them unless explicitly asked.
+      where: role ? { role } : { role: { not: Role.CLIENT } },
       select: USER_SELECT,
       orderBy: { createdAt: 'desc' },
     });

@@ -16,18 +16,42 @@ export class CreateTaskTypeDto {
 
   @ApiProperty({
     example: 'Plomberie',
-    description: 'Nom du type de tâche (unique, insensible à la casse)',
+    description: 'Nom du type de tâche (unique, insensible à la casse). Legacy — écris de préférence nameFr + nameEn.',
   })
   @IsString({ message: i18nValidationMessage('validation.IS_STRING') })
   @IsNotEmpty({ message: i18nValidationMessage('validation.NAME_REQUIRED') })
   @MaxLength(100, { message: i18nValidationMessage('validation.MAX_LENGTH') })
   name: string;
 
+  @ApiPropertyOptional({ description: 'Nom en français (B10.2)' })
+  @IsOptional()
+  @IsString({ message: i18nValidationMessage('validation.IS_STRING') })
+  @MaxLength(100)
+  nameFr?: string;
+
+  @ApiPropertyOptional({ description: 'Nom en anglais (B10.2)' })
+  @IsOptional()
+  @IsString({ message: i18nValidationMessage('validation.IS_STRING') })
+  @MaxLength(100)
+  nameEn?: string;
+
   @ApiPropertyOptional({ description: 'Description du type de tâche' })
   @IsOptional()
   @IsString()
   @MaxLength(500)
   description?: string;
+
+  @ApiPropertyOptional({ description: 'Description en français (B10.2)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  descriptionFr?: string;
+
+  @ApiPropertyOptional({ description: 'Description en anglais (B10.2)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  descriptionEn?: string;
 
   @ApiPropertyOptional({
     example: '#FF5733',

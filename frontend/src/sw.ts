@@ -49,10 +49,10 @@ self.addEventListener('push', (event: PushEvent) => {
     payload = event.data ? (event.data.json() as PushPayload) : {};
   } catch {
     // Body wasn't JSON — fall back to a generic notification.
-    payload = { title: 'TaskMgr', body: event.data?.text() ?? '' };
+    payload = { title: 'Dispatch2Go', body: event.data?.text() ?? '' };
   }
 
-  const title = payload.title ?? 'TaskMgr';
+  const title = payload.title ?? 'Dispatch2Go';
   const options: NotificationOptions = {
     body: payload.body,
     badge: '/pwa-192x192.png',

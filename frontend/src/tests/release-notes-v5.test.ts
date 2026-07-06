@@ -447,30 +447,28 @@ describe('BUG-01 — borderBottom overridden by border: none in version card hea
 
 // ─── BUG-02 Regression: duplicate icons in TechnicianNav ─────────────────────
 
-describe('BUG-02 — Duplicate 📋 icon in TechnicianNav for Mes BT and Notes de version', () => {
+describe('BUG-02 (fixed) — TechnicianNav icons are unique', () => {
   /**
-   * TechnicianNav.tsx uses 📋 for both "Mes BT" (line 39) and "Notes de version" (line 51).
-   * This causes visual ambiguity in the bottom navigation bar.
-   * The nav items should each have a unique icon.
+   * BUG-02 historique : TechnicianNav utilisait 📋 pour « Mes BT » ET
+   * « Notes de version ». Corrigé — les notes de version utilisent 📝.
+   * Fixture alignée sur TechnicianNav.tsx ; ces assertions verrouillent
+   * la correction (régression = ce test casse).
    */
   const navItems = [
     { to: '/mes-bons',      label: 'Mes BT',    icon: '📋' },
     { to: '/profil',        label: 'Mon profil', icon: '🙍' },
-    { to: '/release-notes', label: 'Notes',      icon: '📋' }, // BUG: same as Mes BT
+    { to: '/release-notes', label: 'Notes',      icon: '📝' },
   ];
 
-  it('should have unique icons across all nav items (currently FAILS — documents BUG-02)', () => {
+  it('has unique icons across all nav items', () => {
     const icons = navItems.map((n) => n.icon);
     const uniqueIcons = new Set(icons);
-    // This assertion FAILS with the current implementation — it documents the bug.
-    // Expected fix: change /release-notes icon to e.g. 📝 or 🗒️
-    expect(uniqueIcons.size).toBe(icons.length); // Will FAIL: 2 items share 📋
+    expect(uniqueIcons.size).toBe(icons.length);
   });
 
   it('Mes BT and Notes de version do not share the same icon', () => {
     const mesBTItem = navItems.find((n) => n.to === '/mes-bons')!;
     const notesItem = navItems.find((n) => n.to === '/release-notes')!;
-    // Documents the bug — currently these ARE equal
-    expect(mesBTItem.icon).not.toBe(notesItem.icon); // Will FAIL with current code
+    expect(mesBTItem.icon).not.toBe(notesItem.icon);
   });
 });

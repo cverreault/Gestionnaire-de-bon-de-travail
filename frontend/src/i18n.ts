@@ -19,6 +19,7 @@ import frCsv from './locales/fr/csv.json';
 import frApiKeys from './locales/fr/apiKeys.json';
 import frApiDocs from './locales/fr/apiDocs.json';
 import frWebhooks from './locales/fr/webhooks.json';
+import frAlerts from './locales/fr/alerts.json';
 
 // ── EN ─────────────────────────────────────────────────────────────────────
 import enCommon from './locales/en/common.json';
@@ -37,6 +38,9 @@ import enCsv from './locales/en/csv.json';
 import enApiKeys from './locales/en/apiKeys.json';
 import enApiDocs from './locales/en/apiDocs.json';
 import enWebhooks from './locales/en/webhooks.json';
+import enAlerts from './locales/en/alerts.json';
+import frPortal from './locales/fr/portal.json';
+import enPortal from './locales/en/portal.json';
 
 export const SUPPORTED_LOCALES = ['fr', 'en'] as const;
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
@@ -58,6 +62,8 @@ const NAMESPACES = [
   'apiKeys',
   'apiDocs',
   'webhooks',
+  'alerts',
+  'portal',
 ] as const;
 
 i18n
@@ -82,6 +88,8 @@ i18n
         apiKeys: frApiKeys,
         apiDocs: frApiDocs,
         webhooks: frWebhooks,
+        alerts: frAlerts,
+        portal: frPortal,
       },
       en: {
         common: enCommon,
@@ -100,6 +108,8 @@ i18n
         apiKeys: enApiKeys,
         apiDocs: enApiDocs,
         webhooks: enWebhooks,
+        alerts: enAlerts,
+        portal: enPortal,
       },
     },
     fallbackLng: 'fr',

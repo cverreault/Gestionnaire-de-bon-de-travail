@@ -46,6 +46,7 @@ export class SettingsController {
    * Accessible à tous les utilisateurs authentifiés (lecture seule).
    */
   @Get('task-types')
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN) // B21 — explicit: CLIENT portal users must not reach staff routes
   @ApiOperation({
     summary: 'Lister les types de tâche',
     description:
@@ -72,6 +73,7 @@ export class SettingsController {
    * Accessible à tous les utilisateurs authentifiés (lecture seule).
    */
   @Get('task-types/:id')
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN) // B21 — explicit: CLIENT portal users must not reach staff routes
   @ApiOperation({ summary: 'Détail d\'un type de tâche' })
   @ApiParam({ name: 'id', description: 'UUID du type de tâche' })
   @ApiResponse({ status: 200, description: 'Type de tâche trouvé' })
@@ -152,6 +154,7 @@ export class SettingsController {
    * Accessible à tous les utilisateurs authentifiés.
    */
   @Get('client-types')
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN) // B21 — explicit: CLIENT portal users must not reach staff routes
   @ApiOperation({
     summary: 'Lister les types de clients',
     description:
@@ -239,6 +242,7 @@ export class SettingsController {
    * Accessible à tous les utilisateurs authentifiés.
    */
   @Get('address-types')
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN) // B21 — explicit: CLIENT portal users must not reach staff routes
   @ApiOperation({
     summary: "Lister les types d'emplacement",
     description:
@@ -322,6 +326,7 @@ export class SettingsController {
   // ── AddressType custom fields ─────────────────────────────────────────────
 
   @Get('address-types/:id/fields')
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN) // B21 — explicit: CLIENT portal users must not reach staff routes
   @ApiOperation({ summary: "Liste des champs custom d'un type d'emplacement" })
   listAddressTypeFields(@Param('id', ParseUUIDPipe) id: string) {
     return this.settingsService.listAddressTypeFields(id);

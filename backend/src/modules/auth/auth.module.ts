@@ -8,6 +8,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { RefreshTokenCleanupService } from './refresh-token-cleanup.service';
 import { SuperAdminBootstrapService } from './super-admin-bootstrap.service';
 import { EmailVerificationService } from './application/email-verification.service';
+import { TotpService } from './totp/totp.service';
+import { TotpController } from './totp/totp.controller';
 
 @Module({
   imports: [
@@ -21,13 +23,14 @@ import { EmailVerificationService } from './application/email-verification.servi
       inject: [ConfigService],
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, TotpController],
   providers: [
     AuthService,
     JwtStrategy,
     RefreshTokenCleanupService,
     SuperAdminBootstrapService,
     EmailVerificationService,
+    TotpService,
   ],
   /**
    * JwtModule est exporté pour que d'autres modules (ex. UsersModule)

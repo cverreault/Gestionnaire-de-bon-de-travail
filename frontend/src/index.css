@@ -192,3 +192,54 @@ a:hover {
   background-color: var(--c-primaryLight);
   color: var(--c-text);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   B20 — RESPONSIVE (desktop / tablette / téléphone)
+
+   L'app est stylée inline (theme.ts), donc les media queries ne peuvent pas
+   cibler les styles des composants… sauf avec `!important`, qui bat les
+   styles inline. Les règles ci-dessous corrigent globalement les patterns
+   récurrents sans toucher chaque page. Breakpoints : <768 téléphone,
+   768-1023 tablette, ≥1024 desktop (voir theme.breakpoints).
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Tables : scroll horizontal au lieu d'être coupées ─────────────────────
+   `tableStyles.container` fait `overflow: hidden` — sur petit écran les
+   colonnes disparaissent. :has() cible tout wrapper direct d'une table. */
+main div:has(> table) {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+main table {
+  min-width: max-content;
+}
+
+@media (max-width: 767px) {
+  /* ── Grilles de formulaires symétriques → 1 colonne ──────────────────────
+     Matche `1fr 1fr` et `1fr 1fr 1fr` (formulaires bilingues, modals de
+     création…). Ne touche PAS `320px 1fr`, `repeat(7,1fr)` (calendrier),
+     `1fr auto`, `2fr 1fr` — vérifié contre l'inventaire des pages. */
+  [style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Confort téléphone ─────────────────────────────────────────────────── */
+  main {
+    padding: 0.75rem !important;
+  }
+  /* iOS zoome automatiquement sur les inputs < 16px — on force 16px. */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+  /* Les modals pleine-hauteur ne doivent pas déborder l'écran. */
+  [style*="max-height: 90vh"] {
+    max-height: 88dvh !important;
+  }
+}
+
+@media (max-width: 1023px) {
+  /* Les blocs page-header (titre + boutons) wrappent au lieu de déborder. */
+  main header {
+    flex-wrap: wrap !important;
+  }
+}

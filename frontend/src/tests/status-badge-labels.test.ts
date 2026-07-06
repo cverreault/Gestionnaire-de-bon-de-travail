@@ -15,6 +15,7 @@ import { WorkOrderStatus } from '../types/index';
 // ─── Re-declare label maps (mirrors actual source files) ─────────────────────
 
 const STATUS_CONFIG: Record<WorkOrderStatus, { label: string; bg: string; color: string; border: string }> = {
+  [WorkOrderStatus.REQUESTED]:          { label: 'Demandé',       bg: '#fef9c3', color: '#854d0e', border: '#fde047' },
   [WorkOrderStatus.CREATED]:            { label: 'Créé',          bg: '#dbeafe', color: '#1e40af', border: '#93c5fd' },
   [WorkOrderStatus.ASSIGNED]:           { label: 'Assigné',       bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
   [WorkOrderStatus.DISPATCHED]:         { label: 'Réparti',       bg: '#e0e7ff', color: '#3730a3', border: '#a5b4fc' },
@@ -25,6 +26,7 @@ const STATUS_CONFIG: Record<WorkOrderStatus, { label: string; bg: string; color:
 };
 
 const STATUS_LABELS: Record<WorkOrderStatus, string> = {
+  [WorkOrderStatus.REQUESTED]:          'Demandé',
   [WorkOrderStatus.CREATED]:            'Créé',
   [WorkOrderStatus.ASSIGNED]:           'Assigné',
   [WorkOrderStatus.DISPATCHED]:         'Dispatché',
@@ -35,6 +37,7 @@ const STATUS_LABELS: Record<WorkOrderStatus, string> = {
 };
 
 const STATUS_FR: Record<WorkOrderStatus, string> = {
+  [WorkOrderStatus.REQUESTED]:          'Demandé',
   [WorkOrderStatus.CREATED]:            'Créé',
   [WorkOrderStatus.ASSIGNED]:           'Assigné',
   [WorkOrderStatus.DISPATCHED]:         'Réparti',
@@ -60,8 +63,8 @@ function getStatusAccentColor(status: WorkOrderStatus): string {
 describe('WorkOrderStatusBadge STATUS_CONFIG — completeness', () => {
   const ALL_STATUSES = Object.values(WorkOrderStatus);
 
-  it('has exactly 7 entries', () => {
-    expect(Object.keys(STATUS_CONFIG)).toHaveLength(7);
+  it('has exactly 8 entries', () => {
+    expect(Object.keys(STATUS_CONFIG)).toHaveLength(8);
   });
 
   it.each(ALL_STATUSES)('has an entry for status %s', (status) => {
@@ -91,8 +94,8 @@ describe('WorkOrderStatusBadge STATUS_CONFIG — completeness', () => {
 describe('WorkOrdersPage STATUS_LABELS — completeness', () => {
   const ALL_STATUSES = Object.values(WorkOrderStatus);
 
-  it('has exactly 7 entries', () => {
-    expect(Object.keys(STATUS_LABELS)).toHaveLength(7);
+  it('has exactly 8 entries', () => {
+    expect(Object.keys(STATUS_LABELS)).toHaveLength(8);
   });
 
   it.each(ALL_STATUSES)('has a label for status %s', (status) => {
@@ -110,8 +113,8 @@ describe('WorkOrdersPage STATUS_LABELS — completeness', () => {
 describe('PrintWorkOrder STATUS_FR — completeness', () => {
   const ALL_STATUSES = Object.values(WorkOrderStatus);
 
-  it('has exactly 7 entries', () => {
-    expect(Object.keys(STATUS_FR)).toHaveLength(7);
+  it('has exactly 8 entries', () => {
+    expect(Object.keys(STATUS_FR)).toHaveLength(8);
   });
 
   it.each(ALL_STATUSES)('has a French label for status %s', (status) => {

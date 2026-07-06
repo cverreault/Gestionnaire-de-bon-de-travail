@@ -7,9 +7,22 @@ export interface LoginResponse {
   refreshToken: string;
 }
 
+/** Emitted when the account has 2FA enabled — client must call /auth/login/2fa. */
+export interface Login2faChallenge {
+  requires2fa: true;
+  pendingToken: string;
+  userId: string;
+}
+
+export type LoginResult = LoginResponse | Login2faChallenge;
+
+export function is2faChallenge(x: LoginResult): x is Login2faChallenge {
+  return (x as Login2faChallenge).requires2fa === true;
+}
+
 const authService = {
-  async login(credentials: LoginCredentials): Promise<LoginResponse> {
-    const { data } = await api.post<ApiResponse<LoginResponse>>('/auth/login', credentials);
+  async login(credentials: LoginCredentials): Promise<LoginResult> {
+    const { data } = await api.post<ApiResponse<LoginResult>>('/auth/login', credentials);
     return data.data;
   },
 

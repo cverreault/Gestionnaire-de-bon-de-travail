@@ -40,13 +40,25 @@ export class CreateProcessTransitionDto {
 
   @ApiProperty({
     example: 'Assigner',
-    description: 'Libellé de la transition',
+    description: 'Libellé de la transition. Legacy — écris de préférence labelFr + labelEn.',
     maxLength: 100,
   })
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
   label: string;
+
+  @ApiPropertyOptional({ description: 'Libellé en français (B10.2)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  labelFr?: string;
+
+  @ApiPropertyOptional({ description: 'Libellé en anglais (B10.2)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  labelEn?: string;
 
   @ApiProperty({
     enum: Role,

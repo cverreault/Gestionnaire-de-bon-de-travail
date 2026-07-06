@@ -65,6 +65,25 @@ export class AuthService {
       throw new UnauthorizedException('Email ou mot de passe invalide');
     }
 
+    // B14 — if 2FA is enabled, halt here and issue a short-lived « pending
+    // login token » the client must exchange for real tokens via
+    // /auth/login/2fa with a valid TOTP code.
+    if ((user as unknown as { totpEnabled?: boolean }).totpEnabled) {
+      const pendingToken = await this.jwtService.signAsync(
+        {
+          sub: user.id,
+          typ: '2fa-pending',
+          tenantId: user.tenantId,
+        },
+        { expiresIn: '5m' },
+      );
+      return {
+        requires2fa: true as const,
+        pendingToken,
+        userId: user.id,
+      };
+    }
+
     // Nouvelle famille à chaque login.
     const family = crypto.randomUUID();
     const tokens = await this.generateTokens(
@@ -80,6 +99,39 @@ export class AuthService {
       ...tokens,
       user: safeUser,
     };
+  }
+
+  /**
+   * B14 — Step 2 of a 2FA-gated login. Verifies the pending token from
+   * step 1 + the TOTP (or backup) code, then issues the real access +
+   * refresh pair.
+   */
+  async login2fa(pendingToken: string, code: string, verifyTotp: (userId: string, code: string) => Promise<boolean>) {
+    let payload: { sub?: string; typ?: string; tenantId?: string };
+    try {
+      payload = await this.jwtService.verifyAsync(pendingToken);
+    } catch {
+      throw new UnauthorizedException('Session 2FA expirée. Reconnectez-vous.');
+    }
+    if (payload.typ !== '2fa-pending' || !payload.sub) {
+      throw new UnauthorizedException('Session 2FA invalide.');
+    }
+    await verifyTotp(payload.sub, code);
+
+    const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('Utilisateur introuvable ou désactivé');
+    }
+    const family = crypto.randomUUID();
+    const tokens = await this.generateTokens(
+      user.id,
+      user.email,
+      user.role,
+      user.tenantId,
+      family,
+    );
+    const { password: _pw, ...safeUser } = user;
+    return { ...tokens, user: safeUser };
   }
 
   // ── Refresh ────────────────────────────────────────────────────────────────

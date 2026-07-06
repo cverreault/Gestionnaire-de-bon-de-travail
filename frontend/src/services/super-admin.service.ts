@@ -150,6 +150,8 @@ export interface PlanDefinition {
   currency: 'CAD' | 'USD' | 'EUR';
   quotas: PlanQuotas;
   features: string[];
+  /** B22 — Stripe recurring Price id; null = not purchasable online. */
+  stripePriceId?: string | null;
   recommended?: boolean;
   sortOrder?: number;
   isActive?: boolean;
@@ -174,6 +176,8 @@ export interface UpdatePlanInput {
   maxStorageMb?: number;
   maxClients?: number;
   features?: string[];
+  /** B22 — Stripe Price id; empty string clears the binding. */
+  stripePriceId?: string;
   recommended?: boolean;
   sortOrder?: number;
   isActive?: boolean;

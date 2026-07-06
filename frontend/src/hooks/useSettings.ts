@@ -22,7 +22,11 @@ export function useCreateTaskType() {
     mutationFn: (data: {
       prefix: string;
       name: string;
+      nameFr?: string;
+      nameEn?: string;
       description?: string;
+      descriptionFr?: string;
+      descriptionEn?: string;
       color?: string;
       icon?: string;
       templateId?: string | null;
@@ -46,7 +50,11 @@ export function useUpdateTaskType() {
       data: Partial<{
         prefix: string;
         name: string;
+        nameFr: string;
+        nameEn: string;
         description: string;
+        descriptionFr: string;
+        descriptionEn: string;
         color: string;
         icon: string;
         isActive: boolean;
@@ -88,8 +96,12 @@ export function useCreateClientType() {
   return useMutation({
     mutationFn: (data: {
       name: string;
+      nameFr?: string;
+      nameEn?: string;
       code: string;
       description?: string;
+      descriptionFr?: string;
+      descriptionEn?: string;
       color?: string;
       icon?: string;
       sortOrder?: number;
@@ -111,8 +123,12 @@ export function useUpdateClientType() {
       id: string;
       data: Partial<{
         name: string;
+        nameFr: string;
+        nameEn: string;
         code: string;
         description: string;
+        descriptionFr: string;
+        descriptionEn: string;
         color: string;
         icon: string;
         isActive: boolean;
@@ -153,8 +169,12 @@ export function useCreateAddressType() {
   return useMutation({
     mutationFn: (data: {
       name: string;
+      nameFr?: string;
+      nameEn?: string;
       code: string;
       description?: string;
+      descriptionFr?: string;
+      descriptionEn?: string;
       color?: string;
       icon?: string;
       sortOrder?: number;
@@ -176,8 +196,12 @@ export function useUpdateAddressType() {
       id: string;
       data: Partial<{
         name: string;
+        nameFr: string;
+        nameEn: string;
         code: string;
         description: string;
+        descriptionFr: string;
+        descriptionEn: string;
         color: string;
         icon: string;
         isActive: boolean;

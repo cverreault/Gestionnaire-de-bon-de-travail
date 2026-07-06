@@ -104,6 +104,14 @@ export const theme = {
     modal:    400,
     toast:    500,
   },
+
+  // B20 — seuils responsive partagés entre useBreakpoint (JS) et les
+  // règles @media de index.css. mobile = borne supérieure du téléphone,
+  // tablet = borne supérieure de la tablette (= début du desktop).
+  breakpoints: {
+    mobile: 768,
+    tablet: 1024,
+  },
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────────

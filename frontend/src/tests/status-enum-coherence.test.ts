@@ -20,8 +20,8 @@ describe('WorkOrderStatus enum — completeness', () => {
     'COMPLETED_NEGATIVE',
   ];
 
-  it('has exactly 7 statuses', () => {
-    expect(Object.values(WorkOrderStatus)).toHaveLength(7);
+  it('has exactly 8 statuses', () => {
+    expect(Object.values(WorkOrderStatus)).toHaveLength(8);
   });
 
   it.each(EXPECTED_VALUES)('contains status "%s"', (status) => {

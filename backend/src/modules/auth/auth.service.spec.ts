@@ -157,7 +157,11 @@ describe('AuthService.login', () => {
     const prisma = makeMockPrisma({ user });
     const svc = await buildService(prisma);
 
-    const result = await svc.login({ email: user.email, password: 'correct-pw' } as LoginDto, 'test-tenant');
+    const raw = await svc.login({ email: user.email, password: 'correct-pw' } as LoginDto, 'test-tenant');
+    // Login without 2FA returns the token pair directly. The type is a
+    // union — narrow it here so the assertions type-check.
+    if ('requires2fa' in raw) throw new Error('Unexpected 2FA branch in test');
+    const result = raw;
 
     expect(result.accessToken).toMatch(/^mock-access-/);
     expect(result.refreshToken).toMatch(/^mock-refresh-/);

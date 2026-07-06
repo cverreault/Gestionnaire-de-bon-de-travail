@@ -1,17 +1,28 @@
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { useLogin } from '../hooks/useAuth';
+import { useLogin, useLogin2fa } from '../hooks/useAuth';
 import { useAuthStore } from '../context/auth.store';
 import { useUiStore, type Locale } from '../context/ui.store';
 import { getBranding } from '../services/super-admin.service';
+import { is2faChallenge } from '../services/auth.service';
 import type { LoginCredentials } from '../types';
 import { theme, cardStyles, formStyles, buttonStyles } from '../theme';
+import { FlagFr, FlagEn } from '../components/Flag';
+import logoFr from '../assets/logo-fr.png';
+import logoEn from '../assets/logo-en.png';
 
 export default function LoginPage() {
   const { isAuthenticated, user } = useAuthStore();
-  const { mutate: login, isPending, error } = useLogin();
+  const { mutate: login, isPending, error, data: loginData } = useLogin();
+  const {
+    mutate: login2fa,
+    isPending: is2faPending,
+    error: error2fa,
+  } = useLogin2fa();
+  const [otpCode, setOtpCode] = useState('');
   const { t } = useTranslation('auth');
   const { t: tCommon } = useTranslation('common');
   const locale = useUiStore((s) => s.locale);
@@ -25,7 +36,7 @@ export default function LoginPage() {
     staleTime: Infinity,
     retry: false,
   });
-  const brandName = branding?.name ?? 'TaskMgr';
+  const brandName = branding?.name ?? 'Dispatch2Go';
   const brandLogo = branding?.logoUrl ?? null;
   const {
     register,
@@ -72,30 +83,55 @@ export default function LoginPage() {
           overflow: 'visible',
         }}
       >
-        {/* Logo / Title — per-tenant when on a tenant subdomain */}
+        {/* Logo / Title — per-tenant when on a tenant subdomain, otherwise
+            the bilingual Dispatch2Go brand logo (follows the language
+            switcher at the bottom of the card). */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           {brandLogo ? (
+            <>
+              <img
+                src={brandLogo}
+                alt={brandName}
+                style={{
+                  maxHeight: '4rem',
+                  maxWidth: '80%',
+                  marginBottom: '0.5rem',
+                  objectFit: 'contain',
+                }}
+              />
+              <h1 style={{ fontSize: theme.font.size2xl, color: theme.colors.text, margin: 0, fontWeight: theme.font.weightBold }}>
+                {brandName}
+              </h1>
+              <p style={{ color: theme.colors.textMuted, margin: '0.25rem 0 0', fontSize: theme.font.sizeSm }}>
+                {t('login.subtitle')}
+              </p>
+            </>
+          ) : (
             <img
-              src={brandLogo}
-              alt={brandName}
+              src={locale === 'fr' ? logoFr : logoEn}
+              alt="Dispatch2Go"
               style={{
-                maxHeight: '4rem',
-                maxWidth: '80%',
-                marginBottom: '0.5rem',
-                objectFit: 'contain',
+                width: '100%',
+                maxWidth: 300,
+                height: 'auto',
+                display: 'block',
+                margin: '0 auto',
               }}
             />
-          ) : (
-            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🔧</div>
           )}
-          <h1 style={{ fontSize: theme.font.size2xl, color: theme.colors.text, margin: 0, fontWeight: theme.font.weightBold }}>
-            {brandName}
-          </h1>
-          <p style={{ color: theme.colors.textMuted, margin: '0.25rem 0 0', fontSize: theme.font.sizeSm }}>
-            {t('login.subtitle')}
-          </p>
         </div>
 
+        {loginData && is2faChallenge(loginData) ? (
+          <Login2faForm
+            pendingToken={loginData.pendingToken}
+            otpCode={otpCode}
+            setOtpCode={setOtpCode}
+            onSubmit={() => login2fa({ pendingToken: loginData.pendingToken, code: otpCode })}
+            isPending={is2faPending}
+            error={error2fa}
+            t={t}
+          />
+        ) : (
         <form onSubmit={handleSubmit(onSubmit)}>
           {/* Email */}
           <div style={{ marginBottom: '1rem' }}>
@@ -168,6 +204,7 @@ export default function LoginPage() {
             {isPending ? t('login.loggingIn') : t('login.submit')}
           </button>
         </form>
+        )}
 
         {/* Language switcher (pre-login, localStorage only) */}
         <div style={{ marginTop: '1.5rem', textAlign: 'center', display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
@@ -187,11 +224,84 @@ export default function LoginPage() {
                 cursor: 'pointer',
               }}
             >
-              {l === 'fr' ? '🇫🇷 Français' : '🇬🇧 English'}
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                {l === 'fr' ? <FlagFr width={16} height={11} /> : <FlagEn width={16} height={11} />}
+                {l === 'fr' ? 'Français' : 'English'}
+              </span>
             </button>
           ))}
         </div>
       </div>
     </div>
+  );
+}
+
+/* B14 — Second-step form for a 2FA-gated login. */
+function Login2faForm({
+  otpCode,
+  setOtpCode,
+  onSubmit,
+  isPending,
+  error,
+  t,
+}: {
+  pendingToken: string;
+  otpCode: string;
+  setOtpCode: (v: string) => void;
+  onSubmit: () => void;
+  isPending: boolean;
+  error: unknown;
+  t: (k: string, o?: Record<string, string>) => string;
+}) {
+  const errorMessage =
+    (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+    (error as { message?: string })?.message ??
+    null;
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit();
+      }}
+    >
+      <p style={{ marginTop: 0, fontSize: theme.font.sizeSm, color: theme.colors.text }}>
+        {t('login.twoFactorPrompt', {
+          defaultValue: 'Entre le code à 6 chiffres de ton application d\'authentification (ou un code de secours).',
+        })}
+      </p>
+      <input
+        autoFocus
+        value={otpCode}
+        onChange={(e) => setOtpCode(e.target.value)}
+        placeholder="123456"
+        style={{
+          ...formStyles.input,
+          fontFamily: 'monospace',
+          fontSize: 22,
+          letterSpacing: 4,
+          textAlign: 'center',
+          marginBottom: '0.75rem',
+        }}
+      />
+      {errorMessage && (
+        <p
+          style={{
+            color: theme.colors.danger,
+            fontSize: theme.font.sizeSm,
+            marginTop: 0,
+            marginBottom: 8,
+          }}
+        >
+          {errorMessage}
+        </p>
+      )}
+      <button
+        type="submit"
+        style={{ ...buttonStyles.primary, width: '100%' }}
+        disabled={isPending || otpCode.trim().length < 6}
+      >
+        {isPending ? '…' : t('login.verify', { defaultValue: 'Vérifier' })}
+      </button>
+    </form>
   );
 }
