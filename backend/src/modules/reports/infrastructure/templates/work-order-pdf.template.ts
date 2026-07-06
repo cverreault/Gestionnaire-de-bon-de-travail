@@ -47,6 +47,12 @@ export interface WorkOrderPdfData {
     filename: string;
     uploadedAt: Date;
   }>;
+  /** B24 — parts consumed on the WO (no prices until invoicing lands). */
+  partsUsed: Array<{
+    name: string;
+    quantity: number;
+    unit: string;
+  }>;
 }
 
 interface TemplateStrings {
@@ -64,6 +70,8 @@ interface TemplateStrings {
   description: string;
   notes: string;
   attachments: string;
+  partsUsed: string;
+  quantityShort: string;
   completionNotes: string;
   negativeReason: string;
   signatures: string;
@@ -93,6 +101,8 @@ const STRINGS: Record<'fr' | 'en', TemplateStrings> = {
     description: 'Description',
     notes: 'Notes',
     attachments: 'Pièces jointes',
+    partsUsed: 'Pièces utilisées',
+    quantityShort: 'Qté',
     completionNotes: 'Notes de complétion',
     negativeReason: 'Motif de fermeture négative',
     noClient: 'Aucun client',
@@ -120,6 +130,8 @@ const STRINGS: Record<'fr' | 'en', TemplateStrings> = {
     description: 'Description',
     notes: 'Notes',
     attachments: 'Attachments',
+    partsUsed: 'Parts used',
+    quantityShort: 'Qty',
     completionNotes: 'Completion notes',
     negativeReason: 'Negative completion reason',
     noClient: 'No client',
@@ -189,6 +201,15 @@ export function renderWorkOrderPdfHtml(
         .map((a) => `<li>${esc(a.filename)} <span class="muted">(${esc(fmtDate(a.uploadedAt, locale))})</span></li>`)
         .join('')}</ul>`
     : `<p class="muted">—</p>`;
+
+  const partsUsedBlock = data.partsUsed.length
+    ? `<section><h2>${esc(t.partsUsed)}</h2><table class="info"><tbody>${data.partsUsed
+        .map(
+          (pu) =>
+            `<tr><th>${esc(pu.name)}</th><td>${esc(t.quantityShort)} ${pu.quantity} ${esc(pu.unit)}</td></tr>`,
+        )
+        .join('')}</tbody></table></section>`
+    : '';
 
   const slaBlock = data.slaBreachedAt
     ? `<tr><th>${esc(t.slaBreached)}</th><td class="breach">${esc(fmtDate(data.slaBreachedAt, locale))}</td></tr>`
@@ -297,6 +318,7 @@ ${data.description ? `<section><h2>${esc(t.description)}</h2><p>${esc(data.descr
   ${attachmentsHtml}
 </section>
 
+${partsUsedBlock}
 ${closeBlock}
 ${negativeBlock}
 ${signaturesBlock}

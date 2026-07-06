@@ -1,0 +1,93 @@
+{
+  "title": "Inventaire",
+  "subtitle": "Catalogue de pièces, stock entrepôt et camions",
+  "searchPlaceholder": "Rechercher (SKU, nom)…",
+  "showInactive": "Afficher les pièces désactivées",
+  "newPart": "Nouvelle pièce",
+  "empty": "Aucune pièce au catalogue. Créez la première !",
+  "columns": {
+    "sku": "SKU",
+    "name": "Pièce",
+    "cost": "Coûtant",
+    "sale": "Vente",
+    "warehouse": "Entrepôt",
+    "trucks": "Camions",
+    "minStock": "Seuil",
+    "actions": ""
+  },
+  "lowStock": "Stock bas",
+  "inactive": "Désactivée",
+  "actions": {
+    "receive": "Réception",
+    "adjust": "Ajustement",
+    "transfer": "Transfert",
+    "history": "Historique",
+    "edit": "Modifier",
+    "deactivate": "Désactiver"
+  },
+  "modal": {
+    "createTitle": "Nouvelle pièce",
+    "editTitle": "Modifier la pièce",
+    "sku": "SKU (code unique)",
+    "nameFr": "Nom (français)",
+    "nameEn": "Nom (anglais)",
+    "description": "Description",
+    "unit": "Unité",
+    "unitHint": "un, m, kg, boîte…",
+    "costPrice": "Prix coûtant (CAD)",
+    "salePrice": "Prix de vente (CAD)",
+    "minStock": "Seuil d'alerte stock bas (0 = désactivé)",
+    "active": "Pièce active",
+    "save": "Enregistrer",
+    "cancel": "Annuler"
+  },
+  "stockModal": {
+    "receiveTitle": "Réception entrepôt",
+    "adjustTitle": "Ajustement d'inventaire",
+    "transferTitle": "Transfert entrepôt ↔ camion",
+    "quantity": "Quantité",
+    "delta": "Delta (± signé)",
+    "note": "Note",
+    "notePlaceholder": "Bon de commande, décompte physique…",
+    "technician": "Technicien (camion)",
+    "warehouseTarget": "— Entrepôt —",
+    "direction": "Sens",
+    "toTech": "Entrepôt → camion",
+    "toWarehouse": "Camion → entrepôt",
+    "submit": "Appliquer",
+    "success": "Stock mis à jour"
+  },
+  "history": {
+    "title": "Historique des mouvements",
+    "empty": "Aucun mouvement",
+    "types": {
+      "RECEIPT": "Réception",
+      "ADJUSTMENT": "Ajustement",
+      "TRANSFER_TO_TECH": "→ Camion",
+      "TRANSFER_TO_WAREHOUSE": "→ Entrepôt",
+      "USAGE": "Utilisée (BT)",
+      "USAGE_REVERT": "Retour (BT)"
+    }
+  },
+  "byTechnician": {
+    "title": "Stock par camion",
+    "empty": "Aucun stock dans les camions"
+  },
+  "woSection": {
+    "title": "Pièces utilisées",
+    "empty": "Aucune pièce utilisée",
+    "selectPart": "Choisir une pièce…",
+    "quantity": "Qté",
+    "source": "Source",
+    "warehouse": "Entrepôt",
+    "truck": "Camion",
+    "add": "Ajouter",
+    "remove": "Retirer",
+    "added": "Pièce ajoutée",
+    "removed": "Pièce retirée"
+  },
+  "myStock": {
+    "title": "Mon stock de camion",
+    "empty": "Votre camion est vide — demandez un transfert au bureau."
+  }
+}

@@ -231,6 +231,13 @@ export default function LoginPage() {
             </button>
           ))}
         </div>
+
+        {/* B24 — privacy policy link (public page) */}
+        <p style={{ marginTop: '0.75rem', textAlign: 'center', fontSize: theme.font.sizeXs }}>
+          <a href="/confidentialite" style={{ color: theme.colors.textMuted, textDecoration: 'underline' }}>
+            {locale === 'fr' ? 'Politique de confidentialité' : 'Privacy policy'}
+          </a>
+        </p>
       </div>
     </div>
   );

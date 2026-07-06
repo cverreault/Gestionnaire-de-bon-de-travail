@@ -41,6 +41,8 @@ import enWebhooks from './locales/en/webhooks.json';
 import enAlerts from './locales/en/alerts.json';
 import frPortal from './locales/fr/portal.json';
 import enPortal from './locales/en/portal.json';
+import frInventory from './locales/fr/inventory.json';
+import enInventory from './locales/en/inventory.json';
 
 export const SUPPORTED_LOCALES = ['fr', 'en'] as const;
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
@@ -64,6 +66,7 @@ const NAMESPACES = [
   'webhooks',
   'alerts',
   'portal',
+  'inventory',
 ] as const;
 
 i18n
@@ -90,6 +93,7 @@ i18n
         webhooks: frWebhooks,
         alerts: frAlerts,
         portal: frPortal,
+        inventory: frInventory,
       },
       en: {
         common: enCommon,
@@ -110,6 +114,7 @@ i18n
         webhooks: enWebhooks,
         alerts: enAlerts,
         portal: enPortal,
+        inventory: enInventory,
       },
     },
     fallbackLng: 'fr',

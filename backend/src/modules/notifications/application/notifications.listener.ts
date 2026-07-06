@@ -312,6 +312,43 @@ export class NotificationsListener {
   }
 
   /**
+   * B24 — warehouse stock crossed a part's minimum threshold: in-app +
+   * email to every ADMIN and DISPATCHER. Emitted once per crossing by
+   * StockService, so no dedup needed here.
+   */
+  @OnEvent('inventory.stock.low', { async: true, promisify: true })
+  async onInventoryStockLow(event: {
+    partId: string;
+    sku: string;
+    name: string;
+    quantity: number;
+    minStock: number;
+  }) {
+    try {
+      const recipients = await this.resolveSlaRecipients(null);
+      if (recipients.length === 0) return;
+      const title = '📦 Stock bas';
+      const body =
+        `La pièce ${event.sku} — « ${event.name} » est passée sous son seuil : ` +
+        `${event.quantity} restante(s) (seuil ${event.minStock}). Pensez à commander.`;
+      for (const recipient of recipients) {
+        await this.dispatchOne(
+          recipient.id,
+          'inventory.lowStock',
+          { title, body, aggregateId: event.partId, data: event },
+          { subject: title, body, url: '/inventaire' },
+        );
+      }
+    } catch (err) {
+      this.logger.error(
+        `Failed to handle inventory.stock.low: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+  }
+
+  /**
    * SLA fan-out target list: the assigned tech (if any) + every ADMIN
    * and DISPATCHER. Deduped on id.
    */
@@ -332,7 +369,7 @@ export class NotificationsListener {
    */
   private async dispatchOne(
     userId: string,
-    eventType: 'workOrder.assigned' | 'workOrder.slaBreached' | 'workOrder.requested',
+    eventType: 'workOrder.assigned' | 'workOrder.slaBreached' | 'workOrder.requested' | 'inventory.lowStock',
     notification: { title: string; body?: string; aggregateId?: string; data?: unknown },
     emailAndPush: { subject: string; body?: string; url?: string },
   ): Promise<void> {

@@ -157,6 +157,11 @@ export default function SignupPage() {
             Se connecter
           </Link>
         </p>
+        <p style={{ textAlign: 'center', fontSize: 11, marginTop: 4 }}>
+          <a href="/confidentialite" style={{ color: theme.colors.textMuted, textDecoration: 'underline' }}>
+            Politique de confidentialité / Privacy policy
+          </a>
+        </p>
       </form>
     </div>
   );

@@ -42,6 +42,12 @@ export default function TechnicianNav() {
         {t('nav:myWorkOrders')}
       </NavLink>
 
+      {/* My truck stock (B24) */}
+      <NavLink to="/mon-stock" style={linkStyle}>
+        <span style={{ fontSize: '1.4rem' }}>📦</span>
+        {t('nav:myStock')}
+      </NavLink>
+
       {/* Profile */}
       <NavLink to="/profil" style={linkStyle}>
         <span style={{ fontSize: '1.4rem' }}>🙍</span>

@@ -13,6 +13,7 @@ import TemplateValuesView from '../components/TemplateValuesView';
 import WorkOrderStatusBadge from '../components/WorkOrderStatusBadge';
 import TransitionActionBar from '../components/transitions/TransitionActionBar';
 import ApproveScheduleModal from '../components/ApproveScheduleModal';
+import WorkOrderPartsSection from '../components/WorkOrderPartsSection';
 import WorkOrderAuditTimeline from '../components/WorkOrderAuditTimeline';
 import SignaturePad from '../components/SignaturePad';
 import SlaBadge from '../components/SlaBadge';
@@ -608,6 +609,14 @@ export default function WorkOrderDetailPage() {
           />
         </div>
       )}
+
+      {/* Parts used (B24) */}
+      <WorkOrderPartsSection
+        workOrderId={wo.id}
+        readOnly={wo.status === WorkOrderStatus.COMPLETED_POSITIVE || wo.status === WorkOrderStatus.COMPLETED_NEGATIVE}
+        cardStyle={cardStyle}
+        titleStyle={{ fontSize: theme.font.sizeMd, marginBottom: '1rem', color: theme.colors.text }}
+      />
 
       {/* Notes */}
       <div style={cardStyle}>

@@ -98,6 +98,13 @@ export class ReportsService {
           select: { fileName: true, uploadedAt: true },
           orderBy: { uploadedAt: 'desc' },
         },
+        partsUsed: {
+          select: {
+            quantity: true,
+            part: { select: { name: true, nameFr: true, nameEn: true, unit: true } },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
       },
     });
 
@@ -175,6 +182,12 @@ export class ReportsService {
           ? `${n.author.firstName} ${n.author.lastName}`
           : '—',
         createdAt: n.createdAt,
+      })),
+      partsUsed: wo.partsUsed.map((pu) => ({
+        name:
+          (locale === 'en' ? pu.part.nameEn : pu.part.nameFr) || pu.part.name,
+        quantity: pu.quantity,
+        unit: pu.part.unit,
       })),
       attachments: wo.attachments.map((a) => ({
         filename: a.fileName,

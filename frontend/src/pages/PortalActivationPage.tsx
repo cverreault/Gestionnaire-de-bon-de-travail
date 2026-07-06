@@ -120,6 +120,12 @@ export default function PortalActivationPage() {
             </form>
           )
         )}
+
+        <p style={{ marginTop: '1rem', textAlign: 'center', fontSize: theme.font.sizeXs }}>
+          <a href="/confidentialite" style={{ color: theme.colors.textMuted, textDecoration: 'underline' }}>
+            {locale === 'fr' ? 'Politique de confidentialité' : 'Privacy policy'}
+          </a>
+        </p>
       </div>
     </div>
   );
