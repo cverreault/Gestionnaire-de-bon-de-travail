@@ -62,7 +62,8 @@ function buildListener(opts: {
     },
   } as unknown as PrismaService;
 
-  const listener = new NotificationsListener(notifications, email, push, prisma);
+  const configs = { resolve: jest.fn().mockResolvedValue(undefined) } as never;
+  const listener = new NotificationsListener(notifications, email, push, prisma, configs);
 
   // Silence the in-test logger noise.
   jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);

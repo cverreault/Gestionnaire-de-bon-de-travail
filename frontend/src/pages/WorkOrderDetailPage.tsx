@@ -12,6 +12,7 @@ import TemplateFormRenderer from '../components/TemplateFormRenderer';
 import TemplateValuesView from '../components/TemplateValuesView';
 import WorkOrderStatusBadge from '../components/WorkOrderStatusBadge';
 import TransitionActionBar from '../components/transitions/TransitionActionBar';
+import ApproveScheduleModal from '../components/ApproveScheduleModal';
 import WorkOrderAuditTimeline from '../components/WorkOrderAuditTimeline';
 import SignaturePad from '../components/SignaturePad';
 import SlaBadge from '../components/SlaBadge';
@@ -44,6 +45,8 @@ export default function WorkOrderDetailPage() {
   const { data: addressTypeConfigs = [] } = useAddressTypes(true);
   const updateWorkOrder = useUpdateWorkOrder(id!);
   const updateStatus = useUpdateWorkOrderStatus(id!);
+  // B23 — one-step approval of a portal work request (date + technician)
+  const [showApproveModal, setShowApproveModal] = useState(false);
   const addNote = useAddNote(id!);
   const uploadAttachment = useUploadAttachment(id!);
   const currentUser = useAuthStore((s) => s.user);
@@ -370,6 +373,14 @@ export default function WorkOrderDetailPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
             <WorkOrderStatusBadge step={wo.currentStep} status={wo.status} />
             <SlaBadge wo={wo} />
+            {(wo.currentStep?.isRequested || wo.status === WorkOrderStatus.REQUESTED) && isAdmin && (
+              <button
+                onClick={() => setShowApproveModal(true)}
+                style={{ ...buttonStyles.primary, fontSize: theme.font.sizeSm, background: '#10b981', borderColor: '#10b981' }}
+              >
+                ✔ Approuver et planifier
+              </button>
+            )}
             <TransitionActionBar workOrderId={wo.id} variant="dropdown" />
             {isAdmin && (
               <button
@@ -762,6 +773,10 @@ export default function WorkOrderDetailPage() {
       {/* ═══════════════════════════════════════════════════════════════════════
            EDIT MODAL — Admin can edit all fields at any status
          ═══════════════════════════════════════════════════════════════════════ */}
+      {showApproveModal && (
+        <ApproveScheduleModal workOrderId={wo.id} onClose={() => setShowApproveModal(false)} />
+      )}
+
       {showEditModal && (
         <div
           style={{ ...modalStyles.overlay }}
