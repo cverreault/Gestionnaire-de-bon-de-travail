@@ -59,6 +59,21 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.6.1',
+    name: 'Suivi client par courriel + approbation en un geste (B23)',
+    date: 'Juillet 2026',
+    entries: [
+      {
+        type: 'new',
+        text: "📧 Le client est informé par courriel (FR/EN) aux trois moments clés : demande approuvée, demande refusée (avec le motif), et travail complété avec rappel que le rapport PDF est disponible au portail",
+      },
+      {
+        type: 'improvement',
+        text: "✔ Bouton « Approuver et planifier » sur le détail d'un BT en statut Demandé : fixe la date prévue et le technicien (optionnels) et approuve la demande en un seul geste",
+      },
+    ],
+  },
+  {
     version: '2.6.0',
     name: 'Connecteur SMS Twilio + paiements Stripe (B22)',
     date: 'Juillet 2026',

@@ -495,6 +495,8 @@ export interface ProcessStatus {
   isStart: boolean;
   isTerminalPositive: boolean;
   isTerminalNegative: boolean;
+  /** B21 — pre-approval step for client-portal work requests. */
+  isRequested?: boolean;
 }
 
 export interface ProcessTransitionDef {

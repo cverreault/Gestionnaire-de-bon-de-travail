@@ -1,4 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  SYSTEM_CONFIG_RESOLVER,
+  type ISystemConfigResolver,
+} from '../../../common/contracts/system-config-resolver.contract';
 import { OnEvent } from '@nestjs/event-emitter';
 import type { IDomainEvent } from '../../../common/contracts/domain-event.interface';
 import { PrismaService } from '../../../common/prisma/prisma.service';
@@ -53,6 +57,8 @@ export class NotificationsListener {
     private readonly email: EmailChannelService,
     private readonly push: PushChannelService,
     private readonly prisma: PrismaService,
+    @Inject(SYSTEM_CONFIG_RESOLVER)
+    private readonly configs: ISystemConfigResolver,
   ) {}
 
   @OnEvent('workOrders.workOrder.assigned', { async: true, promisify: true })
@@ -156,6 +162,113 @@ export class NotificationsListener {
     } catch (err) {
       this.logger.error(
         `Failed to handle requested event ${event.eventId}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+  }
+
+  /**
+   * B23 — keep the CLIENT in the loop by email at the three moments that
+   * matter to them (zero-config, bilingual FR/EN since the client record
+   * has no locale):
+   *   - request approved   (isRequested step → isInitial step)
+   *   - request rejected   (isRequested step → isTerminalNegative step)
+   *   - work order completed positively — the PDF report is now
+   *     downloadable on the portal (only sent when the client actually
+   *     has an active portal account, otherwise the link is a dead end).
+   */
+  @OnEvent('workOrders.workOrder.statusChanged', { async: true, promisify: true })
+  async onWorkOrderStatusChangedClientEmail(event: WorkOrderEvent) {
+    try {
+      const data = event.data as unknown as {
+        fromStatusId: string | null;
+        toStatusId: string;
+      };
+      if (!data.toStatusId) return;
+
+      const wo = await this.prisma.workOrder.findUnique({
+        where: { id: event.aggregateId },
+        select: {
+          referenceNumber: true,
+          title: true,
+          negativeReason: true,
+          scheduledDate: true,
+          client: {
+            select: {
+              email: true,
+              firstName: true,
+              portalUsers: { where: { isActive: true }, select: { id: true } },
+            },
+          },
+        },
+      });
+      if (!wo?.client?.email) return;
+
+      const [from, to] = await Promise.all([
+        data.fromStatusId
+          ? this.prisma.processStatus.findUnique({
+              where: { id: data.fromStatusId },
+              select: { isRequested: true },
+            })
+          : Promise.resolve(null),
+        this.prisma.processStatus.findUnique({
+          where: { id: data.toStatusId },
+          select: { isInitial: true, isTerminalPositive: true, isTerminalNegative: true },
+        }),
+      ]);
+      if (!to) return;
+
+      const origin =
+        (await this.configs.resolve('platform.origin', 'PLATFORM_ORIGIN')) ??
+        'http://localhost:8088';
+      const portalLink = `${origin}/portail`;
+      const ref = wo.referenceNumber;
+      const hello = `Bonjour ${wo.client.firstName},\n\n`;
+
+      if (from?.isRequested && to.isInitial) {
+        await this.email.send({
+          to: wo.client.email,
+          subject: `Demande ${ref} approuvée / Request approved`,
+          text:
+            hello +
+            `Votre demande de travail ${ref} — « ${wo.title} » a été approuvée. ` +
+            `Nous vous contacterons pour la planification ; suivez son avancement sur le portail : ${portalLink}\n\n` +
+            `— Your work request ${ref} — "${wo.title}" has been approved. ` +
+            `We will contact you for scheduling; track its progress on the portal: ${portalLink}`,
+        });
+        return;
+      }
+
+      if (from?.isRequested && to.isTerminalNegative) {
+        const reason = wo.negativeReason ? `\nMotif / Reason : ${wo.negativeReason}` : '';
+        await this.email.send({
+          to: wo.client.email,
+          subject: `Demande ${ref} refusée / Request declined`,
+          text:
+            hello +
+            `Votre demande de travail ${ref} — « ${wo.title} » n'a pas été retenue.${reason}\n` +
+            `Pour toute question, répondez à ce courriel ou contactez votre fournisseur.\n\n` +
+            `— Your work request ${ref} — "${wo.title}" was declined.${reason}`,
+        });
+        return;
+      }
+
+      if (to.isTerminalPositive && wo.client.portalUsers.length > 0) {
+        await this.email.send({
+          to: wo.client.email,
+          subject: `Travail ${ref} complété / Work completed`,
+          text:
+            hello +
+            `Le bon de travail ${ref} — « ${wo.title} » est complété. ` +
+            `Le rapport d'intervention (PDF) est disponible sur le portail : ${portalLink}\n\n` +
+            `— Work order ${ref} — "${wo.title}" is complete. ` +
+            `The intervention report (PDF) is available on the portal: ${portalLink}`,
+        });
+      }
+    } catch (err) {
+      this.logger.error(
+        `Failed client email for statusChanged ${event.eventId}: ${
           err instanceof Error ? err.message : String(err)
         }`,
       );
