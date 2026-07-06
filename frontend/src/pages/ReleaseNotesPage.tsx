@@ -69,7 +69,7 @@ const VERSIONS: ReleaseVersion[] = [
       },
       {
         type: 'new',
-        text: "🔩 Pièces utilisées sur les BT : les techniciens (leur camion) et le bureau (l'entrepôt) ajoutent les pièces consommées sur un bon de travail — le stock se décrémente automatiquement, les prix sont figés au moment de l'ajout (prêt pour la facturation) et la liste apparaît dans le rapport PDF",
+        text: "🔩 Pièces utilisées sur les BT : les techniciens (leur camion) et le bureau (l'entrepôt) ajoutent les pièces consommées sur un bon de travail — le stock se décrémente automatiquement, les prix sont figés au moment de l'ajout (traçabilité interne des coûts) et la liste apparaît dans le rapport PDF",
       },
       {
         type: 'new',

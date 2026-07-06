@@ -7,7 +7,7 @@
 | Catalogue | Pièces bilingues (SKU unique par tenant, coûtant + prix de vente CAD, unité, seuil d'alerte), soft-delete gardé par « utilisée sur un BT actif » |
 | Stock | **Entrepôt** (`Part.quantityOnHand`) + **camions** (`TechnicianPartStock`, unique `[partId, technicianId]`) — réception, ajustement signé (note obligatoire), transfert entrepôt ↔ camion |
 | Journal | `StockMovement` append-only : `RECEIPT / ADJUSTMENT / TRANSFER_TO_TECH / TRANSFER_TO_WAREHOUSE / USAGE / USAGE_REVERT` — chaque changement de quantité écrit sa ligne **dans la même transaction** ; résultat négatif → 409 avec la quantité disponible |
-| Pièces sur BT | `WorkOrderPart` : source camion (technicien) ou entrepôt (bureau), **prix figés à l'insertion** (`unitCostPrice`/`unitSalePrice` — contrat pour la facturation à venir), retrait symétrique (`USAGE_REVERT`), verrouillé quand le BT est terminal ; rendues dans le PDF (noms + quantités, sans prix) |
+| Pièces sur BT | `WorkOrderPart` : source camion (technicien) ou entrepôt (bureau), **prix figés à l'insertion** (`unitCostPrice`/`unitSalePrice` — traçabilité interne des coûts au moment de l'usage ; aucun module de facturation dans ce produit), retrait symétrique (`USAGE_REVERT`), verrouillé quand le BT est terminal ; rendues dans le PDF (noms + quantités, sans prix) |
 
 ## Surface API
 

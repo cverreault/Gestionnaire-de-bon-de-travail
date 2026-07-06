@@ -47,7 +47,8 @@ export interface WorkOrderPdfData {
     filename: string;
     uploadedAt: Date;
   }>;
-  /** B24 — parts consumed on the WO (no prices until invoicing lands). */
+  /** B24 — parts consumed on the WO. Prices stay internal — Dispatch2Go
+   * is a work-order tool, not invoicing software (owner decision). */
   partsUsed: Array<{
     name: string;
     quantity: number;

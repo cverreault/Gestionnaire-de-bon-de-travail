@@ -101,7 +101,7 @@ describe('renderWorkOrderPdfHtml', () => {
     expect(html).toContain('Pièces utilisées');
     expect(html).toContain('Câble RG6 30m');
     expect(html).toContain('Qté');
-    expect(html).not.toContain('24.99'); // prices stay internal until invoicing
+    expect(html).not.toContain('24.99'); // prices are internal — no invoicing in this product
   });
 
   it('omits the parts-used section entirely when empty', () => {
