@@ -12,6 +12,8 @@ import { MinioService } from '../../common/storage/minio.service';
 import { Role } from '@prisma/client';
 
 /** Allowed MIME types grouped by category */
+import { magicBytesMatch } from './magic-bytes';
+
 const ALLOWED_MIME_TYPES = new Set([
   // Images
   'image/jpeg',
@@ -74,6 +76,15 @@ export class AttachmentsService {
       throw new BadRequestException(
         `Type de fichier non autorisé : ${file.mimetype}. ` +
           `Types acceptés : images (jpg/png/gif/webp), documents (pdf/doc/docx/xls/xlsx)`,
+      );
+    }
+
+    // 3b. B27 — confirm the magic bytes match the declared MIME (the
+    // client Content-Type is untrusted). Blocks e.g. an HTML payload
+    // labelled image/png.
+    if (file.buffer && !magicBytesMatch(file.buffer, file.mimetype)) {
+      throw new BadRequestException(
+        `Le contenu du fichier ne correspond pas au type déclaré (${file.mimetype}).`,
       );
     }
 
