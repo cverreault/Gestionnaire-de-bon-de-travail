@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { PrismaService } from '../../../common/prisma/prisma.service';
+import { RequestContextService } from '../../../common/context/request-context.service';
 import { isGpsEnabled } from '../../../common/contracts/gps-preferences.contract';
 
 export interface RecordLocationInput {
@@ -28,7 +29,10 @@ export interface LatestPosition {
 export class LocationsService {
   private readonly logger = new Logger(LocationsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly requestContext: RequestContextService,
+  ) {}
 
   /**
    * Record a position for the calling tech.
@@ -88,6 +92,10 @@ export class LocationsService {
       recorded_at: Date;
     };
 
+    // SECURITY (B25): raw SQL bypasses the Prisma tenant-scope middleware,
+    // so the tenant filter MUST be explicit here — otherwise this leaks the
+    // GPS positions of every tenant's technicians.
+    const tenantId = this.requestContext.requireTenantId();
     const rows = await this.prisma.$queryRaw<Row[]>`
       SELECT DISTINCT ON (tl.technician_id)
         tl.technician_id,
@@ -100,6 +108,8 @@ export class LocationsService {
       FROM technician_locations tl
       JOIN users u ON u.id = tl.technician_id
       WHERE u.is_active = true
+        AND tl.tenant_id = ${tenantId}
+        AND u.tenant_id = ${tenantId}
       ORDER BY tl.technician_id, tl.recorded_at DESC
     `;
 

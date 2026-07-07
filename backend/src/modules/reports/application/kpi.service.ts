@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { WorkOrderStatus } from '@prisma/client';
 import { PrismaService } from '../../../common/prisma/prisma.service';
+import { RequestContextService } from '../../../common/context/request-context.service';
 
 export interface DateRange {
   from: Date;
@@ -63,7 +64,10 @@ const COMPLETED_STATUSES: WorkOrderStatus[] = [
 export class KpiService {
   private readonly logger = new Logger(KpiService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly requestContext: RequestContextService,
+  ) {}
 
   defaultRange(): DateRange {
     const to = new Date();
@@ -98,6 +102,7 @@ export class KpiService {
       median_hours: number | null;
     };
 
+    const tenantId = this.requestContext.requireTenantId();
     const rows = await this.prisma.$queryRaw<Row[]>`
       SELECT
         wo.task_type_id,
@@ -109,7 +114,8 @@ export class KpiService {
         )::float8 AS median_hours
       FROM work_orders wo
       LEFT JOIN task_types tt ON tt.id = wo.task_type_id
-      WHERE wo.status IN ('COMPLETED_POSITIVE', 'COMPLETED_NEGATIVE')
+      WHERE wo.tenant_id = ${tenantId}
+        AND wo.status IN ('COMPLETED_POSITIVE', 'COMPLETED_NEGATIVE')
         AND wo.updated_at >= ${range.from}
         AND wo.updated_at <= ${range.to}
       GROUP BY wo.task_type_id, tt.name
@@ -228,6 +234,7 @@ export class KpiService {
   async throughput(range: DateRange): Promise<ThroughputBucket[]> {
     type Row = { day: Date; created: bigint; completed: bigint };
 
+    const tenantId = this.requestContext.requireTenantId();
     const rows = await this.prisma.$queryRaw<Row[]>`
       WITH days AS (
         SELECT generate_series(
@@ -239,13 +246,15 @@ export class KpiService {
       created AS (
         SELECT date_trunc('day', created_at) AS day, COUNT(*)::bigint AS n
         FROM work_orders
-        WHERE created_at >= ${range.from} AND created_at <= ${range.to}
+        WHERE tenant_id = ${tenantId}
+          AND created_at >= ${range.from} AND created_at <= ${range.to}
         GROUP BY 1
       ),
       completed AS (
         SELECT date_trunc('day', updated_at) AS day, COUNT(*)::bigint AS n
         FROM work_orders
-        WHERE status IN ('COMPLETED_POSITIVE', 'COMPLETED_NEGATIVE')
+        WHERE tenant_id = ${tenantId}
+          AND status IN ('COMPLETED_POSITIVE', 'COMPLETED_NEGATIVE')
           AND updated_at >= ${range.from} AND updated_at <= ${range.to}
         GROUP BY 1
       )

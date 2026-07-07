@@ -3,6 +3,7 @@
 import * as Sentry from '@sentry/node';
 
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { I18nValidationPipe, I18nValidationExceptionFilter } from 'nestjs-i18n';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { JwtService } from '@nestjs/jwt';
@@ -12,6 +13,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { Logger as PinoLogger } from 'nestjs-pino';
 import type { INestApplication } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { assertSecrets } from './common/config/assert-secrets';
 import { PublicApiModule } from './modules/public-api/public-api.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { AlertsModule } from './modules/alerts/alerts.module';
@@ -126,11 +128,17 @@ async function runBootSmokeTest(
 };
 
 async function bootstrap() {
+  // B25 — refuse to boot with missing/weak JWT secrets (token forgery).
+  assertSecrets();
+
   // Booter avec bufferLogs pour que les premiers logs (avant que Pino
   // soit prêt) soient stockés et flushés via Pino une fois disponible.
   // rawBody: the Stripe webhook (B22) must verify its signature against
   // the UNPARSED request body — Nest keeps it on req.rawBody.
-  const app = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: true,
+    rawBody: true,
+  });
 
   // Remplacer le Logger NestJS par notre instance Pino. Tous les `Logger`
   // existants dans le code (via `new Logger(name)`) héritent du provider
@@ -140,6 +148,10 @@ async function bootstrap() {
   const logger = app.get(PinoLogger);
 
   // ── Security ──────────────────────────────────────────────────────────────
+  // B25: the app sits behind nginx — trust the first proxy hop so req.ip is
+  // the real client (X-Forwarded-For) and the per-IP throttler buckets per
+  // client instead of collapsing every request onto the nginx IP.
+  app.set('trust proxy', 1);
   app.use(helmet());
   app.use(compression());
 

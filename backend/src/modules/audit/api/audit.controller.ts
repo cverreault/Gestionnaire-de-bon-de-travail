@@ -93,6 +93,9 @@ export class AuditController {
    * Retourne les 50 events les plus récents.
    */
   @Get('aggregate/:id')
+  // SECURITY (B25): staff only — a CLIENT portal user must not read the
+  // internal audit timeline (actor emails/roles) of their work orders.
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN)
   @ApiOperation({
     summary: 'Timeline d\'un agrégat (tous les rôles, RBAC sur l\'objet)',
     description:

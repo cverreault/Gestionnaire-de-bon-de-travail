@@ -35,7 +35,9 @@ const MAX_RESTORE_SIZE = 5 * 1024 * 1024 * 1024; // 5 GB
 @ApiTags('Backup')
 @ApiBearerAuth('access-token')
 @Controller('backup')
-@Roles(Role.ADMIN)
+// SECURITY (B25): full-database pg_dump/psql — platform-level only,
+// never a tenant ADMIN (would dump/restore ALL tenants).
+@Roles(Role.SUPER_ADMIN)
 export class BackupController {
   constructor(
     private readonly backupService: BackupService,
