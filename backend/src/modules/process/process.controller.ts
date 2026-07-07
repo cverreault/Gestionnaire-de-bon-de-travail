@@ -264,6 +264,8 @@ export class ProcessController {
   // ── Snapshot ───────────────────────────────────────────────────────────────
 
   @Get(':id/snapshot')
+  // SECURITY (B25): staff only — process config is internal.
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN)
   @ApiOperation({
     summary: 'Snapshot complet d\'un processus',
     description:

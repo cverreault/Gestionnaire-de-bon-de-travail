@@ -123,7 +123,7 @@ const AUDIT_MATRIX: MatrixRow[] = [
   { controller: AuditController, method: 'getActivityStats', expectedRoles: [Role.ADMIN], note: 'GET /audit/stats — dashboard rollup' },
   // A6 — TECHNICIAN allowed at the route level; service enforces object-level RBAC
   // (technicians can only read the timeline of BTs they are assigned to).
-  { controller: AuditController, method: 'findForAggregate', expectedRoles: 'ANY',       note: 'GET /audit/aggregate/:id — A6, object-level RBAC in service' },
+  { controller: AuditController, method: 'findForAggregate', expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'GET /audit/aggregate/:id — B25: staff only (CLIENT excluded), object-level RBAC in service' },
 ];
 
 const SEARCH_MATRIX: MatrixRow[] = [
@@ -199,9 +199,9 @@ const PARTS_MATRIX: MatrixRow[] = [
 
 const BACKUP_MATRIX: MatrixRow[] = [
   // Backup controller has class-level @Roles(ADMIN) — every method inherits.
-  { controller: BackupController, method: 'info',    expectedRoles: [Role.ADMIN], note: 'GET /backup/info' },
-  { controller: BackupController, method: 'export',  expectedRoles: [Role.ADMIN], note: 'GET /backup/export' },
-  { controller: BackupController, method: 'restore', expectedRoles: [Role.ADMIN], note: 'POST /backup/restore' },
+  { controller: BackupController, method: 'info',    expectedRoles: [Role.SUPER_ADMIN], note: 'GET /backup/info' },
+  { controller: BackupController, method: 'export',  expectedRoles: [Role.SUPER_ADMIN], note: 'GET /backup/export' },
+  { controller: BackupController, method: 'restore', expectedRoles: [Role.SUPER_ADMIN], note: 'POST /backup/restore' },
 ];
 
 const LOCATIONS_MATRIX: MatrixRow[] = [

@@ -118,7 +118,6 @@ export default function AdminSidebar() {
     { to: '/utilisateurs',    label: `👥 ${t('nav:users')}` },
     { to: '/parametres',      label: `⚙️ ${t('nav:settings')}` },
     { to: '/audit',           label: `📜 ${t('nav:audit', { defaultValue: 'Audit' })}` },
-    { to: '/sauvegarde',      label: `💾 ${t('nav:backup')}` },
     { to: '/mon-abonnement',  label: `💳 ${t('nav:mySubscription', { defaultValue: 'Mon abonnement' })}` },
     { to: '/parametres/api-keys', label: `🔑 ${t('nav:apiKeys', { defaultValue: 'Clés API' })}` },
     { to: '/parametres/webhooks', label: `🔔 ${t('nav:webhooks', { defaultValue: 'Webhooks' })}` },
@@ -135,6 +134,7 @@ export default function AdminSidebar() {
     { to: '/super-admin/users',    label: `🔍 ${t('nav:saUsers', { defaultValue: 'Rechercher utilisateur' })}` },
     { to: '/super-admin/all-users', label: `👥 ${t('nav:saAllUsers', { defaultValue: 'Tous les utilisateurs' })}` },
     { to: '/super-admin/platform-users', label: `🛡️ ${t('nav:saPlatformUsers', { defaultValue: 'SUPER_ADMINs' })}` },
+    { to: '/super-admin/sauvegarde', label: `💾 ${t('nav:backup')}` },
     { to: '/super-admin',          label: `⚙️ ${t('nav:saConfig', { defaultValue: 'Configuration plateforme' })}` },
   ];
 

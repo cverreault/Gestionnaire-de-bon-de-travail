@@ -145,10 +145,7 @@ export class AuthService {
     // sur les tokens manifestement bogus.
     try {
       this.jwtService.verify(refreshToken, {
-        secret: this.configService.get<string>(
-          'JWT_REFRESH_SECRET',
-          'changeme-jwt-refresh-secret',
-        ),
+        secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
       });
     } catch {
       throw new UnauthorizedException('Refresh token invalide ou expiré');
@@ -276,10 +273,7 @@ export class AuthService {
     const refreshToken = this.jwtService.sign(
       { ...payload, jti: crypto.randomUUID() },
       {
-        secret: this.configService.get<string>(
-          'JWT_REFRESH_SECRET',
-          'changeme-jwt-refresh-secret',
-        ),
+        secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
         expiresIn: '7d',
       },
     );

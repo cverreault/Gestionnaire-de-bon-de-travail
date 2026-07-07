@@ -27,7 +27,8 @@ function makePrisma() {
 type MockPrisma = ReturnType<typeof makePrisma>;
 
 function makeService(prisma: MockPrisma): LocationsService {
-  return new LocationsService(prisma as unknown as never);
+  const ctx = { requireTenantId: () => '00000000-0000-0000-0000-000000000001' };
+  return new LocationsService(prisma as unknown as never, ctx as unknown as never);
 }
 
 describe('LocationsService.recordLocation', () => {

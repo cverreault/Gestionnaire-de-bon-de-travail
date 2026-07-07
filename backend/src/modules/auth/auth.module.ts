@@ -17,7 +17,7 @@ import { TotpController } from './totp/totp.controller';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET', 'changeme-jwt-secret'),
+        secret: configService.getOrThrow<string>('JWT_SECRET'),
         signOptions: { expiresIn: '15m' },
       }),
       inject: [ConfigService],

@@ -239,7 +239,6 @@ export default function App() {
             <Route path="/parametres" element={<SettingsPage />} />
             <Route path="/parametres/processus" element={<ProcessSettingsPage />} />
             <Route path="/parametres/templates" element={<TemplatesSettingsPage />} />
-            <Route path="/sauvegarde" element={<BackupPage />} />
             <Route path="/audit" element={<AuditPage />} />
             <Route path="/mon-abonnement" element={<MySubscriptionPage />} />
             <Route path="/parametres/api-keys" element={<ApiKeysPage />} />
@@ -259,6 +258,7 @@ export default function App() {
             <Route path="/super-admin/all-users" element={<SuperAdminAllUsersPage />} />
             <Route path="/super-admin/platform-users" element={<SuperAdminPlatformUsersPage />} />
             <Route path="/super-admin/plans" element={<SuperAdminPlansPage />} />
+            <Route path="/super-admin/sauvegarde" element={<BackupPage />} />
           </Route>
 
         </Route>
