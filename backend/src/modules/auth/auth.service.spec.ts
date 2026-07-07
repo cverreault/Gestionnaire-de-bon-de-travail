@@ -124,10 +124,12 @@ function makeMockJwt(refreshSecret = REFRESH_SECRET) {
 }
 
 function makeMockConfig() {
+  const resolve = (key: string, fallback?: string) =>
+    key === 'JWT_REFRESH_SECRET' ? REFRESH_SECRET : (fallback ?? '');
   return {
-    get: jest.fn((key: string, fallback?: string) =>
-      key === 'JWT_REFRESH_SECRET' ? REFRESH_SECRET : (fallback ?? ''),
-    ),
+    get: jest.fn(resolve),
+    // B25 — secrets are read via getOrThrow now (no hardcoded fallback).
+    getOrThrow: jest.fn((key: string) => resolve(key)),
   };
 }
 

@@ -43,6 +43,12 @@ import * as bcrypt from 'bcrypt';
 export class TotpService {
   private readonly logger = new Logger(TotpService.name);
 
+  // B26 — per-user brute-force lock: after MAX_ATTEMPTS wrong codes, lock
+  // for LOCKOUT_MS. A live TOTP is a 6-digit space; the per-IP throttle
+  // alone (10/min) is not enough on its own.
+  private static readonly MAX_ATTEMPTS = 5;
+  private static readonly LOCKOUT_MS = 15 * 60 * 1000;
+
   constructor(private readonly prisma: PrismaService) {}
 
   async beginSetup(userId: string): Promise<{
@@ -144,10 +150,21 @@ export class TotpService {
         totpSecret: true,
         totpEnabled: true,
         totpBackupCodesHash: true,
+        totpFailedAttempts: true,
+        totpLockedUntil: true,
       },
     });
     if (!user || !user.totpEnabled || !user.totpSecret) {
       throw new UnauthorizedException('2FA non configuré');
+    }
+
+    // B26 — refuse while locked.
+    if (user.totpLockedUntil && user.totpLockedUntil.getTime() > Date.now()) {
+      const mins = Math.ceil((user.totpLockedUntil.getTime() - Date.now()) / 60000);
+      this.logger.warn(`2FA locked for ${user.email} — ${mins} min remaining`);
+      throw new UnauthorizedException(
+        `Trop de tentatives 2FA. Réessayez dans ${mins} minute(s).`,
+      );
     }
 
     // 1. Try as live TOTP code.
@@ -163,6 +180,7 @@ export class TotpService {
         secret: Secret.fromBase32(secret),
       });
       if (totp.validate({ token: trimmed, window: 1 }) !== null) {
+        await this.resetLock(user.id, user.totpFailedAttempts);
         return true;
       }
     }
@@ -176,7 +194,11 @@ export class TotpService {
         const remaining = hashes.filter((h) => h !== codeHash).join(' ');
         await this.prisma.user.update({
           where: { id: userId },
-          data: { totpBackupCodesHash: remaining || null },
+          data: {
+            totpBackupCodesHash: remaining || null,
+            totpFailedAttempts: 0,
+            totpLockedUntil: null,
+          },
         });
         this.logger.warn(
           `User ${user.email} redeemed a backup 2FA code (${hashes.length - 1} remaining).`,
@@ -185,7 +207,43 @@ export class TotpService {
       }
     }
 
+    await this.registerFailure(user.id, user.email, user.totpFailedAttempts);
     throw new UnauthorizedException('Code TOTP ou de secours invalide');
+  }
+
+  /** Reset the brute-force counters after a successful verification. */
+  private async resetLock(userId: string, current: number): Promise<void> {
+    if (current === 0) return; // avoid a needless write on the happy path
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { totpFailedAttempts: 0, totpLockedUntil: null },
+    });
+  }
+
+  /** Bump the failed-attempt counter and lock the account past the cap. */
+  private async registerFailure(
+    userId: string,
+    email: string,
+    current: number,
+  ): Promise<void> {
+    const attempts = current + 1;
+    const locked = attempts >= TotpService.MAX_ATTEMPTS;
+    await this.prisma.user.update({
+      where: { id: userId },
+      // When locking, reset the counter and stamp the window; otherwise
+      // only bump the counter (leave totpLockedUntil untouched).
+      data: locked
+        ? {
+            totpFailedAttempts: 0,
+            totpLockedUntil: new Date(Date.now() + TotpService.LOCKOUT_MS),
+          }
+        : { totpFailedAttempts: attempts },
+    });
+    if (locked) {
+      this.logger.warn(
+        `2FA locked for ${email} after ${attempts} failed attempts (${TotpService.LOCKOUT_MS / 60000} min).`,
+      );
+    }
   }
 
   /**
