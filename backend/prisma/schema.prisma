@@ -583,6 +583,10 @@ model User {
   totpEnabled         Boolean   @default(false) @map("totp_enabled")
   totpBackupCodesHash String?   @map("totp_backup_codes_hash")
   totpEnabledAt       DateTime? @map("totp_enabled_at")
+  // B26 — per-user 2FA brute-force lock: consecutive wrong codes and a
+  // temporary lockout window (defence beyond the per-IP throttle).
+  totpFailedAttempts  Int       @default(0) @map("totp_failed_attempts")
+  totpLockedUntil     DateTime? @map("totp_locked_until")
   tenant    Tenant  @relation(fields: [tenantId], references: [id])
   email     String
   password  String

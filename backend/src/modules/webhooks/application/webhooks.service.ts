@@ -6,8 +6,7 @@ import {
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { randomBytes } from 'node:crypto';
-import { promises as dnsPromises } from 'node:dns';
-import { isIP } from 'node:net';
+import { assertPublicWebhookUrl, WebhookUrlError } from './webhook-url-guard';
 import { PrismaService } from '../../../common/prisma/prisma.service';
 import { validateSubscribedEvents } from '../domain/webhook-events';
 import { encryptSecret } from './secret-crypto';
@@ -316,53 +315,14 @@ export class WebhooksService {
    * infra or a cloud metadata endpoint.
    */
   private async validateUrl(rawUrl: string): Promise<void> {
-    let parsed: URL;
+    // B26 — delegate to the shared SSRF guard (also used at delivery time).
     try {
-      parsed = new URL(rawUrl);
-    } catch {
-      throw new BadRequestException('URL invalide');
-    }
-    if (!['http:', 'https:'].includes(parsed.protocol)) {
-      throw new BadRequestException('Seul http:// et https:// sont autorisés');
-    }
-    if (
-      process.env.NODE_ENV === 'production' &&
-      parsed.protocol === 'http:'
-    ) {
-      throw new BadRequestException(
-        'https:// est obligatoire en production',
-      );
-    }
-
-    const host = parsed.hostname;
-    if (!host) throw new BadRequestException('Hostname manquant dans l\'URL');
-
-    // If it's a raw IP literal we can classify it directly. Otherwise we
-    // resolve via dns.lookup — which honours /etc/hosts and returns the
-    // FIRST address, matching what fetch() would actually connect to.
-    const addresses: string[] = [];
-    if (isIP(host)) {
-      addresses.push(host);
-    } else {
-      try {
-        const results = await dnsPromises.lookup(host, { all: true });
-        for (const r of results) addresses.push(r.address);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        throw new BadRequestException(
-          `Impossible de résoudre le hostname : ${message}`,
-        );
+      await assertPublicWebhookUrl(rawUrl);
+    } catch (err) {
+      if (err instanceof WebhookUrlError) {
+        throw new BadRequestException(err.message);
       }
-    }
-    if (addresses.length === 0) {
-      throw new BadRequestException('Hostname non résolu');
-    }
-    for (const addr of addresses) {
-      if (isReservedAddress(addr)) {
-        throw new BadRequestException(
-          `L'URL pointe vers une adresse privée/réservée (${addr}) — refusée pour des raisons de sécurité (SSRF).`,
-        );
-      }
+      throw err;
     }
   }
 }
@@ -461,41 +421,5 @@ function generateSecret(): string {
   return `whsec_${random}`;
 }
 
-/**
- * True when `addr` is a private / loopback / link-local / metadata address.
- * Covers the ranges an SSRF attacker would use to talk to TaskMgr's own
- * infra or cloud metadata endpoints.
- */
-export function isReservedAddress(addr: string): boolean {
-  const family = isIP(addr);
-  if (family === 4) {
-    // 127.0.0.0/8
-    if (addr.startsWith('127.')) return true;
-    // 10.0.0.0/8
-    if (addr.startsWith('10.')) return true;
-    // 169.254.0.0/16 — link-local + AWS/GCE metadata
-    if (addr.startsWith('169.254.')) return true;
-    // 192.168.0.0/16
-    if (addr.startsWith('192.168.')) return true;
-    // 172.16.0.0/12
-    const parts = addr.split('.').map(Number);
-    if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;
-    // 0.0.0.0/8
-    if (parts[0] === 0) return true;
-    return false;
-  }
-  if (family === 6) {
-    const lower = addr.toLowerCase();
-    // Loopback ::1
-    if (lower === '::1') return true;
-    // Unique local fc00::/7
-    if (lower.startsWith('fc') || lower.startsWith('fd')) return true;
-    // Link-local fe80::/10
-    if (lower.startsWith('fe80:') || lower.startsWith('fe9') || lower.startsWith('fea') || lower.startsWith('feb')) return true;
-    // IPv4-mapped ::ffff:x.x.x.x — classify the embedded v4
-    const mapped = lower.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
-    if (mapped) return isReservedAddress(mapped[1]);
-    return false;
-  }
-  return false;
-}
+// isReservedAddress lives in webhook-url-guard.ts (shared with delivery).
+export { isReservedAddress } from './webhook-url-guard';

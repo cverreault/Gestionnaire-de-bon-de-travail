@@ -5,6 +5,7 @@ import { PrismaService } from '../../../common/prisma/prisma.service';
 import { sign } from './webhook-signer';
 import { WebhooksService } from './webhooks.service';
 import { decryptSecret } from './secret-crypto';
+import { assertPublicWebhookUrl, WebhookUrlError } from './webhook-url-guard';
 
 /**
  * B9 — Sweeper-based delivery dispatcher.
@@ -209,15 +210,35 @@ export class WebhookDispatcherService {
     let responseBody = '';
     let error: string | null = null;
 
+    // B26 — SSRF defence: re-validate the target just before sending. The
+    // create-time check can be stale (DNS rebinding), so we re-resolve and
+    // refuse a now-private address. If it fails we skip the request and let
+    // the normal failure/retry path record it.
+    let urlSafe = true;
+    try {
+      await assertPublicWebhookUrl(row.endpoint.url);
+    } catch (err) {
+      urlSafe = false;
+      error =
+        err instanceof WebhookUrlError
+          ? `URL refusée (SSRF) : ${err.message}`
+          : `Validation URL échouée : ${err instanceof Error ? err.message : String(err)}`;
+      this.logger.warn(`Webhook ${row.eventName} → ${row.endpoint.url} bloqué: ${error}`);
+    }
+
     const controller = new AbortController();
     const timer = setTimeout(
       () => controller.abort(),
       WebhookDispatcherService.REQUEST_TIMEOUT_MS,
     );
     try {
+      if (!urlSafe) throw new Error(error ?? 'URL non sûre');
       const res = await fetch(row.endpoint.url, {
         method: 'POST',
         signal: controller.signal,
+        // B26 — never follow a redirect to an internal host. A 3xx is
+        // treated as a non-2xx delivery (retry/abandon), not chased.
+        redirect: 'manual',
         headers: {
           'Content-Type': 'application/json',
           'User-Agent': 'TaskMgr-Webhooks/1.0',
