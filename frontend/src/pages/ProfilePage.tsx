@@ -93,8 +93,16 @@ function getPasswordStrength(pwd: string): PasswordStrength | null {
 }
 
 function PasswordStrengthMeter({ password }: { password: string }) {
+  const { t } = useTranslation('auth');
   const strength = getPasswordStrength(password);
   if (!strength) return null;
+
+  const strengthLabel =
+    strength.level === 'faible'
+      ? t('auth:profilePage.strengthWeak', { defaultValue: 'Faible' })
+      : strength.level === 'fort'
+        ? t('auth:profilePage.strengthStrong', { defaultValue: 'Fort' })
+        : t('auth:profilePage.strengthMedium', { defaultValue: 'Moyen' });
 
   return (
     <div style={{ marginTop: '0.375rem' }}>
@@ -115,7 +123,7 @@ function PasswordStrengthMeter({ password }: { password: string }) {
       </div>
       {/* Label */}
       <p style={{ ...formStyles.fieldHint, color: strength.color, margin: 0 }}>
-        Force : <strong>{strength.label}</strong>
+        {t('auth:profilePage.strengthPrefix', { defaultValue: 'Force :' })} <strong>{strengthLabel}</strong>
       </p>
     </div>
   );
@@ -146,6 +154,7 @@ function PasswordInput({
   minLength,
   extraStyle,
 }: PasswordInputProps) {
+  const { t } = useTranslation('auth');
   const [visible, setVisible] = useState(false);
 
   const inputBase: React.CSSProperties = focused
@@ -169,7 +178,7 @@ function PasswordInput({
         type="button"
         onClick={() => setVisible((v) => !v)}
         tabIndex={-1}
-        aria-label={visible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+        aria-label={visible ? t('auth:profilePage.hidePassword', { defaultValue: 'Masquer le mot de passe' }) : t('auth:profilePage.showPassword', { defaultValue: 'Afficher le mot de passe' })}
         style={{
           position: 'absolute',
           right: '0.625rem',
@@ -360,7 +369,7 @@ export default function ProfilePage() {
                 onFocus={() => setFocusedField('phone')}
                 onBlur={() => setFocusedField(null)}
                 style={inputStyle('phone')}
-                placeholder="Ex. : 514-555-0100"
+                placeholder={t('auth:profilePage.phonePlaceholder', { defaultValue: 'Ex. : 514-555-0100' })}
               />
             </div>
           </div>
@@ -583,15 +592,16 @@ function AppearanceSection() {
 
 // ─── Notification preferences (B1.2) ─────────────────────────────────────────
 
-const EVENT_LABELS: Record<string, string> = {
-  'workOrder.assigned':  'Un BT m\'est assigné',
-  'workOrder.completed': 'Un BT est terminé',
-};
-
 function NotificationPreferencesSection() {
   const { t } = useTranslation();
   const { data, isLoading, isError } = useNotificationPreferences();
   const mutation = useUpdateNotificationPreferences();
+
+  const eventLabel = (evt: string): string => {
+    if (evt === 'workOrder.assigned') return t('auth:profilePage.eventAssigned', { defaultValue: "Un BT m'est assigné" });
+    if (evt === 'workOrder.completed') return t('auth:profilePage.eventCompleted', { defaultValue: 'Un BT est terminé' });
+    return evt;
+  };
 
   // ── Push registration state (browser-side) ───────────────────────────────
   const [pushState, setPushState] = useState<PushState | null>(null);
@@ -611,10 +621,10 @@ function NotificationPreferencesSection() {
       setPushState('granted');
     } catch (err) {
       const msg = (err as Error).message;
-      if (msg === 'permission-denied') setPushError("Permission refusée par le navigateur — autorisez les notifications puis réessayez.");
-      else if (msg === 'server-disabled') setPushError("Le serveur n'a pas de clés VAPID configurées — contactez l'administrateur.");
-      else if (msg === 'unsupported') setPushError("Ce navigateur ne supporte pas les notifications push.");
-      else setPushError("Impossible d'activer les notifications push.");
+      if (msg === 'permission-denied') setPushError(t('auth:profilePage.pushPermissionDenied', { defaultValue: 'Permission refusée par le navigateur — autorisez les notifications puis réessayez.' }));
+      else if (msg === 'server-disabled') setPushError(t('auth:profilePage.pushServerDisabled', { defaultValue: "Le serveur n'a pas de clés VAPID configurées — contactez l'administrateur." }));
+      else if (msg === 'unsupported') setPushError(t('auth:profilePage.pushUnsupported', { defaultValue: 'Ce navigateur ne supporte pas les notifications push.' }));
+      else setPushError(t('auth:profilePage.pushEnableFailed', { defaultValue: "Impossible d'activer les notifications push." }));
       setPushState(await getPushState().catch(() => 'unsupported' as PushState));
     } finally {
       setPushBusy(false);
@@ -628,7 +638,7 @@ function NotificationPreferencesSection() {
       await disablePush();
       setPushState('unsubscribed');
     } catch {
-      setPushError("Impossible de désactiver les notifications push.");
+      setPushError(t('auth:profilePage.pushDisableFailed', { defaultValue: 'Impossible de désactiver les notifications push.' }));
     } finally {
       setPushBusy(false);
     }
@@ -641,7 +651,7 @@ function NotificationPreferencesSection() {
   return (
     <div style={{ ...cardStyles.card }}>
       <div style={{ ...cardStyles.cardHeader }}>
-        <h2 style={{ ...cardStyles.cardTitle }}>🔔 Préférences de notifications</h2>
+        <h2 style={{ ...cardStyles.cardTitle }}>🔔 {t('auth:profilePage.notifPrefsTitle', { defaultValue: 'Préférences de notifications' })}</h2>
       </div>
       <div style={{ ...cardStyles.cardBody }}>
         {isLoading && (
@@ -649,7 +659,7 @@ function NotificationPreferencesSection() {
         )}
         {isError && (
           <p style={{ color: theme.colors.danger, margin: 0 }}>
-            Impossible de charger les préférences. Réessayez plus tard.
+            {t('auth:profilePage.notifPrefsLoadError', { defaultValue: 'Impossible de charger les préférences. Réessayez plus tard.' })}
           </p>
         )}
         {data && (
@@ -659,9 +669,7 @@ function NotificationPreferencesSection() {
               fontSize: theme.font.sizeSm,
               color: theme.colors.textMuted,
             }}>
-              L'option « En-app » contrôle la cloche en haut à droite. L'email
-              dépend de la configuration SMTP du serveur. Le canal « Push »
-              nécessite que vous activiez les notifications push ci-dessous.
+              {t('auth:profilePage.notifPrefsIntro', { defaultValue: "L'option « En-app » contrôle la cloche en haut à droite. L'email dépend de la configuration SMTP du serveur. Le canal « Push » nécessite que vous activiez les notifications push ci-dessous." })}
             </p>
 
             {/* ── Push activation toggle ───────────────────────────────── */}
@@ -678,15 +686,15 @@ function NotificationPreferencesSection() {
             }}>
               <div style={{ minWidth: 0 }}>
                 <p style={{ margin: 0, fontSize: theme.font.sizeSm, fontWeight: theme.font.weightSemibold, color: theme.colors.text }}>
-                  📲 Notifications push (navigateur)
+                  📲 {t('auth:profilePage.pushBrowserTitle', { defaultValue: 'Notifications push (navigateur)' })}
                 </p>
                 <p style={{ margin: '0.2rem 0 0', fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>
-                  {pushState === null && 'Vérification…'}
-                  {pushState === 'unsupported' && 'Non supporté sur ce navigateur.'}
-                  {pushState === 'denied' && 'Bloqué par le navigateur — autorisez les notifications dans les paramètres du site.'}
-                  {pushState === 'default' && "Pas encore activé. Cliquez sur « Activer » pour recevoir des notifications même quand l'onglet est fermé."}
-                  {pushState === 'unsubscribed' && 'Permission accordée mais pas activé. Cliquez sur « Activer ».'}
-                  {pushState === 'granted' && '✅ Actif sur ce navigateur.'}
+                  {pushState === null && t('auth:profilePage.pushChecking', { defaultValue: 'Vérification…' })}
+                  {pushState === 'unsupported' && t('auth:profilePage.pushStateUnsupported', { defaultValue: 'Non supporté sur ce navigateur.' })}
+                  {pushState === 'denied' && t('auth:profilePage.pushStateDenied', { defaultValue: 'Bloqué par le navigateur — autorisez les notifications dans les paramètres du site.' })}
+                  {pushState === 'default' && t('auth:profilePage.pushStateDefault', { defaultValue: "Pas encore activé. Cliquez sur « Activer » pour recevoir des notifications même quand l'onglet est fermé." })}
+                  {pushState === 'unsubscribed' && t('auth:profilePage.pushStateUnsubscribed', { defaultValue: 'Permission accordée mais pas activé. Cliquez sur « Activer ».' })}
+                  {pushState === 'granted' && `✅ ${t('auth:profilePage.pushStateGranted', { defaultValue: 'Actif sur ce navigateur.' })}`}
                 </p>
                 {pushError && (
                   <p style={{ margin: '0.3rem 0 0', fontSize: theme.font.sizeXs, color: theme.colors.danger }}>
@@ -702,7 +710,7 @@ function NotificationPreferencesSection() {
                     disabled={pushBusy}
                     style={{ ...buttonStyles.primary, fontSize: theme.font.sizeSm }}
                   >
-                    {pushBusy ? 'Activation…' : 'Activer'}
+                    {pushBusy ? t('auth:profilePage.pushEnabling', { defaultValue: 'Activation…' }) : t('auth:profilePage.pushEnable', { defaultValue: 'Activer' })}
                   </button>
                 )}
                 {pushState === 'granted' && (
@@ -712,7 +720,7 @@ function NotificationPreferencesSection() {
                     disabled={pushBusy}
                     style={{ ...buttonStyles.secondary, fontSize: theme.font.sizeSm }}
                   >
-                    {pushBusy ? 'Désactivation…' : 'Désactiver'}
+                    {pushBusy ? t('auth:profilePage.pushDisabling', { defaultValue: 'Désactivation…' }) : t('auth:profilePage.pushDisable', { defaultValue: 'Désactiver' })}
                   </button>
                 )}
               </div>
@@ -722,16 +730,16 @@ function NotificationPreferencesSection() {
               <thead>
                 <tr>
                   <th style={{ textAlign: 'left', padding: '0.5rem', color: theme.colors.textMuted, fontWeight: theme.font.weightMedium, borderBottom: theme.borders.light }}>
-                    Événement
+                    {t('auth:profilePage.colEvent', { defaultValue: 'Événement' })}
                   </th>
                   <th style={{ width: '90px', textAlign: 'center', padding: '0.5rem', color: theme.colors.textMuted, fontWeight: theme.font.weightMedium, borderBottom: theme.borders.light }}>
-                    🔔 En-app
+                    🔔 {t('auth:profilePage.colInApp', { defaultValue: 'En-app' })}
                   </th>
                   <th style={{ width: '90px', textAlign: 'center', padding: '0.5rem', color: theme.colors.textMuted, fontWeight: theme.font.weightMedium, borderBottom: theme.borders.light }}>
-                    ✉️ Email
+                    ✉️ {t('auth:profilePage.colEmail', { defaultValue: 'Email' })}
                   </th>
                   <th style={{ width: '90px', textAlign: 'center', padding: '0.5rem', color: theme.colors.textMuted, fontWeight: theme.font.weightMedium, borderBottom: theme.borders.light }}>
-                    📲 Push
+                    📲 {t('auth:profilePage.colPush', { defaultValue: 'Push' })}
                   </th>
                 </tr>
               </thead>
@@ -741,7 +749,7 @@ function NotificationPreferencesSection() {
                   return (
                     <tr key={evt} style={{ borderBottom: theme.borders.light }}>
                       <td style={{ padding: '0.5rem', color: theme.colors.text }}>
-                        {EVENT_LABELS[evt] ?? evt}
+                        {eventLabel(evt)}
                       </td>
                       <td style={{ padding: '0.5rem', textAlign: 'center' }}>
                         <input
@@ -749,7 +757,7 @@ function NotificationPreferencesSection() {
                           checked={prefs.inApp}
                           disabled={mutation.isPending}
                           onChange={(e) => toggle(evt, 'inApp', e.target.checked)}
-                          aria-label={`En-app pour ${EVENT_LABELS[evt] ?? evt}`}
+                          aria-label={t('auth:profilePage.inAppFor', { defaultValue: 'En-app pour {{event}}', event: eventLabel(evt) })}
                         />
                       </td>
                       <td style={{ padding: '0.5rem', textAlign: 'center' }}>
@@ -758,7 +766,7 @@ function NotificationPreferencesSection() {
                           checked={prefs.email}
                           disabled={mutation.isPending}
                           onChange={(e) => toggle(evt, 'email', e.target.checked)}
-                          aria-label={`Email pour ${EVENT_LABELS[evt] ?? evt}`}
+                          aria-label={t('auth:profilePage.emailFor', { defaultValue: 'Email pour {{event}}', event: eventLabel(evt) })}
                         />
                       </td>
                       <td style={{ padding: '0.5rem', textAlign: 'center' }}>
@@ -767,8 +775,8 @@ function NotificationPreferencesSection() {
                           checked={prefs.push}
                           disabled={mutation.isPending || pushState !== 'granted'}
                           onChange={(e) => toggle(evt, 'push', e.target.checked)}
-                          aria-label={`Push pour ${EVENT_LABELS[evt] ?? evt}`}
-                          title={pushState !== 'granted' ? 'Activez les notifications push ci-dessus pour utiliser ce canal' : undefined}
+                          aria-label={t('auth:profilePage.pushFor', { defaultValue: 'Push pour {{event}}', event: eventLabel(evt) })}
+                          title={pushState !== 'granted' ? t('auth:profilePage.pushChannelHint', { defaultValue: 'Activez les notifications push ci-dessus pour utiliser ce canal' }) : undefined}
                         />
                       </td>
                     </tr>
@@ -778,7 +786,7 @@ function NotificationPreferencesSection() {
             </table>
             {mutation.isError && (
               <p style={{ color: theme.colors.danger, fontSize: theme.font.sizeSm, margin: 0 }}>
-                Échec de la mise à jour — la case est revenue à son ancien état.
+                {t('auth:profilePage.updateFailed', { defaultValue: 'Échec de la mise à jour — la case est revenue à son ancien état.' })}
               </p>
             )}
           </div>
@@ -798,6 +806,7 @@ function NotificationPreferencesSection() {
  * preference ON but no rows get posted until the user grants it.
  */
 function GpsTrackingSection() {
+  const { t } = useTranslation('auth');
   const user = useAuthStore((s) => s.user);
   const { data: prefs } = useUserPreferences();
   const updatePrefs = useUpdateUserPreferences();
@@ -814,11 +823,11 @@ function GpsTrackingSection() {
   return (
     <div style={{ ...cardStyles.card }}>
       <div style={{ ...cardStyles.cardHeader }}>
-        <h2 style={{ ...cardStyles.cardTitle }}>📍 Suivi de position</h2>
+        <h2 style={{ ...cardStyles.cardTitle }}>📍 {t('auth:profilePage.gpsTitle', { defaultValue: 'Suivi de position' })}</h2>
       </div>
       <div style={{ ...cardStyles.cardBody, display: 'flex', flexDirection: 'column', gap: 12 }}>
         <p style={{ color: theme.colors.textMuted, margin: 0, fontSize: theme.font.sizeSm }}>
-          En activant ce suivi, votre position GPS est transmise au répartiteur pendant que vous êtes connecté. Les données sont conservées 7 jours puis supprimées automatiquement (Loi 25 / PIPEDA). Vous pouvez désactiver le suivi en tout temps.
+          {t('auth:profilePage.gpsDescription', { defaultValue: 'En activant ce suivi, votre position GPS est transmise au répartiteur pendant que vous êtes connecté. Les données sont conservées 7 jours puis supprimées automatiquement (Loi 25 / PIPEDA). Vous pouvez désactiver le suivi en tout temps.' })}
         </p>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
           <input
@@ -831,15 +840,15 @@ function GpsTrackingSection() {
                 gps: { enabled: e.target.checked },
               })
             }
-            aria-label="Activer le suivi GPS"
+            aria-label={t('auth:profilePage.gpsToggleAria', { defaultValue: 'Activer le suivi GPS' })}
           />
           <span style={{ color: theme.colors.text }}>
-            Partager ma position avec le répartiteur
+            {t('auth:profilePage.gpsShareLabel', { defaultValue: 'Partager ma position avec le répartiteur' })}
           </span>
         </label>
         {updatePrefs.isError && (
           <p style={{ color: theme.colors.danger, fontSize: theme.font.sizeSm, margin: 0 }}>
-            Échec de la mise à jour — la case est revenue à son ancien état.
+            {t('auth:profilePage.updateFailed', { defaultValue: 'Échec de la mise à jour — la case est revenue à son ancien état.' })}
           </p>
         )}
       </div>
@@ -884,7 +893,7 @@ function TotpSection() {
       setEnabled(true);
       setSetup(null);
       setCode('');
-      toast.success('2FA activé — les prochaines connexions demanderont un code.');
+      toast.success(t('auth:profilePage.totpEnabledToast', { defaultValue: '2FA activé — les prochaines connexions demanderont un code.' }));
     } catch (err) {
       toast.error(extractErr(err));
     } finally {
@@ -900,7 +909,7 @@ function TotpSection() {
       setDisableOpen(false);
       setDisablePwd('');
       setDisableCode('');
-      toast.success('2FA désactivé.');
+      toast.success(t('auth:profilePage.totpDisabledToast', { defaultValue: '2FA désactivé.' }));
     } catch (err) {
       toast.error(extractErr(err));
     } finally {
@@ -911,7 +920,7 @@ function TotpSection() {
   return (
     <div style={{ ...cardStyles.card, marginBottom: '1.5rem' }}>
       <div style={cardStyles.cardHeader}>
-        <h2 style={cardStyles.cardTitle}>🔐 Sécurité — Double authentification (2FA)</h2>
+        <h2 style={cardStyles.cardTitle}>🔐 {t('auth:profilePage.totpSectionTitle', { defaultValue: 'Sécurité — Double authentification (2FA)' })}</h2>
       </div>
       <div style={cardStyles.cardBody}>
         {enabled === null && <p style={{ color: theme.colors.textMuted }}>{t('common:messages.loading', { defaultValue: 'Chargement…' })}</p>}
@@ -919,10 +928,10 @@ function TotpSection() {
         {enabled === false && !setup && (
           <>
             <p style={{ marginTop: 0, fontSize: theme.font.sizeSm, color: theme.colors.textMuted }}>
-              Ajoute un deuxième facteur d'authentification via une application comme Google Authenticator, Authy, 1Password ou Bitwarden. Bloque 99 % des prises de compte.
+              {t('auth:profilePage.totpIntro', { defaultValue: "Ajoute un deuxième facteur d'authentification via une application comme Google Authenticator, Authy, 1Password ou Bitwarden. Bloque 99 % des prises de compte." })}
             </p>
             <button style={buttonStyles.primary} onClick={handleBeginSetup} disabled={busy}>
-              Activer le 2FA
+              {t('auth:profilePage.totpEnable', { defaultValue: 'Activer le 2FA' })}
             </button>
           </>
         )}
@@ -930,7 +939,7 @@ function TotpSection() {
         {enabled === false && setup && (
           <div>
             <p style={{ marginTop: 0, fontSize: theme.font.sizeSm }}>
-              1. Scanne ce QR code dans ton application d'authentification :
+              {t('auth:profilePage.totpStep1', { defaultValue: "1. Scanne ce QR code dans ton application d'authentification :" })}
             </p>
             <div
               style={{
@@ -946,7 +955,7 @@ function TotpSection() {
             </div>
             <details style={{ marginBottom: 12 }}>
               <summary style={{ cursor: 'pointer', fontSize: 12, color: theme.colors.textMuted }}>
-                Ou entre le secret manuellement
+                {t('auth:profilePage.totpManualSecret', { defaultValue: 'Ou entre le secret manuellement' })}
               </summary>
               <code
                 style={{
@@ -974,7 +983,7 @@ function TotpSection() {
               }}
             >
               <div style={{ fontWeight: 600, marginBottom: 6, fontSize: 13 }}>
-                ⚠️ Codes de secours — enregistre-les maintenant, ils ne seront plus jamais montrés
+                ⚠️ {t('auth:profilePage.totpBackupCodesWarning', { defaultValue: 'Codes de secours — enregistre-les maintenant, ils ne seront plus jamais montrés' })}
               </div>
               <div
                 style={{
@@ -993,15 +1002,15 @@ function TotpSection() {
                 style={{ ...buttonStyles.secondary, marginTop: 8, fontSize: 12 }}
                 onClick={() => {
                   navigator.clipboard.writeText(setup.backupCodes.join('\n'));
-                  toast.success('Codes copiés');
+                  toast.success(t('auth:profilePage.totpCodesCopied', { defaultValue: 'Codes copiés' }));
                 }}
               >
-                📋 Copier tous les codes
+                📋 {t('auth:profilePage.totpCopyAllCodes', { defaultValue: 'Copier tous les codes' })}
               </button>
             </div>
 
             <p style={{ fontSize: theme.font.sizeSm, marginBottom: 6 }}>
-              2. Entre le code à 6 chiffres généré par ton application :
+              {t('auth:profilePage.totpStep2', { defaultValue: '2. Entre le code à 6 chiffres généré par ton application :' })}
             </p>
             <div style={{ display: 'flex', gap: 8 }}>
               <input
@@ -1023,7 +1032,7 @@ function TotpSection() {
                 onClick={handleEnable}
                 disabled={busy || code.length !== 6}
               >
-                Confirmer
+                {t('auth:profilePage.totpConfirm', { defaultValue: 'Confirmer' })}
               </button>
               <button
                 style={buttonStyles.secondary}
@@ -1033,7 +1042,7 @@ function TotpSection() {
                 }}
                 disabled={busy}
               >
-                Annuler
+                {t('auth:profilePage.totpCancel', { defaultValue: 'Annuler' })}
               </button>
             </div>
           </div>
@@ -1042,10 +1051,10 @@ function TotpSection() {
         {enabled === true && !disableOpen && (
           <>
             <p style={{ marginTop: 0, fontSize: theme.font.sizeSm }}>
-              ✅ 2FA activé. Un code sera demandé à chaque connexion.
+              ✅ {t('auth:profilePage.totpActiveInfo', { defaultValue: '2FA activé. Un code sera demandé à chaque connexion.' })}
             </p>
             <button style={buttonStyles.secondary} onClick={() => setDisableOpen(true)}>
-              Désactiver le 2FA
+              {t('auth:profilePage.totpDisable', { defaultValue: 'Désactiver le 2FA' })}
             </button>
           </>
         )}
@@ -1053,19 +1062,19 @@ function TotpSection() {
         {enabled === true && disableOpen && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 320 }}>
             <p style={{ fontSize: theme.font.sizeSm, marginTop: 0 }}>
-              Confirme avec ton mot de passe + un code TOTP (ou un code de secours) :
+              {t('auth:profilePage.totpDisableConfirmPrompt', { defaultValue: 'Confirme avec ton mot de passe + un code TOTP (ou un code de secours) :' })}
             </p>
             <input
               type="password"
               value={disablePwd}
               onChange={(e) => setDisablePwd(e.target.value)}
-              placeholder="Mot de passe actuel"
+              placeholder={t('auth:profilePage.totpCurrentPassword', { defaultValue: 'Mot de passe actuel' })}
               style={formStyles.input}
             />
             <input
               value={disableCode}
               onChange={(e) => setDisableCode(e.target.value)}
-              placeholder="Code TOTP (6 chiffres) ou code de secours"
+              placeholder={t('auth:profilePage.totpCodePlaceholder', { defaultValue: 'Code TOTP (6 chiffres) ou code de secours' })}
               style={formStyles.input}
             />
             <div style={{ display: 'flex', gap: 8 }}>
@@ -1074,14 +1083,14 @@ function TotpSection() {
                 onClick={handleDisable}
                 disabled={busy || !disablePwd || !disableCode}
               >
-                Désactiver
+                {t('auth:profilePage.totpDisableShort', { defaultValue: 'Désactiver' })}
               </button>
               <button
                 style={buttonStyles.secondary}
                 onClick={() => setDisableOpen(false)}
                 disabled={busy}
               >
-                Annuler
+                {t('auth:profilePage.totpCancel', { defaultValue: 'Annuler' })}
               </button>
             </div>
           </div>

@@ -360,7 +360,7 @@ export default function WorkOrderDetailPage() {
           fontSize: theme.font.sizeSm,
         }}
       >
-        ← Retour
+        ← {t('workOrders:detailPage.back', { defaultValue: 'Retour' })}
       </button>
 
       {/* Header */}
@@ -379,7 +379,7 @@ export default function WorkOrderDetailPage() {
                 onClick={() => setShowApproveModal(true)}
                 style={{ ...buttonStyles.primary, fontSize: theme.font.sizeSm, background: '#10b981', borderColor: '#10b981' }}
               >
-                ✔ Approuver et planifier
+                ✔ {t('workOrders:detailPage.approveAndSchedule', { defaultValue: 'Approuver et planifier' })}
               </button>
             )}
             <TransitionActionBar workOrderId={wo.id} variant="dropdown" />
@@ -392,7 +392,7 @@ export default function WorkOrderDetailPage() {
                   fontSize: theme.font.sizeSm,
                 }}
               >
-                ✏️ Éditer
+                ✏️ {t('workOrders:detailPage.edit', { defaultValue: 'Éditer' })}
               </button>
             )}
             {canDuplicate && wo && (
@@ -432,7 +432,7 @@ export default function WorkOrderDetailPage() {
                 fontSize: theme.font.sizeSm,
               }}
             >
-              🖨 Imprimer
+              🖨 {t('workOrders:detailPage.print', { defaultValue: 'Imprimer' })}
             </button>
           </div>
         </div>
@@ -475,7 +475,7 @@ export default function WorkOrderDetailPage() {
               {wo.client.phone && <p style={{ color: theme.colors.textSecondary, fontSize: '0.9rem', margin: '0.125rem 0' }}>📞 {wo.client.phone}</p>}
               {wo.client.email && <p style={{ color: theme.colors.textSecondary, fontSize: '0.9rem', margin: '0.125rem 0' }}>📧 {wo.client.email}</p>}
               <span style={{ display: 'inline-block', marginTop: '0.375rem', fontSize: '0.65rem', fontWeight: theme.font.weightSemibold, padding: '0.1rem 0.4rem', borderRadius: theme.radius.full, background: theme.colors.primaryLight, color: theme.colors.primary }}>
-                Client enregistré
+                {t('workOrders:detailPage.registeredClient', { defaultValue: 'Client enregistré' })}
               </span>
             </div>
           ) : wo.temporaryClient ? (
@@ -484,25 +484,25 @@ export default function WorkOrderDetailPage() {
               {wo.temporaryClient.phone && <p style={{ color: theme.colors.textSecondary, fontSize: '0.9rem', margin: '0.125rem 0' }}>📞 {wo.temporaryClient.phone}</p>}
               {wo.temporaryClient.email && <p style={{ color: theme.colors.textSecondary, fontSize: '0.9rem', margin: '0.125rem 0' }}>📧 {wo.temporaryClient.email}</p>}
               <span style={{ display: 'inline-block', marginTop: '0.375rem', fontSize: '0.65rem', fontWeight: theme.font.weightSemibold, padding: '0.1rem 0.4rem', borderRadius: theme.radius.full, background: 'var(--c-warningLight)', color: 'var(--c-warningBadgeText)' }}>
-                Client temporaire
+                {t('workOrders:detailPage.temporaryClient', { defaultValue: 'Client temporaire' })}
               </span>
             </div>
           ) : wo.externalClientName ? (
             <div>
               <p style={{ ...valueStyle, fontWeight: theme.font.weightSemibold }}>{wo.externalClientName}</p>
               <span style={{ display: 'inline-block', marginTop: '0.375rem', fontSize: '0.65rem', fontWeight: theme.font.weightSemibold, padding: '0.1rem 0.4rem', borderRadius: theme.radius.full, background: '#d1fae5', color: 'var(--c-successBadgeText)' }}>
-                Client externe
+                {t('workOrders:detailPage.externalClient', { defaultValue: 'Client externe' })}
               </span>
             </div>
           ) : (
             <div>
               <p style={{ color: theme.colors.textLight, marginBottom: isAdmin ? '0.75rem' : 0 }}>
-                Aucun client assigné
+                {t('workOrders:detailPage.noClientAssigned', { defaultValue: 'Aucun client assigné' })}
               </p>
               {isAdmin && (
                 <button
                   onClick={openEditModal}
-                  title="Assigner un client à ce bon de travail"
+                  title={t('workOrders:detailPage.assignClientTitle', { defaultValue: 'Assigner un client à ce bon de travail' })}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -517,7 +517,7 @@ export default function WorkOrderDetailPage() {
                     cursor: 'pointer',
                   }}
                 >
-                  👤 Assigner un client
+                  👤 {t('workOrders:detailPage.assignClient', { defaultValue: 'Assigner un client' })}
                 </button>
               )}
             </div>
@@ -570,7 +570,7 @@ export default function WorkOrderDetailPage() {
           return (
             <div>
               <p style={{ color: theme.colors.textLight, marginBottom: isAdmin ? '0.75rem' : 0 }}>
-                Aucune adresse renseignée
+                {t('workOrders:detailPage.noAddress', { defaultValue: 'Aucune adresse renseignée' })}
               </p>
               {isAdmin && (
                 <button
@@ -589,7 +589,7 @@ export default function WorkOrderDetailPage() {
                     cursor: 'pointer',
                   }}
                 >
-                  📍 Définir l'adresse
+                  📍 {t('workOrders:detailPage.setAddress', { defaultValue: "Définir l'adresse" })}
                 </button>
               )}
             </div>
@@ -601,7 +601,7 @@ export default function WorkOrderDetailPage() {
       {woTemplate && woTemplate.sections.length > 0 && (
         <div style={cardStyle}>
           <h2 style={{ fontSize: theme.font.sizeMd, marginBottom: '1rem', color: theme.colors.text }}>
-            Formulaire — {woTemplate.name}
+            {t('workOrders:detailPage.formTemplate', { defaultValue: 'Formulaire — {{name}}', name: woTemplate.name })}
           </h2>
           <TemplateValuesView
             template={woTemplate}
@@ -675,7 +675,7 @@ export default function WorkOrderDetailPage() {
       {/* Signatures (B12) */}
       <div style={cardStyle}>
         <h2 style={{ fontSize: theme.font.sizeMd, marginBottom: '1rem', color: theme.colors.text }}>
-          ✍️ Signatures
+          ✍️ {t('workOrders:detailPage.signatures', { defaultValue: 'Signatures' })}
         </h2>
         <SignaturePad
           workOrderId={wo.id}
@@ -749,9 +749,9 @@ export default function WorkOrderDetailPage() {
                 onChange={(e) => setSelectedTechnicianId(e.target.value)}
                 style={{ ...formStyles.select, marginBottom: '1rem' }}
               >
-                <option value="">-- Choisir un technicien --</option>
-                {technicians.map((t) => (
-                  <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>
+                <option value="">{t('workOrders:detailPage.chooseTechnician', { defaultValue: '-- Choisir un technicien --' })}</option>
+                {technicians.map((tech) => (
+                  <option key={tech.id} value={tech.id}>{tech.firstName} {tech.lastName}</option>
                 ))}
               </select>
             </div>
@@ -760,7 +760,7 @@ export default function WorkOrderDetailPage() {
                 onClick={() => { setShowAssignModal(false); setSelectedTechnicianId(''); }}
                 style={{ ...buttonStyles.secondary }}
               >
-                Annuler
+                {t('workOrders:detailPage.cancel', { defaultValue: 'Annuler' })}
               </button>
               <button
                 onClick={handleAssign}
@@ -793,7 +793,7 @@ export default function WorkOrderDetailPage() {
         >
           <div style={{ ...modalStyles.content, maxWidth: '720px' }}>
             <div style={{ ...modalStyles.header }}>
-              <h3 style={{ ...modalStyles.headerTitle }}>✏️ Éditer le bon de travail</h3>
+              <h3 style={{ ...modalStyles.headerTitle }}>✏️ {t('workOrders:detailPage.editModalTitle', { defaultValue: 'Éditer le bon de travail' })}</h3>
               <button
                 onClick={() => setShowEditModal(false)}
                 style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: theme.colors.textMuted }}
@@ -803,12 +803,12 @@ export default function WorkOrderDetailPage() {
             <div style={{ ...modalStyles.body, overflowY: 'auto', maxHeight: '70vh' }}>
               {/* ── Informations générales ────────────────────────────────── */}
               <p style={{ fontSize: theme.font.sizeSm, fontWeight: theme.font.weightBold, color: theme.colors.text, marginBottom: '0.75rem', paddingBottom: '0.4rem', borderBottom: theme.borders.default }}>
-                Informations générales
+                {t('workOrders:detailPage.generalInfo', { defaultValue: 'Informations générales' })}
               </p>
 
               {/* Title */}
               <div style={{ marginBottom: '0.75rem' }}>
-                <label style={{ ...formStyles.label }}>Titre <span style={{ color: theme.colors.danger }}>*</span></label>
+                <label style={{ ...formStyles.label }}>{t('workOrders:detailPage.titleField', { defaultValue: 'Titre' })} <span style={{ color: theme.colors.danger }}>*</span></label>
                 <input
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
@@ -826,8 +826,8 @@ export default function WorkOrderDetailPage() {
                     onChange={(e) => setEditType(e.target.value)}
                     style={{ ...formStyles.select, boxSizing: 'border-box' }}
                   >
-                    {Object.values(WorkOrderType).map((t) => (
-                      <option key={t} value={t}>{TYPE_LABELS[t] || t}</option>
+                    {Object.values(WorkOrderType).map((code) => (
+                      <option key={code} value={code}>{t(`types.${code}`, { defaultValue: TYPE_LABELS[code] || code })}</option>
                     ))}
                   </select>
                 </div>
@@ -842,7 +842,15 @@ export default function WorkOrderDetailPage() {
                   >
                     {[1, 2, 3, 4, 5].map((p) => (
                       <option key={p} value={p}>
-                        {p} — {p === 1 ? 'Très basse' : p === 2 ? 'Basse' : p === 3 ? 'Normale' : p === 4 ? 'Haute' : 'Critique'}
+                        {p} — {p === 1
+                          ? t('workOrders:detailPage.priorityVeryLow', { defaultValue: 'Très basse' })
+                          : p === 2
+                            ? t('workOrders:detailPage.priorityLow', { defaultValue: 'Basse' })
+                            : p === 3
+                              ? t('workOrders:detailPage.priorityNormal', { defaultValue: 'Normale' })
+                              : p === 4
+                                ? t('workOrders:detailPage.priorityHigh', { defaultValue: 'Haute' })
+                                : t('workOrders:detailPage.priorityCritical', { defaultValue: 'Critique' })}
                       </option>
                     ))}
                   </select>
@@ -866,7 +874,7 @@ export default function WorkOrderDetailPage() {
                   ════════════════════════════════════════════════════════════ */}
               <div style={{ border: theme.borders.default, borderRadius: theme.radius.md, padding: '0.875rem 1rem', marginBottom: '0.875rem', background: theme.colors.surface }}>
                 <p style={{ margin: '0 0 0.625rem', fontSize: theme.font.sizeSm, fontWeight: theme.font.weightBold, color: theme.colors.text, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  👤 Client
+                  👤 {t('workOrders:detailPage.clientBlock', { defaultValue: 'Client' })}
                 </p>
 
                 {editSelectedClient ? (
@@ -888,7 +896,9 @@ export default function WorkOrderDetailPage() {
                             {editSelectedClient.phone && <span>📞 {editSelectedClient.phone}</span>}
                           </div>
                           <span style={{ display: 'inline-block', marginTop: '0.375rem', fontSize: '0.65rem', fontWeight: theme.font.weightSemibold, padding: '0.15rem 0.5rem', borderRadius: theme.radius.full, background: editSelectedClient.source === 'local' ? theme.colors.primary : '#10b981', color: '#fff' }}>
-                            {editSelectedClient.source === 'local' ? 'Client enregistré' : 'Client externe'}
+                            {editSelectedClient.source === 'local'
+                              ? t('workOrders:detailPage.registeredClient', { defaultValue: 'Client enregistré' })
+                              : t('workOrders:detailPage.externalClient', { defaultValue: 'Client externe' })}
                           </span>
                         </div>
                         <button
@@ -896,7 +906,7 @@ export default function WorkOrderDetailPage() {
                           onClick={clearEditClient}
                           style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}
                         >
-                          Changer
+                          {t('workOrders:detailPage.change', { defaultValue: 'Changer' })}
                         </button>
                       </div>
                     </div>
@@ -922,11 +932,11 @@ export default function WorkOrderDetailPage() {
                         }}>
                           {editSearchFetching && !editSearchResults ? (
                             <p style={{ padding: '0.625rem 0.875rem', margin: 0, fontSize: theme.font.sizeSm, color: theme.colors.textLight, textAlign: 'center' }}>
-                              Recherche…
+                              {t('workOrders:detailPage.searching', { defaultValue: 'Recherche…' })}
                             </p>
                           ) : !editSearchResults || editSearchResults.length === 0 ? (
                             <p style={{ padding: '0.625rem 0.875rem', margin: 0, fontSize: theme.font.sizeSm, color: theme.colors.textLight, textAlign: 'center' }}>
-                              Aucun client trouvé pour « {editDebouncedSearch} »
+                              {t('workOrders:detailPage.noClientFound', { defaultValue: 'Aucun client trouvé pour « {{query}} »', query: editDebouncedSearch })}
                             </p>
                           ) : (
                             editSearchResults.map((c) => (
@@ -950,7 +960,9 @@ export default function WorkOrderDetailPage() {
                                   background: c.source === 'local' ? theme.colors.primaryLight : '#d1fae5',
                                   color: c.source === 'local' ? theme.colors.primary : 'var(--c-successBadgeText)',
                                 }}>
-                                  {c.source === 'local' ? 'Client' : 'Externe'}
+                                  {c.source === 'local'
+                                    ? t('workOrders:detailPage.badgeClient', { defaultValue: 'Client' })
+                                    : t('workOrders:detailPage.badgeExternal', { defaultValue: 'Externe' })}
                                 </span>
                               </button>
                             ))
@@ -964,26 +976,26 @@ export default function WorkOrderDetailPage() {
                         type="button"
                         onClick={() => setEditShowNewClientForm(true)}
                         style={{ background: 'none', border: `1px dashed ${theme.colors.focusRing}`, color: theme.colors.primary, padding: '0.375rem 0.75rem', borderRadius: theme.radius.md, cursor: 'pointer', fontSize: theme.font.sizeXs }}
-                      >+ Créer un client temporaire</button>
+                      >+ {t('workOrders:detailPage.createTempClient', { defaultValue: 'Créer un client temporaire' })}</button>
                     )}
 
                     {editShowNewClientForm && (
                       <div style={{ background: theme.colors.surfaceAlt, border: theme.borders.default, borderRadius: theme.radius.md, padding: '0.75rem', marginTop: '0.5rem' }}>
-                        <p style={{ margin: '0 0 0.5rem', fontWeight: theme.font.weightSemibold, fontSize: theme.font.sizeXs, color: theme.colors.text }}>Nouveau client temporaire</p>
+                        <p style={{ margin: '0 0 0.5rem', fontWeight: theme.font.weightSemibold, fontSize: theme.font.sizeXs, color: theme.colors.text }}>{t('workOrders:detailPage.newTempClient', { defaultValue: 'Nouveau client temporaire' })}</p>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                          <input value={ncFirstName} onChange={(e) => setNcFirstName(e.target.value)} placeholder="Prénom *" style={{ ...formStyles.input, boxSizing: 'border-box', fontSize: theme.font.sizeXs }} />
-                          <input value={ncLastName} onChange={(e) => setNcLastName(e.target.value)} placeholder="Nom *" style={{ ...formStyles.input, boxSizing: 'border-box', fontSize: theme.font.sizeXs }} />
-                          <input value={ncEmail} onChange={(e) => setNcEmail(e.target.value)} placeholder="Email" style={{ ...formStyles.input, boxSizing: 'border-box', fontSize: theme.font.sizeXs }} />
-                          <input value={ncPhone} onChange={(e) => setNcPhone(e.target.value)} placeholder="Téléphone" style={{ ...formStyles.input, boxSizing: 'border-box', fontSize: theme.font.sizeXs }} />
-                          <input value={ncAddress} onChange={(e) => setNcAddress(e.target.value)} placeholder="Adresse" style={{ ...formStyles.input, boxSizing: 'border-box', gridColumn: '1 / -1', fontSize: theme.font.sizeXs }} />
-                          <input value={ncCity} onChange={(e) => setNcCity(e.target.value)} placeholder="Ville" style={{ ...formStyles.input, boxSizing: 'border-box', fontSize: theme.font.sizeXs }} />
-                          <input value={ncPostal} onChange={(e) => setNcPostal(e.target.value)} placeholder="Code postal" style={{ ...formStyles.input, boxSizing: 'border-box', fontSize: theme.font.sizeXs }} />
+                          <input value={ncFirstName} onChange={(e) => setNcFirstName(e.target.value)} placeholder={t('workOrders:detailPage.firstNameRequired', { defaultValue: 'Prénom *' })} style={{ ...formStyles.input, boxSizing: 'border-box', fontSize: theme.font.sizeXs }} />
+                          <input value={ncLastName} onChange={(e) => setNcLastName(e.target.value)} placeholder={t('workOrders:detailPage.lastNameRequired', { defaultValue: 'Nom *' })} style={{ ...formStyles.input, boxSizing: 'border-box', fontSize: theme.font.sizeXs }} />
+                          <input value={ncEmail} onChange={(e) => setNcEmail(e.target.value)} placeholder={t('workOrders:detailPage.emailPlaceholder', { defaultValue: 'Email' })} style={{ ...formStyles.input, boxSizing: 'border-box', fontSize: theme.font.sizeXs }} />
+                          <input value={ncPhone} onChange={(e) => setNcPhone(e.target.value)} placeholder={t('workOrders:detailPage.phonePlaceholder', { defaultValue: 'Téléphone' })} style={{ ...formStyles.input, boxSizing: 'border-box', fontSize: theme.font.sizeXs }} />
+                          <input value={ncAddress} onChange={(e) => setNcAddress(e.target.value)} placeholder={t('workOrders:detailPage.addressPlaceholder', { defaultValue: 'Adresse' })} style={{ ...formStyles.input, boxSizing: 'border-box', gridColumn: '1 / -1', fontSize: theme.font.sizeXs }} />
+                          <input value={ncCity} onChange={(e) => setNcCity(e.target.value)} placeholder={t('workOrders:detailPage.cityPlaceholder', { defaultValue: 'Ville' })} style={{ ...formStyles.input, boxSizing: 'border-box', fontSize: theme.font.sizeXs }} />
+                          <input value={ncPostal} onChange={(e) => setNcPostal(e.target.value)} placeholder={t('workOrders:detailPage.postalPlaceholder', { defaultValue: 'Code postal' })} style={{ ...formStyles.input, boxSizing: 'border-box', fontSize: theme.font.sizeXs }} />
                         </div>
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                           <button type="button" onClick={handleEditCreateTempClient}
                             disabled={!ncFirstName.trim() || !ncLastName.trim()}
                             style={{ ...buttonStyles.primary, fontSize: theme.font.sizeXs, padding: '0.375rem 0.75rem', opacity: (!ncFirstName.trim() || !ncLastName.trim()) ? 0.5 : 1 }}
-                          >Créer et sélectionner</button>
+                          >{t('workOrders:detailPage.createAndSelect', { defaultValue: 'Créer et sélectionner' })}</button>
                           <button type="button" onClick={() => setEditShowNewClientForm(false)}
                             style={{ ...buttonStyles.secondary, fontSize: theme.font.sizeXs, padding: '0.375rem 0.75rem' }}
                           >{tCommon('actions.cancel')}</button>
@@ -999,12 +1011,12 @@ export default function WorkOrderDetailPage() {
                   ════════════════════════════════════════════════════════════ */}
               <div style={{ border: theme.borders.default, borderRadius: theme.radius.md, padding: '0.875rem 1rem', marginBottom: '1rem', background: theme.colors.surface }}>
                 <p style={{ margin: '0 0 0.625rem', fontSize: theme.font.sizeSm, fontWeight: theme.font.weightBold, color: theme.colors.text, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  📍 Adresse d'intervention
+                  📍 {t('workOrders:detailPage.interventionAddress', { defaultValue: "Adresse d'intervention" })}
                 </p>
 
                 {!editSelectedClient ? (
                   <p style={{ margin: 0, fontSize: theme.font.sizeSm, color: theme.colors.textMuted, fontStyle: 'italic' }}>
-                    Sélectionnez d'abord un client pour voir ses adresses enregistrées.
+                    {t('workOrders:detailPage.selectClientFirst', { defaultValue: "Sélectionnez d'abord un client pour voir ses adresses enregistrées." })}
                   </p>
                 ) : editSelectedClient.source === 'local' ? (
                   <div>
@@ -1017,13 +1029,13 @@ export default function WorkOrderDetailPage() {
                         marginBottom: '0.5rem',
                       }}>
                         <p style={{ margin: 0, fontSize: theme.font.sizeXs, color: 'var(--c-warningBadgeText)' }}>
-                          ⚠️ Ce client n'a aucune adresse enregistrée. Ajoutez-en une depuis la page Clients, ou saisissez l'adresse libre ci-dessous.
+                          {t('workOrders:detailPage.noClientAddressWarning', { defaultValue: "⚠️ Ce client n'a aucune adresse enregistrée. Ajoutez-en une depuis la page Clients, ou saisissez l'adresse libre ci-dessous." })}
                         </p>
                       </div>
                     ) : (
                       <div style={{ marginBottom: '0.5rem' }}>
                         <label style={{ ...formStyles.label }}>
-                          Adresse enregistrée du client ({editClientAddresses.length})
+                          {t('workOrders:detailPage.registeredClientAddress', { defaultValue: 'Adresse enregistrée du client ({{count}})', count: editClientAddresses.length })}
                         </label>
                         <select
                           value={editClientAddressId}
@@ -1044,12 +1056,12 @@ export default function WorkOrderDetailPage() {
                           }}
                           style={{ ...formStyles.select, boxSizing: 'border-box' }}
                         >
-                          <option value="">— Saisir une adresse libre —</option>
+                          <option value="">{t('workOrders:detailPage.freeAddressOption', { defaultValue: '— Saisir une adresse libre —' })}</option>
                           {editClientAddresses.map((a) => (
                             <option key={a.id} value={a.id}>
                               {formatStreet(a)}{a.apartment ? ` app. ${a.apartment}` : ''}, {a.city} {a.postalCode}
                               {a.label ? ` · ${a.label}` : ''}
-                              {a.isDefault ? ' [défaut]' : ''}
+                              {a.isDefault ? t('workOrders:detailPage.defaultSuffix', { defaultValue: ' [défaut]' }) : ''}
                             </option>
                           ))}
                         </select>
@@ -1067,14 +1079,14 @@ export default function WorkOrderDetailPage() {
                     placeholder={t('fields.addressPlaceholder', { defaultValue: 'Numéro, rue, ville, code postal…' })}
                   />
                   <p style={{ ...formStyles.fieldHint }}>
-                    Utilisé pour l'impression et l'affichage. Pré-rempli automatiquement quand vous sélectionnez une adresse enregistrée.
+                    {t('workOrders:detailPage.addressHint', { defaultValue: "Utilisé pour l'impression et l'affichage. Pré-rempli automatiquement quand vous sélectionnez une adresse enregistrée." })}
                   </p>
                 </div>
               </div>
 
               {/* ── Assignation et planification ──────────────────────────── */}
               <p style={{ fontSize: theme.font.sizeSm, fontWeight: theme.font.weightBold, color: theme.colors.text, marginBottom: '0.75rem', paddingBottom: '0.4rem', borderBottom: theme.borders.default }}>
-                Assignation et planification
+                {t('workOrders:detailPage.assignmentScheduling', { defaultValue: 'Assignation et planification' })}
               </p>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
@@ -1086,9 +1098,9 @@ export default function WorkOrderDetailPage() {
                     onChange={(e) => setEditAssignedToId(e.target.value)}
                     style={{ ...formStyles.select, boxSizing: 'border-box' }}
                   >
-                    <option value="">— Non assigné —</option>
-                    {technicians.map((t) => (
-                      <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>
+                    <option value="">{t('workOrders:detailPage.unassignedOption', { defaultValue: '— Non assigné —' })}</option>
+                    {technicians.map((tech) => (
+                      <option key={tech.id} value={tech.id}>{tech.firstName} {tech.lastName}</option>
                     ))}
                   </select>
                 </div>
@@ -1131,7 +1143,7 @@ export default function WorkOrderDetailPage() {
               {woTemplate && woTemplate.sections.length > 0 && (
                 <div style={{ marginBottom: '1rem' }}>
                   <p style={{ fontSize: theme.font.sizeSm, fontWeight: theme.font.weightBold, color: theme.colors.text, marginBottom: '0.75rem', paddingBottom: '0.4rem', borderBottom: theme.borders.default }}>
-                    Formulaire — {woTemplate.name}
+                    {t('workOrders:detailPage.formTemplate', { defaultValue: 'Formulaire — {{name}}', name: woTemplate.name })}
                   </p>
                   <TemplateFormRenderer
                     template={woTemplate}
@@ -1157,7 +1169,7 @@ export default function WorkOrderDetailPage() {
               {/* Error display */}
               {updateWorkOrder.isError && (
                 <div style={{ background: theme.colors.dangerLight, border: '1px solid var(--c-dangerBadgeBorder)', color: theme.colors.danger, padding: '0.5rem 0.75rem', borderRadius: theme.radius.md, fontSize: theme.font.sizeXs, marginTop: '0.5rem' }}>
-                  Erreur lors de la sauvegarde. Veuillez réessayer.
+                  {t('workOrders:detailPage.saveError', { defaultValue: 'Erreur lors de la sauvegarde. Veuillez réessayer.' })}
                 </div>
               )}
             </div>

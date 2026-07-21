@@ -10,14 +10,6 @@ import { theme, tableStyles, cardStyles, buttonStyles, formStyles, modalStyles, 
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const ROLE_LABELS: Record<Role, string> = {
-  [Role.SUPER_ADMIN]: 'Super-Admin',
-  [Role.ADMIN]: 'Admin',
-  [Role.DISPATCHER]: 'Dispatcher',
-  [Role.TECHNICIAN]: 'Technicien',
-  [Role.CLIENT]: 'Client',
-};
-
 const ROLE_COLORS: Record<Role, string> = {
   [Role.SUPER_ADMIN]: '#7e22ce',
   [Role.ADMIN]: '#1e40af',
@@ -80,6 +72,7 @@ interface CreateUserModalProps {
 }
 
 function CreateUserModal({ onClose }: CreateUserModalProps) {
+  const { t } = useTranslation('common');
   const queryClient = useQueryClient();
 
   const [email, setEmail] = useState('');
@@ -109,7 +102,7 @@ function CreateUserModal({ onClose }: CreateUserModalProps) {
     onError: (err: unknown) => {
       const axiosErr = err as { response?: { data?: { message?: string } } };
       setErrorMsg(
-        axiosErr?.response?.data?.message ?? 'Une erreur est survenue. Veuillez réessayer.',
+        axiosErr?.response?.data?.message ?? t('common:usersPage.errorGeneric', { defaultValue: 'Une erreur est survenue. Veuillez réessayer.' }),
       );
     },
   });
@@ -132,7 +125,7 @@ function CreateUserModal({ onClose }: CreateUserModalProps) {
       <div style={{ ...modalStyles.content, maxWidth: '480px' }}>
         <div style={{ ...modalStyles.header }}>
           <h2 style={{ ...modalStyles.headerTitle }}>
-            Nouvel utilisateur
+            {t('common:usersPage.createTitle', { defaultValue: 'Nouvel utilisateur' })}
           </h2>
           <button
             onClick={onClose}
@@ -144,7 +137,7 @@ function CreateUserModal({ onClose }: CreateUserModalProps) {
               color: theme.colors.textLight,
               lineHeight: 1,
             }}
-            aria-label="Fermer"
+            aria-label={t('common:usersPage.close', { defaultValue: 'Fermer' })}
           >
             ✕
           </button>
@@ -170,25 +163,25 @@ function CreateUserModal({ onClose }: CreateUserModalProps) {
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 1rem' }}>
               <Field
-                label="Prénom"
+                label={t('common:usersPage.firstName', { defaultValue: 'Prénom' })}
                 id="create-firstName"
                 value={firstName}
                 onChange={setFirstName}
                 required
-                placeholder="Jean"
+                placeholder={t('common:usersPage.firstNamePlaceholder', { defaultValue: 'Jean' })}
               />
               <Field
-                label="Nom"
+                label={t('common:usersPage.lastName', { defaultValue: 'Nom' })}
                 id="create-lastName"
                 value={lastName}
                 onChange={setLastName}
                 required
-                placeholder="Dupont"
+                placeholder={t('common:usersPage.lastNamePlaceholder', { defaultValue: 'Dupont' })}
               />
             </div>
 
             <Field
-              label="Email"
+              label={t('common:usersPage.email', { defaultValue: 'Email' })}
               id="create-email"
               type="email"
               value={email}
@@ -198,7 +191,7 @@ function CreateUserModal({ onClose }: CreateUserModalProps) {
             />
 
             <Field
-              label="Mot de passe"
+              label={t('common:usersPage.password', { defaultValue: 'Mot de passe' })}
               id="create-password"
               type="password"
               value={password}
@@ -207,14 +200,14 @@ function CreateUserModal({ onClose }: CreateUserModalProps) {
               placeholder="••••••••"
             />
 
-            <Field label="Rôle" id="create-role" value={role} onChange={(v) => setRole(v as Role)} required>
-              <option value={Role.TECHNICIAN}>Technicien</option>
-              <option value={Role.DISPATCHER}>Répartiteur</option>
-              <option value={Role.ADMIN}>Admin</option>
+            <Field label={t('common:usersPage.role', { defaultValue: 'Rôle' })} id="create-role" value={role} onChange={(v) => setRole(v as Role)} required>
+              <option value={Role.TECHNICIAN}>{t('common:usersPage.roleTechnician', { defaultValue: 'Technicien' })}</option>
+              <option value={Role.DISPATCHER}>{t('common:usersPage.roleDispatcherOption', { defaultValue: 'Répartiteur' })}</option>
+              <option value={Role.ADMIN}>{t('common:usersPage.roleAdmin', { defaultValue: 'Admin' })}</option>
             </Field>
 
             <Field
-              label="Téléphone"
+              label={t('common:usersPage.phone', { defaultValue: 'Téléphone' })}
               id="create-phone"
               type="tel"
               value={phone}
@@ -228,7 +221,7 @@ function CreateUserModal({ onClose }: CreateUserModalProps) {
                 onClick={onClose}
                 style={{ ...buttonStyles.secondary, flex: 1 }}
               >
-                Annuler
+                {t('common:usersPage.cancel', { defaultValue: 'Annuler' })}
               </button>
               <button
                 type="submit"
@@ -240,7 +233,7 @@ function CreateUserModal({ onClose }: CreateUserModalProps) {
                   cursor: createUser.isPending ? 'not-allowed' : 'pointer',
                 }}
               >
-                {createUser.isPending ? 'Création…' : 'Créer'}
+                {createUser.isPending ? t('common:usersPage.creating', { defaultValue: 'Création…' }) : t('common:usersPage.create', { defaultValue: 'Créer' })}
               </button>
             </div>
           </form>
@@ -258,6 +251,7 @@ interface EditUserModalProps {
 }
 
 function EditUserModal({ user, onClose }: EditUserModalProps) {
+  const { t } = useTranslation('common');
   const queryClient = useQueryClient();
 
   const [email, setEmail] = useState(user.email);
@@ -285,7 +279,7 @@ function EditUserModal({ user, onClose }: EditUserModalProps) {
     onError: (err: unknown) => {
       const axiosErr = err as { response?: { data?: { message?: string } } };
       setErrorMsg(
-        axiosErr?.response?.data?.message ?? 'Une erreur est survenue. Veuillez réessayer.',
+        axiosErr?.response?.data?.message ?? t('common:usersPage.errorGeneric', { defaultValue: 'Une erreur est survenue. Veuillez réessayer.' }),
       );
     },
   });
@@ -307,7 +301,7 @@ function EditUserModal({ user, onClose }: EditUserModalProps) {
       <div style={{ ...modalStyles.content, maxWidth: '480px' }}>
         <div style={{ ...modalStyles.header }}>
           <h2 style={{ ...modalStyles.headerTitle }}>
-            Modifier l'utilisateur
+            {t('common:usersPage.editTitle', { defaultValue: "Modifier l'utilisateur" })}
           </h2>
           <button
             onClick={onClose}
@@ -319,7 +313,7 @@ function EditUserModal({ user, onClose }: EditUserModalProps) {
               color: theme.colors.textLight,
               lineHeight: 1,
             }}
-            aria-label="Fermer"
+            aria-label={t('common:usersPage.close', { defaultValue: 'Fermer' })}
           >
             ✕
           </button>
@@ -345,14 +339,14 @@ function EditUserModal({ user, onClose }: EditUserModalProps) {
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 1rem' }}>
               <Field
-                label="Prénom"
+                label={t('common:usersPage.firstName', { defaultValue: 'Prénom' })}
                 id="edit-firstName"
                 value={firstName}
                 onChange={setFirstName}
                 required
               />
               <Field
-                label="Nom"
+                label={t('common:usersPage.lastName', { defaultValue: 'Nom' })}
                 id="edit-lastName"
                 value={lastName}
                 onChange={setLastName}
@@ -361,7 +355,7 @@ function EditUserModal({ user, onClose }: EditUserModalProps) {
             </div>
 
             <Field
-              label="Email"
+              label={t('common:usersPage.email', { defaultValue: 'Email' })}
               id="edit-email"
               type="email"
               value={email}
@@ -369,14 +363,14 @@ function EditUserModal({ user, onClose }: EditUserModalProps) {
               required
             />
 
-            <Field label="Rôle" id="edit-role" value={role} onChange={(v) => setRole(v as Role)} required>
-              <option value={Role.TECHNICIAN}>Technicien</option>
-              <option value={Role.DISPATCHER}>Répartiteur</option>
-              <option value={Role.ADMIN}>Admin</option>
+            <Field label={t('common:usersPage.role', { defaultValue: 'Rôle' })} id="edit-role" value={role} onChange={(v) => setRole(v as Role)} required>
+              <option value={Role.TECHNICIAN}>{t('common:usersPage.roleTechnician', { defaultValue: 'Technicien' })}</option>
+              <option value={Role.DISPATCHER}>{t('common:usersPage.roleDispatcherOption', { defaultValue: 'Répartiteur' })}</option>
+              <option value={Role.ADMIN}>{t('common:usersPage.roleAdmin', { defaultValue: 'Admin' })}</option>
             </Field>
 
             <Field
-              label="Téléphone"
+              label={t('common:usersPage.phone', { defaultValue: 'Téléphone' })}
               id="edit-phone"
               type="tel"
               value={phone}
@@ -390,7 +384,7 @@ function EditUserModal({ user, onClose }: EditUserModalProps) {
                 onClick={onClose}
                 style={{ ...buttonStyles.secondary, flex: 1 }}
               >
-                Annuler
+                {t('common:usersPage.cancel', { defaultValue: 'Annuler' })}
               </button>
               <button
                 type="submit"
@@ -402,7 +396,7 @@ function EditUserModal({ user, onClose }: EditUserModalProps) {
                   cursor: updateUser.isPending ? 'not-allowed' : 'pointer',
                 }}
               >
-                {updateUser.isPending ? 'Enregistrement…' : 'Enregistrer'}
+                {updateUser.isPending ? t('common:usersPage.saving', { defaultValue: 'Enregistrement…' }) : t('common:usersPage.save', { defaultValue: 'Enregistrer' })}
               </button>
             </div>
           </form>
@@ -421,6 +415,7 @@ interface ResetPasswordModalProps {
 }
 
 function ResetPasswordModal({ userId, userName, onClose }: ResetPasswordModalProps) {
+  const { t } = useTranslation('common');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -429,7 +424,7 @@ function ResetPasswordModal({ userId, userName, onClose }: ResetPasswordModalPro
   const resetPassword = useMutation({
     mutationFn: () => adminResetPassword(userId, newPassword),
     onSuccess: () => {
-      setSuccessMsg('Mot de passe réinitialisé avec succès.');
+      setSuccessMsg(t('common:usersPage.resetSuccess', { defaultValue: 'Mot de passe réinitialisé avec succès.' }));
       setNewPassword('');
       setConfirmPassword('');
       setTimeout(() => onClose(), 1500);
@@ -437,7 +432,7 @@ function ResetPasswordModal({ userId, userName, onClose }: ResetPasswordModalPro
     onError: (err: unknown) => {
       const axiosErr = err as { response?: { data?: { message?: string } } };
       setErrorMsg(
-        axiosErr?.response?.data?.message ?? 'Une erreur est survenue. Veuillez réessayer.',
+        axiosErr?.response?.data?.message ?? t('common:usersPage.errorGeneric', { defaultValue: 'Une erreur est survenue. Veuillez réessayer.' }),
       );
     },
   });
@@ -448,11 +443,11 @@ function ResetPasswordModal({ userId, userName, onClose }: ResetPasswordModalPro
     setSuccessMsg('');
 
     if (newPassword.length < 6) {
-      setErrorMsg('Le mot de passe doit contenir au moins 6 caractères.');
+      setErrorMsg(t('common:usersPage.passwordMin6', { defaultValue: 'Le mot de passe doit contenir au moins 6 caractères.' }));
       return;
     }
     if (newPassword !== confirmPassword) {
-      setErrorMsg('Les mots de passe ne correspondent pas.');
+      setErrorMsg(t('common:usersPage.passwordsMismatch', { defaultValue: 'Les mots de passe ne correspondent pas.' }));
       return;
     }
     resetPassword.mutate();
@@ -463,7 +458,7 @@ function ResetPasswordModal({ userId, userName, onClose }: ResetPasswordModalPro
       <div style={{ ...modalStyles.content, maxWidth: '420px' }}>
         <div style={{ ...modalStyles.header }}>
           <h2 style={{ ...modalStyles.headerTitle }}>
-            Réinitialiser le mot de passe
+            {t('common:usersPage.resetTitle', { defaultValue: 'Réinitialiser le mot de passe' })}
           </h2>
           <button
             onClick={onClose}
@@ -475,7 +470,7 @@ function ResetPasswordModal({ userId, userName, onClose }: ResetPasswordModalPro
               color: theme.colors.textLight,
               lineHeight: 1,
             }}
-            aria-label="Fermer"
+            aria-label={t('common:usersPage.close', { defaultValue: 'Fermer' })}
           >
             ✕
           </button>
@@ -483,7 +478,8 @@ function ResetPasswordModal({ userId, userName, onClose }: ResetPasswordModalPro
 
         <div style={{ ...modalStyles.body }}>
           <p style={{ fontSize: theme.font.sizeSm, color: theme.colors.textLight, marginBottom: '1rem' }}>
-            Définir un nouveau mot de passe pour <strong>{userName}</strong>.
+            {t('common:usersPage.setNewPasswordFor', { defaultValue: 'Définir un nouveau mot de passe pour' })}{' '}
+            <strong>{userName}</strong>.
           </p>
 
           {errorMsg && (
@@ -520,7 +516,7 @@ function ResetPasswordModal({ userId, userName, onClose }: ResetPasswordModalPro
 
           <form onSubmit={handleSubmit}>
             <Field
-              label="Nouveau mot de passe"
+              label={t('common:usersPage.newPassword', { defaultValue: 'Nouveau mot de passe' })}
               id="reset-newPassword"
               type="password"
               value={newPassword}
@@ -530,7 +526,7 @@ function ResetPasswordModal({ userId, userName, onClose }: ResetPasswordModalPro
             />
 
             <Field
-              label="Confirmer le mot de passe"
+              label={t('common:usersPage.confirmPassword', { defaultValue: 'Confirmer le mot de passe' })}
               id="reset-confirmPassword"
               type="password"
               value={confirmPassword}
@@ -545,7 +541,7 @@ function ResetPasswordModal({ userId, userName, onClose }: ResetPasswordModalPro
                 onClick={onClose}
                 style={{ ...buttonStyles.secondary, flex: 1 }}
               >
-                Annuler
+                {t('common:usersPage.cancel', { defaultValue: 'Annuler' })}
               </button>
               <button
                 type="submit"
@@ -557,7 +553,7 @@ function ResetPasswordModal({ userId, userName, onClose }: ResetPasswordModalPro
                   cursor: resetPassword.isPending ? 'not-allowed' : 'pointer',
                 }}
               >
-                {resetPassword.isPending ? 'Réinitialisation…' : '🔑 Réinitialiser'}
+                {resetPassword.isPending ? t('common:usersPage.resetting', { defaultValue: 'Réinitialisation…' }) : `🔑 ${t('common:usersPage.reset', { defaultValue: 'Réinitialiser' })}`}
               </button>
             </div>
           </form>
@@ -571,7 +567,19 @@ function ResetPasswordModal({ userId, userName, onClose }: ResetPasswordModalPro
 
 export default function UsersPage() {
   const { t: tNav } = useTranslation('nav');
+  const { t } = useTranslation('common');
   const queryClient = useQueryClient();
+
+  const roleLabel = (role: Role): string => {
+    switch (role) {
+      case Role.SUPER_ADMIN: return t('common:usersPage.roleSuperAdmin', { defaultValue: 'Super-Admin' });
+      case Role.ADMIN: return t('common:usersPage.roleAdmin', { defaultValue: 'Admin' });
+      case Role.DISPATCHER: return t('common:usersPage.roleDispatcher', { defaultValue: 'Dispatcher' });
+      case Role.TECHNICIAN: return t('common:usersPage.roleTechnician', { defaultValue: 'Technicien' });
+      case Role.CLIENT: return t('common:usersPage.roleClient', { defaultValue: 'Client' });
+      default: return role;
+    }
+  };
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
@@ -624,14 +632,21 @@ export default function UsersPage() {
             textAlign: 'center',
           }}
         >
-          Erreur de chargement
+          {t('common:usersPage.loadError', { defaultValue: 'Erreur de chargement' })}
         </div>
       ) : (
         <div style={{ ...tableStyles.container }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead style={{ ...tableStyles.header }}>
               <tr>
-                {['Nom', 'Email', 'Rôle', 'Téléphone', 'Statut', 'Actions'].map((h) => (
+                {[
+                  t('common:usersPage.colName', { defaultValue: 'Nom' }),
+                  t('common:usersPage.colEmail', { defaultValue: 'Email' }),
+                  t('common:usersPage.colRole', { defaultValue: 'Rôle' }),
+                  t('common:usersPage.colPhone', { defaultValue: 'Téléphone' }),
+                  t('common:usersPage.colStatus', { defaultValue: 'Statut' }),
+                  t('common:usersPage.colActions', { defaultValue: 'Actions' }),
+                ].map((h) => (
                   <th
                     key={h}
                     style={{ ...tableStyles.headerCell, textAlign: 'left' }}
@@ -671,7 +686,7 @@ export default function UsersPage() {
                         fontWeight: theme.font.weightSemibold,
                       }}
                     >
-                      {ROLE_LABELS[user.role]}
+                      {roleLabel(user.role)}
                     </span>
                   </td>
 
@@ -692,7 +707,7 @@ export default function UsersPage() {
                         fontWeight: theme.font.weightSemibold,
                       }}
                     >
-                      {user.isActive ? 'Actif' : 'Inactif'}
+                      {user.isActive ? t('common:usersPage.statusActive', { defaultValue: 'Actif' }) : t('common:usersPage.statusInactive', { defaultValue: 'Inactif' })}
                     </span>
                   </td>
 
@@ -712,9 +727,9 @@ export default function UsersPage() {
                           color: theme.colors.text,
                           fontWeight: theme.font.weightMedium,
                         }}
-                        title="Modifier"
+                        title={t('common:usersPage.editAction', { defaultValue: 'Modifier' })}
                       >
-                        ✏️ Modifier
+                        ✏️ {t('common:usersPage.editAction', { defaultValue: 'Modifier' })}
                       </button>
 
                       {/* Reset password button */}
@@ -730,9 +745,9 @@ export default function UsersPage() {
                           color: 'var(--c-warningBadgeText)',
                           fontWeight: theme.font.weightMedium,
                         }}
-                        title="Réinitialiser le mot de passe"
+                        title={t('common:usersPage.resetTitle', { defaultValue: 'Réinitialiser le mot de passe' })}
                       >
-                        🔑 MDP
+                        🔑 {t('common:usersPage.resetShort', { defaultValue: 'MDP' })}
                       </button>
 
                       {/* Toggle active button */}
@@ -752,9 +767,9 @@ export default function UsersPage() {
                           fontWeight: theme.font.weightMedium,
                           opacity: togglingId === user.id ? 0.6 : 1,
                         }}
-                        title={user.isActive ? 'Désactiver' : 'Réactiver'}
+                        title={user.isActive ? t('common:usersPage.deactivate', { defaultValue: 'Désactiver' }) : t('common:usersPage.reactivate', { defaultValue: 'Réactiver' })}
                       >
-                        {user.isActive ? '🔒 Désactiver' : '🔓 Réactiver'}
+                        {user.isActive ? `🔒 ${t('common:usersPage.deactivate', { defaultValue: 'Désactiver' })}` : `🔓 ${t('common:usersPage.reactivate', { defaultValue: 'Réactiver' })}`}
                       </button>
                     </div>
                   </td>

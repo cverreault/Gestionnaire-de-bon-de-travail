@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { theme, cardStyles, layoutStyles, buttonStyles, formStyles } from '../theme';
 import { toast } from '../context/toast.store';
@@ -23,6 +24,7 @@ import {
  * Route: /parametres/bons-recurrents
  */
 export default function RecurringPage() {
+  const { t } = useTranslation('workOrders');
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<RecurringWorkOrder | null | undefined>(undefined);
 
@@ -50,7 +52,7 @@ export default function RecurringPage() {
     [clientsList],
   );
   const techById = useMemo(
-    () => new Map((technicians ?? []).map((t) => [t.id, t] as const)),
+    () => new Map((technicians ?? []).map((item) => [item.id, item] as const)),
     [technicians],
   );
 
@@ -65,7 +67,7 @@ export default function RecurringPage() {
     mutationFn: (id: string) => deleteRecurring(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recurring'] });
-      toast.success('Supprimé');
+      toast.success(t('workOrders:recurring.deleted', { defaultValue: 'Supprimé' }));
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -83,7 +85,7 @@ export default function RecurringPage() {
         }}
       >
         <div>
-          <h1 style={{ margin: 0 }}>🔁 Bons de travail récurrents</h1>
+          <h1 style={{ margin: 0 }}>🔁 {t('workOrders:recurring.pageTitle', { defaultValue: 'Bons de travail récurrents' })}</h1>
           <p
             style={{
               color: theme.colors.textMuted,
@@ -93,11 +95,11 @@ export default function RecurringPage() {
               lineHeight: 1.5,
             }}
           >
-            Chaque règle crée automatiquement un BT selon un calendrier (hebdo, mensuel, annuel…). Idéal pour les contrats d'entretien préventif.
+            {t('workOrders:recurring.pageSubtitle', { defaultValue: 'Chaque règle crée automatiquement un BT selon un calendrier (hebdo, mensuel, annuel…). Idéal pour les contrats d\'entretien préventif.' })}
           </p>
         </div>
         <button style={buttonStyles.primary} onClick={() => setEditing(null)}>
-          ➕ Nouveau
+          ➕ {t('workOrders:recurring.new', { defaultValue: 'Nouveau' })}
         </button>
       </header>
 
@@ -105,9 +107,9 @@ export default function RecurringPage() {
       {!isLoading && (!rows || rows.length === 0) && (
         <EmptyState
           icon="🔁"
-          title="Aucun BT récurrent"
-          subtitle="Créez votre première règle pour générer automatiquement des BT selon un calendrier."
-          actionLabel="Nouveau"
+          title={t('workOrders:recurring.emptyTitle', { defaultValue: 'Aucun BT récurrent' })}
+          subtitle={t('workOrders:recurring.emptySubtitle', { defaultValue: 'Créez votre première règle pour générer automatiquement des BT selon un calendrier.' })}
+          actionLabel={t('workOrders:recurring.emptyAction', { defaultValue: 'Nouveau' })}
           onAction={() => setEditing(null)}
         />
       )}
@@ -117,15 +119,15 @@ export default function RecurringPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead style={{ background: theme.colors.surfaceAlt, fontSize: 12 }}>
               <tr>
-                <th style={cellHead}>Nom</th>
-                <th style={cellHead}>Type / Modèle</th>
-                <th style={cellHead}>Client</th>
-                <th style={cellHead}>Technicien</th>
-                <th style={cellHead}>Fréquence</th>
-                <th style={cellHead}>Prochain spawn</th>
+                <th style={cellHead}>{t('workOrders:recurring.colName', { defaultValue: 'Nom' })}</th>
+                <th style={cellHead}>{t('workOrders:recurring.colTypeTemplate', { defaultValue: 'Type / Modèle' })}</th>
+                <th style={cellHead}>{t('workOrders:recurring.colClient', { defaultValue: 'Client' })}</th>
+                <th style={cellHead}>{t('workOrders:recurring.colTechnician', { defaultValue: 'Technicien' })}</th>
+                <th style={cellHead}>{t('workOrders:recurring.colFrequency', { defaultValue: 'Fréquence' })}</th>
+                <th style={cellHead}>{t('workOrders:recurring.colNextSpawn', { defaultValue: 'Prochain spawn' })}</th>
                 <th style={{ ...cellHead, textAlign: 'center' }}>#</th>
-                <th style={cellHead}>Statut</th>
-                <th style={{ ...cellHead, textAlign: 'right' }}>Actions</th>
+                <th style={cellHead}>{t('workOrders:recurring.colStatus', { defaultValue: 'Statut' })}</th>
+                <th style={{ ...cellHead, textAlign: 'right' }}>{t('workOrders:recurring.colActions', { defaultValue: 'Actions' })}</th>
               </tr>
             </thead>
             <tbody>
@@ -173,7 +175,7 @@ export default function RecurringPage() {
                         <span>👷 {techLabel}</span>
                       ) : (
                         <span style={{ color: theme.colors.textMuted, fontStyle: 'italic' }}>
-                          Non assigné
+                          {t('workOrders:recurring.unassigned', { defaultValue: 'Non assigné' })}
                         </span>
                       )}
                     </td>
@@ -184,9 +186,9 @@ export default function RecurringPage() {
                     <td style={{ ...cell, textAlign: 'center' }}>{r.spawnedCount}</td>
                     <td style={cell}>
                       {r.isActive ? (
-                        <Pill kind="ok">Actif</Pill>
+                        <Pill kind="ok">{t('workOrders:recurring.active', { defaultValue: 'Actif' })}</Pill>
                       ) : (
-                        <Pill kind="muted">En pause</Pill>
+                        <Pill kind="muted">{t('workOrders:recurring.paused', { defaultValue: 'En pause' })}</Pill>
                       )}
                     </td>
                     <td style={{ ...cell, textAlign: 'right', whiteSpace: 'nowrap' }}>
@@ -202,7 +204,7 @@ export default function RecurringPage() {
                       <button
                         style={{ ...rowBtn, color: theme.colors.danger }}
                         onClick={() => {
-                          if (window.confirm(`Supprimer « ${r.name} » ?`)) remove.mutate(r.id);
+                          if (window.confirm(t('workOrders:recurring.confirmDelete', { defaultValue: 'Supprimer « {{name}} » ?', name: r.name }))) remove.mutate(r.id);
                         }}
                       >
                         🗑
@@ -241,6 +243,7 @@ function EditModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useTranslation('workOrders');
   const isNew = existing === null;
   const [name, setName] = useState(existing?.name ?? '');
   const [description, setDescription] = useState(existing?.description ?? '');
@@ -274,10 +277,10 @@ function EditModal({
 
   const missingFields = useMemo(() => {
     const m: string[] = [];
-    if (!name.trim()) m.push('Nom');
-    if (!taskTypeId) m.push('Type de tâche');
-    if (!clientId) m.push('Client');
-    if (!startDate) m.push('Date de début');
+    if (!name.trim()) m.push(t('workOrders:recurring.fieldName', { defaultValue: 'Nom' }));
+    if (!taskTypeId) m.push(t('workOrders:recurring.fieldTaskType', { defaultValue: 'Type de tâche' }));
+    if (!clientId) m.push(t('workOrders:recurring.fieldClient', { defaultValue: 'Client' }));
+    if (!startDate) m.push(t('workOrders:recurring.fieldStartDate', { defaultValue: 'Date de début' }));
     return m;
   }, [name, taskTypeId, clientId, startDate]);
 
@@ -365,7 +368,7 @@ function EditModal({
     mutationFn: (input: CreateRecurringInput) =>
       isNew ? createRecurring(input) : updateRecurring(existing!.id, input),
     onSuccess: () => {
-      toast.success(isNew ? 'Créé' : 'Mis à jour');
+      toast.success(isNew ? t('workOrders:recurring.created', { defaultValue: 'Créé' }) : t('workOrders:recurring.updated', { defaultValue: 'Mis à jour' }));
       onSaved();
     },
     onError: (err: unknown) => {
@@ -374,7 +377,7 @@ function EditModal({
       const raw = axiosErr?.response?.data?.message;
       const msg = Array.isArray(raw)
         ? raw.join(' · ')
-        : raw ?? (err instanceof Error ? err.message : 'Erreur inconnue');
+        : raw ?? (err instanceof Error ? err.message : t('workOrders:recurring.unknownError', { defaultValue: 'Erreur inconnue' }));
       toast.error(msg);
     },
   });
@@ -386,13 +389,13 @@ function EditModal({
 
   return (
     <ModalShell onClose={onClose}>
-      <h2 style={{ margin: 0 }}>{isNew ? '➕ Nouvelle règle' : '✏️ Modifier'}</h2>
+      <h2 style={{ margin: 0 }}>{isNew ? `➕ ${t('workOrders:recurring.newRuleTitle', { defaultValue: 'Nouvelle règle' })}` : `✏️ ${t('workOrders:recurring.editTitle', { defaultValue: 'Modifier' })}`}</h2>
 
-      <Field label="Nom">
+      <Field label={t('workOrders:recurring.labelName', { defaultValue: 'Nom' })}>
         <input style={formStyles.input} value={name} onChange={(e) => setName(e.target.value)} />
       </Field>
 
-      <Field label="Description">
+      <Field label={t('workOrders:recurring.labelDescription', { defaultValue: 'Description' })}>
         <input
           style={formStyles.input}
           value={description}
@@ -401,13 +404,13 @@ function EditModal({
       </Field>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-        <Field label="Type de tâche">
+        <Field label={t('workOrders:recurring.labelTaskType', { defaultValue: 'Type de tâche' })}>
           <select
             style={formStyles.input}
             value={taskTypeId}
             onChange={(e) => setTaskTypeId(e.target.value)}
           >
-            <option value="">— Choisir —</option>
+            <option value="">{t('workOrders:recurring.choose', { defaultValue: '— Choisir —' })}</option>
             {(taskTypes ?? []).map((tt) => (
               <option key={tt.id} value={tt.id}>
                 {tt.name}
@@ -416,17 +419,17 @@ function EditModal({
           </select>
           {(taskTypes ?? []).length === 0 && (
             <div style={{ fontSize: 11, color: theme.colors.warning, marginTop: 4 }}>
-              Aucun type de tâche configuré. Créez-en un dans Paramètres → Types de tâche.
+              {t('workOrders:recurring.noTaskTypeConfigured', { defaultValue: 'Aucun type de tâche configuré. Créez-en un dans Paramètres → Types de tâche.' })}
             </div>
           )}
         </Field>
-        <Field label="Client">
+        <Field label={t('workOrders:recurring.labelClient', { defaultValue: 'Client' })}>
           <select
             style={formStyles.input}
             value={clientId}
             onChange={(e) => setClientId(e.target.value)}
           >
-            <option value="">— Choisir —</option>
+            <option value="">{t('workOrders:recurring.choose', { defaultValue: '— Choisir —' })}</option>
             {clients.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.companyName || `${c.firstName ?? ''} ${c.lastName ?? ''}`.trim() || c.id}
@@ -435,37 +438,37 @@ function EditModal({
           </select>
           {clients.length === 0 && (
             <div style={{ fontSize: 11, color: theme.colors.warning, marginTop: 4 }}>
-              Aucun client configuré. Créez-en un depuis la page Clients.
+              {t('workOrders:recurring.noClientConfigured', { defaultValue: 'Aucun client configuré. Créez-en un depuis la page Clients.' })}
             </div>
           )}
         </Field>
       </div>
 
-      <Field label="Technicien par défaut (optionnel)">
+      <Field label={t('workOrders:recurring.labelDefaultTech', { defaultValue: 'Technicien par défaut (optionnel)' })}>
         <select
           style={formStyles.input}
           value={assignedToId}
           onChange={(e) => setAssignedToId(e.target.value)}
         >
-          <option value="">Aucun</option>
-          {(technicians ?? []).map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.firstName} {t.lastName}
+          <option value="">{t('workOrders:recurring.none', { defaultValue: 'Aucun' })}</option>
+          {(technicians ?? []).map((tech) => (
+            <option key={tech.id} value={tech.id}>
+              {tech.firstName} {tech.lastName}
             </option>
           ))}
         </select>
       </Field>
 
-      <Field label="Titre du BT (utilise {{date}} pour la date du run)">
+      <Field label={t('workOrders:recurring.labelWoTitle', { defaultValue: 'Titre du BT (utilise {{token}} pour la date du run)', token: '{{date}}' })}>
         <input
           style={formStyles.input}
           value={workOrderTitle}
           onChange={(e) => setWorkOrderTitle(e.target.value)}
-          placeholder="Inspection {{date}}"
+          placeholder={t('workOrders:recurring.woTitlePlaceholder', { defaultValue: 'Inspection {{token}}', token: '{{date}}' })}
         />
       </Field>
 
-      <Field label="Description du BT">
+      <Field label={t('workOrders:recurring.labelWoDescription', { defaultValue: 'Description du BT' })}>
         <textarea
           style={{ ...formStyles.input, minHeight: 60, fontFamily: 'inherit' }}
           value={workOrderDescription}
@@ -474,19 +477,19 @@ function EditModal({
       </Field>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-        <Field label="Fréquence">
+        <Field label={t('workOrders:recurring.labelFrequency', { defaultValue: 'Fréquence' })}>
           <select
             style={formStyles.input}
             value={frequency}
             onChange={(e) => setFrequency(e.target.value as Frequency)}
           >
-            <option value="DAILY">Journalière</option>
-            <option value="WEEKLY">Hebdomadaire</option>
-            <option value="MONTHLY">Mensuelle</option>
-            <option value="YEARLY">Annuelle</option>
+            <option value="DAILY">{t('workOrders:recurring.freqDaily', { defaultValue: 'Journalière' })}</option>
+            <option value="WEEKLY">{t('workOrders:recurring.freqWeekly', { defaultValue: 'Hebdomadaire' })}</option>
+            <option value="MONTHLY">{t('workOrders:recurring.freqMonthly', { defaultValue: 'Mensuelle' })}</option>
+            <option value="YEARLY">{t('workOrders:recurring.freqYearly', { defaultValue: 'Annuelle' })}</option>
           </select>
         </Field>
-        <Field label="Intervalle (× fréquence)">
+        <Field label={t('workOrders:recurring.labelInterval', { defaultValue: 'Intervalle (× fréquence)' })}>
           <input
             type="number"
             min={1}
@@ -499,9 +502,17 @@ function EditModal({
       </div>
 
       {frequency === 'WEEKLY' && (
-        <Field label="Jours de la semaine">
+        <Field label={t('workOrders:recurring.labelDaysOfWeek', { defaultValue: 'Jours de la semaine' })}>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'].map((label, i) => (
+            {[
+              t('workOrders:recurring.daySun', { defaultValue: 'Dim' }),
+              t('workOrders:recurring.dayMon', { defaultValue: 'Lun' }),
+              t('workOrders:recurring.dayTue', { defaultValue: 'Mar' }),
+              t('workOrders:recurring.dayWed', { defaultValue: 'Mer' }),
+              t('workOrders:recurring.dayThu', { defaultValue: 'Jeu' }),
+              t('workOrders:recurring.dayFri', { defaultValue: 'Ven' }),
+              t('workOrders:recurring.daySat', { defaultValue: 'Sam' }),
+            ].map((label, i) => (
               <label key={i} style={{ fontSize: 12, cursor: 'pointer' }}>
                 <input
                   type="checkbox"
@@ -520,23 +531,23 @@ function EditModal({
       )}
 
       {frequency === 'MONTHLY' && (
-        <Field label="Jours du mois (1-31, laisser vide = jour de la date de début)">
+        <Field label={t('workOrders:recurring.labelDaysOfMonth', { defaultValue: 'Jours du mois (1-31, laisser vide = jour de la date de début)' })}>
           <input
             style={formStyles.input}
             value={byDayOfMonthText}
             onChange={(e) => setByDayOfMonthText(e.target.value)}
-            placeholder="ex. 1, 15  ou  1-5, 20"
+            placeholder={t('workOrders:recurring.daysOfMonthPlaceholder', { defaultValue: 'ex. 1, 15  ou  1-5, 20' })}
           />
           {parsedDaysOfMonth.length > 0 && (
             <div style={{ fontSize: 11, color: theme.colors.textMuted, marginTop: 4 }}>
-              → jours retenus : {parsedDaysOfMonth.join(', ')}
+              → {t('workOrders:recurring.retainedDays', { defaultValue: 'jours retenus : {{days}}', days: parsedDaysOfMonth.join(', ') })}
             </div>
           )}
         </Field>
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-        <Field label="Date de début">
+        <Field label={t('workOrders:recurring.labelStartDate', { defaultValue: 'Date de début' })}>
           <input
             type="date"
             style={formStyles.input}
@@ -544,7 +555,7 @@ function EditModal({
             onChange={(e) => setStartDate(e.target.value)}
           />
         </Field>
-        <Field label="Date de fin (optionnel)">
+        <Field label={t('workOrders:recurring.labelEndDate', { defaultValue: 'Date de fin (optionnel)' })}>
           <input
             type="date"
             style={formStyles.input}
@@ -564,11 +575,11 @@ function EditModal({
         }}
       >
         <div style={{ fontSize: 11, color: theme.colors.textMuted, marginBottom: 4 }}>
-          Aperçu des 5 prochains spawns
+          {t('workOrders:recurring.previewTitle', { defaultValue: 'Aperçu des 5 prochains spawns' })}
         </div>
         {preview.length === 0 ? (
           <div style={{ fontSize: 12, color: theme.colors.textMuted, fontStyle: 'italic' }}>
-            (schedule incomplet)
+            {t('workOrders:recurring.scheduleIncomplete', { defaultValue: '(schedule incomplet)' })}
           </div>
         ) : (
           <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12 }}>
@@ -591,12 +602,12 @@ function EditModal({
             fontSize: 12,
           }}
         >
-          ⚠️ Champs manquants : {missingFields.join(', ')}
+          ⚠️ {t('workOrders:recurring.missingFields', { defaultValue: 'Champs manquants : {{fields}}', fields: missingFields.join(', ') })}
         </div>
       )}
       <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
         <button style={buttonStyles.secondary} onClick={onClose}>
-          Annuler
+          {t('workOrders:recurring.cancel', { defaultValue: 'Annuler' })}
         </button>
         <button
           style={buttonStyles.primary}
@@ -605,14 +616,18 @@ function EditModal({
             const input = buildInput();
             if (!input) {
               toast.error(
-                `Impossible de créer : ${missingFields.join(', ')} obligatoire${missingFields.length > 1 ? 's' : ''}.`,
+                t('workOrders:recurring.cannotCreate', {
+                  defaultValue: 'Impossible de créer : {{fields}} obligatoire{{plural}}.',
+                  fields: missingFields.join(', '),
+                  plural: missingFields.length > 1 ? 's' : '',
+                }),
               );
               return;
             }
             save.mutate(input);
           }}
         >
-          {save.isPending ? 'Enregistrement…' : isNew ? 'Créer' : 'Enregistrer'}
+          {save.isPending ? t('workOrders:recurring.saving', { defaultValue: 'Enregistrement…' }) : isNew ? t('workOrders:recurring.create', { defaultValue: 'Créer' }) : t('workOrders:recurring.save', { defaultValue: 'Enregistrer' })}
         </button>
       </div>
     </ModalShell>

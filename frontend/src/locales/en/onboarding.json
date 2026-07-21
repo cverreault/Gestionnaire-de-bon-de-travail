@@ -38,5 +38,30 @@
     "subtitle": "Your workspace is configured. Create your first work order to see the complete flow.",
     "back": "Back to dashboard",
     "createBt": "➕ Create a first work order"
+  },
+  "signup": {
+    "unexpectedError": "Unexpected error. Please try again later.",
+    "spaceCreatedTitle": "Workspace created",
+    "spaceOnlinePrefix": "Your workspace",
+    "spaceOnlineSuffix": "is online. You can now sign in at:",
+    "devSubdomainHint": "For now (dev), access your workspace via the subdomain of this host.",
+    "goToLogin": "Go to login",
+    "createSpaceTitle": "Create a workspace",
+    "freeToStart": "Everything is free to start — upgrade to PRO later if needed.",
+    "slugLabel": "URL identifier (slug)",
+    "slugHint": "3-20 characters, lowercase + digits + hyphens",
+    "slugPlaceholder": "e.g. campingpleinbois",
+    "orgNameLabel": "Organization name",
+    "orgNamePlaceholder": "e.g. Camping Plein Bois",
+    "firstNameLabel": "First name",
+    "lastNameLabel": "Last name",
+    "adminEmailLabel": "Administrator email",
+    "passwordLabel": "Password",
+    "passwordHint": "Minimum 8 characters",
+    "creating": "Creating…",
+    "createMySpace": "Create my workspace",
+    "alreadyHaveAccount": "Already have an account?",
+    "signIn": "Sign in",
+    "privacyPolicy": "Politique de confidentialité / Privacy policy"
   }
 }

@@ -183,7 +183,30 @@ function QuickCreateModal({
   onClose: () => void;
   onSave: (dto: CreateWorkOrderDto) => void;
 }) {
+  const { t } = useTranslation('common');
   const { day, startHour, startMin, technicianId: initTechId } = initial;
+
+  const workOrderTypeLabel = (code: string): string => {
+    switch (code) {
+      case WorkOrderType.INSTALLATION: return t('common:calendarPage.typeInstallation', { defaultValue: 'Installation' });
+      case WorkOrderType.REPAIR: return t('common:calendarPage.typeRepair', { defaultValue: 'Réparation' });
+      case WorkOrderType.MAINTENANCE: return t('common:calendarPage.typeMaintenance', { defaultValue: 'Maintenance' });
+      case WorkOrderType.INSPECTION: return t('common:calendarPage.typeInspection', { defaultValue: 'Inspection' });
+      case WorkOrderType.OTHER: return t('common:calendarPage.typeOther', { defaultValue: 'Autre' });
+      default: return WORK_ORDER_TYPE_FR[code] ?? code;
+    }
+  };
+
+  const priorityLabel = (value: number): string => {
+    switch (value) {
+      case 1: return t('common:calendarPage.priorityVeryLow', { defaultValue: 'Très basse' });
+      case 2: return t('common:calendarPage.priorityLow', { defaultValue: 'Basse' });
+      case 3: return t('common:calendarPage.priorityNormal', { defaultValue: 'Normale' });
+      case 4: return t('common:calendarPage.priorityHigh', { defaultValue: 'Haute' });
+      case 5: return t('common:calendarPage.priorityCritical', { defaultValue: 'Critique' });
+      default: return String(value);
+    }
+  };
 
   const defaultEndH = startMin + 60 >= 60 ? startHour + 1 : startHour;
   const defaultEndM = (startMin + 60) % 60;
@@ -200,7 +223,7 @@ function QuickCreateModal({
 
   const doSubmit = () => {
     if (!title.trim()) {
-      setTitleError('Le titre est requis');
+      setTitleError(t('common:calendarPage.titleRequired', { defaultValue: 'Le titre est requis' }));
       return;
     }
     onSave({
@@ -234,7 +257,7 @@ function QuickCreateModal({
       >
         {/* Header */}
         <div style={{ ...modalStyles.header }}>
-          <h3 style={{ ...modalStyles.headerTitle }}>Nouveau bon de travail</h3>
+          <h3 style={{ ...modalStyles.headerTitle }}>{t('common:calendarPage.quickCreateTitle', { defaultValue: 'Nouveau bon de travail' })}</h3>
           <button
             onClick={onClose}
             style={{
@@ -255,13 +278,13 @@ function QuickCreateModal({
           {/* Title */}
           <div style={{ ...formStyles.fieldGroup }}>
             <label style={{ ...formStyles.labelRequired }}>
-              Titre <span style={{ color: theme.colors.danger }}>*</span>
+              {t('common:calendarPage.titleLabel', { defaultValue: 'Titre' })} <span style={{ color: theme.colors.danger }}>*</span>
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => { setTitle(e.target.value); setTitleError(''); }}
-              placeholder="Ex : Réparation chaudière"
+              placeholder={t('common:calendarPage.titlePlaceholder', { defaultValue: 'Ex : Réparation chaudière' })}
               autoFocus
               style={{ ...formStyles.input }}
             />
@@ -273,21 +296,21 @@ function QuickCreateModal({
           {/* Type + Priority */}
           <div style={{ ...formStyles.fieldGrid2, marginBottom: '1rem' }}>
             <div>
-              <label style={{ ...formStyles.label }}>Type</label>
+              <label style={{ ...formStyles.label }}>{t('common:calendarPage.typeLabel', { defaultValue: 'Type' })}</label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value)}
                 style={{ ...formStyles.select }}
               >
-                {Object.values(WorkOrderType).map((t) => (
-                  <option key={t} value={t}>
-                    {WORK_ORDER_TYPE_FR[t] ?? t}
+                {Object.values(WorkOrderType).map((code) => (
+                  <option key={code} value={code}>
+                    {workOrderTypeLabel(code)}
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <label style={{ ...formStyles.label }}>Priorité</label>
+              <label style={{ ...formStyles.label }}>{t('common:calendarPage.priorityLabel', { defaultValue: 'Priorité' })}</label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(Number(e.target.value))}
@@ -295,7 +318,7 @@ function QuickCreateModal({
               >
                 {PRIORITY_OPTIONS.map((p) => (
                   <option key={p.value} value={p.value}>
-                    {p.label}
+                    {priorityLabel(p.value)}
                   </option>
                 ))}
               </select>
@@ -305,16 +328,16 @@ function QuickCreateModal({
           {/* Technician */}
           {technicians && technicians.length > 0 && (
             <div style={{ ...formStyles.fieldGroup }}>
-              <label style={{ ...formStyles.label }}>Technicien</label>
+              <label style={{ ...formStyles.label }}>{t('common:calendarPage.technicianLabel', { defaultValue: 'Technicien' })}</label>
               <select
                 value={technicianId}
                 onChange={(e) => setTechId(e.target.value)}
                 style={{ ...formStyles.select }}
               >
-                <option value="">— Aucun —</option>
-                {technicians.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.firstName} {t.lastName}
+                <option value="">{t('common:calendarPage.noneOption', { defaultValue: '— Aucun —' })}</option>
+                {technicians.map((tech) => (
+                  <option key={tech.id} value={tech.id}>
+                    {tech.firstName} {tech.lastName}
                   </option>
                 ))}
               </select>
@@ -323,7 +346,7 @@ function QuickCreateModal({
 
           {/* Date */}
           <div style={{ ...formStyles.fieldGroup }}>
-            <label style={{ ...formStyles.label }}>Date planifiée</label>
+            <label style={{ ...formStyles.label }}>{t('common:calendarPage.scheduledDate', { defaultValue: 'Date planifiée' })}</label>
             <input
               type="date"
               value={scheduledDate}
@@ -335,7 +358,7 @@ function QuickCreateModal({
           {/* Start + End time */}
           <div style={{ ...formStyles.fieldGrid2, marginBottom: '1rem' }}>
             <div>
-              <label style={{ ...formStyles.label }}>Heure de début</label>
+              <label style={{ ...formStyles.label }}>{t('common:calendarPage.startTime', { defaultValue: 'Heure de début' })}</label>
               <input
                 type="time"
                 value={startTime}
@@ -344,7 +367,7 @@ function QuickCreateModal({
               />
             </div>
             <div>
-              <label style={{ ...formStyles.label }}>Heure de fin</label>
+              <label style={{ ...formStyles.label }}>{t('common:calendarPage.endTime', { defaultValue: 'Heure de fin' })}</label>
               <input
                 type="time"
                 value={endTime}
@@ -356,11 +379,11 @@ function QuickCreateModal({
 
           {/* Description */}
           <div style={{ ...formStyles.fieldGroup }}>
-            <label style={{ ...formStyles.label }}>Description</label>
+            <label style={{ ...formStyles.label }}>{t('common:calendarPage.description', { defaultValue: 'Description' })}</label>
             <textarea
               value={description}
               onChange={(e) => setDesc(e.target.value)}
-              placeholder="Détails supplémentaires…"
+              placeholder={t('common:calendarPage.descPlaceholder', { defaultValue: 'Détails supplémentaires…' })}
               rows={3}
               style={{ ...formStyles.textarea }}
             />
@@ -384,7 +407,7 @@ function QuickCreateModal({
               opacity: isSaving ? 0.6 : 1,
             }}
           >
-            Annuler
+            {t('common:calendarPage.cancel', { defaultValue: 'Annuler' })}
           </button>
           <button
             type="button"
@@ -401,7 +424,7 @@ function QuickCreateModal({
               color: '#fff',
             }}
           >
-            {isSaving ? 'Enregistrement…' : 'Créer le BT'}
+            {isSaving ? t('common:calendarPage.saving', { defaultValue: 'Enregistrement…' }) : t('common:calendarPage.createWorkOrder', { defaultValue: 'Créer le BT' })}
           </button>
         </div>
       </div>
@@ -434,6 +457,7 @@ function TimelineDay({
   onEventDrop?: (event: CalendarEvent, day: Date, offsetY: number) => void;
   onHover?: (info: { x: number; y: number; day: Date; hours: number; mins: number } | null) => void;
 }) {
+  const { t } = useTranslation('common');
   const [isDragOver, setIsDragOver] = useState(false);
 
   const positioned = assignColumns(
@@ -653,7 +677,7 @@ function TimelineDay({
               )}
               {isDraggable && height > 40 && (
                 <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>
-                  ⠿ glisser pour déplacer
+                  ⠿ {t('common:calendarPage.dragToMove', { defaultValue: 'glisser pour déplacer' })}
                 </div>
               )}
             </div>
@@ -758,6 +782,7 @@ function MonthView({
   onCreateOnDay?: (day: Date) => void;
   onHover?: (info: { x: number; y: number; label: string } | null) => void;
 }) {
+  const { t } = useTranslation('common');
   const monthStart = startOfMonth(currentDate);
   const monthEnd   = endOfMonth(currentDate);
   const today      = new Date();
@@ -857,7 +882,7 @@ function MonthView({
                       e.stopPropagation();
                       onCreateOnDay(day);
                     }}
-                    title="Créer un BT ce jour"
+                    title={t('common:calendarPage.createOnDay', { defaultValue: 'Créer un BT ce jour' })}
                     style={{
                       width: '16px',
                       height: '16px',
@@ -924,6 +949,7 @@ function EventDetailPanel({
   selectedDay: Date | null;
   events: CalendarEvent[];
 }) {
+  const { t } = useTranslation('common');
   const dayEvents = selectedDay
     ? events.filter((ev) => isSameDay(new Date(ev.startTime), selectedDay))
     : [];
@@ -937,7 +963,7 @@ function EventDetailPanel({
           </h3>
           {dayEvents.length === 0 ? (
             <p style={{ color: theme.colors.textLight, fontSize: theme.font.sizeSm, margin: 0 }}>
-              Aucun événement ce jour
+              {t('common:calendarPage.noEventsDay', { defaultValue: 'Aucun événement ce jour' })}
             </p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
@@ -970,7 +996,7 @@ function EventDetailPanel({
                       to={`/bons-de-travail/${ev.workOrderId}`}
                       style={{ display: 'inline-block', marginTop: '0.3rem', fontSize: '0.7rem', color: theme.colors.info, textDecoration: 'none' }}
                     >
-                      Voir le BT →
+                      {t('common:calendarPage.viewWorkOrder', { defaultValue: 'Voir le BT' })} →
                     </Link>
                   )}
                 </div>
@@ -980,7 +1006,7 @@ function EventDetailPanel({
         </>
       ) : (
         <p style={{ color: theme.colors.textLight, fontSize: theme.font.sizeSm, margin: 0 }}>
-          Sélectionnez un jour pour voir les événements
+          {t('common:calendarPage.selectDayHint', { defaultValue: 'Sélectionnez un jour pour voir les événements' })}
         </p>
       )}
     </div>
@@ -990,6 +1016,7 @@ function EventDetailPanel({
 // ─── Clicked event detail modal ───────────────────────────────────────────────
 
 function EventModal({ event, onClose }: { event: CalendarEvent; onClose: () => void }) {
+  const { t } = useTranslation('common');
   const color = eventColor(event);
   return (
     <div
@@ -1033,7 +1060,7 @@ function EventModal({ event, onClose }: { event: CalendarEvent; onClose: () => v
 
           {event.status && (
             <div>
-              Statut :{' '}
+              {t('common:calendarPage.statusLabel', { defaultValue: 'Statut :' })}{' '}
               <span
                 style={{
                   background: (STATUS_COLOR[event.status] ?? theme.colors.textSecondary) + '1a',
@@ -1064,7 +1091,7 @@ function EventModal({ event, onClose }: { event: CalendarEvent; onClose: () => v
                 fontWeight: theme.font.weightSemibold,
               }}
             >
-              Voir le bon de travail
+              {t('common:calendarPage.viewWorkOrderFull', { defaultValue: 'Voir le bon de travail' })}
             </Link>
           )}
         </div>
@@ -1077,6 +1104,7 @@ function EventModal({ event, onClose }: { event: CalendarEvent; onClose: () => v
 
 export default function CalendarPage() {
   const { t: tNav } = useTranslation('nav');
+  const { t } = useTranslation('common');
   const { user } = useAuthStore();
   const { isDesktop } = useBreakpoint();
   const isAdmin = user?.role === Role.ADMIN;
@@ -1323,10 +1351,10 @@ export default function CalendarPage() {
         >
           {(['day', '3days', 'week', 'month'] as CalendarView[]).map((v) => {
             const labels: Record<CalendarView, string> = {
-              day: 'Jour',
-              '3days': '3 Jours',
-              week: 'Semaine',
-              month: 'Mois',
+              day: t('common:calendarPage.viewDay', { defaultValue: 'Jour' }),
+              '3days': t('common:calendarPage.view3Days', { defaultValue: '3 Jours' }),
+              week: t('common:calendarPage.viewWeek', { defaultValue: 'Semaine' }),
+              month: t('common:calendarPage.viewMonth', { defaultValue: 'Mois' }),
             };
             const active = v === view;
             return (
@@ -1365,7 +1393,7 @@ export default function CalendarPage() {
               fontSize: '1rem',
               color: theme.colors.text,
             }}
-            aria-label="Précédent"
+            aria-label={t('common:calendarPage.previous', { defaultValue: 'Précédent' })}
           >
             ‹
           </button>
@@ -1383,7 +1411,7 @@ export default function CalendarPage() {
               color: theme.colors.text,
             }}
           >
-            Aujourd'hui
+            {t('common:calendarPage.today', { defaultValue: "Aujourd'hui" })}
           </button>
 
           <button
@@ -1397,7 +1425,7 @@ export default function CalendarPage() {
               fontSize: '1rem',
               color: theme.colors.text,
             }}
-            aria-label="Suivant"
+            aria-label={t('common:calendarPage.next', { defaultValue: 'Suivant' })}
           >
             ›
           </button>
@@ -1443,7 +1471,7 @@ export default function CalendarPage() {
               gap: '0.3rem',
             }}
           >
-            + Nouveau BT
+            + {t('common:calendarPage.newWorkOrder', { defaultValue: 'Nouveau BT' })}
           </button>
         )}
 
@@ -1460,10 +1488,10 @@ export default function CalendarPage() {
               fontSize: theme.font.sizeXs,
             }}
           >
-            <option value="">Tous les techniciens</option>
-            {technicians.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.firstName} {t.lastName}
+            <option value="">{t('common:calendarPage.allTechnicians', { defaultValue: 'Tous les techniciens' })}</option>
+            {technicians.map((tech) => (
+              <option key={tech.id} value={tech.id}>
+                {tech.firstName} {tech.lastName}
               </option>
             ))}
           </select>
@@ -1487,7 +1515,7 @@ export default function CalendarPage() {
           }}
         >
           <span>⠿</span>
-          <span>Déposez l'événement sur le créneau souhaité pour le replanifier.</span>
+          <span>{t('common:calendarPage.dropHint', { defaultValue: "Déposez l'événement sur le créneau souhaité pour le replanifier." })}</span>
         </div>
       )}
 
@@ -1554,10 +1582,10 @@ export default function CalendarPage() {
                 marginTop: '1.5rem',
               }}
             >
-              Aucun événement pour cette période
+              {t('common:calendarPage.noEventsPeriod', { defaultValue: 'Aucun événement pour cette période' })}
               {isAdmin && (
                 <span style={{ display: 'block', marginTop: '0.4rem', fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>
-                  Cliquez sur un créneau horaire pour créer un bon de travail.
+                  {t('common:calendarPage.clickSlotHint', { defaultValue: 'Cliquez sur un créneau horaire pour créer un bon de travail.' })}
                 </span>
               )}
             </p>

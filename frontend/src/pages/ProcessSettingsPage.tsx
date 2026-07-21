@@ -126,6 +126,7 @@ function ProcessList({
   onSelect: (id: string) => void;
   onEdit: (proc: ProcessDefinition) => void;
 }) {
+  const { t } = useTranslation('settings');
   const { data, isLoading, isError } = useProcesses();
   const createProcess = useCreateProcess();
   const updateProcess = useUpdateProcess();
@@ -154,10 +155,10 @@ function ProcessList({
     try {
       await deleteProcess.mutateAsync(proc.id);
       setDeleteConfirmId(null);
-      showToast(`✓ « ${proc.name} » supprimé`, 'success');
+      showToast(t('settings:process.toastDeleted', { defaultValue: '✓ « {{name}} » supprimé', name: proc.name }), 'success');
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
-      const msg = axiosErr?.response?.data?.message ?? 'Impossible de supprimer ce processus.';
+      const msg = axiosErr?.response?.data?.message ?? t('settings:process.deleteFailed', { defaultValue: 'Impossible de supprimer ce processus.' });
       setDeleteConfirmId(null);
       showToast(`❌ ${msg}`, 'error');
     }
@@ -166,10 +167,10 @@ function ProcessList({
   async function handleReactivate(proc: ProcessDefinition) {
     try {
       await updateProcess.mutateAsync({ id: proc.id, data: { isActive: true } });
-      showToast(`✓ « ${proc.name} » réactivé`, 'success');
+      showToast(t('settings:process.toastReactivated', { defaultValue: '✓ « {{name}} » réactivé', name: proc.name }), 'success');
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
-      const msg = axiosErr?.response?.data?.message ?? 'Impossible de réactiver ce processus.';
+      const msg = axiosErr?.response?.data?.message ?? t('settings:process.reactivateFailed', { defaultValue: 'Impossible de réactiver ce processus.' });
       showToast(`❌ ${msg}`, 'error');
     }
   }
@@ -191,21 +192,21 @@ function ProcessList({
       const axiosErr = err as { response?: { data?: { message?: string } } };
       setCreateError(
         axiosErr?.response?.data?.message ??
-          'Impossible de créer le processus. Vérifiez que le nom n\'est pas déjà utilisé.',
+          t('settings:process.createFailed', { defaultValue: "Impossible de créer le processus. Vérifiez que le nom n'est pas déjà utilisé." }),
       );
     }
   }
 
   async function handleDuplicate(proc: ProcessDefinition) {
     await createProcess.mutateAsync({
-      name: `Copie de ${proc.name}`,
+      name: t('settings:process.copyOfName', { defaultValue: 'Copie de {{name}}', name: proc.name }),
       description: proc.description || undefined,
       isDefault: false,
     });
   }
 
   if (isLoading) return <LoadingSpinner />;
-  if (isError) return <p style={{ color: theme.colors.danger }}>Erreur lors du chargement.</p>;
+  if (isError) return <p style={{ color: theme.colors.danger }}>{t('settings:process.loadError', { defaultValue: 'Erreur lors du chargement.' })}</p>;
 
   return (
     <div>
@@ -222,10 +223,10 @@ function ProcessList({
       >
         <div>
           <h2 style={{ margin: 0, fontSize: theme.font.sizeXl, fontWeight: theme.font.weightBold, color: theme.colors.text }}>
-            ⚙️ Processus configurés
+            ⚙️ {t('settings:process.listTitle', { defaultValue: 'Processus configurés' })}
           </h2>
           <p style={{ margin: '0.25rem 0 0', fontSize: theme.font.sizeSm, color: theme.colors.textMuted }}>
-            Cliquez sur un processus pour configurer ses étapes et transitions.
+            {t('settings:process.listSubtitle', { defaultValue: 'Cliquez sur un processus pour configurer ses étapes et transitions.' })}
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -237,11 +238,11 @@ function ProcessList({
                 onChange={(e) => setShowInactive(e.target.checked)}
                 style={{ width: '0.9rem', height: '0.9rem', accentColor: theme.colors.primary }}
               />
-              Afficher les inactifs ({inactiveCount})
+              {t('settings:process.showInactive', { defaultValue: 'Afficher les inactifs ({{count}})', count: inactiveCount })}
             </label>
           )}
           <button onClick={() => setShowCreate(true)} style={{ ...buttonStyles.primary }}>
-            + Nouveau processus
+            {t('settings:process.newProcessButton', { defaultValue: '+ Nouveau processus' })}
           </button>
         </div>
       </div>
@@ -282,25 +283,25 @@ function ProcessList({
           }}
         >
           <h3 style={{ margin: '0 0 1rem', fontSize: theme.font.sizeMd, color: theme.colors.text }}>
-            Nouveau processus
+            {t('settings:process.newProcessTitle', { defaultValue: 'Nouveau processus' })}
           </h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
             <div>
-              <label style={{ ...formStyles.label }}>Nom <span style={{ color: theme.colors.danger }}>*</span></label>
+              <label style={{ ...formStyles.label }}>{t('settings:process.labelName', { defaultValue: 'Nom' })} <span style={{ color: theme.colors.danger }}>*</span></label>
               <input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 style={{ ...formStyles.input, boxSizing: 'border-box' }}
-                placeholder="Ex: Processus standard"
+                placeholder={t('settings:process.nameExamplePlaceholder', { defaultValue: 'Ex: Processus standard' })}
               />
             </div>
             <div>
-              <label style={{ ...formStyles.label }}>Description</label>
+              <label style={{ ...formStyles.label }}>{t('settings:process.labelDescription', { defaultValue: 'Description' })}</label>
               <input
                 value={newDesc}
                 onChange={(e) => setNewDesc(e.target.value)}
                 style={{ ...formStyles.input, boxSizing: 'border-box' }}
-                placeholder="Description optionnelle"
+                placeholder={t('settings:process.descOptionalPlaceholder', { defaultValue: 'Description optionnelle' })}
               />
             </div>
           </div>
@@ -321,7 +322,7 @@ function ProcessList({
               onChange={(e) => setNewIsDefault(e.target.checked)}
               style={{ width: '1rem', height: '1rem', accentColor: theme.colors.primary }}
             />
-            Définir comme processus par défaut
+            {t('settings:process.setAsDefault', { defaultValue: 'Définir comme processus par défaut' })}
           </label>
           {createError && (
             <div
@@ -348,10 +349,10 @@ function ProcessList({
                 cursor: (!newName.trim() || createProcess.isPending) ? 'not-allowed' : 'pointer',
               }}
             >
-              {createProcess.isPending ? 'Création...' : '✓ Créer'}
+              {createProcess.isPending ? t('settings:process.creating', { defaultValue: 'Création...' }) : t('settings:process.create', { defaultValue: '✓ Créer' })}
             </button>
             <button onClick={() => { setShowCreate(false); setCreateError(null); }} style={{ ...buttonStyles.secondary }}>
-              Annuler
+              {t('settings:process.cancel', { defaultValue: 'Annuler' })}
             </button>
           </div>
         </div>
@@ -361,7 +362,7 @@ function ProcessList({
       {processes.length === 0 ? (
         <div style={{ ...layoutStyles.emptyState }}>
           <span style={{ fontSize: '2.5rem' }}>⚙️</span>
-          <p style={{ margin: 0 }}>Aucun processus configuré. Créez-en un pour commencer.</p>
+          <p style={{ margin: 0 }}>{t('settings:process.emptyList', { defaultValue: 'Aucun processus configuré. Créez-en un pour commencer.' })}</p>
         </div>
       ) : (
         <div
@@ -376,7 +377,7 @@ function ProcessList({
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead style={{ ...tableStyles.header }}>
               <tr>
-                {['Nom', 'Description', 'Étapes', 'Transitions', 'Défaut', 'Actif', ''].map((h) => (
+                {[t('settings:process.labelName', { defaultValue: 'Nom' }), t('settings:process.labelDescription', { defaultValue: 'Description' }), t('settings:process.colSteps', { defaultValue: 'Étapes' }), t('settings:process.colTransitions', { defaultValue: 'Transitions' }), t('settings:process.colDefault', { defaultValue: 'Défaut' }), t('settings:process.colActive', { defaultValue: 'Actif' }), ''].map((h) => (
                   <th key={h} style={{ ...tableStyles.headerCell, textAlign: 'left' }}>
                     {h}
                   </th>
@@ -437,7 +438,7 @@ function ProcessList({
                   </td>
                   <td style={{ ...tableStyles.cell }}>
                     {proc.isDefault ? (
-                      <span style={{ ...badgeStyles.base, ...badgeStyles.success, fontSize: '0.7rem' }}>✓ Défaut</span>
+                      <span style={{ ...badgeStyles.base, ...badgeStyles.success, fontSize: '0.7rem' }}>{t('settings:process.badgeDefault', { defaultValue: '✓ Défaut' })}</span>
                     ) : (
                       <span style={{ color: theme.colors.textLight, fontSize: theme.font.sizeXs }}>—</span>
                     )}
@@ -462,27 +463,27 @@ function ProcessList({
                         color: proc.isActive ? 'var(--c-successBadgeText)' : 'var(--c-dangerBadgeText)',
                       }}
                     >
-                      {proc.isActive ? '✓ Actif' : '✗ Inactif'}
+                      {proc.isActive ? t('settings:process.statusActive', { defaultValue: '✓ Actif' }) : t('settings:process.statusInactive', { defaultValue: '✗ Inactif' })}
                     </button>
                   </td>
                   <td style={{ ...tableStyles.cell, whiteSpace: 'nowrap' }}>
                     {deleteConfirmId === proc.id ? (
                       <span style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                         <span style={{ fontSize: theme.font.sizeXs, color: theme.colors.danger, fontWeight: theme.font.weightMedium }}>
-                          Confirmer ?
+                          {t('settings:process.confirmQuestion', { defaultValue: 'Confirmer ?' })}
                         </span>
                         <button
                           onClick={() => handleDelete(proc)}
                           disabled={deleteProcess.isPending}
                           style={{ ...buttonStyles.danger, ...buttonStyles.sm }}
                         >
-                          Oui
+                          {t('settings:process.yes', { defaultValue: 'Oui' })}
                         </button>
                         <button
                           onClick={() => setDeleteConfirmId(null)}
                           style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}
                         >
-                          Non
+                          {t('settings:process.no', { defaultValue: 'Non' })}
                         </button>
                       </span>
                     ) : (
@@ -491,20 +492,20 @@ function ProcessList({
                           onClick={() => onEdit(proc)}
                           style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}
                         >
-                          ✏️ Modifier
+                          {t('settings:process.editButton', { defaultValue: '✏️ Modifier' })}
                         </button>
                         <button
                           onClick={() => handleDuplicate(proc)}
                           disabled={createProcess.isPending}
                           style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}
-                          title="Créer un nouveau processus basé sur celui-ci. Seules les informations de base seront copiées — les étapes et transitions devront être configurées manuellement."
+                          title={t('settings:process.duplicateTitle', { defaultValue: 'Créer un nouveau processus basé sur celui-ci. Seules les informations de base seront copiées — les étapes et transitions devront être configurées manuellement.' })}
                         >
-                          📋 Créer basé sur...
+                          {t('settings:process.duplicateButton', { defaultValue: '📋 Créer basé sur...' })}
                         </button>
                         {proc.isActive ? (
                           <button
                             onClick={() => setDeleteConfirmId(proc.id)}
-                            title="Supprimer (désactiver) ce processus"
+                            title={t('settings:process.deleteTitle', { defaultValue: 'Supprimer (désactiver) ce processus' })}
                             style={{
                               ...buttonStyles.sm,
                               background: 'none',
@@ -516,13 +517,13 @@ function ProcessList({
                               fontSize: theme.font.sizeXs,
                             }}
                           >
-                            🗑 Supprimer
+                            {t('settings:process.deleteButton', { defaultValue: '🗑 Supprimer' })}
                           </button>
                         ) : (
                           <button
                             onClick={() => handleReactivate(proc)}
                             disabled={updateProcess.isPending}
-                            title="Réactiver ce processus"
+                            title={t('settings:process.reactivateTitle', { defaultValue: 'Réactiver ce processus' })}
                             style={{
                               ...buttonStyles.sm,
                               background: 'none',
@@ -534,7 +535,7 @@ function ProcessList({
                               fontSize: theme.font.sizeXs,
                             }}
                           >
-                            ♻️ Réactiver
+                            {t('settings:process.reactivateButton', { defaultValue: '♻️ Réactiver' })}
                           </button>
                         )}
                       </span>
@@ -559,6 +560,7 @@ function ProcessEditor({
   processId: string;
   onBack: () => void;
 }) {
+  const { t } = useTranslation('settings');
   const { data: proc, isLoading, isError } = useProcess(processId);
   const updateProcess = useUpdateProcess();
   const addStatus = useAddProcessStatus();
@@ -674,7 +676,7 @@ function ProcessEditor({
   // ── Loading / error ───────────────────────────────────────────────────────
   if (isLoading) return <LoadingSpinner />;
   if (isError || !proc)
-    return <p style={{ color: theme.colors.danger }}>Erreur lors du chargement du processus.</p>;
+    return <p style={{ color: theme.colors.danger }}>{t('settings:process.editorLoadError', { defaultValue: 'Erreur lors du chargement du processus.' })}</p>;
 
   const statuses: ProcessStatus[] = proc.statuses ?? [];
   const transitions: ProcessTransitionDef[] = proc.transitions ?? [];
@@ -699,7 +701,7 @@ function ProcessEditor({
           fontSize: theme.font.sizeSm,
         }}
       >
-        ← Retour à la liste
+        {t('settings:process.backToList', { defaultValue: '← Retour à la liste' })}
       </button>
 
       {/* Process title */}
@@ -715,15 +717,15 @@ function ProcessEditor({
           {proc.name}
         </h2>
         <p style={{ margin: '0.25rem 0 0', fontSize: theme.font.sizeSm, color: theme.colors.textMuted }}>
-          Version {proc.version} ·{' '}
+          {t('settings:process.versionLabel', { defaultValue: 'Version {{version}} ·', version: proc.version })}{' '}
           {proc.isActive ? (
-            <span style={{ color: theme.colors.success }}>Actif</span>
+            <span style={{ color: theme.colors.success }}>{t('settings:process.active', { defaultValue: 'Actif' })}</span>
           ) : (
-            <span style={{ color: theme.colors.danger }}>Inactif</span>
+            <span style={{ color: theme.colors.danger }}>{t('settings:process.inactive', { defaultValue: 'Inactif' })}</span>
           )}
           {proc.isDefault && (
             <span style={{ marginLeft: '0.5rem', ...badgeStyles.base, ...badgeStyles.info, fontSize: '0.7rem' }}>
-              Défaut
+              {t('settings:process.badgeDefaultShort', { defaultValue: 'Défaut' })}
             </span>
           )}
         </p>
@@ -731,7 +733,11 @@ function ProcessEditor({
 
       {/* Tabs */}
       <TabBar
-        tabs={['🪪 Identité', `📋 Étapes (${statuses.length})`, `🔀 Transitions (${transitions.length})`]}
+        tabs={[
+          `🪪 ${t('settings:process.tabIdentity', { defaultValue: 'Identité' })}`,
+          `📋 ${t('settings:process.tabSteps', { defaultValue: 'Étapes ({{count}})', count: statuses.length })}`,
+          `🔀 ${t('settings:process.tabTransitions', { defaultValue: 'Transitions ({{count}})', count: transitions.length })}`,
+        ]}
         active={activeTab}
         onChange={setActiveTab}
       />
@@ -741,7 +747,7 @@ function ProcessEditor({
         <div style={cardStyle}>
           <div style={{ marginBottom: '0.75rem' }}>
             <label style={{ ...formStyles.label }}>
-              Nom <span style={{ color: theme.colors.danger }}>*</span>
+              {t('settings:process.labelName', { defaultValue: 'Nom' })} <span style={{ color: theme.colors.danger }}>*</span>
             </label>
             <input
               value={editName}
@@ -750,7 +756,7 @@ function ProcessEditor({
             />
           </div>
           <div style={{ marginBottom: '0.75rem' }}>
-            <label style={{ ...formStyles.label }}>Description</label>
+            <label style={{ ...formStyles.label }}>{t('settings:process.labelDescription', { defaultValue: 'Description' })}</label>
             <textarea
               value={editDesc}
               onChange={(e) => { setEditDesc(e.target.value); setIdentityDirty(true); }}
@@ -775,7 +781,7 @@ function ProcessEditor({
               onChange={(e) => { setEditIsDefault(e.target.checked); setIdentityDirty(true); }}
               style={{ width: '1rem', height: '1rem', accentColor: theme.colors.primary }}
             />
-            Processus par défaut (appliqué aux nouveaux bons de travail)
+            {t('settings:process.defaultCheckbox', { defaultValue: 'Processus par défaut (appliqué aux nouveaux bons de travail)' })}
           </label>
           <button
             onClick={handleSaveIdentity}
@@ -786,11 +792,11 @@ function ProcessEditor({
               cursor: (!editName.trim() || updateProcess.isPending || !identityDirty) ? 'not-allowed' : 'pointer',
             }}
           >
-            {updateProcess.isPending ? 'Sauvegarde...' : '✓ Enregistrer'}
+            {updateProcess.isPending ? t('settings:process.saving', { defaultValue: 'Sauvegarde...' }) : t('settings:process.save', { defaultValue: '✓ Enregistrer' })}
           </button>
           {updateProcess.isError && (
             <p style={{ color: theme.colors.danger, fontSize: theme.font.sizeXs, marginTop: '0.5rem' }}>
-              Erreur lors de la sauvegarde.
+              {t('settings:process.saveError', { defaultValue: 'Erreur lors de la sauvegarde.' })}
             </p>
           )}
         </div>
@@ -805,7 +811,7 @@ function ProcessEditor({
               onClick={() => setShowAddStatus(true)}
               style={{ ...buttonStyles.primary }}
             >
-              + Ajouter une étape
+              {t('settings:process.addStepButton', { defaultValue: '+ Ajouter une étape' })}
             </button>
           </div>
 
@@ -813,7 +819,7 @@ function ProcessEditor({
           {showAddStatus && (
             <div style={{ ...cardStyle }}>
               <h3 style={{ margin: '0 0 1rem', fontSize: theme.font.sizeMd, color: theme.colors.text }}>
-                Nouvelle étape
+                {t('settings:process.newStepTitle', { defaultValue: 'Nouvelle étape' })}
               </h3>
               <div
                 style={{
@@ -824,35 +830,35 @@ function ProcessEditor({
                 }}
               >
                 <div>
-                  <label style={{ ...formStyles.label }}>Code (int) *</label>
+                  <label style={{ ...formStyles.label }}>{t('settings:process.stepCodeLabel', { defaultValue: 'Code (int) *' })}</label>
                   <input
                     type="number"
                     value={nsCode}
                     onChange={(e) => setNsCode(e.target.value)}
                     style={{ ...formStyles.input, boxSizing: 'border-box' }}
-                    placeholder="Ex: 10"
+                    placeholder={t('settings:process.stepCodePlaceholder', { defaultValue: 'Ex: 10' })}
                   />
                 </div>
                 <div>
-                  <label style={{ ...formStyles.label }}>Nom FR *</label>
+                  <label style={{ ...formStyles.label }}>{t('settings:process.stepNameFrLabel', { defaultValue: 'Nom FR *' })}</label>
                   <input
                     value={nsName}
                     onChange={(e) => setNsName(e.target.value)}
                     style={{ ...formStyles.input, boxSizing: 'border-box' }}
-                    placeholder="Ex: Créé"
+                    placeholder={t('settings:process.stepNameFrPlaceholder', { defaultValue: 'Ex: Créé' })}
                   />
                 </div>
                 <div>
-                  <label style={{ ...formStyles.label }}>Nom EN</label>
+                  <label style={{ ...formStyles.label }}>{t('settings:process.stepNameEnLabel', { defaultValue: 'Nom EN' })}</label>
                   <input
                     value={nsNameEn}
                     onChange={(e) => setNsNameEn(e.target.value)}
                     style={{ ...formStyles.input, boxSizing: 'border-box' }}
-                    placeholder="E.g. Created"
+                    placeholder={t('settings:process.stepNameEnPlaceholder', { defaultValue: 'E.g. Created' })}
                   />
                 </div>
                 <div>
-                  <label style={{ ...formStyles.label }}>Position</label>
+                  <label style={{ ...formStyles.label }}>{t('settings:process.stepPositionLabel', { defaultValue: 'Position' })}</label>
                   <input
                     type="number"
                     value={nsPosition}
@@ -863,7 +869,7 @@ function ProcessEditor({
               </div>
               {/* Color */}
               <div style={{ marginBottom: '0.75rem' }}>
-                <label style={{ ...formStyles.label }}>Couleur</label>
+                <label style={{ ...formStyles.label }}>{t('settings:process.stepColorLabel', { defaultValue: 'Couleur' })}</label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <input
                     type="color"
@@ -902,11 +908,11 @@ function ProcessEditor({
                 }}
               >
                 {[
-                  { label: 'Initial', val: nsIsInitial, set: setNsIsInitial },
-                  { label: 'Dispatch', val: nsIsDispatch, set: setNsIsDispatch },
-                  { label: 'Démarrage', val: nsIsStart, set: setNsIsStart },
-                  { label: 'Terminal positif', val: nsIsTerminalPos, set: setNsIsTerminalPos },
-                  { label: 'Terminal négatif', val: nsIsTerminalNeg, set: setNsIsTerminalNeg },
+                  { label: t('settings:process.flagInitial', { defaultValue: 'Initial' }), val: nsIsInitial, set: setNsIsInitial },
+                  { label: t('settings:process.flagDispatch', { defaultValue: 'Dispatch' }), val: nsIsDispatch, set: setNsIsDispatch },
+                  { label: t('settings:process.flagStart', { defaultValue: 'Démarrage' }), val: nsIsStart, set: setNsIsStart },
+                  { label: t('settings:process.flagTerminalPos', { defaultValue: 'Terminal positif' }), val: nsIsTerminalPos, set: setNsIsTerminalPos },
+                  { label: t('settings:process.flagTerminalNeg', { defaultValue: 'Terminal négatif' }), val: nsIsTerminalNeg, set: setNsIsTerminalNeg },
                 ].map(({ label, val, set }) => (
                   <label
                     key={label}
@@ -939,10 +945,10 @@ function ProcessEditor({
                     cursor: (!nsName.trim() || !nsCode.trim() || addStatus.isPending) ? 'not-allowed' : 'pointer',
                   }}
                 >
-                  {addStatus.isPending ? 'Ajout...' : '✓ Ajouter'}
+                  {addStatus.isPending ? t('settings:process.adding', { defaultValue: 'Ajout...' }) : t('settings:process.add', { defaultValue: '✓ Ajouter' })}
                 </button>
                 <button onClick={() => setShowAddStatus(false)} style={{ ...buttonStyles.secondary }}>
-                  Annuler
+                  {t('settings:process.cancel', { defaultValue: 'Annuler' })}
                 </button>
               </div>
             </div>
@@ -952,7 +958,7 @@ function ProcessEditor({
           {statuses.length === 0 ? (
             <div style={{ ...layoutStyles.emptyState }}>
               <span style={{ fontSize: '2rem' }}>📋</span>
-              <p style={{ margin: 0 }}>Aucune étape. Ajoutez-en une pour commencer.</p>
+              <p style={{ margin: 0 }}>{t('settings:process.emptySteps', { defaultValue: 'Aucune étape. Ajoutez-en une pour commencer.' })}</p>
             </div>
           ) : (
             <div
@@ -967,7 +973,7 @@ function ProcessEditor({
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead style={{ ...tableStyles.header }}>
                   <tr>
-                    {['Couleur', 'Code', 'Nom', 'Pos.', 'Flags', ''].map((h) => (
+                    {[t('settings:process.stepColColor', { defaultValue: 'Couleur' }), t('settings:process.stepColCode', { defaultValue: 'Code' }), t('settings:process.stepColName', { defaultValue: 'Nom' }), t('settings:process.stepColPos', { defaultValue: 'Pos.' }), t('settings:process.stepColFlags', { defaultValue: 'Flags' }), ''].map((h) => (
                       <th key={h} style={{ ...tableStyles.headerCell, textAlign: 'left' }}>{h}</th>
                     ))}
                   </tr>
@@ -1006,7 +1012,7 @@ function ProcessEditor({
               onClick={() => setShowAddTransition(true)}
               style={{ ...buttonStyles.primary }}
             >
-              + Ajouter une transition
+              {t('settings:process.addTransitionButton', { defaultValue: '+ Ajouter une transition' })}
             </button>
           </div>
 
@@ -1014,7 +1020,7 @@ function ProcessEditor({
           {showAddTransition && (
             <div style={cardStyle}>
               <h3 style={{ margin: '0 0 1rem', fontSize: theme.font.sizeMd, color: theme.colors.text }}>
-                Nouvelle transition
+                {t('settings:process.newTransitionTitle', { defaultValue: 'Nouvelle transition' })}
               </h3>
               <div
                 style={{
@@ -1026,13 +1032,13 @@ function ProcessEditor({
               >
                 {/* From */}
                 <div>
-                  <label style={{ ...formStyles.label }}>De (étape source) *</label>
+                  <label style={{ ...formStyles.label }}>{t('settings:process.transitionFromLabel', { defaultValue: 'De (étape source) *' })}</label>
                   <select
                     value={ntFromId}
                     onChange={(e) => setNtFromId(e.target.value)}
                     style={{ ...formStyles.select, boxSizing: 'border-box' }}
                   >
-                    <option value="">— Choisir —</option>
+                    <option value="">{t('settings:process.chooseOption', { defaultValue: '— Choisir —' })}</option>
                     {statuses.map((s) => (
                       <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
@@ -1040,13 +1046,13 @@ function ProcessEditor({
                 </div>
                 {/* To */}
                 <div>
-                  <label style={{ ...formStyles.label }}>Vers (étape cible) *</label>
+                  <label style={{ ...formStyles.label }}>{t('settings:process.transitionToLabel', { defaultValue: 'Vers (étape cible) *' })}</label>
                   <select
                     value={ntToId}
                     onChange={(e) => setNtToId(e.target.value)}
                     style={{ ...formStyles.select, boxSizing: 'border-box' }}
                   >
-                    <option value="">— Choisir —</option>
+                    <option value="">{t('settings:process.chooseOption', { defaultValue: '— Choisir —' })}</option>
                     {statuses.map((s) => (
                       <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
@@ -1054,19 +1060,19 @@ function ProcessEditor({
                 </div>
                 {/* Label — bilingual (B10.2) */}
                 <div style={{ gridColumn: '1 / -1' }}>
-                  <label style={{ ...formStyles.label }}>Label de la transition *</label>
+                  <label style={{ ...formStyles.label }}>{t('settings:process.transitionLabelLabel', { defaultValue: 'Label de la transition *' })}</label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                     <input
                       value={ntLabel}
                       onChange={(e) => setNtLabel(e.target.value)}
                       style={{ ...formStyles.input, boxSizing: 'border-box' }}
-                      placeholder="FR → Assigner"
+                      placeholder={t('settings:process.transitionLabelFrPlaceholder', { defaultValue: 'FR → Assigner' })}
                     />
                     <input
                       value={ntLabelEn}
                       onChange={(e) => setNtLabelEn(e.target.value)}
                       style={{ ...formStyles.input, boxSizing: 'border-box' }}
-                      placeholder="EN → Assign"
+                      placeholder={t('settings:process.transitionLabelEnPlaceholder', { defaultValue: 'EN → Assign' })}
                     />
                   </div>
                 </div>
@@ -1084,7 +1090,7 @@ function ProcessEditor({
                 {/* Roles */}
                 <div>
                   <label style={{ ...formStyles.label }}>
-                    Rôles autorisés <span style={{ color: theme.colors.danger }}>*</span>
+                    {t('settings:process.allowedRolesLabel', { defaultValue: 'Rôles autorisés' })} <span style={{ color: theme.colors.danger }}>*</span>
                   </label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.25rem' }}>
                     {ROLE_OPTIONS.map((role) => (
@@ -1116,14 +1122,14 @@ function ProcessEditor({
                   </div>
                   {ntRoles.length === 0 && (
                     <p style={{ margin: '0.25rem 0 0', fontSize: theme.font.sizeXs, color: theme.colors.danger }}>
-                      Au moins un rôle doit être sélectionné.
+                      {t('settings:process.atLeastOneRole', { defaultValue: 'Au moins un rôle doit être sélectionné.' })}
                     </p>
                   )}
                 </div>
 
                 {/* Required fields */}
                 <div>
-                  <label style={{ ...formStyles.label }}>Champs requis</label>
+                  <label style={{ ...formStyles.label }}>{t('settings:process.requiredFieldsLabel', { defaultValue: 'Champs requis' })}</label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.25rem' }}>
                     {REQUIRED_FIELD_OPTIONS.map((field) => (
                       <label
@@ -1157,7 +1163,7 @@ function ProcessEditor({
 
               {/* Sort order */}
               <div style={{ marginBottom: '1rem' }}>
-                <label style={{ ...formStyles.label }}>Ordre de tri</label>
+                <label style={{ ...formStyles.label }}>{t('settings:process.sortOrderLabel', { defaultValue: 'Ordre de tri' })}</label>
                 <input
                   type="number"
                   value={ntSortOrder}
@@ -1176,10 +1182,10 @@ function ProcessEditor({
                     cursor: (!ntFromId || !ntToId || (!ntLabel.trim() && !ntLabelEn.trim()) || ntRoles.length === 0 || addTransition.isPending) ? 'not-allowed' : 'pointer',
                   }}
                 >
-                  {addTransition.isPending ? 'Ajout...' : '✓ Ajouter'}
+                  {addTransition.isPending ? t('settings:process.adding', { defaultValue: 'Ajout...' }) : t('settings:process.add', { defaultValue: '✓ Ajouter' })}
                 </button>
                 <button onClick={() => setShowAddTransition(false)} style={{ ...buttonStyles.secondary }}>
-                  Annuler
+                  {t('settings:process.cancel', { defaultValue: 'Annuler' })}
                 </button>
               </div>
             </div>
@@ -1189,7 +1195,7 @@ function ProcessEditor({
           {transitions.length === 0 ? (
             <div style={{ ...layoutStyles.emptyState }}>
               <span style={{ fontSize: '2rem' }}>🔀</span>
-              <p style={{ margin: 0 }}>Aucune transition. Ajoutez-en une pour commencer.</p>
+              <p style={{ margin: 0 }}>{t('settings:process.emptyTransitions', { defaultValue: 'Aucune transition. Ajoutez-en une pour commencer.' })}</p>
             </div>
           ) : (
             <div
@@ -1204,7 +1210,7 @@ function ProcessEditor({
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead style={{ ...tableStyles.header }}>
                   <tr>
-                    {['De', '', 'Vers', 'Label', 'Rôles', 'Champs requis', 'Tri', ''].map((h) => (
+                    {[t('settings:process.transColFrom', { defaultValue: 'De' }), '', t('settings:process.transColTo', { defaultValue: 'Vers' }), t('settings:process.transColLabel', { defaultValue: 'Label' }), t('settings:process.transColRoles', { defaultValue: 'Rôles' }), t('settings:process.transColRequiredFields', { defaultValue: 'Champs requis' }), t('settings:process.transColSort', { defaultValue: 'Tri' }), ''].map((h) => (
                       <th key={h} style={{ ...tableStyles.headerCell, textAlign: 'left' }}>{h}</th>
                     ))}
                   </tr>
@@ -1251,6 +1257,7 @@ function StatusRow({
   isUpdating: boolean;
   isDeleting: boolean;
 }) {
+  const { t } = useTranslation('settings');
   const [editing, setEditing] = useState(false);
   const [eName, setEName] = useState(status.nameFr ?? status.name);
   const [eNameEn, setENameEn] = useState(status.nameEn ?? status.name);
@@ -1292,13 +1299,13 @@ function StatusRow({
             <input
               value={eName}
               onChange={(e) => setEName(e.target.value)}
-              placeholder="FR"
+              placeholder={t('settings:process.langFr', { defaultValue: 'FR' })}
               style={{ ...formStyles.input, boxSizing: 'border-box', maxWidth: '180px', padding: '0.2rem 0.4rem', fontSize: theme.font.sizeXs }}
             />
             <input
               value={eNameEn}
               onChange={(e) => setENameEn(e.target.value)}
-              placeholder="EN"
+              placeholder={t('settings:process.langEn', { defaultValue: 'EN' })}
               style={{ ...formStyles.input, boxSizing: 'border-box', maxWidth: '180px', padding: '0.2rem 0.4rem', fontSize: theme.font.sizeXs }}
             />
           </div>
@@ -1363,20 +1370,20 @@ function StatusRow({
         {deleteConfirm ? (
           <span style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <span style={{ fontSize: theme.font.sizeXs, color: theme.colors.danger, fontWeight: theme.font.weightMedium }}>
-              Confirmer ?
+              {t('settings:process.confirmQuestion', { defaultValue: 'Confirmer ?' })}
             </span>
             <button
               onClick={() => { onDelete(status.id); setDeleteConfirm(false); }}
               disabled={isDeleting}
               style={{ ...buttonStyles.danger, ...buttonStyles.sm }}
             >
-              Oui
+              {t('settings:process.yes', { defaultValue: 'Oui' })}
             </button>
             <button
               onClick={() => setDeleteConfirm(false)}
               style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}
             >
-              Non
+              {t('settings:process.no', { defaultValue: 'Non' })}
             </button>
           </span>
         ) : (
@@ -1408,12 +1415,13 @@ function StatusRow({
 
 /** Inline flags pills */
 function FlagsChips({ status }: { status: ProcessStatus }) {
+  const { t } = useTranslation('settings');
   const flags: string[] = [];
-  if (status.isInitial) flags.push('Initial');
-  if (status.isDispatch) flags.push('Dispatch');
-  if (status.isStart) flags.push('Start');
-  if (status.isTerminalPositive) flags.push('✅ Terminal+');
-  if (status.isTerminalNegative) flags.push('❌ Terminal−');
+  if (status.isInitial) flags.push(t('settings:process.flagInitial', { defaultValue: 'Initial' }));
+  if (status.isDispatch) flags.push(t('settings:process.flagDispatch', { defaultValue: 'Dispatch' }));
+  if (status.isStart) flags.push(t('settings:process.flagStartShort', { defaultValue: 'Start' }));
+  if (status.isTerminalPositive) flags.push(t('settings:process.flagTerminalPosShort', { defaultValue: '✅ Terminal+' }));
+  if (status.isTerminalNegative) flags.push(t('settings:process.flagTerminalNegShort', { defaultValue: '❌ Terminal−' }));
 
   if (flags.length === 0) return <span style={{ color: theme.colors.textLight, fontSize: theme.font.sizeXs }}>—</span>;
 
@@ -1450,6 +1458,7 @@ function TransitionRow({
   isDeleting: boolean;
 }) {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const { t } = useTranslation('settings');
   const [hovered, setHovered] = useState(false);
   const bgStyle = getRowStyle(index, hovered);
 
@@ -1490,7 +1499,7 @@ function TransitionRow({
       {/* Roles */}
       <td style={{ ...tableStyles.cell }}>
         {transition.allowedRoles.length === 0 ? (
-          <span style={{ color: theme.colors.textLight, fontSize: theme.font.sizeXs }}>Tous</span>
+          <span style={{ color: theme.colors.textLight, fontSize: theme.font.sizeXs }}>{t('settings:process.allRoles', { defaultValue: 'Tous' })}</span>
         ) : (
           <span style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
             {transition.allowedRoles.map((r) => (
@@ -1540,17 +1549,17 @@ function TransitionRow({
         {deleteConfirm ? (
           <span style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <span style={{ fontSize: theme.font.sizeXs, color: theme.colors.danger, fontWeight: theme.font.weightMedium }}>
-              Confirmer ?
+              {t('settings:process.confirmQuestion', { defaultValue: 'Confirmer ?' })}
             </span>
             <button
               onClick={() => { onDelete(); setDeleteConfirm(false); }}
               disabled={isDeleting}
               style={{ ...buttonStyles.danger, ...buttonStyles.sm }}
             >
-              Oui
+              {t('settings:process.yes', { defaultValue: 'Oui' })}
             </button>
             <button onClick={() => setDeleteConfirm(false)} style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}>
-              Non
+              {t('settings:process.no', { defaultValue: 'Non' })}
             </button>
           </span>
         ) : (
@@ -1605,7 +1614,7 @@ function EditProcessModal({
     >
       <div style={{ ...modalStyles.content, maxWidth: '480px' }}>
         <div style={{ ...modalStyles.header }}>
-          <h3 style={{ ...modalStyles.headerTitle }}>✏️ Modifier — {proc.name}</h3>
+          <h3 style={{ ...modalStyles.headerTitle }}>{t('settings:process.editModalTitle', { defaultValue: '✏️ Modifier — {{name}}', name: proc.name })}</h3>
           <button
             onClick={onClose}
             style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: theme.colors.textMuted }}
@@ -1616,7 +1625,7 @@ function EditProcessModal({
         <div style={{ ...modalStyles.body }}>
           <div style={{ marginBottom: '0.75rem' }}>
             <label style={{ ...formStyles.label }}>
-              Nom <span style={{ color: theme.colors.danger }}>*</span>
+              {t('settings:process.labelName', { defaultValue: 'Nom' })} <span style={{ color: theme.colors.danger }}>*</span>
             </label>
             <input
               value={name}
@@ -1625,7 +1634,7 @@ function EditProcessModal({
             />
           </div>
           <div style={{ marginBottom: '0.75rem' }}>
-            <label style={{ ...formStyles.label }}>Description</label>
+            <label style={{ ...formStyles.label }}>{t('settings:process.labelDescription', { defaultValue: 'Description' })}</label>
             <textarea
               value={desc}
               onChange={(e) => setDesc(e.target.value)}
@@ -1649,11 +1658,11 @@ function EditProcessModal({
               onChange={(e) => setIsDefault(e.target.checked)}
               style={{ width: '1rem', height: '1rem', accentColor: theme.colors.primary }}
             />
-            Processus par défaut
+            {t('settings:process.defaultCheckboxShort', { defaultValue: 'Processus par défaut' })}
           </label>
           {updateProcess.isError && (
             <p style={{ color: theme.colors.danger, fontSize: theme.font.sizeXs, marginTop: '0.5rem' }}>
-              Erreur lors de la sauvegarde.
+              {t('settings:process.saveError', { defaultValue: 'Erreur lors de la sauvegarde.' })}
             </p>
           )}
         </div>
@@ -1668,7 +1677,7 @@ function EditProcessModal({
               cursor: (!name.trim() || updateProcess.isPending) ? 'not-allowed' : 'pointer',
             }}
           >
-            {updateProcess.isPending ? 'Sauvegarde...' : '✓ Enregistrer'}
+            {updateProcess.isPending ? t('settings:process.saving', { defaultValue: 'Sauvegarde...' }) : t('settings:process.save', { defaultValue: '✓ Enregistrer' })}
           </button>
         </div>
       </div>

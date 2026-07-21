@@ -244,7 +244,7 @@ function ClientModal({
         <div style={{ ...modalStyles.body }}>
           <form id="client-form" onSubmit={handleSubmit(handleMainSubmit)}>
             <p style={{ margin: '0 0 0.75rem', fontWeight: theme.font.weightSemibold, fontSize: theme.font.sizeSm, color: theme.colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Informations client
+              {t('clients:page.clientInfo', { defaultValue: 'Informations client' })}
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
@@ -260,7 +260,7 @@ function ClientModal({
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={{ ...formStyles.label }}>{t('fields.companyName')} <span style={{ color: theme.colors.textMuted, fontWeight: theme.font.weightNormal, fontSize: theme.font.sizeXs }}>{tCommon('labels.optional')}</span></label>
-                <input style={{ ...formStyles.input }} placeholder="Ex: Construction ABC inc." {...register('companyName')} />
+                <input style={{ ...formStyles.input }} placeholder={t('clients:page.companyPlaceholder', { defaultValue: 'Ex: Construction ABC inc.' })} {...register('companyName')} />
               </div>
               <div>
                 <label style={{ ...formStyles.label }}>{t('fields.clientType')} <span style={{ color: theme.colors.danger }}>*</span></label>
@@ -286,7 +286,7 @@ function ClientModal({
 
             {isError && (
               <p style={{ ...formStyles.fieldError, marginBottom: '0.75rem' }}>
-                Une erreur est survenue. Veuillez réessayer.
+                {t('clients:page.errorGeneric', { defaultValue: 'Une erreur est survenue. Veuillez réessayer.' })}
               </p>
             )}
           </form>
@@ -343,7 +343,7 @@ function ClientModal({
                           {formatStreet(addr)}{addr.apartment ? ` app. ${addr.apartment}` : ''}, {addr.city} {addr.postalCode}
                           {addr.isDefault && (
                             <span style={{ marginLeft: '0.5rem', fontSize: '0.65rem', fontWeight: theme.font.weightSemibold, background: theme.colors.primaryLight, color: theme.colors.primary, padding: '0.1rem 0.4rem', borderRadius: theme.radius.full }}>
-                              Défaut
+                              {t('clients:page.defaultBadge', { defaultValue: 'Défaut' })}
                             </span>
                           )}
                         </p>
@@ -357,7 +357,7 @@ function ClientModal({
                           type="button"
                           onClick={() => openEditAddress(addr)}
                           disabled={editingAddressId === addr.id}
-                          title="Modifier cette adresse"
+                          title={t('clients:page.editAddressTitle', { defaultValue: 'Modifier cette adresse' })}
                           style={{ ...buttonStyles.sm, background: 'none', border: 'none', color: theme.colors.primary, cursor: editingAddressId === addr.id ? 'default' : 'pointer', fontSize: '1rem', padding: '0.25rem', opacity: editingAddressId === addr.id ? 0.4 : 1 }}
                         >
                           ✏️
@@ -366,7 +366,7 @@ function ClientModal({
                           type="button"
                           onClick={() => handleDeleteAddress(addr.id)}
                           disabled={deleteAddress.isPending}
-                          title="Supprimer cette adresse"
+                          title={t('clients:page.deleteAddressTitle', { defaultValue: 'Supprimer cette adresse' })}
                           style={{ ...buttonStyles.sm, background: 'none', border: 'none', color: theme.colors.danger, cursor: 'pointer', fontSize: '1rem', padding: '0.25rem' }}
                         >
                           🗑
@@ -381,7 +381,7 @@ function ClientModal({
                 <>
                   <AddressFormFields
                     form={addressForm}
-                    title={editingAddressId ? 'Modifier l\'adresse' : 'Nouvelle adresse'}
+                    title={editingAddressId ? t('clients:page.editAddress', { defaultValue: "Modifier l'adresse" }) : t('clients:page.newAddress', { defaultValue: 'Nouvelle adresse' })}
                   />
                   {customFields.length > 0 && (
                     <AddressTypeCustomFields
@@ -429,6 +429,7 @@ function ClientModal({
 // ─── Portal access (B21) ──────────────────────────────────────────────────────
 
 function PortalAccessSection({ client }: { client: Client }) {
+  const { t } = useTranslation('clients');
   const queryClient = useQueryClient();
   const portalUser = client.portalUsers?.[0] ?? null;
   const hasActiveAccess = !!portalUser?.isActive;
@@ -441,7 +442,7 @@ function PortalAccessSection({ client }: { client: Client }) {
   const invite = useMutation({
     mutationFn: () => invitePortalClient(client.id),
     onSuccess: (res) => {
-      toast.success(`Invitation envoyée à ${res.email}`);
+      toast.success(t('clients:page.inviteSent', { defaultValue: 'Invitation envoyée à {{email}}', email: res.email }));
       refresh();
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : String(err)),
@@ -450,7 +451,7 @@ function PortalAccessSection({ client }: { client: Client }) {
   const revoke = useMutation({
     mutationFn: () => api.patch(`/users/${portalUser!.id}`, { isActive: false }),
     onSuccess: () => {
-      toast.success("Accès au portail révoqué");
+      toast.success(t('clients:page.accessRevoked', { defaultValue: 'Accès au portail révoqué' }));
       refresh();
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : String(err)),
@@ -461,18 +462,18 @@ function PortalAccessSection({ client }: { client: Client }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
         <div>
           <p style={{ margin: 0, fontSize: theme.font.sizeXs, color: theme.colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Portail client
+            {t('clients:page.clientPortal', { defaultValue: 'Portail client' })}
           </p>
           {portalUser ? (
             <p style={{ margin: '0.2rem 0 0', fontSize: theme.font.sizeSm, color: hasActiveAccess ? theme.colors.success : theme.colors.danger }}>
-              {hasActiveAccess ? '✓ Accès actif' : '✗ Accès révoqué'} — {portalUser.email}
+              {hasActiveAccess ? `✓ ${t('clients:page.accessActive', { defaultValue: 'Accès actif' })}` : `✗ ${t('clients:page.accessRevokedShort', { defaultValue: 'Accès révoqué' })}`} — {portalUser.email}
               {portalUser.isActive && !portalUser.emailVerifiedAt && (
-                <span style={{ color: theme.colors.textMuted }}> (invitation en attente)</span>
+                <span style={{ color: theme.colors.textMuted }}> {t('clients:page.invitationPending', { defaultValue: '(invitation en attente)' })}</span>
               )}
             </p>
           ) : (
             <p style={{ margin: '0.2rem 0 0', fontSize: theme.font.sizeSm, color: theme.colors.textMuted }}>
-              Ce client n'a pas encore accès au portail.
+              {t('clients:page.noPortalAccess', { defaultValue: "Ce client n'a pas encore accès au portail." })}
             </p>
           )}
         </div>
@@ -480,10 +481,10 @@ function PortalAccessSection({ client }: { client: Client }) {
           <button
             onClick={() => invite.mutate()}
             disabled={invite.isPending || (!client.email && !portalUser)}
-            title={!client.email && !portalUser ? 'Ajoutez un courriel à la fiche client' : undefined}
+            title={!client.email && !portalUser ? t('clients:page.addEmailHint', { defaultValue: 'Ajoutez un courriel à la fiche client' }) : undefined}
             style={{ ...buttonStyles.secondary, ...buttonStyles.sm, opacity: invite.isPending || (!client.email && !portalUser) ? 0.6 : 1 }}
           >
-            {invite.isPending ? 'Envoi…' : portalUser ? "🔁 Renvoyer l'invitation" : '✉️ Inviter au portail'}
+            {invite.isPending ? t('clients:page.sending', { defaultValue: 'Envoi…' }) : portalUser ? `🔁 ${t('clients:page.resendInvitation', { defaultValue: "Renvoyer l'invitation" })}` : `✉️ ${t('clients:page.inviteToPortal', { defaultValue: 'Inviter au portail' })}`}
           </button>
           {hasActiveAccess && (
             <button
@@ -491,7 +492,7 @@ function PortalAccessSection({ client }: { client: Client }) {
               disabled={revoke.isPending}
               style={{ ...buttonStyles.danger, ...buttonStyles.sm, opacity: revoke.isPending ? 0.6 : 1 }}
             >
-              🚫 Révoquer
+              🚫 {t('clients:page.revoke', { defaultValue: 'Révoquer' })}
             </button>
           )}
         </div>
@@ -538,7 +539,7 @@ function ClientDetailModal({
             <ClientTypeBadge type={client.clientType} />
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button onClick={onEdit} style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}>✏️ Modifier</button>
+            <button onClick={onEdit} style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}>✏️ {t('clients:page.edit', { defaultValue: 'Modifier' })}</button>
             <button onClick={onClose} style={{ ...buttonStyles.ghost, padding: '0.25rem 0.5rem' }}>✕</button>
           </div>
         </div>
@@ -548,26 +549,26 @@ function ClientDetailModal({
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
             {client.email && (
               <div>
-                <p style={{ margin: 0, fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>Email</p>
+                <p style={{ margin: 0, fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>{t('clients:page.emailLabel', { defaultValue: 'Email' })}</p>
                 <p style={{ margin: 0, fontSize: theme.font.sizeSm, color: theme.colors.text }}>{client.email}</p>
               </div>
             )}
             {client.phone && (
               <div>
-                <p style={{ margin: 0, fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>Téléphone</p>
+                <p style={{ margin: 0, fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>{t('clients:page.phoneLabel', { defaultValue: 'Téléphone' })}</p>
                 <p style={{ margin: 0, fontSize: theme.font.sizeSm, color: theme.colors.text }}>{client.phone}</p>
               </div>
             )}
             <div>
-              <p style={{ margin: 0, fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>Statut</p>
+              <p style={{ margin: 0, fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>{t('clients:page.statusLabel', { defaultValue: 'Statut' })}</p>
               <p style={{ margin: 0, fontSize: theme.font.sizeSm, color: client.isActive ? theme.colors.success : theme.colors.danger }}>
-                {client.isActive ? '✓ Actif' : '✗ Inactif'}
+                {client.isActive ? `✓ ${t('clients:page.active', { defaultValue: 'Actif' })}` : `✗ ${t('clients:page.inactive', { defaultValue: 'Inactif' })}`}
               </p>
             </div>
           </div>
           {client.notes && (
             <div style={{ marginBottom: '1rem', padding: '0.75rem', background: theme.colors.surfaceAlt, borderRadius: theme.radius.md, border: theme.borders.light }}>
-              <p style={{ margin: 0, fontSize: theme.font.sizeXs, color: theme.colors.textMuted, marginBottom: '0.25rem' }}>Notes</p>
+              <p style={{ margin: 0, fontSize: theme.font.sizeXs, color: theme.colors.textMuted, marginBottom: '0.25rem' }}>{t('clients:page.notesLabel', { defaultValue: 'Notes' })}</p>
               <p style={{ margin: 0, fontSize: theme.font.sizeSm, color: theme.colors.text }}>{client.notes}</p>
             </div>
           )}
@@ -604,7 +605,7 @@ function ClientDetailModal({
                         {addr.postalCode && ` ${addr.postalCode}`}
                         {addr.isDefault && (
                           <span style={{ marginLeft: '0.5rem', fontSize: '0.65rem', fontWeight: theme.font.weightSemibold, background: theme.colors.primaryLight, color: theme.colors.primary, padding: '0.1rem 0.4rem', borderRadius: theme.radius.full }}>
-                            Défaut
+                            {t('clients:page.defaultBadge', { defaultValue: 'Défaut' })}
                           </span>
                         )}
                       </p>
@@ -747,7 +748,9 @@ export default function ClientsPage() {
           <h1 style={{ ...layoutStyles.pageTitle }}>{t('title')}</h1>
           {total > 0 && (
             <p style={{ ...layoutStyles.pageSubtitle }}>
-              {total} client{total > 1 ? 's' : ''}
+              {total > 1
+                ? t('clients:page.clientCountPlural', { defaultValue: '{{count}} clients', count: total })
+                : t('clients:page.clientCountSingular', { defaultValue: '{{count}} client', count: total })}
             </p>
           )}
         </div>
@@ -782,7 +785,7 @@ export default function ClientsPage() {
           value={filterType}
           onChange={(e) => { setFilterType(e.target.value as ClientType | ''); setPage(1); }}
         >
-          <option value="">Tous les types</option>
+          <option value="">{t('clients:page.allTypes', { defaultValue: 'Tous les types' })}</option>
           {Object.values(ClientType).map((code) => (
             <option key={code} value={code}>{clientTypeLabel(t, code)}</option>
           ))}
@@ -792,7 +795,7 @@ export default function ClientsPage() {
             onClick={() => { setSearchInput(''); setFilterType(''); setPage(1); }}
             style={{ ...buttonStyles.ghost, ...buttonStyles.sm }}
           >
-            ✕ Réinitialiser
+            ✕ {t('clients:page.reset', { defaultValue: 'Réinitialiser' })}
           </button>
         )}
       </div>
@@ -801,14 +804,14 @@ export default function ClientsPage() {
       {isLoading ? (
         <LoadingSpinner />
       ) : isError ? (
-        <div style={{ color: theme.colors.danger, padding: '1rem' }}>Erreur lors du chargement des clients.</div>
+        <div style={{ color: theme.colors.danger, padding: '1rem' }}>{t('clients:page.loadError', { defaultValue: 'Erreur lors du chargement des clients.' })}</div>
       ) : clients.length === 0 ? (
         <div style={{ ...layoutStyles.emptyState, ...{ background: theme.colors.surface, border: theme.borders.default, borderRadius: theme.radius.lg } }}>
           <span style={{ fontSize: '2.5rem' }}>👥</span>
           <p style={{ margin: 0 }}>
             {debouncedSearch || filterType
-              ? 'Aucun client ne correspond à vos filtres.'
-              : 'Aucun client enregistré. Commencez par en créer un.'}
+              ? t('clients:page.noMatch', { defaultValue: 'Aucun client ne correspond à vos filtres.' })
+              : t('clients:page.noClients', { defaultValue: 'Aucun client enregistré. Commencez par en créer un.' })}
           </p>
         </div>
       ) : (
@@ -818,7 +821,14 @@ export default function ClientsPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px' }}>
               <thead style={{ ...tableStyles.header }}>
                 <tr>
-                  {['Nom', 'Type', 'Email', 'Téléphone', 'Adresses', ''].map((h) => (
+                  {[
+                    t('clients:page.colName', { defaultValue: 'Nom' }),
+                    t('clients:page.colType', { defaultValue: 'Type' }),
+                    t('clients:page.colEmail', { defaultValue: 'Email' }),
+                    t('clients:page.colPhone', { defaultValue: 'Téléphone' }),
+                    t('clients:page.colAddresses', { defaultValue: 'Adresses' }),
+                    '',
+                  ].map((h) => (
                     <th key={h} style={{ ...tableStyles.headerCell, textAlign: 'left' }}>
                       {h}
                     </th>
@@ -847,7 +857,7 @@ export default function ClientsPage() {
                       )}
                       {!client.isActive && (
                         <span style={{ marginLeft: '0.5rem', fontSize: '0.65rem', background: theme.colors.dangerLight, color: theme.colors.danger, padding: '0.1rem 0.4rem', borderRadius: theme.radius.full, fontWeight: theme.font.weightSemibold }}>
-                          Inactif
+                          {t('clients:page.inactive', { defaultValue: 'Inactif' })}
                         </span>
                       )}
                     </td>
@@ -862,7 +872,9 @@ export default function ClientsPage() {
                     </td>
                     <td style={{ ...tableStyles.cell }}>
                       <span style={{ fontSize: theme.font.sizeXs, background: theme.colors.background, border: theme.borders.light, borderRadius: theme.radius.full, padding: '0.2rem 0.6rem', color: theme.colors.textSecondary }}>
-                        {client.addresses?.length ?? 0} adresse{(client.addresses?.length ?? 0) !== 1 ? 's' : ''}
+                        {(client.addresses?.length ?? 0) !== 1
+                          ? t('clients:page.addressCountPlural', { defaultValue: '{{count}} adresses', count: client.addresses?.length ?? 0 })
+                          : t('clients:page.addressCountSingular', { defaultValue: '{{count}} adresse', count: client.addresses?.length ?? 0 })}
                       </span>
                     </td>
                     <td style={{ ...tableStyles.cell, whiteSpace: 'nowrap' }}>
@@ -870,10 +882,10 @@ export default function ClientsPage() {
                         <span style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                           <span style={{ fontSize: theme.font.sizeXs, color: theme.colors.danger, fontWeight: theme.font.weightMedium }}>{t('common:actions.confirm', { defaultValue: 'Confirmer' })} ?</span>
                           <button onClick={() => handleDelete(client.id)} disabled={deleteClient.isPending} style={{ ...buttonStyles.danger, ...buttonStyles.sm }}>
-                            Oui
+                            {t('clients:page.yes', { defaultValue: 'Oui' })}
                           </button>
                           <button onClick={() => setDeleteConfirmId(null)} style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}>
-                            Non
+                            {t('clients:page.no', { defaultValue: 'Non' })}
                           </button>
                         </span>
                       ) : (
@@ -916,7 +928,7 @@ export default function ClientsPage() {
                 ‹
               </button>
               <span style={{ padding: '0.4rem 0.875rem', fontSize: theme.font.sizeSm, color: theme.colors.textMuted }}>
-                Page {page} / {totalPages}
+                {t('clients:page.pageOf', { defaultValue: 'Page {{page}} / {{total}}', page, total: totalPages })}
               </span>
               <button
                 disabled={page === totalPages}
@@ -933,7 +945,7 @@ export default function ClientsPage() {
       {/* Create Modal */}
       {showCreateModal && (
         <ClientModal
-          title="Nouveau client"
+          title={t('clients:page.newClientTitle', { defaultValue: 'Nouveau client' })}
           onSubmit={handleCreate}
           onCancel={() => { setShowCreateModal(false); createClient.reset(); }}
           isLoading={createClient.isPending}
@@ -944,7 +956,7 @@ export default function ClientsPage() {
       {/* Edit Modal */}
       {editingClient && (
         <ClientModal
-          title={`Modifier — ${editingClient.firstName} ${editingClient.lastName}`}
+          title={t('clients:page.editClientTitle', { defaultValue: 'Modifier — {{name}}', name: `${editingClient.firstName} ${editingClient.lastName}` })}
           defaultValues={{
             firstName: editingClient.firstName,
             lastName: editingClient.lastName,

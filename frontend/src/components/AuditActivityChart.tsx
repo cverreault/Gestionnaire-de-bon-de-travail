@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuditActivityStats } from '../hooks/useAudit';
 import { theme } from '../theme';
 
@@ -34,6 +35,7 @@ function eventShortName(full: string): string {
 }
 
 export default function AuditActivityChart({ days = 30, hideWhenEmpty = true }: Props) {
+  const { t } = useTranslation('common');
   const { data, isLoading, isError } = useAuditActivityStats(days);
 
   // Build a contiguous range so days with no events render as a 0 bar
@@ -54,7 +56,7 @@ export default function AuditActivityChart({ days = 30, hideWhenEmpty = true }: 
   if (isLoading) {
     return (
       <section style={cardStyle}>
-        <p style={{ color: theme.colors.textMuted }}>Chargement de l'activité…</p>
+        <p style={{ color: theme.colors.textMuted }}>{t('common:auditChart.loading', { defaultValue: "Chargement de l'activité…" })}</p>
       </section>
     );
   }
@@ -62,7 +64,7 @@ export default function AuditActivityChart({ days = 30, hideWhenEmpty = true }: 
   if (isError) {
     return (
       <section style={cardStyle}>
-        <p style={{ color: theme.colors.danger }}>Impossible de charger l'activité d'audit.</p>
+        <p style={{ color: theme.colors.danger }}>{t('common:auditChart.loadError', { defaultValue: "Impossible de charger l'activité d'audit." })}</p>
       </section>
     );
   }
@@ -75,10 +77,12 @@ export default function AuditActivityChart({ days = 30, hideWhenEmpty = true }: 
     <section style={cardStyle}>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.75rem' }}>
         <h2 style={{ margin: 0, fontSize: theme.font.sizeMd, color: theme.colors.text }}>
-          📊 Activité d'audit ({data.range.days} derniers jours)
+          📊 {t('common:auditChart.title', { defaultValue: "Activité d'audit ({{days}} derniers jours)", days: data.range.days })}
         </h2>
         <span style={{ fontSize: theme.font.sizeSm, color: theme.colors.textMuted }}>
-          {data.total} évènement{data.total === 1 ? '' : 's'}
+          {data.total === 1
+            ? t('common:auditChart.eventCountSingular', { defaultValue: '{{count}} évènement', count: data.total })
+            : t('common:auditChart.eventCountPlural', { defaultValue: '{{count}} évènements', count: data.total })}
         </span>
       </header>
 
@@ -90,7 +94,7 @@ export default function AuditActivityChart({ days = 30, hideWhenEmpty = true }: 
             preserveAspectRatio="none"
             style={{ width: '100%', height: '120px', display: 'block' }}
             role="img"
-            aria-label={`Activité d'audit sur ${series.length} jours`}
+            aria-label={t('common:auditChart.chartAria', { defaultValue: "Activité d'audit sur {{count}} jours", count: series.length })}
           >
             {series.map((s, i) => {
               const h = (s.count / max) * 95; // leave 5% for the floor line
@@ -103,7 +107,9 @@ export default function AuditActivityChart({ days = 30, hideWhenEmpty = true }: 
                   height={Math.max(h, s.count > 0 ? 1 : 0)}
                   fill={s.count > 0 ? theme.colors.primary : theme.colors.surfaceAlt}
                 >
-                  <title>{`${fmtDayLabel(s.date)} — ${s.count} évènement${s.count === 1 ? '' : 's'}`}</title>
+                  <title>{`${fmtDayLabel(s.date)} — ${s.count === 1
+                    ? t('common:auditChart.eventCountSingular', { defaultValue: '{{count}} évènement', count: s.count })
+                    : t('common:auditChart.eventCountPlural', { defaultValue: '{{count}} évènements', count: s.count })}`}</title>
                 </rect>
               );
             })}
@@ -118,7 +124,7 @@ export default function AuditActivityChart({ days = 30, hideWhenEmpty = true }: 
         {/* ── Top events ────────────────────────────────────────────────── */}
         <div>
           <p style={{ fontSize: theme.font.sizeXs, color: theme.colors.textMuted, margin: '0 0 0.4rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Top évènements
+            {t('common:auditChart.topEvents', { defaultValue: 'Top évènements' })}
           </p>
           <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
             {data.topEvents.slice(0, 5).map((e) => (

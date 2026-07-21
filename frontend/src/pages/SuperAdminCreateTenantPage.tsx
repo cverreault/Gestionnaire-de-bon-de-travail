@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { theme, cardStyles, layoutStyles, buttonStyles, formStyles } from '../theme';
 import {
@@ -27,6 +28,7 @@ const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,18}[a-z0-9]$/;
  * single transaction; the logo (if any) is uploaded right after.
  */
 export default function SuperAdminCreateTenantPage() {
+  const { t } = useTranslation('superAdmin');
   const navigate = useNavigate();
   const qc = useQueryClient();
 
@@ -105,18 +107,17 @@ export default function SuperAdminCreateTenantPage() {
   return (
     <div style={layoutStyles.page}>
       <header style={{ marginBottom: 16 }}>
-        <h1 style={{ margin: 0 }}>➕ Créer un tenant</h1>
+        <h1 style={{ margin: 0 }}>➕ {t('superAdmin:createTenant.title', { defaultValue: 'Créer un tenant' })}</h1>
         <p style={{ color: theme.colors.textMuted, margin: '4px 0 0', fontSize: 13 }}>
-          Provisionne un espace de travail complet : sous-domaine, plan, logo et
-          premier administrateur.
+          {t('superAdmin:createTenant.subtitle', { defaultValue: 'Provisionne un espace de travail complet : sous-domaine, plan, logo et premier administrateur.' })}
         </p>
       </header>
 
       <div style={{ ...cardStyles.card, padding: 24, maxWidth: 640 }}>
         {/* ── Workspace ─────────────────────────────────────────── */}
-        <SectionTitle>Espace de travail</SectionTitle>
+        <SectionTitle>{t('superAdmin:createTenant.workspaceSection', { defaultValue: 'Espace de travail' })}</SectionTitle>
         <Stack>
-          <Field label="Nom de l'organisation">
+          <Field label={t('superAdmin:createTenant.orgName', { defaultValue: "Nom de l'organisation" })}>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -125,7 +126,7 @@ export default function SuperAdminCreateTenantPage() {
             />
           </Field>
 
-          <Field label="Sous-domaine (slug)">
+          <Field label={t('superAdmin:createTenant.subdomain', { defaultValue: 'Sous-domaine (slug)' })}>
             <input
               value={slug}
               onChange={(e) => setSlug(e.target.value.toLowerCase().trim())}
@@ -137,20 +138,19 @@ export default function SuperAdminCreateTenantPage() {
               }}
             />
             <span style={{ fontSize: 12, color: theme.colors.textMuted }}>
-              Adresse :{' '}
+              {t('superAdmin:createTenant.addressLabel', { defaultValue: 'Adresse :' })}{' '}
               <code style={{ color: theme.colors.primary }}>
-                {slug || 'votre-slug'}.{BASE_DOMAIN}
+                {slug || t('superAdmin:createTenant.slugPlaceholder', { defaultValue: 'votre-slug' })}.{BASE_DOMAIN}
               </code>
             </span>
             {slug && !slugValid && (
               <span style={{ fontSize: 12, color: theme.colors.danger }}>
-                3–20 caractères, minuscules/chiffres/tirets, début et fin
-                alphanumériques.
+                {t('superAdmin:createTenant.slugRule', { defaultValue: '3–20 caractères, minuscules/chiffres/tirets, début et fin alphanumériques.' })}
               </span>
             )}
           </Field>
 
-          <Field label="Plan">
+          <Field label={t('superAdmin:createTenant.plan', { defaultValue: 'Plan' })}>
             <select
               value={plan}
               onChange={(e) => setPlan(e.target.value as TenantPlan)}
@@ -167,37 +167,37 @@ export default function SuperAdminCreateTenantPage() {
         </Stack>
 
         {/* ── Quotas (optional) ─────────────────────────────────── */}
-        <SectionTitle>Quotas (optionnel — sinon valeurs du plan)</SectionTitle>
+        <SectionTitle>{t('superAdmin:createTenant.quotasSection', { defaultValue: 'Quotas (optionnel — sinon valeurs du plan)' })}</SectionTitle>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <NumField
-            label="Max users"
+            label={t('superAdmin:createTenant.maxUsers', { defaultValue: 'Max users' })}
             value={quotas.maxUsers}
             onChange={(v) => setQuotas({ ...quotas, maxUsers: v })}
           />
           <NumField
-            label="Max BTs/mois"
+            label={t('superAdmin:createTenant.maxWorkOrders', { defaultValue: 'Max BTs/mois' })}
             value={quotas.maxWorkOrdersPerMonth}
             onChange={(v) => setQuotas({ ...quotas, maxWorkOrdersPerMonth: v })}
           />
           <NumField
-            label="Max stockage (MB)"
+            label={t('superAdmin:createTenant.maxStorage', { defaultValue: 'Max stockage (MB)' })}
             value={quotas.maxStorageMb}
             onChange={(v) => setQuotas({ ...quotas, maxStorageMb: v })}
           />
           <NumField
-            label="Max clients"
+            label={t('superAdmin:createTenant.maxClients', { defaultValue: 'Max clients' })}
             value={quotas.maxClients}
             onChange={(v) => setQuotas({ ...quotas, maxClients: v })}
           />
         </div>
 
         {/* ── Logo (optional) ───────────────────────────────────── */}
-        <SectionTitle>Logo (optionnel — PNG/JPEG/WEBP/SVG, ≤ 2 Mo)</SectionTitle>
+        <SectionTitle>{t('superAdmin:createTenant.logoSection', { defaultValue: 'Logo (optionnel — PNG/JPEG/WEBP/SVG, ≤ 2 Mo)' })}</SectionTitle>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           {logoPreview && (
             <img
               src={logoPreview}
-              alt="Aperçu du logo"
+              alt={t('superAdmin:createTenant.logoPreviewAlt', { defaultValue: 'Aperçu du logo' })}
               style={{
                 width: 56,
                 height: 56,
@@ -217,17 +217,17 @@ export default function SuperAdminCreateTenantPage() {
         </div>
 
         {/* ── First admin ───────────────────────────────────────── */}
-        <SectionTitle>Premier administrateur</SectionTitle>
+        <SectionTitle>{t('superAdmin:createTenant.firstAdminSection', { defaultValue: 'Premier administrateur' })}</SectionTitle>
         <Stack>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <Field label="Prénom">
+            <Field label={t('superAdmin:createTenant.firstName', { defaultValue: 'Prénom' })}>
               <input
                 value={admin.firstName}
                 onChange={(e) => setAdmin({ ...admin, firstName: e.target.value })}
                 style={formStyles.input}
               />
             </Field>
-            <Field label="Nom">
+            <Field label={t('superAdmin:createTenant.lastName', { defaultValue: 'Nom' })}>
               <input
                 value={admin.lastName}
                 onChange={(e) => setAdmin({ ...admin, lastName: e.target.value })}
@@ -235,7 +235,7 @@ export default function SuperAdminCreateTenantPage() {
               />
             </Field>
           </div>
-          <Field label="Email">
+          <Field label={t('superAdmin:createTenant.email', { defaultValue: 'Email' })}>
             <input
               type="email"
               value={admin.email}
@@ -244,7 +244,7 @@ export default function SuperAdminCreateTenantPage() {
               style={formStyles.input}
             />
           </Field>
-          <Field label="Mot de passe (≥ 8 caractères)">
+          <Field label={t('superAdmin:createTenant.password', { defaultValue: 'Mot de passe (≥ 8 caractères)' })}>
             <input
               type="password"
               value={admin.password}
@@ -269,7 +269,7 @@ export default function SuperAdminCreateTenantPage() {
               lineHeight: 1.5,
             }}
           >
-            <strong>Échec de la création :</strong>
+            <strong>{t('superAdmin:createTenant.createFailure', { defaultValue: 'Échec de la création :' })}</strong>
             {errorMessages.length > 1 ? (
               <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
                 {errorMessages.map((m, i) => (
@@ -284,7 +284,7 @@ export default function SuperAdminCreateTenantPage() {
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}>
           <button onClick={() => navigate('/super-admin/tenants')} style={buttonStyles.secondary}>
-            Annuler
+            {t('superAdmin:createTenant.cancel', { defaultValue: 'Annuler' })}
           </button>
           <button
             onClick={() => create.mutate()}
@@ -295,7 +295,7 @@ export default function SuperAdminCreateTenantPage() {
               cursor: !canSubmit || create.isPending ? 'not-allowed' : 'pointer',
             }}
           >
-            {create.isPending ? 'Création…' : 'Créer le tenant'}
+            {create.isPending ? t('superAdmin:createTenant.creating', { defaultValue: 'Création…' }) : t('superAdmin:createTenant.createButton', { defaultValue: 'Créer le tenant' })}
           </button>
         </div>
       </div>
@@ -337,6 +337,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function PlanPreview({ plan }: { plan: TenantPlan }) {
+  const { t } = useTranslation('superAdmin');
   const { data } = useQuery({
     queryKey: ['superAdmin', 'plans'],
     queryFn: getPlanCatalog,
@@ -347,6 +348,10 @@ function PlanPreview({ plan }: { plan: TenantPlan }) {
   const hasBase = def.priceMonthly > 0;
   const hasPerUser = def.pricePerUserMonthly > 0;
   const isFree = !hasBase && !hasPerUser;
+  const storageLabel =
+    def.quotas.maxStorageMb >= 1000
+      ? `${(def.quotas.maxStorageMb / 1000).toFixed(0)} Go`
+      : `${def.quotas.maxStorageMb} Mo`;
   return (
     <div
       style={{
@@ -366,9 +371,13 @@ function PlanPreview({ plan }: { plan: TenantPlan }) {
           {def.displayName}
         </div>
         <div style={{ fontSize: 11, color: theme.colors.textMuted, marginTop: 2 }}>
-          👥 {def.quotas.maxUsers} users · 📋 {def.quotas.maxWorkOrdersPerMonth.toLocaleString('fr-CA')} BTs/mois ·
-          🧑‍🤝‍🧑 {def.quotas.maxClients.toLocaleString('fr-CA')} clients ·
-          💾 {def.quotas.maxStorageMb >= 1000 ? `${(def.quotas.maxStorageMb / 1000).toFixed(0)} Go` : `${def.quotas.maxStorageMb} Mo`}
+          {t('superAdmin:createTenant.planQuotas', {
+            defaultValue: '👥 {{users}} users · 📋 {{workOrders}} BTs/mois · 🧑‍🤝‍🧑 {{clients}} clients · 💾 {{storage}}',
+            users: def.quotas.maxUsers,
+            workOrders: def.quotas.maxWorkOrdersPerMonth.toLocaleString('fr-CA'),
+            clients: def.quotas.maxClients.toLocaleString('fr-CA'),
+            storage: storageLabel,
+          })}
         </div>
       </div>
       <div
@@ -381,12 +390,12 @@ function PlanPreview({ plan }: { plan: TenantPlan }) {
           lineHeight: 1.3,
         }}
       >
-        {isFree && <span>Gratuit</span>}
+        {isFree && <span>{t('superAdmin:createTenant.free', { defaultValue: 'Gratuit' })}</span>}
         {hasBase && (
           <div>
             {def.priceMonthly} {def.currency}
             <span style={{ fontSize: 11, color: theme.colors.textMuted, fontWeight: 500 }}>
-              {' '}/ mois
+              {' '}{t('superAdmin:createTenant.perMonth', { defaultValue: '/ mois' })}
             </span>
           </div>
         )}
@@ -395,7 +404,7 @@ function PlanPreview({ plan }: { plan: TenantPlan }) {
             {hasBase && <span style={{ color: theme.colors.textMuted, fontWeight: 500 }}>+ </span>}
             {def.pricePerUserMonthly} {def.currency}
             <span style={{ fontSize: 11, color: theme.colors.textMuted, fontWeight: 500 }}>
-              {' '}/ user / mois
+              {' '}{t('superAdmin:createTenant.perUserPerMonth', { defaultValue: '/ user / mois' })}
             </span>
           </div>
         )}

@@ -165,7 +165,7 @@ export default function AddressCreateModal({ onClose, onCreated, address }: Prop
           nextClientId = null;
         } else if (showNewClient) {
           if (!newClient.firstName.trim() || !newClient.lastName.trim()) {
-            setError('Prénom et nom du nouveau client sont requis.');
+            setError(t('addresses:createModal.newClientNameRequired', { defaultValue: 'Prénom et nom du nouveau client sont requis.' }));
             return;
           }
           const created = await createClient.mutateAsync({
@@ -197,7 +197,7 @@ export default function AddressCreateModal({ onClose, onCreated, address }: Prop
         await createStandalone.mutateAsync(addressDto);
       } else if (showNewClient) {
         if (!newClient.firstName.trim() || !newClient.lastName.trim()) {
-          setError('Prénom et nom du nouveau client sont requis.');
+          setError(t('addresses:createModal.newClientNameRequired', { defaultValue: 'Prénom et nom du nouveau client sont requis.' }));
           return;
         }
         // Atomic: create client + address in one POST
@@ -219,7 +219,7 @@ export default function AddressCreateModal({ onClose, onCreated, address }: Prop
       onClose();
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
-      setError(axiosErr?.response?.data?.message ?? 'Erreur lors de l\'enregistrement.');
+      setError(axiosErr?.response?.data?.message ?? t('addresses:createModal.saveError', { defaultValue: "Erreur lors de l'enregistrement." }));
     } finally {
       setSubmitting(false);
     }
@@ -235,7 +235,7 @@ export default function AddressCreateModal({ onClose, onCreated, address }: Prop
       onClose();
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
-      setError(axiosErr?.response?.data?.message ?? 'Erreur lors de la suppression.');
+      setError(axiosErr?.response?.data?.message ?? t('addresses:createModal.deleteError', { defaultValue: 'Erreur lors de la suppression.' }));
       setConfirmDelete(false);
     } finally {
       setSubmitting(false);
@@ -292,7 +292,7 @@ export default function AddressCreateModal({ onClose, onCreated, address }: Prop
                 <strong>{selectedClient.firstName} {selectedClient.lastName}</strong>
                 {selectedClient.email && <span style={{ marginLeft: '0.5rem', fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>{selectedClient.email}</span>}
               </div>
-              <button onClick={() => { setSelectedClient(null); setSearch(''); }} style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}>Changer</button>
+              <button onClick={() => { setSelectedClient(null); setSearch(''); }} style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}>{t('addresses:createModal.change', { defaultValue: 'Changer' })}</button>
             </div>
           ) : !showNewClient ? (
             <div style={{ position: 'relative', marginBottom: '0.75rem' }}>
@@ -346,10 +346,10 @@ export default function AddressCreateModal({ onClose, onCreated, address }: Prop
                 <input value={newClient.email} onChange={(e) => setNewClient((p) => ({ ...p, email: e.target.value }))} placeholder={tClients('fields.email')} style={{ ...formStyles.input, boxSizing: 'border-box' }} />
                 <input value={newClient.phone} onChange={(e) => setNewClient((p) => ({ ...p, phone: e.target.value }))} placeholder={tClients('fields.phone')} style={{ ...formStyles.input, boxSizing: 'border-box' }} />
                 <select value={newClient.clientType} onChange={(e) => setNewClient((p) => ({ ...p, clientType: e.target.value as ClientType }))} style={{ ...formStyles.select, boxSizing: 'border-box', gridColumn: '1 / -1' }}>
-                  <option value={ClientType.RESIDENTIAL}>Résidentiel</option>
-                  <option value={ClientType.COMMERCIAL}>Commercial</option>
-                  <option value={ClientType.INDUSTRIAL}>Industriel</option>
-                  <option value={ClientType.INSTITUTIONAL}>Institutionnel</option>
+                  <option value={ClientType.RESIDENTIAL}>{t('addresses:createModal.clientTypeResidential', { defaultValue: 'Résidentiel' })}</option>
+                  <option value={ClientType.COMMERCIAL}>{t('addresses:createModal.clientTypeCommercial', { defaultValue: 'Commercial' })}</option>
+                  <option value={ClientType.INDUSTRIAL}>{t('addresses:createModal.clientTypeIndustrial', { defaultValue: 'Industriel' })}</option>
+                  <option value={ClientType.INSTITUTIONAL}>{t('addresses:createModal.clientTypeInstitutional', { defaultValue: 'Institutionnel' })}</option>
                 </select>
               </div>
               <button type="button" onClick={() => { setShowNewClient(false); setNewClient({ firstName: '', lastName: '', email: '', phone: '', clientType: ClientType.RESIDENTIAL }); }} style={{ ...buttonStyles.ghost, ...buttonStyles.sm }}>

@@ -1,4 +1,5 @@
 import { useState, FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { theme, cardStyles, layoutStyles, buttonStyles, formStyles } from '../theme';
 import {
@@ -18,6 +19,7 @@ import { Role } from '../types';
  * page (auto-pick the 1st ADMIN of the row's tenant).
  */
 export default function SuperAdminUsersPage() {
+  const { t } = useTranslation('superAdmin');
   const [input, setInput] = useState('');
   const [submitted, setSubmitted] = useState<string | null>(null);
 
@@ -35,9 +37,9 @@ export default function SuperAdminUsersPage() {
   return (
     <div style={layoutStyles.page}>
       <header style={{ marginBottom: 16 }}>
-        <h1 style={{ margin: 0 }}>🔍 Recherche utilisateur cross-tenant</h1>
+        <h1 style={{ margin: 0 }}>🔍 {t('superAdmin:usersPage.title', { defaultValue: 'Recherche utilisateur cross-tenant' })}</h1>
         <p style={{ color: theme.colors.textMuted, margin: '4px 0 0', fontSize: 13 }}>
-          Tape un email (ou un préfixe) — résultats à travers tous les tenants.
+          {t('superAdmin:usersPage.subtitle', { defaultValue: 'Tape un email (ou un préfixe) — résultats à travers tous les tenants.' })}
         </p>
       </header>
 
@@ -49,32 +51,32 @@ export default function SuperAdminUsersPage() {
           autoFocus
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="ex: jean@…"
+          placeholder={t('superAdmin:usersPage.searchPlaceholder', { defaultValue: 'ex: jean@…' })}
           style={{ ...formStyles.input, flex: 1 }}
         />
         <button type="submit" style={buttonStyles.primary} disabled={input.trim().length < 2}>
-          Rechercher
+          {t('superAdmin:usersPage.search', { defaultValue: 'Rechercher' })}
         </button>
       </form>
 
-      {isFetching && <p>Recherche…</p>}
+      {isFetching && <p>{t('superAdmin:usersPage.searching', { defaultValue: 'Recherche…' })}</p>}
 
       {data && (
         <div style={{ ...cardStyles.card, padding: 0, overflow: 'hidden' }}>
           {data.length === 0 ? (
             <p style={{ padding: 16, color: theme.colors.textMuted }}>
-              Aucun utilisateur ne correspond à « {submitted} ».
+              {t('superAdmin:usersPage.noResults', { defaultValue: 'Aucun utilisateur ne correspond à « {{query}} ».', query: submitted })}
             </p>
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead style={{ background: theme.colors.surfaceAlt }}>
                 <tr>
-                  <th style={th}>Email</th>
-                  <th style={th}>Nom</th>
-                  <th style={th}>Rôle</th>
-                  <th style={th}>Tenant</th>
-                  <th style={th}>Statut</th>
-                  <th style={th}>Action</th>
+                  <th style={th}>{t('superAdmin:usersPage.colEmail', { defaultValue: 'Email' })}</th>
+                  <th style={th}>{t('superAdmin:usersPage.colName', { defaultValue: 'Nom' })}</th>
+                  <th style={th}>{t('superAdmin:usersPage.colRole', { defaultValue: 'Rôle' })}</th>
+                  <th style={th}>{t('superAdmin:usersPage.colTenant', { defaultValue: 'Tenant' })}</th>
+                  <th style={th}>{t('superAdmin:usersPage.colStatus', { defaultValue: 'Statut' })}</th>
+                  <th style={th}>{t('superAdmin:usersPage.colAction', { defaultValue: 'Action' })}</th>
                 </tr>
               </thead>
               <tbody>
@@ -91,6 +93,7 @@ export default function SuperAdminUsersPage() {
 }
 
 function UserRow({ user }: { user: UserSearchRow }) {
+  const { t } = useTranslation('superAdmin');
   const startImpersonation = useAuthStore((s) => s.startImpersonation);
 
   const enter = useMutation({
@@ -137,9 +140,9 @@ function UserRow({ user }: { user: UserSearchRow }) {
       </td>
       <td style={td}>
         {user.isActive ? (
-          <span style={{ color: theme.colors.success }}>✓ actif</span>
+          <span style={{ color: theme.colors.success }}>{t('superAdmin:usersPage.active', { defaultValue: '✓ actif' })}</span>
         ) : (
-          <span style={{ color: theme.colors.danger }}>✗ inactif</span>
+          <span style={{ color: theme.colors.danger }}>{t('superAdmin:usersPage.inactive', { defaultValue: '✗ inactif' })}</span>
         )}
       </td>
       <td style={td}>
@@ -148,7 +151,7 @@ function UserRow({ user }: { user: UserSearchRow }) {
           disabled={enter.isPending}
           style={{ ...buttonStyles.secondary, fontSize: 12, padding: '4px 8px' }}
         >
-          {enter.isPending ? '…' : 'Entrer 🎭'}
+          {enter.isPending ? '…' : t('superAdmin:usersPage.enter', { defaultValue: 'Entrer 🎭' })}
         </button>
       </td>
     </tr>
