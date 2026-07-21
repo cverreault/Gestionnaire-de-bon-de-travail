@@ -157,8 +157,8 @@ export interface PlanDefinition {
   isActive?: boolean;
 }
 
-export async function getPlanCatalog(): Promise<{ data: PlanDefinition[] }> {
-  const { data } = await api.get<ApiResponse<{ data: PlanDefinition[] }>>(
+export async function getPlanCatalog(): Promise<PlanDefinition[]> {
+  const { data } = await api.get<ApiResponse<PlanDefinition[]>>(
     '/super-admin/plans',
   );
   return data.data;
@@ -244,8 +244,8 @@ export interface UserSearchRow {
 
 export async function searchUsers(
   email: string,
-): Promise<{ data: UserSearchRow[] }> {
-  const { data } = await api.get<ApiResponse<{ data: UserSearchRow[] }>>(
+): Promise<UserSearchRow[]> {
+  const { data } = await api.get<ApiResponse<UserSearchRow[]>>(
     '/super-admin/users',
     { params: { email } },
   );

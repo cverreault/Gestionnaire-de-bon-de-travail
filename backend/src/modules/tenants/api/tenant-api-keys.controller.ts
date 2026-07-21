@@ -69,9 +69,9 @@ export class TenantApiKeysController {
   @ApiOperation({ summary: 'Lister les clés API du tenant' })
   async list(
     @CurrentUser() actor: { tenantId: string },
-  ): Promise<{ data: unknown[] }> {
+  ): Promise<unknown[]> {
     const rows = await this.apiKeys.list(actor.tenantId);
-    return { data: rows };
+    return rows;
   }
 
   @Post()

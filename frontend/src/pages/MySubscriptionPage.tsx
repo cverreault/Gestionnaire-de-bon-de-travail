@@ -281,10 +281,10 @@ function HistoryCard() {
       {history.error && (
         <p style={{ fontSize: 13, color: theme.colors.danger }}>{t('history.loadFailed')}</p>
       )}
-      {history.data && history.data.data.length <= 1 && (
+      {history.data && history.data.length <= 1 && (
         <p style={{ fontSize: 13, color: theme.colors.textMuted }}>{t('history.empty')}</p>
       )}
-      {history.data && history.data.data.length > 1 && (
+      {history.data && history.data.length > 1 && (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
@@ -297,7 +297,7 @@ function HistoryCard() {
               </tr>
             </thead>
             <tbody>
-              {history.data.data.map((row) => (
+              {history.data.map((row) => (
                 <HistoryRow key={row.yearMonth} row={row} locale={numberLocale} />
               ))}
             </tbody>
@@ -534,7 +534,7 @@ function ChangePlanCard({ sub }: { sub: MySubscription }) {
     stripeEnabled && !!targetPlan && (billing.data?.purchasablePlans ?? []).includes(targetPlan);
 
   const availablePlans =
-    plans.data?.data.filter(
+    plans.data?.filter(
       (p) => p.code !== sub.plan.code && p.isActive !== false,
     ) ?? [];
 

@@ -38,8 +38,8 @@ export interface MintedApiKey {
   plaintext: string;
 }
 
-export async function listApiKeys(): Promise<{ data: ApiKeyRow[] }> {
-  const { data } = await api.get<ApiResponse<{ data: ApiKeyRow[] }>>(
+export async function listApiKeys(): Promise<ApiKeyRow[]> {
+  const { data } = await api.get<ApiResponse<ApiKeyRow[]>>(
     '/tenant/api-keys',
   );
   return data.data;

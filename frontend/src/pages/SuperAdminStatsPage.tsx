@@ -47,13 +47,13 @@ export default function SuperAdminStatsPage() {
   // platform-wide KPI card. Computed client-side because both inputs are
   // already on this page and the calculation is trivial.
   const planByCode = new Map<string, PlanDefinition>();
-  plans.data?.data.forEach((p) => planByCode.set(p.code, p));
+  plans.data?.forEach((p) => planByCode.set(p.code, p));
   const totalMrr =
     usage.data?.data.reduce(
       (sum, t) => sum + monthlyCharge(t, planByCode.get(t.plan)),
       0,
     ) ?? 0;
-  const currency = plans.data?.data[0]?.currency ?? 'CAD';
+  const currency = plans.data?.[0]?.currency ?? 'CAD';
   const { t } = useTranslation('superAdmin');
 
   return (
