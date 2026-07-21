@@ -126,8 +126,14 @@ export class PortalInvitationService {
     });
 
     const link = await this.buildLink(user.tenantId, raw);
-    // Dev / no-SMTP: the link is greppable in the container logs.
-    this.logger.log(`📧 Portal invitation issued for client=${client.id} : ${link}`);
+    // B29 — the raw token lives in the link. Log it only in dev (no SMTP)
+    // so it's greppable from the container logs; never in production.
+    const smtpHost = await this.configs.resolve('smtp.host', 'SMTP_HOST');
+    if (smtpHost) {
+      this.logger.log(`📧 Portal invitation issued for client=${client.id}`);
+    } else {
+      this.logger.log(`📧 Portal invitation issued for client=${client.id} : ${link}`);
+    }
 
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: user.tenantId },

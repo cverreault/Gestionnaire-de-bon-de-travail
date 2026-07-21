@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import { i18nValidationMessage } from 'nestjs-i18n';
 
 /**
  * B12 — Payload for POST /work-orders/:id/signatures.
@@ -21,7 +22,7 @@ export class SignaturesDto {
   @IsString()
   @MaxLength(262144)
   @Matches(/^data:image\/png;base64,/, {
-    message: 'signatureClient doit être un data-URL image/png en base64.',
+    message: i18nValidationMessage('validation.IS_DATA_URL_PNG'),
   })
   signatureClient?: string | null;
 
@@ -33,7 +34,7 @@ export class SignaturesDto {
   @IsString()
   @MaxLength(262144)
   @Matches(/^data:image\/png;base64,/, {
-    message: 'signatureTechnician doit être un data-URL image/png en base64.',
+    message: i18nValidationMessage('validation.IS_DATA_URL_PNG'),
   })
   signatureTechnician?: string | null;
 }

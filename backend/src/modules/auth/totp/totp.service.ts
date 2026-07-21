@@ -161,7 +161,7 @@ export class TotpService {
     // B26 — refuse while locked.
     if (user.totpLockedUntil && user.totpLockedUntil.getTime() > Date.now()) {
       const mins = Math.ceil((user.totpLockedUntil.getTime() - Date.now()) / 60000);
-      this.logger.warn(`2FA locked for ${user.email} — ${mins} min remaining`);
+      this.logger.warn(`2FA locked for user=${user.id} — ${mins} min remaining`);
       throw new UnauthorizedException(
         `Trop de tentatives 2FA. Réessayez dans ${mins} minute(s).`,
       );
@@ -207,7 +207,7 @@ export class TotpService {
       }
     }
 
-    await this.registerFailure(user.id, user.email, user.totpFailedAttempts);
+    await this.registerFailure(user.id, user.totpFailedAttempts);
     throw new UnauthorizedException('Code TOTP ou de secours invalide');
   }
 
@@ -221,11 +221,7 @@ export class TotpService {
   }
 
   /** Bump the failed-attempt counter and lock the account past the cap. */
-  private async registerFailure(
-    userId: string,
-    email: string,
-    current: number,
-  ): Promise<void> {
+  private async registerFailure(userId: string, current: number): Promise<void> {
     const attempts = current + 1;
     const locked = attempts >= TotpService.MAX_ATTEMPTS;
     await this.prisma.user.update({
@@ -241,7 +237,7 @@ export class TotpService {
     });
     if (locked) {
       this.logger.warn(
-        `2FA locked for ${email} after ${attempts} failed attempts (${TotpService.LOCKOUT_MS / 60000} min).`,
+        `2FA locked for user=${userId} after ${attempts} failed attempts (${TotpService.LOCKOUT_MS / 60000} min).`,
       );
     }
   }
