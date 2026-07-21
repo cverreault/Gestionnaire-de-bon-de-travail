@@ -19,8 +19,8 @@ import {
 import { Role } from '@prisma/client';
 import { Scope } from '../../common/decorators/scope.decorator';
 import { CurrentApiKey } from '../../common/decorators/current-api-key.decorator';
-import { PublicApiThrottle } from './public-api-throttle.decorator';
-import type { ResolvedApiKey } from '../api-keys/api-keys.service';
+import { PublicApiThrottle } from '../../common/decorators/public-api-throttle.decorator';
+import type { ResolvedApiKey } from '../../common/contracts/api-key.contract';
 import { WorkOrdersService } from '../work-orders/work-orders.service';
 import { CreateWorkOrderDto } from '../work-orders/dto/create-work-order.dto';
 import { WorkOrderFilterDto } from '../work-orders/dto/work-order-filter.dto';

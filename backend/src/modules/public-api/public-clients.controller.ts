@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { Scope } from '../../common/decorators/scope.decorator';
-import { PublicApiThrottle } from './public-api-throttle.decorator';
+import { PublicApiThrottle } from '../../common/decorators/public-api-throttle.decorator';
 import { ClientsService } from '../clients/clients.service';
 import {
   CreateClientAddressDto,

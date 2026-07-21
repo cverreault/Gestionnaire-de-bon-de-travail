@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { Scope } from '../../common/decorators/scope.decorator';
-import { PublicApiThrottle } from './public-api-throttle.decorator';
+import { PublicApiThrottle } from '../../common/decorators/public-api-throttle.decorator';
 import { SettingsService } from '../settings/settings.service';
 import { ProcessService } from '../process/process.service';
 import { UsersService } from '../users/users.service';

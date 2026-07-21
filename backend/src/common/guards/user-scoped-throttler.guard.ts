@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import type { Request } from 'express';
-import type { ResolvedApiKey } from '../../modules/api-keys/api-keys.service';
+import type { ResolvedApiKey } from '../contracts/api-key.contract';
 
 /**
  * Rate-limit per authenticated caller — API key, then JWT user, then IP.

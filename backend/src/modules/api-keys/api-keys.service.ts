@@ -1,3 +1,4 @@
+import type { ResolvedApiKey } from '../../common/contracts/api-key.contract';
 import {
   BadRequestException,
   ForbiddenException,
@@ -256,16 +257,6 @@ export interface ApiKeyListRow {
   createdAt: Date;
 }
 
-export interface ResolvedApiKey {
-  id: string;
-  tenantId: string;
-  name: string;
-  scope: string;
-  /** User who minted the key — used as the effective `createdBy` for
-   * resources created through the key, since we don't have a real
-   * request user in the machine-to-machine flow. */
-  createdByUserId: string;
-}
 
 // ─── Helpers ────────────────────────────────────────────────────────
 

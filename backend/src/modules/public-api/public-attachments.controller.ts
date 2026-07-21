@@ -22,8 +22,8 @@ import {
 import { Role } from '@prisma/client';
 import { Scope } from '../../common/decorators/scope.decorator';
 import { CurrentApiKey } from '../../common/decorators/current-api-key.decorator';
-import { PublicApiThrottle } from './public-api-throttle.decorator';
-import type { ResolvedApiKey } from '../api-keys/api-keys.service';
+import { PublicApiThrottle } from '../../common/decorators/public-api-throttle.decorator';
+import type { ResolvedApiKey } from '../../common/contracts/api-key.contract';
 import { AttachmentsService } from '../attachments/attachments.service';
 
 // Kept in sync with the internal attachments controller — 10 MB cap and
