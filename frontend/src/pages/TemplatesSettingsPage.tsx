@@ -849,7 +849,7 @@ function FieldFormFields({
 }) {
   return (
     <>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', alignItems: 'end' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.5rem', alignItems: 'end' }}>
         <div>
           <label style={{ ...formStyles.label }}>Libellé FR</label>
           <input value={labelFr} onChange={(e) => setLabelFr(e.target.value)} style={{ ...formStyles.input, boxSizing: 'border-box' }} placeholder="Ex: Marque du chauffe-eau" />
