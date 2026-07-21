@@ -41,6 +41,7 @@ function PermissionsMatrix({
   onChange: (next: { viewRoles: Role[]; editRoles: Role[]; requiredRoles?: Role[] }) => void;
   showRequired: boolean;
 }) {
+  const { t } = useTranslation();
   function toggle(list: Role[], role: Role, on: boolean): Role[] {
     if (role === Role.ADMIN) return list; // admin always implicitly in
     const without = list.filter((r) => r !== role);
@@ -73,7 +74,7 @@ function PermissionsMatrix({
           <tr style={{ color: theme.colors.textMuted }}>
             <th style={{ textAlign: 'left', padding: '0.2rem 0.4rem', fontWeight: theme.font.weightMedium }}>Rôle</th>
             <th style={{ padding: '0.2rem 0.4rem', fontWeight: theme.font.weightMedium }}>Voir</th>
-            <th style={{ padding: '0.2rem 0.4rem', fontWeight: theme.font.weightMedium }}>Modifier</th>
+            <th style={{ padding: '0.2rem 0.4rem', fontWeight: theme.font.weightMedium }}>{t('common:actions.edit', { defaultValue: 'Modifier' })}</th>
             {showRequired && (
               <th style={{ padding: '0.2rem 0.4rem', fontWeight: theme.font.weightMedium }}>Requis</th>
             )}
@@ -673,6 +674,7 @@ function AddFieldForm({
   onDone: () => void;
   isPending: boolean;
 }) {
+  const { t } = useTranslation();
   const addField = useAddField();
   const [labelFr, setLabelFr] = useState('');
   const [labelEn, setLabelEn] = useState('');
@@ -738,7 +740,7 @@ function AddFieldForm({
         <button onClick={handleAdd} disabled={(!labelFr.trim() && !labelEn.trim()) || isPending} style={{ ...buttonStyles.primary, ...buttonStyles.sm }}>
           ✓ Ajouter
         </button>
-        <button onClick={onDone} style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}>Annuler</button>
+        <button onClick={onDone} style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}>{t('common:actions.cancel', { defaultValue: 'Annuler' })}</button>
       </div>
     </div>
   );
@@ -757,6 +759,7 @@ function EditFieldForm({
   onDone: () => void;
   isPending: boolean;
 }) {
+  const { t } = useTranslation();
   const updateField = useUpdateField();
   const [labelFr, setLabelFr] = useState(field.labelFr ?? field.label);
   const [labelEn, setLabelEn] = useState(field.labelEn ?? field.label);
@@ -822,7 +825,7 @@ function EditFieldForm({
         <button onClick={handleSave} disabled={(!labelFr.trim() && !labelEn.trim()) || isPending} style={{ ...buttonStyles.primary, ...buttonStyles.sm }}>
           ✓ Enregistrer
         </button>
-        <button onClick={onDone} style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}>Annuler</button>
+        <button onClick={onDone} style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}>{t('common:actions.cancel', { defaultValue: 'Annuler' })}</button>
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -23,6 +24,7 @@ import {
  * DEFAULT tenant by convention — that's where every SA lives.
  */
 export default function SuperAdminPlatformUsersPage() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
 
   const { data: list, isLoading } = useQuery({
@@ -207,7 +209,7 @@ export default function SuperAdminPlatformUsersPage() {
         </div>
         {isLoading ? (
           <div style={{ padding: 16, color: theme.colors.textMuted }}>
-            Chargement…
+            {t('common:messages.loading', { defaultValue: 'Chargement…' })}
           </div>
         ) : !list || list.data.length === 0 ? (
           <div style={{ padding: 16, color: theme.colors.textMuted }}>

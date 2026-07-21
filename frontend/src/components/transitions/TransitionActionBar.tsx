@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useState, useRef, useEffect } from 'react';
 import {
   useAvailableTransitions,
@@ -27,6 +28,7 @@ function buildRequiredFieldsHint(t: AvailableTransition): string {
 }
 
 export default function TransitionActionBar({ workOrderId, onTransitionComplete, variant = 'buttons' }: Props) {
+  const { t } = useTranslation();
   const { data, isLoading, isError } = useAvailableTransitions(workOrderId);
   const executeTransition = useExecuteTransition(workOrderId);
 
@@ -126,7 +128,7 @@ export default function TransitionActionBar({ workOrderId, onTransitionComplete,
           }}
         />
         <span style={{ fontSize: theme.font.sizeSm, color: theme.colors.textMuted }}>
-          Chargement des actions...
+          {t('common:messages.loading', { defaultValue: 'Chargement…' })}
         </span>
       </div>
     );

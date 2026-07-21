@@ -1584,6 +1584,7 @@ function EditProcessModal({
   proc: ProcessDefinition;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const updateProcess = useUpdateProcess();
   const [name, setName] = useState(proc.name);
   const [desc, setDesc] = useState(proc.description ?? '');
@@ -1657,7 +1658,7 @@ function EditProcessModal({
           )}
         </div>
         <div style={{ ...modalStyles.footer }}>
-          <button onClick={onClose} style={{ ...buttonStyles.secondary }}>Annuler</button>
+          <button onClick={onClose} style={{ ...buttonStyles.secondary }}>{t('common:actions.cancel', { defaultValue: 'Annuler' })}</button>
           <button
             onClick={handleSave}
             disabled={!name.trim() || updateProcess.isPending}
