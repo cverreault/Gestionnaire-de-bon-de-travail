@@ -571,7 +571,7 @@ function Step3Details({
         />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem' }}>
         <div style={fieldStyle}>
           <label style={labelStyle}>Date planifiée</label>
           <input style={{ ...formStyles.input }} type="date" value={values.scheduledDate} onChange={(e) => set('scheduledDate', e.target.value)} />

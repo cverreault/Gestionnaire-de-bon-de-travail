@@ -415,7 +415,7 @@ function EditPlanModal({
           </Section>
 
           <Section title={t('plans.editModal.sections.pricing')}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: 12 }}>
               <NumField
                 label={t('plans.editModal.fields.baseMonthly')}
                 value={form.priceMonthly}
