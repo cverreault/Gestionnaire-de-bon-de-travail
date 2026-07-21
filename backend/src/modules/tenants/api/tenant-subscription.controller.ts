@@ -226,7 +226,7 @@ export class TenantSubscriptionController {
     // 12 months is a full year of context — enough to spot seasonality
     // and forecast next month's bill, and small enough to render as one
     // table without pagination.
-    return { data: await this.peakTracker.history(actor.tenantId, 12) };
+    return this.peakTracker.history(actor.tenantId, 12);
   }
 
   @Post('change-request')

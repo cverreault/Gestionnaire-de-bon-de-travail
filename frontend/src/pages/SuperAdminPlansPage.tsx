@@ -60,7 +60,7 @@ export default function SuperAdminPlansPage() {
             gap: 16,
           }}
         >
-          {data.data.map((p) => (
+          {data.map((p) => (
             <PlanCard key={p.code} plan={p} onEdit={() => setEditing(p)} />
           ))}
         </div>

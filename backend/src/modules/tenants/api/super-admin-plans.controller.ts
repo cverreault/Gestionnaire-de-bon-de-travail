@@ -123,7 +123,7 @@ export class SuperAdminPlansController {
   @Get()
   @ApiOperation({ summary: 'Catalogue des plans SaaS (prix + quotas + features)' })
   async list() {
-    return { data: await this.plans.list() };
+    return this.plans.list();
   }
 
   @Patch(':code')

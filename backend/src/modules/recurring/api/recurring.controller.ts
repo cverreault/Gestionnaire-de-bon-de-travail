@@ -92,7 +92,7 @@ export class RecurringController {
       },
       Number.isFinite(parsed) && parsed > 0 && parsed <= 30 ? parsed : 5,
     );
-    return { data: preview.map((d) => d.toISOString()) };
+    return preview.map((d) => d.toISOString());
   }
 
   private toCreateInput(

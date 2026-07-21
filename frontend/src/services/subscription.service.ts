@@ -70,8 +70,8 @@ export interface MonthlyPeakRow {
   maxStorageBytes: number;
 }
 
-export async function getSubscriptionHistory(): Promise<{ data: MonthlyPeakRow[] }> {
-  const { data } = await api.get<ApiResponse<{ data: MonthlyPeakRow[] }>>(
+export async function getSubscriptionHistory(): Promise<MonthlyPeakRow[]> {
+  const { data } = await api.get<ApiResponse<MonthlyPeakRow[]>>(
     '/tenant/subscription/history',
   );
   return data.data;

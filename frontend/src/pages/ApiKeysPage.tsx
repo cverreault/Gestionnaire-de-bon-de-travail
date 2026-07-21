@@ -116,7 +116,7 @@ export default function ApiKeysPage() {
         <p style={{ color: theme.colors.danger }}>{t('loadFailed')}</p>
       )}
 
-      {query.data && query.data.data.length === 0 && (
+      {query.data && query.data.length === 0 && (
         <EmptyState
           icon="🔑"
           title={t('empty')}
@@ -126,8 +126,8 @@ export default function ApiKeysPage() {
         />
       )}
 
-      {query.data && query.data.data.length > 0 && (
-        <ApiKeysTable rows={query.data.data} onRevoke={(r) => setToRevoke(r)} />
+      {query.data && query.data.length > 0 && (
+        <ApiKeysTable rows={query.data} onRevoke={(r) => setToRevoke(r)} />
       )}
 
       {showCreate && !minted && (

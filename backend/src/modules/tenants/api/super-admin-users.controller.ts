@@ -30,7 +30,7 @@ export class SuperAdminUsersController {
   })
   async search(@Query('email') email?: string) {
     if (!email || email.trim().length < 2) {
-      return { data: [] };
+      return [];
     }
 
     type Row = {
@@ -57,8 +57,7 @@ export class SuperAdminUsersController {
       email.trim(),
     );
 
-    return {
-      data: rows.map((r) => ({
+    return rows.map((r) => ({
         id: r.id,
         email: r.email,
         firstName: r.first_name,
@@ -70,7 +69,6 @@ export class SuperAdminUsersController {
           slug: r.tenant_slug,
           name: r.tenant_name,
         },
-      })),
-    };
+      }));
   }
 }

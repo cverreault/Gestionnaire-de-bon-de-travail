@@ -578,7 +578,7 @@ function PlanPreview({
     queryFn: getPlanCatalog,
     staleTime: 5 * 60_000,
   });
-  const def = data?.data.find((p) => p.code === plan);
+  const def = data?.find((p) => p.code === plan);
   if (!def) return null;
   const hasBase = def.priceMonthly > 0;
   const hasPerUser = def.pricePerUserMonthly > 0;

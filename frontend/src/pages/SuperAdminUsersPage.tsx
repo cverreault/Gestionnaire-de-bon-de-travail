@@ -61,7 +61,7 @@ export default function SuperAdminUsersPage() {
 
       {data && (
         <div style={{ ...cardStyles.card, padding: 0, overflow: 'hidden' }}>
-          {data.data.length === 0 ? (
+          {data.length === 0 ? (
             <p style={{ padding: 16, color: theme.colors.textMuted }}>
               Aucun utilisateur ne correspond à « {submitted} ».
             </p>
@@ -78,7 +78,7 @@ export default function SuperAdminUsersPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.data.map((u) => (
+                {data.map((u) => (
                   <UserRow key={u.id} user={u} />
                 ))}
               </tbody>
