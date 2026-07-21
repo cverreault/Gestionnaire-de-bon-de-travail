@@ -483,14 +483,14 @@ export default function WorkOrderDetailPage() {
               <p style={{ ...valueStyle, fontWeight: theme.font.weightSemibold }}>{wo.temporaryClient.firstName} {wo.temporaryClient.lastName}</p>
               {wo.temporaryClient.phone && <p style={{ color: theme.colors.textSecondary, fontSize: '0.9rem', margin: '0.125rem 0' }}>📞 {wo.temporaryClient.phone}</p>}
               {wo.temporaryClient.email && <p style={{ color: theme.colors.textSecondary, fontSize: '0.9rem', margin: '0.125rem 0' }}>📧 {wo.temporaryClient.email}</p>}
-              <span style={{ display: 'inline-block', marginTop: '0.375rem', fontSize: '0.65rem', fontWeight: theme.font.weightSemibold, padding: '0.1rem 0.4rem', borderRadius: theme.radius.full, background: '#fef3c7', color: '#92400e' }}>
+              <span style={{ display: 'inline-block', marginTop: '0.375rem', fontSize: '0.65rem', fontWeight: theme.font.weightSemibold, padding: '0.1rem 0.4rem', borderRadius: theme.radius.full, background: 'var(--c-warningLight)', color: 'var(--c-warningBadgeText)' }}>
                 Client temporaire
               </span>
             </div>
           ) : wo.externalClientName ? (
             <div>
               <p style={{ ...valueStyle, fontWeight: theme.font.weightSemibold }}>{wo.externalClientName}</p>
-              <span style={{ display: 'inline-block', marginTop: '0.375rem', fontSize: '0.65rem', fontWeight: theme.font.weightSemibold, padding: '0.1rem 0.4rem', borderRadius: theme.radius.full, background: '#d1fae5', color: '#065f46' }}>
+              <span style={{ display: 'inline-block', marginTop: '0.375rem', fontSize: '0.65rem', fontWeight: theme.font.weightSemibold, padding: '0.1rem 0.4rem', borderRadius: theme.radius.full, background: '#d1fae5', color: 'var(--c-successBadgeText)' }}>
                 Client externe
               </span>
             </div>
@@ -948,7 +948,7 @@ export default function WorkOrderDetailPage() {
                                   fontSize: '0.65rem', fontWeight: theme.font.weightSemibold,
                                   padding: '0.1rem 0.4rem', borderRadius: theme.radius.full,
                                   background: c.source === 'local' ? theme.colors.primaryLight : '#d1fae5',
-                                  color: c.source === 'local' ? theme.colors.primary : '#065f46',
+                                  color: c.source === 'local' ? theme.colors.primary : 'var(--c-successBadgeText)',
                                 }}>
                                   {c.source === 'local' ? 'Client' : 'Externe'}
                                 </span>
@@ -1016,7 +1016,7 @@ export default function WorkOrderDetailPage() {
                         padding: '0.625rem 0.875rem',
                         marginBottom: '0.5rem',
                       }}>
-                        <p style={{ margin: 0, fontSize: theme.font.sizeXs, color: '#92400e' }}>
+                        <p style={{ margin: 0, fontSize: theme.font.sizeXs, color: 'var(--c-warningBadgeText)' }}>
                           ⚠️ Ce client n'a aucune adresse enregistrée. Ajoutez-en une depuis la page Clients, ou saisissez l'adresse libre ci-dessous.
                         </p>
                       </div>
@@ -1156,7 +1156,7 @@ export default function WorkOrderDetailPage() {
 
               {/* Error display */}
               {updateWorkOrder.isError && (
-                <div style={{ background: theme.colors.dangerLight, border: '1px solid #fca5a5', color: theme.colors.danger, padding: '0.5rem 0.75rem', borderRadius: theme.radius.md, fontSize: theme.font.sizeXs, marginTop: '0.5rem' }}>
+                <div style={{ background: theme.colors.dangerLight, border: '1px solid var(--c-dangerBadgeBorder)', color: theme.colors.danger, padding: '0.5rem 0.75rem', borderRadius: theme.radius.md, fontSize: theme.font.sizeXs, marginTop: '0.5rem' }}>
                   Erreur lors de la sauvegarde. Veuillez réessayer.
                 </div>
               )}

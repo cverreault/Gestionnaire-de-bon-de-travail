@@ -86,7 +86,7 @@ export default function SlaBadge({ wo, compact = false }: Props) {
           gap: '0.25rem',
           padding: compact ? '0.1rem 0.4rem' : '0.2rem 0.55rem',
           borderRadius: theme.radius.full,
-          background: theme.colors.warningLight ?? '#fef3c7',
+          background: theme.colors.warningLight ?? 'var(--c-warningLight)',
           color: theme.colors.warning ?? '#b45309',
           border: `1px solid ${theme.colors.warning ?? '#f59e0b'}`,
           fontSize: compact ? '0.65rem' : theme.font.sizeXs,

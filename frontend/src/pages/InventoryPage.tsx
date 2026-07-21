@@ -432,7 +432,7 @@ export default function InventoryPage() {
                   <td style={tableStyles.td}>
                     {partName(part, locale)}
                     {part.lowStock && (
-                      <span style={{ marginLeft: 8, fontSize: theme.font.sizeXs, color: '#b45309', background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: 999, padding: '0.1rem 0.5rem', whiteSpace: 'nowrap' }}>
+                      <span style={{ marginLeft: 8, fontSize: theme.font.sizeXs, color: '#b45309', background: 'var(--c-warningLight)', border: '1px solid var(--c-warningBadgeBorder)', borderRadius: 999, padding: '0.1rem 0.5rem', whiteSpace: 'nowrap' }}>
                         🔻 {t('lowStock')}
                       </span>
                     )}

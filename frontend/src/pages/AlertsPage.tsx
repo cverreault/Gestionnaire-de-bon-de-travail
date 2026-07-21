@@ -568,8 +568,8 @@ function EditModal({
                 <span
                   style={{
                     marginLeft: 4,
-                    background: '#fef3c7',
-                    color: '#92400e',
+                    background: 'var(--c-warningLight)',
+                    color: 'var(--c-warningBadgeText)',
                     padding: '1px 5px',
                     borderRadius: 4,
                     fontSize: 9,
@@ -817,9 +817,9 @@ function StatusPill({
   kind: 'ok' | 'muted' | 'danger';
 }) {
   const colors: Record<string, { bg: string; fg: string }> = {
-    ok: { bg: '#d1fae5', fg: '#065f46' },
+    ok: { bg: '#d1fae5', fg: 'var(--c-successBadgeText)' },
     muted: { bg: '#e5e7eb', fg: '#374151' },
-    danger: { bg: '#fee2e2', fg: '#991b1b' },
+    danger: { bg: '#fee2e2', fg: 'var(--c-dangerBadgeText)' },
   };
   const c = colors[kind];
   return (

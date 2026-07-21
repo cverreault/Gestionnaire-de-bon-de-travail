@@ -584,7 +584,7 @@ function EditModal({
           style={{
             marginTop: 12,
             padding: 10,
-            background: '#fef3c7',
+            background: 'var(--c-warningLight)',
             border: '1px solid #fbbf24',
             borderRadius: 6,
             color: '#78350f',
@@ -672,7 +672,7 @@ function ModalShell({ children, onClose }: { children: React.ReactNode; onClose:
 }
 
 function Pill({ children, kind }: { children: React.ReactNode; kind: 'ok' | 'muted' }) {
-  const c = kind === 'ok' ? { bg: '#d1fae5', fg: '#065f46' } : { bg: '#e5e7eb', fg: '#374151' };
+  const c = kind === 'ok' ? { bg: '#d1fae5', fg: 'var(--c-successBadgeText)' } : { bg: '#e5e7eb', fg: '#374151' };
   return (
     <span
       style={{

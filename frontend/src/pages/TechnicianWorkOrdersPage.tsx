@@ -115,7 +115,7 @@ export default function TechnicianWorkOrdersPage() {
             border: `1px solid ${theme.colors.warning}`,
             borderRadius: theme.radius.md,
             fontSize: theme.font.sizeXs,
-            color: '#92400e',
+            color: 'var(--c-warningBadgeText)',
             fontWeight: theme.font.weightMedium,
           }}
         >

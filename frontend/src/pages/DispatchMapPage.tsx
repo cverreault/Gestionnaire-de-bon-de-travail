@@ -247,7 +247,7 @@ export default function DispatchMapPage() {
           style={{
             marginBottom: 12,
             padding: '8px 12px',
-            background: '#fef3c7',
+            background: 'var(--c-warningLight)',
             border: '1px solid #fbbf24',
             borderRadius: 6,
             fontSize: 12,

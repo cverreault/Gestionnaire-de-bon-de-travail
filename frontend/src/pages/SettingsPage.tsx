@@ -726,7 +726,7 @@ function ConfigTypeTable<T extends ClientTypeConfig | AddressTypeConfig>({
                       fontWeight: theme.font.weightSemibold,
                       cursor: 'pointer',
                       background: item.isActive ? theme.colors.successLight : theme.colors.dangerLight,
-                      color: item.isActive ? '#065f46' : '#991b1b',
+                      color: item.isActive ? 'var(--c-successBadgeText)' : 'var(--c-dangerBadgeText)',
                       transition: 'all 0.15s ease',
                     }}
                   >
@@ -1211,7 +1211,7 @@ export default function SettingsPage() {
                         fontWeight: theme.font.weightSemibold,
                         cursor: 'pointer',
                         background: tt.isActive ? theme.colors.successLight : theme.colors.dangerLight,
-                        color: tt.isActive ? '#065f46' : '#991b1b',
+                        color: tt.isActive ? 'var(--c-successBadgeText)' : 'var(--c-dangerBadgeText)',
                         transition: 'all 0.15s ease',
                       }}
                     >

@@ -165,7 +165,7 @@ export default function DispatchConfirmModal({ payload, onClose }: Props) {
                 background: theme.colors.dangerLight,
                 padding: '0.5rem 0.75rem',
                 borderRadius: theme.radius.sm,
-                border: `1px solid #fca5a5`,
+                border: `1px solid var(--c-dangerBadgeBorder)`,
               }}
             >
               ✕ Erreur lors de l'assignation. Veuillez réessayer.

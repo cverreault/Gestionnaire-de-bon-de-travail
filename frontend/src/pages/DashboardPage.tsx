@@ -296,7 +296,7 @@ function AdminDashboard() {
                       <span
                         style={{
                           background: tech.completedToday > 0 ? theme.colors.successLight : theme.colors.surfaceAlt,
-                          color: tech.completedToday > 0 ? '#065f46' : theme.colors.textLight,
+                          color: tech.completedToday > 0 ? 'var(--c-successBadgeText)' : theme.colors.textLight,
                           padding: '0.2rem 0.6rem',
                           borderRadius: theme.radius.full,
                           fontSize: theme.font.sizeXs,
