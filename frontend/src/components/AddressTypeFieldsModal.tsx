@@ -60,9 +60,9 @@ export default function AddressTypeFieldsModal({ config, onClose }: Props) {
       <div style={{ ...modalStyles.content, maxWidth: '640px' }}>
         <div style={{ ...modalStyles.header }}>
           <div>
-            <h2 style={{ ...modalStyles.headerTitle, margin: 0 }}>🔧 Champs personnalisés</h2>
+            <h2 style={{ ...modalStyles.headerTitle, margin: 0 }}>🔧 {t('settings:addressTypeFields.title', { defaultValue: 'Champs personnalisés' })}</h2>
             <p style={{ margin: '0.25rem 0 0', fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>
-              Type d'emplacement : <strong>{config.name}</strong> ({config.code})
+              {t('settings:addressTypeFields.locationTypeLabel', { defaultValue: "Type d'emplacement :" })} <strong>{config.name}</strong> ({config.code})
             </p>
           </div>
           <button onClick={onClose} style={{ ...buttonStyles.ghost, padding: '0.25rem 0.5rem' }}>✕</button>
@@ -71,7 +71,7 @@ export default function AddressTypeFieldsModal({ config, onClose }: Props) {
         <div style={{ ...modalStyles.body }}>
           {fields.length === 0 ? (
             <p style={{ color: theme.colors.textMuted, fontStyle: 'italic', margin: 0 }}>
-              Aucun champ personnalisé pour ce type. Ajoutez-en un ci-dessous.
+              {t('settings:addressTypeFields.empty', { defaultValue: 'Aucun champ personnalisé pour ce type. Ajoutez-en un ci-dessous.' })}
             </p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.75rem' }}>
@@ -93,7 +93,7 @@ export default function AddressTypeFieldsModal({ config, onClose }: Props) {
                   isPredominant={config.predominantFieldId === f.id}
                   onEdit={() => setEditingId(f.id)}
                   onDelete={async () => {
-                    if (!confirm(`Supprimer le champ « ${f.label} » ?`)) return;
+                    if (!confirm(t('settings:addressTypeFields.deleteConfirm', { defaultValue: 'Supprimer le champ « {{label}} » ?', label: f.label }))) return;
                     await deleteField.mutateAsync({ typeId: config.id, fieldId: f.id });
                   }}
                   onSetPredominant={async () => {
@@ -128,12 +128,12 @@ export default function AddressTypeFieldsModal({ config, onClose }: Props) {
               onClick={() => setShowAdd(true)}
               style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}
             >
-              + Ajouter un champ
+              {t('settings:addressTypeFields.addFieldButton', { defaultValue: '+ Ajouter un champ' })}
             </button>
           )}
 
           <p style={{ marginTop: '1rem', padding: '0.625rem 0.875rem', background: theme.colors.surfaceAlt, border: theme.borders.light, borderRadius: theme.radius.md, fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>
-            ⭐ <strong>Champ prédominant</strong> : la valeur de ce champ est affichée en gros à la place de la rue, pour les adresses de ce type. Utile pour un n° de terrain (camping), un n° d'unité (entrepôt), etc.
+            ⭐ <strong>{t('settings:addressTypeFields.predominantStrong', { defaultValue: 'Champ prédominant' })}</strong>{t('settings:addressTypeFields.predominantDesc', { defaultValue: " : la valeur de ce champ est affichée en gros à la place de la rue, pour les adresses de ce type. Utile pour un n° de terrain (camping), un n° d'unité (entrepôt), etc." })}
           </p>
         </div>
 
@@ -162,6 +162,7 @@ function FieldRow({
   onSetPredominant: () => void;
   onUnsetPredominant: () => void;
 }) {
+  const { t } = useTranslation('settings');
   return (
     <div style={{
       display: 'flex',
@@ -179,23 +180,23 @@ function FieldRow({
           </span>
           {field.required && <span style={{ color: theme.colors.danger, marginLeft: '0.2rem' }}>*</span>}
           <span style={{ marginLeft: '0.5rem', fontSize: theme.font.sizeXs, padding: '0.1rem 0.4rem', borderRadius: theme.radius.full, background: theme.colors.primaryLight, color: theme.colors.primary }}>
-            {FIELD_TYPE_LABELS[field.fieldType]}
+            {t('settings:addressTypeFields.fieldType_' + field.fieldType, { defaultValue: FIELD_TYPE_LABELS[field.fieldType] })}
           </span>
           {isPredominant && (
             <span style={{ marginLeft: '0.4rem', fontSize: theme.font.sizeXs, padding: '0.1rem 0.4rem', borderRadius: theme.radius.full, background: theme.colors.primary, color: '#fff', fontWeight: theme.font.weightSemibold }}>
-              ⭐ Prédominant
+              {t('settings:addressTypeFields.predominantBadge', { defaultValue: '⭐ Prédominant' })}
             </span>
           )}
         </div>
       </div>
       <div style={{ display: 'flex', gap: '0.25rem' }}>
         {isPredominant ? (
-          <button onClick={onUnsetPredominant} title="Retirer le rôle prédominant" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.95rem', padding: '0.2rem 0.4rem' }}>☆</button>
+          <button onClick={onUnsetPredominant} title={t('settings:addressTypeFields.unsetPredominantTitle', { defaultValue: 'Retirer le rôle prédominant' })} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.95rem', padding: '0.2rem 0.4rem' }}>☆</button>
         ) : (
-          <button onClick={onSetPredominant} title="Définir comme prédominant" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.95rem', padding: '0.2rem 0.4rem' }}>⭐</button>
+          <button onClick={onSetPredominant} title={t('settings:addressTypeFields.setPredominantTitle', { defaultValue: 'Définir comme prédominant' })} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.95rem', padding: '0.2rem 0.4rem' }}>⭐</button>
         )}
-        <button onClick={onEdit} title="Modifier" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', padding: '0.2rem 0.4rem' }}>✏️</button>
-        <button onClick={onDelete} title="Supprimer" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', padding: '0.2rem 0.4rem', color: theme.colors.danger }}>🗑</button>
+        <button onClick={onEdit} title={t('settings:addressTypeFields.editTitle', { defaultValue: 'Modifier' })} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', padding: '0.2rem 0.4rem' }}>✏️</button>
+        <button onClick={onDelete} title={t('settings:addressTypeFields.deleteTitle', { defaultValue: 'Supprimer' })} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', padding: '0.2rem 0.4rem', color: theme.colors.danger }}>🗑</button>
       </div>
     </div>
   );
@@ -221,6 +222,7 @@ function FieldFormBlock({
   }) => void | Promise<void>;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation('settings');
   const [labelFr, setLabelFr] = useState(initial?.labelFr ?? initial?.label ?? '');
   const [labelEn, setLabelEn] = useState(initial?.labelEn ?? initial?.label ?? '');
   const [fieldType, setFieldType] = useState<TemplateFieldType>(initial?.fieldType ?? TemplateFieldType.TEXT);
@@ -248,49 +250,49 @@ function FieldFormBlock({
     <div style={{ padding: '0.75rem', background: theme.colors.primaryLight, border: `1px solid ${theme.colors.primary}40`, borderRadius: theme.radius.md, marginTop: '0.25rem' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '0.5rem', alignItems: 'end' }}>
         <div>
-          <label style={{ ...formStyles.label }}>Libellé FR</label>
+          <label style={{ ...formStyles.label }}>{t('settings:addressTypeFields.labelFrLabel', { defaultValue: 'Libellé FR' })}</label>
           <input
             value={labelFr}
             onChange={(e) => setLabelFr(e.target.value)}
-            placeholder="Ex: N° de terrain"
+            placeholder={t('settings:addressTypeFields.labelFrPlaceholder', { defaultValue: 'Ex: N° de terrain' })}
             style={{ ...formStyles.input, boxSizing: 'border-box' }}
           />
         </div>
         <div>
-          <label style={{ ...formStyles.label }}>Libellé EN</label>
+          <label style={{ ...formStyles.label }}>{t('settings:addressTypeFields.labelEnLabel', { defaultValue: 'Libellé EN' })}</label>
           <input
             value={labelEn}
             onChange={(e) => setLabelEn(e.target.value)}
-            placeholder="Ex: Site number"
+            placeholder={t('settings:addressTypeFields.labelEnPlaceholder', { defaultValue: 'Ex: Site number' })}
             style={{ ...formStyles.input, boxSizing: 'border-box' }}
           />
         </div>
         <div>
-          <label style={{ ...formStyles.label }}>Type</label>
+          <label style={{ ...formStyles.label }}>{t('settings:addressTypeFields.typeLabel', { defaultValue: 'Type' })}</label>
           <select
             value={fieldType}
             onChange={(e) => setFieldType(e.target.value as TemplateFieldType)}
             style={{ ...formStyles.select, boxSizing: 'border-box' }}
           >
-            {Object.values(TemplateFieldType).map((t) => (
-              <option key={t} value={t}>{FIELD_TYPE_LABELS[t]}</option>
+            {Object.values(TemplateFieldType).map((ft) => (
+              <option key={ft} value={ft}>{t('settings:addressTypeFields.fieldType_' + ft, { defaultValue: FIELD_TYPE_LABELS[ft] })}</option>
             ))}
           </select>
         </div>
         <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: theme.font.sizeSm, color: theme.colors.text, cursor: 'pointer', paddingBottom: '0.5rem' }}>
           <input type="checkbox" checked={required} onChange={(e) => setRequired(e.target.checked)} />
-          Requis
+          {t('settings:addressTypeFields.required', { defaultValue: 'Requis' })}
         </label>
       </div>
       {TYPES_WITH_OPTIONS.has(fieldType) && (
         <div style={{ marginTop: '0.5rem' }}>
-          <label style={{ ...formStyles.label }}>Options (une par ligne)</label>
+          <label style={{ ...formStyles.label }}>{t('settings:addressTypeFields.optionsLabel', { defaultValue: 'Options (une par ligne)' })}</label>
           <textarea
             value={optionsText}
             onChange={(e) => setOptionsText(e.target.value)}
             rows={3}
             style={{ ...formStyles.textarea, boxSizing: 'border-box' }}
-            placeholder={'Option 1\nOption 2'}
+            placeholder={t('settings:addressTypeFields.optionsPlaceholder', { defaultValue: 'Option 1\nOption 2' })}
           />
         </div>
       )}
@@ -301,10 +303,10 @@ function FieldFormBlock({
           disabled={(!labelFr.trim() && !labelEn.trim()) || isPending}
           style={{ ...buttonStyles.primary, ...buttonStyles.sm }}
         >
-          {initial ? '✓ Enregistrer' : '✓ Ajouter'}
+          {initial ? t('settings:addressTypeFields.save', { defaultValue: '✓ Enregistrer' }) : t('settings:addressTypeFields.add', { defaultValue: '✓ Ajouter' })}
         </button>
         <button type="button" onClick={onCancel} style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}>
-          Annuler
+          {t('settings:addressTypeFields.cancel', { defaultValue: 'Annuler' })}
         </button>
       </div>
     </div>

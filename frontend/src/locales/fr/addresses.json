@@ -35,5 +35,15 @@
     "noClient": "— Aucun client —",
     "changeClient": "Changer",
     "deleteConfirm": "Supprimer cette adresse ?"
+  },
+  "createModal": {
+    "newClientNameRequired": "Prénom et nom du nouveau client sont requis.",
+    "saveError": "Erreur lors de l'enregistrement.",
+    "deleteError": "Erreur lors de la suppression.",
+    "change": "Changer",
+    "clientTypeResidential": "Résidentiel",
+    "clientTypeCommercial": "Commercial",
+    "clientTypeIndustrial": "Industriel",
+    "clientTypeInstitutional": "Institutionnel"
   }
 }

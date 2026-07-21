@@ -1,26 +1,6 @@
 import type { WorkOrder, TemplateSection, TemplateField, WorkOrderTemplate } from '../types';
 import { WorkOrderStatus, WorkOrderType } from '../types';
-
-// ─── Label maps ───────────────────────────────────────────────────────────────
-
-const STATUS_FR: Record<WorkOrderStatus, string> = {
-  [WorkOrderStatus.REQUESTED]: 'Demandé',
-  [WorkOrderStatus.CREATED]: 'Créé',
-  [WorkOrderStatus.ASSIGNED]: 'Assigné',
-  [WorkOrderStatus.DISPATCHED]: 'Réparti',
-  [WorkOrderStatus.EN_ROUTE]: 'En route',
-  [WorkOrderStatus.IN_PROGRESS]: 'En cours',
-  [WorkOrderStatus.COMPLETED_POSITIVE]: 'Terminé (positif)',
-  [WorkOrderStatus.COMPLETED_NEGATIVE]: 'Terminé (négatif)',
-};
-
-const TYPE_FR: Record<WorkOrderType, string> = {
-  [WorkOrderType.INSTALLATION]: 'Installation',
-  [WorkOrderType.REPAIR]: 'Réparation',
-  [WorkOrderType.MAINTENANCE]: 'Maintenance',
-  [WorkOrderType.INSPECTION]: 'Inspection',
-  [WorkOrderType.OTHER]: 'Autre',
-};
+import { useTranslation } from 'react-i18next';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -144,6 +124,27 @@ interface Props {
 }
 
 export default function PrintWorkOrder({ wo }: Props) {
+  const { t } = useTranslation('workOrders');
+
+  const STATUS_LABELS: Record<WorkOrderStatus, string> = {
+    [WorkOrderStatus.REQUESTED]: t('workOrders:print.statusRequested', { defaultValue: 'Demandé' }),
+    [WorkOrderStatus.CREATED]: t('workOrders:print.statusCreated', { defaultValue: 'Créé' }),
+    [WorkOrderStatus.ASSIGNED]: t('workOrders:print.statusAssigned', { defaultValue: 'Assigné' }),
+    [WorkOrderStatus.DISPATCHED]: t('workOrders:print.statusDispatched', { defaultValue: 'Réparti' }),
+    [WorkOrderStatus.EN_ROUTE]: t('workOrders:print.statusEnRoute', { defaultValue: 'En route' }),
+    [WorkOrderStatus.IN_PROGRESS]: t('workOrders:print.statusInProgress', { defaultValue: 'En cours' }),
+    [WorkOrderStatus.COMPLETED_POSITIVE]: t('workOrders:print.statusCompletedPositive', { defaultValue: 'Terminé (positif)' }),
+    [WorkOrderStatus.COMPLETED_NEGATIVE]: t('workOrders:print.statusCompletedNegative', { defaultValue: 'Terminé (négatif)' }),
+  };
+
+  const TYPE_LABELS_PRINT: Record<WorkOrderType, string> = {
+    [WorkOrderType.INSTALLATION]: t('workOrders:print.typeInstallation', { defaultValue: 'Installation' }),
+    [WorkOrderType.REPAIR]: t('workOrders:print.typeRepair', { defaultValue: 'Réparation' }),
+    [WorkOrderType.MAINTENANCE]: t('workOrders:print.typeMaintenance', { defaultValue: 'Maintenance' }),
+    [WorkOrderType.INSPECTION]: t('workOrders:print.typeInspection', { defaultValue: 'Inspection' }),
+    [WorkOrderType.OTHER]: t('workOrders:print.typeOther', { defaultValue: 'Autre' }),
+  };
+
   // Build client display strings. Resolution priority matches the screen view:
   //   1) V3 Client + ClientAddress relations (modern flow)
   //   2) Temporary client (in-form one-off)
@@ -225,11 +226,11 @@ export default function PrintWorkOrder({ wo }: Props) {
               <span style={{ fontWeight: 700, fontSize: '11pt', letterSpacing: '0.04em' }}>
                 TASKMGR
               </span>
-              <span style={{ fontSize: '7.5pt', color: '#555', marginLeft: '6pt' }}>Gestion des bons de travail</span>
+              <span style={{ fontSize: '7.5pt', color: '#555', marginLeft: '6pt' }}>{t('workOrders:print.appTagline', { defaultValue: 'Gestion des bons de travail' })}</span>
             </div>
             <div style={{ textAlign: 'right' }}>
               <span style={{ fontWeight: 700, fontSize: '10pt', letterSpacing: '0.06em' }}>
-                BON DE TRAVAIL
+                {t('workOrders:print.docTitle', { defaultValue: 'BON DE TRAVAIL' })}
               </span>
               <span style={{ fontSize: '7.5pt', color: '#555', marginLeft: '6pt' }}>
                 {new Date().toLocaleDateString('fr-FR')}
@@ -242,38 +243,38 @@ export default function PrintWorkOrder({ wo }: Props) {
           {/* ── Identification ──────────────────────────────────────────────── */}
           <div style={row}>
             <div style={field}>
-              <span style={labelPrint}>Référence</span>
+              <span style={labelPrint}>{t('workOrders:print.reference', { defaultValue: 'Référence' })}</span>
               <span style={{ ...valuePrint, fontFamily: 'monospace', fontWeight: 700 }}>
                 {wo.referenceNumber}
               </span>
             </div>
             <div style={field}>
-              <span style={labelPrint}>Date de création</span>
+              <span style={labelPrint}>{t('workOrders:print.creationDate', { defaultValue: 'Date de création' })}</span>
               <span style={valuePrint}>{fmtDate(wo.createdAt)}</span>
             </div>
             <div style={field}>
-              <span style={labelPrint}>Statut</span>
-              <span style={{ ...valuePrint, fontWeight: 700 }}>{STATUS_FR[wo.status]}</span>
+              <span style={labelPrint}>{t('workOrders:print.status', { defaultValue: 'Statut' })}</span>
+              <span style={{ ...valuePrint, fontWeight: 700 }}>{STATUS_LABELS[wo.status]}</span>
             </div>
             <div style={field}>
-              <span style={labelPrint}>Priorité</span>
+              <span style={labelPrint}>{t('workOrders:print.priority', { defaultValue: 'Priorité' })}</span>
               <span style={valuePrint}>{wo.priority} / 5</span>
             </div>
           </div>
 
           <div style={row}>
             <div style={field}>
-              <span style={labelPrint}>Type</span>
-              <span style={valuePrint}>{TYPE_FR[wo.type]}</span>
+              <span style={labelPrint}>{t('workOrders:print.type', { defaultValue: 'Type' })}</span>
+              <span style={valuePrint}>{TYPE_LABELS_PRINT[wo.type]}</span>
             </div>
             <div style={{ flex: 3, minWidth: '120pt' }}>
-              <span style={labelPrint}>Titre</span>
+              <span style={labelPrint}>{t('workOrders:print.titleLabel', { defaultValue: 'Titre' })}</span>
               <span style={{ ...valuePrint, fontWeight: 600 }}>{wo.title}</span>
             </div>
           </div>
 
           {/* ── Description ─────────────────────────────────────────────────── */}
-          <div style={sectionTitle}>Description</div>
+          <div style={sectionTitle}>{t('workOrders:print.description', { defaultValue: 'Description' })}</div>
           <div style={{ whiteSpace: 'pre-wrap', marginBottom: '1pt', fontSize: '8pt', maxHeight: '44pt', overflow: 'hidden' }}>
             {wo.description ?? '—'}
           </div>
@@ -282,7 +283,7 @@ export default function PrintWorkOrder({ wo }: Props) {
           {hasTemplateValues && (
             <>
               <hr style={hr} />
-              <div style={sectionTitle}>Détails du formulaire</div>
+              <div style={sectionTitle}>{t('workOrders:print.formDetails', { defaultValue: 'Détails du formulaire' })}</div>
               {template!.sections.map((section: TemplateSection) => {
                 const fieldsWithValues = section.fields
                   .map((f: TemplateField) => ({
@@ -313,7 +314,7 @@ export default function PrintWorkOrder({ wo }: Props) {
                               {Array.isArray(value)
                                 ? value.map(String).join(', ')
                                 : typeof value === 'boolean'
-                                  ? value ? '✓ Oui' : '✗ Non'
+                                  ? value ? t('workOrders:print.yes', { defaultValue: '✓ Oui' }) : t('workOrders:print.no', { defaultValue: '✗ Non' })
                                   : String(value)}
                             </span>
                           </div>
@@ -331,44 +332,44 @@ export default function PrintWorkOrder({ wo }: Props) {
           {/* ── Client + Technicien (côte à côte) ─────────────────────────── */}
           <div style={{ display: 'flex', gap: '12pt' }}>
             <div style={{ flex: 1 }}>
-              <div style={sectionTitle}>Client</div>
+              <div style={sectionTitle}>{t('workOrders:print.client', { defaultValue: 'Client' })}</div>
               <div style={row}>
                 <div style={field}>
-                  <span style={labelPrint}>Nom</span>
+                  <span style={labelPrint}>{t('workOrders:print.name', { defaultValue: 'Nom' })}</span>
                   <span style={valuePrint}>{clientName}</span>
                 </div>
                 <div style={field}>
-                  <span style={labelPrint}>Téléphone</span>
+                  <span style={labelPrint}>{t('workOrders:print.phone', { defaultValue: 'Téléphone' })}</span>
                   <span style={valuePrint}>{clientPhone}</span>
                 </div>
               </div>
               <div>
-                <span style={labelPrint}>Adresse</span>
+                <span style={labelPrint}>{t('workOrders:print.address', { defaultValue: 'Adresse' })}</span>
                 <span style={valuePrint}>{clientAddress}</span>
               </div>
             </div>
 
             <div style={{ flex: 1 }}>
-              <div style={sectionTitle}>Technicien assigné</div>
+              <div style={sectionTitle}>{t('workOrders:print.assignedTechnician', { defaultValue: 'Technicien assigné' })}</div>
               <div style={row}>
                 <div style={field}>
-                  <span style={labelPrint}>Nom</span>
+                  <span style={labelPrint}>{t('workOrders:print.name', { defaultValue: 'Nom' })}</span>
                   <span style={valuePrint}>{techName}</span>
                 </div>
                 {techPhone && (
                   <div style={field}>
-                    <span style={labelPrint}>Tél.</span>
+                    <span style={labelPrint}>{t('workOrders:print.phoneShort', { defaultValue: 'Tél.' })}</span>
                     <span style={valuePrint}>{techPhone}</span>
                   </div>
                 )}
               </div>
               <div style={row}>
                 <div style={field}>
-                  <span style={labelPrint}>Date planifiée</span>
+                  <span style={labelPrint}>{t('workOrders:print.scheduledDate', { defaultValue: 'Date planifiée' })}</span>
                   <span style={valuePrint}>{fmtDate(wo.scheduledDate)}</span>
                 </div>
                 <div style={field}>
-                  <span style={labelPrint}>Heure</span>
+                  <span style={labelPrint}>{t('workOrders:print.time', { defaultValue: 'Heure' })}</span>
                   <span style={valuePrint}>{schedWindow}</span>
                 </div>
               </div>
@@ -378,9 +379,9 @@ export default function PrintWorkOrder({ wo }: Props) {
           <hr style={hr} />
 
           {/* ── Notes ───────────────────────────────────────────────────────── */}
-          <div style={sectionTitle}>Notes</div>
+          <div style={sectionTitle}>{t('workOrders:print.notes', { defaultValue: 'Notes' })}</div>
           {!wo.notes || wo.notes.length === 0 ? (
-            <div style={{ color: '#555', fontSize: '8pt', marginBottom: '1pt' }}>Aucune note</div>
+            <div style={{ color: '#555', fontSize: '8pt', marginBottom: '1pt' }}>{t('workOrders:print.noNote', { defaultValue: 'Aucune note' })}</div>
           ) : (
             <div style={{ marginBottom: '1pt', fontSize: '8pt' }}>
               {wo.notes.slice(0, 5).map((note) => (
@@ -393,7 +394,7 @@ export default function PrintWorkOrder({ wo }: Props) {
               ))}
               {wo.notes.length > 5 && (
                 <div style={{ fontSize: '7pt', color: '#888', paddingLeft: '6pt' }}>
-                  ... et {wo.notes.length - 5} autres notes
+                  {t('workOrders:print.moreNotes', { defaultValue: '... et {{count}} autres notes', count: wo.notes.length - 5 })}
                 </div>
               )}
             </div>
@@ -402,7 +403,7 @@ export default function PrintWorkOrder({ wo }: Props) {
           {/* Negative reason if applicable */}
           {wo.negativeReason && (
             <div style={{ marginBottom: '1pt' }}>
-              <span style={labelPrint}>Raison de la clôture négative</span>
+              <span style={labelPrint}>{t('workOrders:print.negativeReason', { defaultValue: 'Raison de la clôture négative' })}</span>
               <span style={{ ...valuePrint, fontSize: '8.5pt' }}>{wo.negativeReason}</span>
             </div>
           )}
@@ -411,10 +412,10 @@ export default function PrintWorkOrder({ wo }: Props) {
           {hasCompletionData && (
             <>
               <hr style={hr} />
-              <div style={sectionTitle}>Complétion</div>
+              <div style={sectionTitle}>{t('workOrders:print.completion', { defaultValue: 'Complétion' })}</div>
               <div style={row}>
                 <div style={field}>
-                  <span style={labelPrint}>Début effectif</span>
+                  <span style={labelPrint}>{t('workOrders:print.actualStart', { defaultValue: 'Début effectif' })}</span>
                   <span style={valuePrint}>
                     {wo.actualStartTime
                       ? `${fmtDate(wo.actualStartTime)} ${fmtTime(wo.actualStartTime)}`
@@ -422,7 +423,7 @@ export default function PrintWorkOrder({ wo }: Props) {
                   </span>
                 </div>
                 <div style={field}>
-                  <span style={labelPrint}>Fin effective</span>
+                  <span style={labelPrint}>{t('workOrders:print.actualEnd', { defaultValue: 'Fin effective' })}</span>
                   <span style={valuePrint}>
                     {wo.actualEndTime
                       ? `${fmtDate(wo.actualEndTime)} ${fmtTime(wo.actualEndTime)}`
@@ -430,19 +431,19 @@ export default function PrintWorkOrder({ wo }: Props) {
                   </span>
                 </div>
                 <div style={field}>
-                  <span style={labelPrint}>Résultat</span>
+                  <span style={labelPrint}>{t('workOrders:print.result', { defaultValue: 'Résultat' })}</span>
                   <span style={{ ...valuePrint, fontWeight: 700 }}>
                     {wo.status === WorkOrderStatus.COMPLETED_POSITIVE
-                      ? 'Positif'
+                      ? t('workOrders:print.resultPositive', { defaultValue: 'Positif' })
                       : wo.status === WorkOrderStatus.COMPLETED_NEGATIVE
-                        ? 'Négatif'
-                        : 'En cours'}
+                        ? t('workOrders:print.resultNegative', { defaultValue: 'Négatif' })
+                        : t('workOrders:print.resultInProgress', { defaultValue: 'En cours' })}
                   </span>
                 </div>
               </div>
               {wo.completionNotes && (
                 <div style={{ marginTop: '1pt' }}>
-                  <span style={labelPrint}>Notes de complétion</span>
+                  <span style={labelPrint}>{t('workOrders:print.completionNotes', { defaultValue: 'Notes de complétion' })}</span>
                   <span style={{ ...valuePrint, whiteSpace: 'pre-wrap' }}>
                     {wo.completionNotes}
                   </span>
@@ -456,40 +457,40 @@ export default function PrintWorkOrder({ wo }: Props) {
           {/* ── Zone terrain + Signatures (côte à côte) ─────────────────── */}
           <div style={{ display: 'flex', gap: '12pt' }}>
             <div style={{ flex: 3 }}>
-              <div style={sectionTitle}>Zone terrain — à remplir par le technicien</div>
+              <div style={sectionTitle}>{t('workOrders:print.fieldZone', { defaultValue: 'Zone terrain — à remplir par le technicien' })}</div>
               <div style={{ marginBottom: '2pt' }}>
-                <span style={labelPrint}>Travaux effectués</span>
+                <span style={labelPrint}>{t('workOrders:print.workPerformed', { defaultValue: 'Travaux effectués' })}</span>
                 <span style={blankLine} />
                 <span style={blankLine} />
               </div>
               <div style={{ marginBottom: '2pt' }}>
-                <span style={labelPrint}>Résultat</span>
+                <span style={labelPrint}>{t('workOrders:print.result', { defaultValue: 'Résultat' })}</span>
                 <div style={checkboxRow}>
-                  <span>☐ Positif</span>
-                  <span>☐ Négatif</span>
+                  <span>{t('workOrders:print.checkPositive', { defaultValue: '☐ Positif' })}</span>
+                  <span>{t('workOrders:print.checkNegative', { defaultValue: '☐ Négatif' })}</span>
                 </div>
               </div>
               <div>
-                <span style={labelPrint}>Commentaires</span>
+                <span style={labelPrint}>{t('workOrders:print.comments', { defaultValue: 'Commentaires' })}</span>
                 <span style={blankLine} />
               </div>
             </div>
 
             <div style={{ flex: 2 }}>
-              <div style={sectionTitle}>Signatures</div>
+              <div style={sectionTitle}>{t('workOrders:print.signatures', { defaultValue: 'Signatures' })}</div>
               <div style={{ marginBottom: '6pt' }}>
-                <span style={{ ...labelPrint, marginBottom: '1pt' }}>Technicien</span>
+                <span style={{ ...labelPrint, marginBottom: '1pt' }}>{t('workOrders:print.technician', { defaultValue: 'Technicien' })}</span>
                 <div style={{ borderBottom: '1px solid #000', height: '20pt', marginBottom: '2pt' }} />
                 <div style={{ display: 'flex', gap: '4pt' }}>
-                  <span style={{ fontSize: '7pt' }}>Date</span>
+                  <span style={{ fontSize: '7pt' }}>{t('workOrders:print.date', { defaultValue: 'Date' })}</span>
                   <span style={{ flex: 1, borderBottom: '1px solid #555', display: 'inline-block' }} />
                 </div>
               </div>
               <div>
-                <span style={{ ...labelPrint, marginBottom: '1pt' }}>Client</span>
+                <span style={{ ...labelPrint, marginBottom: '1pt' }}>{t('workOrders:print.client', { defaultValue: 'Client' })}</span>
                 <div style={{ borderBottom: '1px solid #000', height: '20pt', marginBottom: '2pt' }} />
                 <div style={{ display: 'flex', gap: '4pt' }}>
-                  <span style={{ fontSize: '7pt' }}>Date</span>
+                  <span style={{ fontSize: '7pt' }}>{t('workOrders:print.date', { defaultValue: 'Date' })}</span>
                   <span style={{ flex: 1, borderBottom: '1px solid #555', display: 'inline-block' }} />
                 </div>
               </div>
@@ -499,7 +500,7 @@ export default function PrintWorkOrder({ wo }: Props) {
           {/* ── Footer ──────────────────────────────────────────────────────── */}
           <hr style={{ ...hr, marginTop: '4pt' }} />
           <div style={{ fontSize: '6.5pt', color: '#888', textAlign: 'center' }}>
-            TaskMgr — Réf. {wo.referenceNumber} — {new Date().toLocaleString('fr-FR')}
+            {t('workOrders:print.footer', { defaultValue: 'TaskMgr — Réf. {{ref}} — {{date}}', ref: wo.referenceNumber, date: new Date().toLocaleString('fr-FR') })}
           </div>
         </div>
       </div>

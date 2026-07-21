@@ -67,16 +67,16 @@ function PermissionsMatrix({
   return (
     <div style={{ background: theme.colors.surface, border: theme.borders.light, borderRadius: theme.radius.sm, padding: '0.5rem 0.75rem', marginTop: '0.5rem' }}>
       <p style={{ margin: '0 0 0.375rem', fontSize: theme.font.sizeXs, fontWeight: theme.font.weightSemibold, color: theme.colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-        🔒 Permissions par rôle
+        🔒 {t('settings:templates.permsTitle', { defaultValue: 'Permissions par rôle' })}
       </p>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: theme.font.sizeXs }}>
         <thead>
           <tr style={{ color: theme.colors.textMuted }}>
-            <th style={{ textAlign: 'left', padding: '0.2rem 0.4rem', fontWeight: theme.font.weightMedium }}>Rôle</th>
-            <th style={{ padding: '0.2rem 0.4rem', fontWeight: theme.font.weightMedium }}>Voir</th>
+            <th style={{ textAlign: 'left', padding: '0.2rem 0.4rem', fontWeight: theme.font.weightMedium }}>{t('settings:templates.colRole', { defaultValue: 'Rôle' })}</th>
+            <th style={{ padding: '0.2rem 0.4rem', fontWeight: theme.font.weightMedium }}>{t('settings:templates.colView', { defaultValue: 'Voir' })}</th>
             <th style={{ padding: '0.2rem 0.4rem', fontWeight: theme.font.weightMedium }}>{t('common:actions.edit', { defaultValue: 'Modifier' })}</th>
             {showRequired && (
-              <th style={{ padding: '0.2rem 0.4rem', fontWeight: theme.font.weightMedium }}>Requis</th>
+              <th style={{ padding: '0.2rem 0.4rem', fontWeight: theme.font.weightMedium }}>{t('settings:templates.colRequired', { defaultValue: 'Requis' })}</th>
             )}
           </tr>
         </thead>
@@ -89,7 +89,7 @@ function PermissionsMatrix({
             return (
               <tr key={r}>
                 <td style={{ padding: '0.2rem 0.4rem', color: theme.colors.text }}>
-                  {ROLE_LABELS[r]}{isAdmin && <span style={{ color: theme.colors.textMuted, marginLeft: '0.25rem' }}>(bypass)</span>}
+                  {t('settings:templates.role_' + r, { defaultValue: ROLE_LABELS[r] })}{isAdmin && <span style={{ color: theme.colors.textMuted, marginLeft: '0.25rem' }}>{t('settings:templates.bypass', { defaultValue: '(bypass)' })}</span>}
                 </td>
                 <td style={{ padding: '0.2rem 0.4rem', textAlign: 'center' }}>
                   <input type="checkbox" checked={canView} disabled={isAdmin} onChange={(e) => handleView(r, e.target.checked)} />
@@ -150,13 +150,13 @@ const FIELD_TYPE_LABELS: Record<TemplateFieldType, string> = {
 };
 
 /** Groupes ordonnés pour le `<select>` du type de champ dans le builder. */
-const FIELD_TYPE_GROUPS: Array<{ label: string; types: TemplateFieldType[] }> = [
-  { label: 'Texte', types: [TemplateFieldType.TEXT, TemplateFieldType.TEXTAREA, TemplateFieldType.EMAIL, TemplateFieldType.URL] },
-  { label: 'Numérique', types: [TemplateFieldType.INTEGER, TemplateFieldType.FLOAT, TemplateFieldType.NUMBER, TemplateFieldType.CURRENCY, TemplateFieldType.PERCENTAGE] },
-  { label: 'Date / Heure', types: [TemplateFieldType.DATE, TemplateFieldType.TIME, TemplateFieldType.DATETIME] },
-  { label: 'Sélection', types: [TemplateFieldType.CHECKBOX, TemplateFieldType.SELECT, TemplateFieldType.MULTISELECT, TemplateFieldType.RADIO] },
-  { label: 'Téléphone / Code postal', types: [TemplateFieldType.PHONE, TemplateFieldType.PHONE_NA, TemplateFieldType.POSTAL_CODE_CA] },
-  { label: 'Géolocalisation', types: [TemplateFieldType.GPS] },
+const FIELD_TYPE_GROUPS: Array<{ label: string; labelKey: string; types: TemplateFieldType[] }> = [
+  { label: 'Texte', labelKey: 'fieldGroupText', types: [TemplateFieldType.TEXT, TemplateFieldType.TEXTAREA, TemplateFieldType.EMAIL, TemplateFieldType.URL] },
+  { label: 'Numérique', labelKey: 'fieldGroupNumeric', types: [TemplateFieldType.INTEGER, TemplateFieldType.FLOAT, TemplateFieldType.NUMBER, TemplateFieldType.CURRENCY, TemplateFieldType.PERCENTAGE] },
+  { label: 'Date / Heure', labelKey: 'fieldGroupDateTime', types: [TemplateFieldType.DATE, TemplateFieldType.TIME, TemplateFieldType.DATETIME] },
+  { label: 'Sélection', labelKey: 'fieldGroupSelection', types: [TemplateFieldType.CHECKBOX, TemplateFieldType.SELECT, TemplateFieldType.MULTISELECT, TemplateFieldType.RADIO] },
+  { label: 'Téléphone / Code postal', labelKey: 'fieldGroupPhonePostal', types: [TemplateFieldType.PHONE, TemplateFieldType.PHONE_NA, TemplateFieldType.POSTAL_CODE_CA] },
+  { label: 'Géolocalisation', labelKey: 'fieldGroupGeo', types: [TemplateFieldType.GPS] },
 ];
 
 /** Field types that use the free-form `options` (one per line) input in the builder. */
@@ -192,7 +192,7 @@ export default function TemplatesSettingsPage() {
           <TemplateBuilder templateId={activeTemplateId} />
         ) : (
           <div style={{ ...cardStyles.card, color: theme.colors.textMuted, padding: '2rem', textAlign: 'center' }}>
-            Sélectionnez un template à gauche ou créez-en un nouveau.
+            {t('settings:templates.selectPrompt', { defaultValue: 'Sélectionnez un template à gauche ou créez-en un nouveau.' })}
           </div>
         )}
       </div>
@@ -209,6 +209,7 @@ function TemplateList({
   activeId: string | null;
   onSelect: (id: string) => void;
 }) {
+  const { t } = useTranslation('settings');
   const { data: templates = [], isLoading } = useTemplates(true);
   const createTpl = useCreateTemplate();
   const delTpl = useDeleteTemplate();
@@ -234,12 +235,12 @@ function TemplateList({
       onSelect((tpl as { id: string }).id);
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
-      setCreateError(axiosErr?.response?.data?.message ?? 'Erreur lors de la création.');
+      setCreateError(axiosErr?.response?.data?.message ?? t('settings:templates.createError', { defaultValue: 'Erreur lors de la création.' }));
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Supprimer ce template ? Les types de tâche associés perdront leur lien.')) return;
+    if (!confirm(t('settings:templates.deleteConfirm', { defaultValue: 'Supprimer ce template ? Les types de tâche associés perdront leur lien.' }))) return;
     await delTpl.mutateAsync(id);
     if (id === activeId) onSelect('');
   }
@@ -247,10 +248,10 @@ function TemplateList({
   return (
     <div style={{ ...cardStyles.card, padding: '1rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-        <h3 style={{ margin: 0, fontSize: theme.font.sizeMd, color: theme.colors.text }}>Templates</h3>
+        <h3 style={{ margin: 0, fontSize: theme.font.sizeMd, color: theme.colors.text }}>{t('settings:templates.listTitle', { defaultValue: 'Templates' })}</h3>
         {!showCreate && (
           <button onClick={() => setShowCreate(true)} style={{ ...buttonStyles.primary, ...buttonStyles.sm }}>
-            + Nouveau
+            {t('settings:templates.newButton', { defaultValue: '+ Nouveau' })}
           </button>
         )}
       </div>
@@ -261,14 +262,14 @@ function TemplateList({
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="FR Nom du template"
+              placeholder={t('settings:templates.nameFrPlaceholder', { defaultValue: 'FR Nom du template' })}
               style={{ ...formStyles.input, boxSizing: 'border-box' }}
               autoFocus
             />
             <input
               value={newNameEn}
               onChange={(e) => setNewNameEn(e.target.value)}
-              placeholder="EN Template name"
+              placeholder={t('settings:templates.nameEnPlaceholder', { defaultValue: 'EN Template name' })}
               style={{ ...formStyles.input, boxSizing: 'border-box' }}
             />
           </div>
@@ -277,10 +278,10 @@ function TemplateList({
           )}
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button onClick={handleCreate} disabled={(!newName.trim() && !newNameEn.trim()) || createTpl.isPending} style={{ ...buttonStyles.primary, ...buttonStyles.sm }}>
-              {createTpl.isPending ? '...' : '✓ Créer'}
+              {createTpl.isPending ? '...' : t('settings:templates.create', { defaultValue: '✓ Créer' })}
             </button>
             <button onClick={() => { setShowCreate(false); setNewName(''); setNewNameEn(''); setCreateError(null); }} style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}>
-              Annuler
+              {t('settings:templates.cancel', { defaultValue: 'Annuler' })}
             </button>
           </div>
         </div>
@@ -290,38 +291,38 @@ function TemplateList({
         <LoadingSpinner />
       ) : templates.length === 0 ? (
         <p style={{ color: theme.colors.textMuted, fontSize: theme.font.sizeSm, fontStyle: 'italic' }}>
-          Aucun template pour l'instant.
+          {t('settings:templates.emptyList', { defaultValue: "Aucun template pour l'instant." })}
         </p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-          {templates.map((t) => (
+          {templates.map((tpl) => (
             <div
-              key={t.id}
+              key={tpl.id}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '0.5rem 0.75rem',
-                background: t.id === activeId ? theme.colors.primaryLight : 'transparent',
-                border: t.id === activeId ? `1px solid ${theme.colors.primary}` : theme.borders.light,
+                background: tpl.id === activeId ? theme.colors.primaryLight : 'transparent',
+                border: tpl.id === activeId ? `1px solid ${theme.colors.primary}` : theme.borders.light,
                 borderRadius: theme.radius.md,
                 cursor: 'pointer',
               }}
-              onClick={() => onSelect(t.id)}
+              onClick={() => onSelect(tpl.id)}
             >
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ margin: 0, fontSize: theme.font.sizeSm, fontWeight: theme.font.weightMedium, color: theme.colors.text }}>
-                  {t.name}
-                  {!t.isActive && <span style={{ marginLeft: '0.4rem', fontSize: '0.65rem', color: theme.colors.danger, fontStyle: 'italic' }}>(inactif)</span>}
+                  {tpl.name}
+                  {!tpl.isActive && <span style={{ marginLeft: '0.4rem', fontSize: '0.65rem', color: theme.colors.danger, fontStyle: 'italic' }}>{t('settings:templates.inactiveSuffix', { defaultValue: '(inactif)' })}</span>}
                 </p>
                 <p style={{ margin: 0, fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>
-                  {t._count?.sections ?? 0} section{(t._count?.sections ?? 0) !== 1 ? 's' : ''}
-                  {(t._count?.taskTypes ?? 0) > 0 && ` · utilisé par ${t._count!.taskTypes} type${t._count!.taskTypes > 1 ? 's' : ''}`}
+                  {tpl._count?.sections ?? 0} {t('settings:templates.sectionWord', { defaultValue: 'section' })}{(tpl._count?.sections ?? 0) !== 1 ? 's' : ''}
+                  {(tpl._count?.taskTypes ?? 0) > 0 && ` · ${t('settings:templates.usedBy', { defaultValue: 'utilisé par' })} ${tpl._count!.taskTypes} ${t('settings:templates.typeWord', { defaultValue: 'type' })}${tpl._count!.taskTypes > 1 ? 's' : ''}`}
                 </p>
               </div>
               <button
-                onClick={(e) => { e.stopPropagation(); handleDelete(t.id); }}
-                title="Supprimer"
+                onClick={(e) => { e.stopPropagation(); handleDelete(tpl.id); }}
+                title={t('settings:templates.deleteTitle', { defaultValue: 'Supprimer' })}
                 style={{ background: 'none', border: 'none', color: theme.colors.danger, cursor: 'pointer', fontSize: '0.95rem', padding: '0.25rem 0.5rem' }}
               >
                 🗑
@@ -337,6 +338,7 @@ function TemplateList({
 // ─── Template Builder (sections + fields) ──────────────────────────────────
 
 function TemplateBuilder({ templateId }: { templateId: string }) {
+  const { t } = useTranslation('settings');
   const { data: tpl, isLoading } = useTemplate(templateId);
   const updateTpl = useUpdateTemplate();
   const addSection = useAddSection();
@@ -390,7 +392,7 @@ function TemplateBuilder({ templateId }: { templateId: string }) {
   }
 
   if (isLoading) return <LoadingSpinner />;
-  if (!tpl) return <p style={{ color: theme.colors.danger }}>Template introuvable.</p>;
+  if (!tpl) return <p style={{ color: theme.colors.danger }}>{t('settings:templates.notFound', { defaultValue: 'Template introuvable.' })}</p>;
 
   return (
     <div style={{ ...cardStyles.card, padding: '1.25rem' }}>
@@ -401,7 +403,7 @@ function TemplateBuilder({ templateId }: { templateId: string }) {
             <h2 style={{ margin: '0 0 0.25rem', fontSize: theme.font.sizeXl, color: theme.colors.text }}>{tpl.name}</h2>
             {tpl.description && <p style={{ margin: 0, fontSize: theme.font.sizeSm, color: theme.colors.textMuted }}>{tpl.description}</p>}
           </div>
-          <button onClick={startEditing} style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}>✏️ Renommer</button>
+          <button onClick={startEditing} style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}>{t('settings:templates.renameButton', { defaultValue: '✏️ Renommer' })}</button>
         </div>
       ) : (
         <div style={{ marginBottom: '1.25rem', padding: '0.75rem', background: theme.colors.surfaceAlt, borderRadius: theme.radius.md }}>
@@ -409,13 +411,13 @@ function TemplateBuilder({ templateId }: { templateId: string }) {
             <input
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              placeholder="FR Nom"
+              placeholder={t('settings:templates.metaNameFrPlaceholder', { defaultValue: 'FR Nom' })}
               style={{ ...formStyles.input, boxSizing: 'border-box' }}
             />
             <input
               value={editNameEn}
               onChange={(e) => setEditNameEn(e.target.value)}
-              placeholder="EN Name"
+              placeholder={t('settings:templates.metaNameEnPlaceholder', { defaultValue: 'EN Name' })}
               style={{ ...formStyles.input, boxSizing: 'border-box' }}
             />
           </div>
@@ -423,22 +425,22 @@ function TemplateBuilder({ templateId }: { templateId: string }) {
             <input
               value={editDesc}
               onChange={(e) => setEditDesc(e.target.value)}
-              placeholder="FR Description (optionnel)"
+              placeholder={t('settings:templates.metaDescFrPlaceholder', { defaultValue: 'FR Description (optionnel)' })}
               style={{ ...formStyles.input, boxSizing: 'border-box' }}
             />
             <input
               value={editDescEn}
               onChange={(e) => setEditDescEn(e.target.value)}
-              placeholder="EN Description (optional)"
+              placeholder={t('settings:templates.metaDescEnPlaceholder', { defaultValue: 'EN Description (optional)' })}
               style={{ ...formStyles.input, boxSizing: 'border-box' }}
             />
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button onClick={handleSaveMeta} disabled={updateTpl.isPending} style={{ ...buttonStyles.primary, ...buttonStyles.sm }}>
-              ✓ Enregistrer
+              {t('settings:templates.save', { defaultValue: '✓ Enregistrer' })}
             </button>
             <button onClick={() => setEditing(false)} style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}>
-              Annuler
+              {t('settings:templates.cancel', { defaultValue: 'Annuler' })}
             </button>
           </div>
         </div>
@@ -448,7 +450,7 @@ function TemplateBuilder({ templateId }: { templateId: string }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1rem' }}>
         {tpl.sections.length === 0 ? (
           <p style={{ color: theme.colors.textMuted, fontStyle: 'italic', fontSize: theme.font.sizeSm }}>
-            Aucune section. Ajoutez-en une ci-dessous.
+            {t('settings:templates.emptySections', { defaultValue: 'Aucune section. Ajoutez-en une ci-dessous.' })}
           </p>
         ) : (
           tpl.sections.map((sec) => (
@@ -462,19 +464,19 @@ function TemplateBuilder({ templateId }: { templateId: string }) {
         <input
           value={newSection}
           onChange={(e) => setNewSection(e.target.value)}
-          placeholder="FR Nom de la section (ex: Avant intervention)"
+          placeholder={t('settings:templates.sectionNameFrPlaceholder', { defaultValue: 'FR Nom de la section (ex: Avant intervention)' })}
           style={{ ...formStyles.input, boxSizing: 'border-box' }}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddSection(); } }}
         />
         <input
           value={newSectionEn}
           onChange={(e) => setNewSectionEn(e.target.value)}
-          placeholder="EN Section name (e.g. Before service)"
+          placeholder={t('settings:templates.sectionNameEnPlaceholder', { defaultValue: 'EN Section name (e.g. Before service)' })}
           style={{ ...formStyles.input, boxSizing: 'border-box' }}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddSection(); } }}
         />
         <button onClick={handleAddSection} disabled={(!newSection.trim() && !newSectionEn.trim()) || addSection.isPending} style={{ ...buttonStyles.primary }}>
-          + Ajouter
+          {t('settings:templates.addButton', { defaultValue: '+ Ajouter' })}
         </button>
       </div>
     </div>
@@ -484,6 +486,7 @@ function TemplateBuilder({ templateId }: { templateId: string }) {
 // ─── Section Editor ─────────────────────────────────────────────────────────
 
 function SectionEditor({ templateId, section }: { templateId: string; section: TemplateSection }) {
+  const { t } = useTranslation('settings');
   const updateSection = useUpdateSection();
   const deleteSection = useDeleteSection();
   const addField = useAddField();
@@ -506,7 +509,7 @@ function SectionEditor({ templateId, section }: { templateId: string; section: T
   }
 
   async function handleDelete() {
-    if (!confirm(`Supprimer la section « ${section.name} » et tous ses champs ?`)) return;
+    if (!confirm(t('settings:templates.deleteSectionConfirm', { defaultValue: 'Supprimer la section « {{name}} » et tous ses champs ?', name: section.name }))) return;
     await deleteSection.mutateAsync({ templateId, sectionId: section.id });
   }
 
@@ -533,14 +536,14 @@ function SectionEditor({ templateId, section }: { templateId: string; section: T
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="FR Nom"
+              placeholder={t('settings:templates.metaNameFrPlaceholder', { defaultValue: 'FR Nom' })}
               style={{ ...formStyles.input, boxSizing: 'border-box' }}
               autoFocus
             />
             <input
               value={nameEn}
               onChange={(e) => setNameEn(e.target.value)}
-              placeholder="EN Name"
+              placeholder={t('settings:templates.metaNameEnPlaceholder', { defaultValue: 'EN Name' })}
               style={{ ...formStyles.input, boxSizing: 'border-box' }}
             />
             <button onClick={handleRename} style={{ ...buttonStyles.primary, ...buttonStyles.sm }}>✓</button>
@@ -550,9 +553,9 @@ function SectionEditor({ templateId, section }: { templateId: string; section: T
           <>
             <h4 style={{ margin: 0, fontSize: theme.font.sizeMd, color: theme.colors.text }}>📂 {section.name}</h4>
             <div style={{ display: 'flex', gap: '0.25rem' }}>
-              <button onClick={() => setShowPerms((v) => !v)} title="Permissions par rôle" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem 0.5rem', fontSize: '0.9rem' }}>🔒</button>
-              <button onClick={() => setEditingName(true)} title="Renommer" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem 0.5rem', fontSize: '0.9rem' }}>✏️</button>
-              <button onClick={handleDelete} title="Supprimer" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem 0.5rem', fontSize: '0.9rem', color: theme.colors.danger }}>🗑</button>
+              <button onClick={() => setShowPerms((v) => !v)} title={t('settings:templates.permsTitle', { defaultValue: 'Permissions par rôle' })} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem 0.5rem', fontSize: '0.9rem' }}>🔒</button>
+              <button onClick={() => setEditingName(true)} title={t('settings:templates.renameTitle', { defaultValue: 'Renommer' })} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem 0.5rem', fontSize: '0.9rem' }}>✏️</button>
+              <button onClick={handleDelete} title={t('settings:templates.deleteTitle', { defaultValue: 'Supprimer' })} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem 0.5rem', fontSize: '0.9rem', color: theme.colors.danger }}>🗑</button>
             </div>
           </>
         )}
@@ -571,7 +574,7 @@ function SectionEditor({ templateId, section }: { templateId: string; section: T
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', marginBottom: '0.5rem' }}>
         {section.fields.length === 0 ? (
           <p style={{ margin: 0, color: theme.colors.textMuted, fontSize: theme.font.sizeXs, fontStyle: 'italic' }}>
-            Aucun champ dans cette section.
+            {t('settings:templates.emptyFields', { defaultValue: 'Aucun champ dans cette section.' })}
           </p>
         ) : (
           section.fields.map((f) => (
@@ -583,7 +586,7 @@ function SectionEditor({ templateId, section }: { templateId: string; section: T
       {/* Add field */}
       {!showAddField ? (
         <button onClick={() => setShowAddField(true)} style={{ ...buttonStyles.ghost, ...buttonStyles.sm, color: theme.colors.primary, padding: '0.25rem 0.5rem' }}>
-          + Ajouter un champ
+          {t('settings:templates.addFieldButton', { defaultValue: '+ Ajouter un champ' })}
         </button>
       ) : (
         <AddFieldForm
@@ -608,12 +611,13 @@ function FieldRow({
   sectionId: string;
   field: TemplateField;
 }) {
+  const { t } = useTranslation('settings');
   const updateField = useUpdateField();
   const deleteField = useDeleteField();
   const [editing, setEditing] = useState(false);
 
   async function handleDelete() {
-    if (!confirm(`Supprimer le champ « ${field.label} » ?`)) return;
+    if (!confirm(t('settings:templates.deleteFieldConfirm', { defaultValue: 'Supprimer le champ « {{label}} » ?', label: field.label }))) return;
     await deleteField.mutateAsync({ templateId, sectionId, fieldId: field.id });
   }
 
@@ -639,23 +643,23 @@ function FieldRow({
       <div style={{ flex: 1, minWidth: 0 }}>
         <span style={{ fontSize: theme.font.sizeSm, color: theme.colors.text }}>
           {field.label}
-          {isRequiredForAll && <span style={{ color: theme.colors.danger, marginLeft: '0.25rem' }} title="Requis pour tous les rôles">*</span>}
-          {requiredForSome && <span style={{ color: theme.colors.warning ?? '#b45309', marginLeft: '0.25rem' }} title={`Requis pour : ${field.requiredRoles.map((r) => ROLE_LABELS[r]).join(', ')}`}>*</span>}
-          {hiddenForSome && <span title="Masqué pour certains rôles" style={{ marginLeft: '0.35rem', fontSize: '0.7rem' }}>🙈</span>}
-          {readonlyForSome && <span title="Lecture seule pour certains rôles" style={{ marginLeft: '0.25rem', fontSize: '0.7rem' }}>🔒</span>}
+          {isRequiredForAll && <span style={{ color: theme.colors.danger, marginLeft: '0.25rem' }} title={t('settings:templates.requiredForAll', { defaultValue: 'Requis pour tous les rôles' })}>*</span>}
+          {requiredForSome && <span style={{ color: theme.colors.warning ?? '#b45309', marginLeft: '0.25rem' }} title={t('settings:templates.requiredForRoles', { defaultValue: 'Requis pour : {{roles}}', roles: field.requiredRoles.map((r) => t('settings:templates.role_' + r, { defaultValue: ROLE_LABELS[r] })).join(', ') })}>*</span>}
+          {hiddenForSome && <span title={t('settings:templates.hiddenForSome', { defaultValue: 'Masqué pour certains rôles' })} style={{ marginLeft: '0.35rem', fontSize: '0.7rem' }}>🙈</span>}
+          {readonlyForSome && <span title={t('settings:templates.readonlyForSome', { defaultValue: 'Lecture seule pour certains rôles' })} style={{ marginLeft: '0.25rem', fontSize: '0.7rem' }}>🔒</span>}
         </span>
         <span style={{ marginLeft: '0.5rem', fontSize: theme.font.sizeXs, color: theme.colors.textMuted, padding: '0.1rem 0.4rem', background: theme.colors.primaryLight, borderRadius: theme.radius.full }}>
-          {FIELD_TYPE_LABELS[field.fieldType]}
+          {t('settings:templates.fieldType_' + field.fieldType, { defaultValue: FIELD_TYPE_LABELS[field.fieldType] })}
         </span>
         {field.options && field.options.length > 0 && (
           <span style={{ marginLeft: '0.5rem', fontSize: theme.font.sizeXs, color: theme.colors.textMuted, fontStyle: 'italic' }}>
-            ({field.options.length} options)
+            {t('settings:templates.optionsCount', { defaultValue: '({{count}} options)', count: field.options.length })}
           </span>
         )}
       </div>
       <div style={{ display: 'flex', gap: '0.25rem' }}>
-        <button onClick={() => setEditing(true)} title="Modifier" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.2rem', fontSize: '0.85rem' }}>✏️</button>
-        <button onClick={handleDelete} title="Supprimer" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.2rem', fontSize: '0.85rem', color: theme.colors.danger }}>🗑</button>
+        <button onClick={() => setEditing(true)} title={t('settings:templates.editTitle', { defaultValue: 'Modifier' })} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.2rem', fontSize: '0.85rem' }}>✏️</button>
+        <button onClick={handleDelete} title={t('settings:templates.deleteTitle', { defaultValue: 'Supprimer' })} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.2rem', fontSize: '0.85rem', color: theme.colors.danger }}>🗑</button>
       </div>
     </div>
   );
@@ -738,7 +742,7 @@ function AddFieldForm({
       />
       <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
         <button onClick={handleAdd} disabled={(!labelFr.trim() && !labelEn.trim()) || isPending} style={{ ...buttonStyles.primary, ...buttonStyles.sm }}>
-          ✓ Ajouter
+          {t('settings:templates.addFieldSubmit', { defaultValue: '✓ Ajouter' })}
         </button>
         <button onClick={onDone} style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}>{t('common:actions.cancel', { defaultValue: 'Annuler' })}</button>
       </div>
@@ -823,7 +827,7 @@ function EditFieldForm({
       />
       <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
         <button onClick={handleSave} disabled={(!labelFr.trim() && !labelEn.trim()) || isPending} style={{ ...buttonStyles.primary, ...buttonStyles.sm }}>
-          ✓ Enregistrer
+          {t('settings:templates.save', { defaultValue: '✓ Enregistrer' })}
         </button>
         <button onClick={onDone} style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}>{t('common:actions.cancel', { defaultValue: 'Annuler' })}</button>
       </div>
@@ -850,24 +854,25 @@ function FieldFormFields({
   optionsText: string;
   setOptionsText: (v: string) => void;
 }) {
+  const { t } = useTranslation('settings');
   return (
     <>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.5rem', alignItems: 'end' }}>
         <div>
-          <label style={{ ...formStyles.label }}>Libellé FR</label>
-          <input value={labelFr} onChange={(e) => setLabelFr(e.target.value)} style={{ ...formStyles.input, boxSizing: 'border-box' }} placeholder="Ex: Marque du chauffe-eau" />
+          <label style={{ ...formStyles.label }}>{t('settings:templates.labelFrLabel', { defaultValue: 'Libellé FR' })}</label>
+          <input value={labelFr} onChange={(e) => setLabelFr(e.target.value)} style={{ ...formStyles.input, boxSizing: 'border-box' }} placeholder={t('settings:templates.labelFrPlaceholder', { defaultValue: 'Ex: Marque du chauffe-eau' })} />
         </div>
         <div>
-          <label style={{ ...formStyles.label }}>Libellé EN</label>
-          <input value={labelEn} onChange={(e) => setLabelEn(e.target.value)} style={{ ...formStyles.input, boxSizing: 'border-box' }} placeholder="E.g. Water heater brand" />
+          <label style={{ ...formStyles.label }}>{t('settings:templates.labelEnLabel', { defaultValue: 'Libellé EN' })}</label>
+          <input value={labelEn} onChange={(e) => setLabelEn(e.target.value)} style={{ ...formStyles.input, boxSizing: 'border-box' }} placeholder={t('settings:templates.labelEnPlaceholder', { defaultValue: 'E.g. Water heater brand' })} />
         </div>
         <div>
-          <label style={{ ...formStyles.label }}>Type</label>
+          <label style={{ ...formStyles.label }}>{t('settings:templates.typeLabel', { defaultValue: 'Type' })}</label>
           <select value={fieldType} onChange={(e) => setFieldType(e.target.value as TemplateFieldType)} style={{ ...formStyles.select, boxSizing: 'border-box' }}>
             {FIELD_TYPE_GROUPS.map((g) => (
-              <optgroup key={g.label} label={g.label}>
-                {g.types.map((t) => (
-                  <option key={t} value={t}>{FIELD_TYPE_LABELS[t]}</option>
+              <optgroup key={g.label} label={t('settings:templates.' + g.labelKey, { defaultValue: g.label })}>
+                {g.types.map((ft) => (
+                  <option key={ft} value={ft}>{t('settings:templates.fieldType_' + ft, { defaultValue: FIELD_TYPE_LABELS[ft] })}</option>
                 ))}
               </optgroup>
             ))}
@@ -876,13 +881,13 @@ function FieldFormFields({
       </div>
       {TYPES_WITH_OPTIONS.has(fieldType) && (
         <div style={{ marginTop: '0.5rem' }}>
-          <label style={{ ...formStyles.label }}>Options (une par ligne)</label>
+          <label style={{ ...formStyles.label }}>{t('settings:templates.optionsLabel', { defaultValue: 'Options (une par ligne)' })}</label>
           <textarea
             value={optionsText}
             onChange={(e) => setOptionsText(e.target.value)}
             rows={3}
             style={{ ...formStyles.textarea, boxSizing: 'border-box' }}
-            placeholder={'Option 1\nOption 2\nOption 3'}
+            placeholder={t('settings:templates.optionsPlaceholder', { defaultValue: 'Option 1\nOption 2\nOption 3' })}
           />
         </div>
       )}

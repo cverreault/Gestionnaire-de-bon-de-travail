@@ -178,9 +178,9 @@ export default function TechnicianWorkOrderDetailPage() {
         });
       }
       setNoteContent('');
-      showToast('✅ Note ajoutée', 'success');
+      showToast(`✅ ${t('workOrders:techDetail.noteAdded', { defaultValue: 'Note ajoutée' })}`, 'success');
     } catch {
-      showToast('❌ Impossible d\'ajouter la note. Veuillez réessayer.', 'error');
+      showToast(`❌ ${t('workOrders:techDetail.noteError', { defaultValue: 'Impossible d\'ajouter la note. Veuillez réessayer.' })}`, 'error');
     }
   };
 
@@ -188,17 +188,17 @@ export default function TechnicianWorkOrderDetailPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!isOnline) {
-      showToast('📵 Impossible d\'envoyer un fichier hors-ligne. Reconnectez-vous.', 'error');
+      showToast(`📵 ${t('workOrders:techDetail.offlineFileError', { defaultValue: 'Impossible d\'envoyer un fichier hors-ligne. Reconnectez-vous.' })}`, 'error');
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
     try {
       await uploadAttachment.mutateAsync(file);
       if (fileInputRef.current) fileInputRef.current.value = '';
-      showToast('✅ Photo envoyée avec succès', 'success');
+      showToast(`✅ ${t('workOrders:techDetail.photoSent', { defaultValue: 'Photo envoyée avec succès' })}`, 'success');
     } catch {
       if (fileInputRef.current) fileInputRef.current.value = '';
-      showToast('❌ Échec de l\'envoi du fichier. Veuillez réessayer.', 'error');
+      showToast(`❌ ${t('workOrders:techDetail.fileUploadError', { defaultValue: 'Échec de l\'envoi du fichier. Veuillez réessayer.' })}`, 'error');
     }
   };
 
@@ -264,8 +264,8 @@ export default function TechnicianWorkOrderDetailPage() {
           <span>
             <strong>{t('messages.offlineMode', { defaultValue: 'Mode hors-ligne' })}</strong>
             {isOfflineFallback
-              ? ' — Données en cache local · Modifications synchronisées à la reconnexion.'
-              : ' — Les changements seront synchronisés à la reconnexion.'}
+              ? ` — ${t('workOrders:techDetail.offlineCached', { defaultValue: 'Données en cache local · Modifications synchronisées à la reconnexion.' })}`
+              : ` — ${t('workOrders:techDetail.offlineChanges', { defaultValue: 'Les changements seront synchronisés à la reconnexion.' })}`}
           </span>
         </div>
       )}
@@ -275,7 +275,7 @@ export default function TechnicianWorkOrderDetailPage() {
         onClick={() => navigate(-1)}
         style={{ ...buttonStyles.ghost, padding: '0 0 1rem', color: theme.colors.primary, fontSize: theme.font.sizeSm }}
       >
-        ← Mes bons de travail
+        ← {t('workOrders:techDetail.backToMyWorkOrders', { defaultValue: 'Mes bons de travail' })}
       </button>
 
       {/* ── Client section — top, always visible ────────────────────────── */}
@@ -379,7 +379,7 @@ export default function TechnicianWorkOrderDetailPage() {
       {/* ── Scheduling ───────────────────────────────────────────────────── */}
       {(wo.scheduledDate || wo.scheduledStartTime) && (
         <div style={sectionStyle}>
-          <h2 style={sectionTitleStyle}>Planification</h2>
+          <h2 style={sectionTitleStyle}>{t('workOrders:techDetail.scheduling', { defaultValue: 'Planification' })}</h2>
           {wo.scheduledDate && (
             <p style={{ margin: '0 0 0.25rem', color: theme.colors.text, fontSize: theme.font.sizeSm }}>
               📅 {new Date(wo.scheduledDate).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
@@ -415,8 +415,8 @@ export default function TechnicianWorkOrderDetailPage() {
             }}>
               <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>⏳</span>
               <span>
-                <strong>En attente de répartition.</strong><br />
-                Le répartiteur doit dispatcher ce bon de travail avant que vous puissiez intervenir.
+                <strong>{t('workOrders:techDetail.awaitingDispatchTitle', { defaultValue: 'En attente de répartition.' })}</strong><br />
+                {t('workOrders:techDetail.awaitingDispatchBody', { defaultValue: 'Le répartiteur doit dispatcher ce bon de travail avant que vous puissiez intervenir.' })}
               </span>
             </div>
           )}
@@ -495,9 +495,9 @@ export default function TechnicianWorkOrderDetailPage() {
           }}
         >
           {!isOnline
-            ? '📵 Les pièces jointes ne peuvent être ajoutées qu\'en ligne'
+            ? `📵 ${t('workOrders:techDetail.attachmentsOnlineOnly', { defaultValue: 'Les pièces jointes ne peuvent être ajoutées qu\'en ligne' })}`
             : uploadAttachment.isPending
-            ? '⏳ Envoi en cours...'
+            ? `⏳ ${t('workOrders:techDetail.uploading', { defaultValue: 'Envoi en cours...' })}`
             : `📷 ${t('actions.addPhotoOrFile', { defaultValue: 'Ajouter une photo ou fichier' })}`}
         </label>
       </div>
@@ -531,7 +531,7 @@ export default function TechnicianWorkOrderDetailPage() {
             value={noteContent}
             onChange={(e) => setNoteContent(e.target.value)}
             rows={2}
-            placeholder="Note terrain..."
+            placeholder={t('workOrders:techDetail.fieldNotePlaceholder', { defaultValue: 'Note terrain...' })}
             style={{ ...formStyles.textarea, flex: 1, minHeight: 'unset', boxSizing: 'border-box' }}
           />
           <button

@@ -35,5 +35,15 @@
     "noClient": "— No client —",
     "changeClient": "Change",
     "deleteConfirm": "Delete this address?"
+  },
+  "createModal": {
+    "newClientNameRequired": "First and last name of the new client are required.",
+    "saveError": "Error while saving.",
+    "deleteError": "Error while deleting.",
+    "change": "Change",
+    "clientTypeResidential": "Residential",
+    "clientTypeCommercial": "Commercial",
+    "clientTypeIndustrial": "Industrial",
+    "clientTypeInstitutional": "Institutional"
   }
 }

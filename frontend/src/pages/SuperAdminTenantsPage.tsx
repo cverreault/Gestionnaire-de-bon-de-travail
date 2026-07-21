@@ -326,6 +326,7 @@ function EditModal({
   onClose: () => void;
 }) {
   const qc = useQueryClient();
+  const { t } = useTranslation('superAdmin');
   const [form, setForm] = useState<UpdateTenantInput>({
     name: tenant.name,
     plan: tenant.plan,
@@ -362,20 +363,20 @@ function EditModal({
         onClick={(e) => e.stopPropagation()}
         style={{ ...cardStyles.card, padding: 24, maxWidth: 520, width: '100%' }}
       >
-        <h2 style={{ margin: '0 0 12px' }}>Éditer <code>{tenant.slug}</code></h2>
+        <h2 style={{ margin: '0 0 12px' }}>{t('superAdmin:tenantsPage.editHeading', { defaultValue: 'Éditer' })} <code>{tenant.slug}</code></h2>
         <p style={{ fontSize: 12, color: theme.colors.textMuted, margin: '0 0 16px' }}>
-          Le slug n'est pas modifiable. Tout le reste l'est.
+          {t('superAdmin:tenantsPage.slugNotEditable', { defaultValue: "Le slug n'est pas modifiable. Tout le reste l'est." })}
         </p>
 
         <Stack>
-          <Field label="Nom">
+          <Field label={t('superAdmin:tenantsPage.fieldName', { defaultValue: 'Nom' })}>
             <input
               value={form.name ?? ''}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               style={formStyles.input}
             />
           </Field>
-          <Field label="Plan">
+          <Field label={t('superAdmin:tenantsPage.fieldPlan', { defaultValue: 'Plan' })}>
             <select
               value={form.plan}
               onChange={(e) => setForm({ ...form, plan: e.target.value as TenantPlan })}
@@ -392,7 +393,7 @@ function EditModal({
               currentPlan={tenant.plan}
             />
           </Field>
-          <Field label="Actif">
+          <Field label={t('superAdmin:tenantsPage.fieldActive', { defaultValue: 'Actif' })}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <input
                 type="checkbox"
@@ -400,29 +401,29 @@ function EditModal({
                 onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
               />
               <span style={{ fontSize: 13, color: theme.colors.textMuted }}>
-                Espace de travail accessible
+                {t('superAdmin:tenantsPage.workspaceAccessible', { defaultValue: 'Espace de travail accessible' })}
               </span>
             </label>
           </Field>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <NumField label="Max users" value={form.maxUsers} onChange={(v) => setForm({ ...form, maxUsers: v })} />
-            <NumField label="Max BTs/mois" value={form.maxWorkOrdersPerMonth} onChange={(v) => setForm({ ...form, maxWorkOrdersPerMonth: v })} />
-            <NumField label="Max stockage (MB)" value={form.maxStorageMb} onChange={(v) => setForm({ ...form, maxStorageMb: v })} />
-            <NumField label="Max clients" value={form.maxClients} onChange={(v) => setForm({ ...form, maxClients: v })} />
+            <NumField label={t('superAdmin:tenantsPage.maxUsers', { defaultValue: 'Max users' })} value={form.maxUsers} onChange={(v) => setForm({ ...form, maxUsers: v })} />
+            <NumField label={t('superAdmin:tenantsPage.maxWorkOrders', { defaultValue: 'Max BTs/mois' })} value={form.maxWorkOrdersPerMonth} onChange={(v) => setForm({ ...form, maxWorkOrdersPerMonth: v })} />
+            <NumField label={t('superAdmin:tenantsPage.maxStorage', { defaultValue: 'Max stockage (MB)' })} value={form.maxStorageMb} onChange={(v) => setForm({ ...form, maxStorageMb: v })} />
+            <NumField label={t('superAdmin:tenantsPage.maxClients', { defaultValue: 'Max clients' })} value={form.maxClients} onChange={(v) => setForm({ ...form, maxClients: v })} />
           </div>
         </Stack>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
           <button onClick={onClose} style={buttonStyles.secondary}>
-            Annuler
+            {t('superAdmin:tenantsPage.cancel', { defaultValue: 'Annuler' })}
           </button>
           <button onClick={() => save.mutate()} disabled={save.isPending} style={buttonStyles.primary}>
-            {save.isPending ? 'Sauvegarde…' : 'Sauvegarder'}
+            {save.isPending ? t('superAdmin:tenantsPage.saving', { defaultValue: 'Sauvegarde…' }) : t('superAdmin:tenantsPage.save', { defaultValue: 'Sauvegarder' })}
           </button>
         </div>
         {save.isError && (
           <p style={{ color: theme.colors.danger, marginTop: 8, fontSize: 13 }}>
-            Échec : vérifie les valeurs et réessaie.
+            {t('superAdmin:tenantsPage.editError', { defaultValue: 'Échec : vérifie les valeurs et réessaie.' })}
           </p>
         )}
       </div>
@@ -438,6 +439,7 @@ function DeleteModal({
   onClose: () => void;
 }) {
   const qc = useQueryClient();
+  const { t } = useTranslation('superAdmin');
   const [confirmSlug, setConfirmSlug] = useState('');
   const matches = confirmSlug === tenant.slug;
 
@@ -479,15 +481,14 @@ function DeleteModal({
         }}
       >
         <h2 style={{ margin: '0 0 8px', color: theme.colors.danger }}>
-          🗑 Supprimer définitivement
+          🗑 {t('superAdmin:tenantsPage.deletePermanently', { defaultValue: 'Supprimer définitivement' })}
         </h2>
         <p style={{ fontSize: 13, color: theme.colors.text, margin: '0 0 12px' }}>
-          Cette action est <strong>irréversible</strong>. Toutes les données de{' '}
-          <strong>{tenant.name}</strong> seront effacées : utilisateurs, bons de
-          travail, clients, pièces jointes, configuration — tout.
+          {t('superAdmin:tenantsPage.deleteWarnPart1', { defaultValue: 'Cette action est ' })}<strong>{t('superAdmin:tenantsPage.irreversible', { defaultValue: 'irréversible' })}</strong>{t('superAdmin:tenantsPage.deleteWarnPart2', { defaultValue: '. Toutes les données de ' })}
+          <strong>{tenant.name}</strong>{t('superAdmin:tenantsPage.deleteWarnPart3', { defaultValue: ' seront effacées : utilisateurs, bons de travail, clients, pièces jointes, configuration — tout.' })}
         </p>
         <p style={{ fontSize: 13, color: theme.colors.textMuted, margin: '0 0 8px' }}>
-          Pour confirmer, tapez le slug{' '}
+          {t('superAdmin:tenantsPage.confirmSlugPrompt', { defaultValue: 'Pour confirmer, tapez le slug ' })}
           <code style={{ color: theme.colors.danger }}>{tenant.slug}</code> :
         </p>
         <input
@@ -504,13 +505,13 @@ function DeleteModal({
 
         {errorText && (
           <p style={{ color: theme.colors.danger, marginTop: 12, fontSize: 13 }}>
-            Échec : {errorText}
+            {t('superAdmin:tenantsPage.failureWith', { defaultValue: 'Échec : {{error}}', error: errorText })}
           </p>
         )}
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
           <button onClick={onClose} style={buttonStyles.secondary}>
-            Annuler
+            {t('superAdmin:tenantsPage.cancel', { defaultValue: 'Annuler' })}
           </button>
           <button
             onClick={() => del.mutate()}
@@ -523,7 +524,7 @@ function DeleteModal({
               cursor: !matches || del.isPending ? 'not-allowed' : 'pointer',
             }}
           >
-            {del.isPending ? 'Suppression…' : 'Supprimer définitivement'}
+            {del.isPending ? t('superAdmin:tenantsPage.deleting', { defaultValue: 'Suppression…' }) : t('superAdmin:tenantsPage.deletePermanently', { defaultValue: 'Supprimer définitivement' })}
           </button>
         </div>
       </div>
@@ -573,6 +574,7 @@ function PlanPreview({
   plan: TenantPlan;
   currentPlan: TenantPlan;
 }) {
+  const { t } = useTranslation('superAdmin');
   const { data } = useQuery({
     queryKey: ['superAdmin', 'plans'],
     queryFn: getPlanCatalog,
@@ -603,7 +605,7 @@ function PlanPreview({
           {def.displayName}
           {isChanging && (
             <span style={{ marginLeft: 6, fontSize: 10, color: theme.colors.warning }}>
-              ⚠ quotas snap au save
+              ⚠ {t('superAdmin:tenantsPage.quotasSnap', { defaultValue: 'quotas snap au save' })}
             </span>
           )}
         </div>
@@ -615,12 +617,12 @@ function PlanPreview({
         </div>
       </div>
       <div style={{ fontSize: 12, fontWeight: 700, color: theme.colors.primary, textAlign: 'right', lineHeight: 1.3 }}>
-        {isFree && 'Gratuit'}
+        {isFree && t('superAdmin:tenantsPage.free', { defaultValue: 'Gratuit' })}
         {hasBase && (
           <div>
             {def.priceMonthly} {def.currency}
             <span style={{ fontSize: 10, color: theme.colors.textMuted, fontWeight: 500 }}>
-              {' '}/ mois
+              {' '}{t('superAdmin:tenantsPage.perMonth', { defaultValue: '/ mois' })}
             </span>
           </div>
         )}
@@ -629,7 +631,7 @@ function PlanPreview({
             {hasBase && <span style={{ color: theme.colors.textMuted, fontWeight: 500 }}>+ </span>}
             {def.pricePerUserMonthly} {def.currency}
             <span style={{ fontSize: 10, color: theme.colors.textMuted, fontWeight: 500 }}>
-              {' '}/ user / mois
+              {' '}{t('superAdmin:tenantsPage.perUserPerMonth', { defaultValue: '/ user / mois' })}
             </span>
           </div>
         )}

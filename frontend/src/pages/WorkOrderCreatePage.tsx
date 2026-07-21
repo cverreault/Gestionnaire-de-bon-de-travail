@@ -20,9 +20,14 @@ import { formatStreet } from '../utils/addressFormat';
 
 // ─── Stepper indicator ────────────────────────────────────────────────────────
 
-const STEPS = ['Client', 'Adresse', 'Détails', 'Assignation'];
-
 function StepperIndicator({ current }: { current: number }) {
+  const { t } = useTranslation('workOrders');
+  const STEPS = [
+    t('workOrders:createPage.stepClient', { defaultValue: 'Client' }),
+    t('workOrders:createPage.stepAddress', { defaultValue: 'Adresse' }),
+    t('workOrders:createPage.stepDetails', { defaultValue: 'Détails' }),
+    t('workOrders:createPage.stepAssignment', { defaultValue: 'Assignation' }),
+  ];
   return (
     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2rem' }}>
       {STEPS.map((label, i) => {
@@ -175,7 +180,7 @@ function Step1Client({
 
   return (
     <div style={cardStyle}>
-      <p style={sectionTitleStyle}>Étape 1 — Sélection du client</p>
+      <p style={sectionTitleStyle}>{t('workOrders:createPage.step1Title', { defaultValue: 'Étape 1 — Sélection du client' })}</p>
 
       {selectedClient ? (
         <div>
@@ -209,7 +214,7 @@ function Step1Client({
               onClick={() => onSelectClient(null as unknown as Client)}
               style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}
             >
-              Changer
+              {t('workOrders:createPage.change', { defaultValue: 'Changer' })}
             </button>
           </div>
         </div>
@@ -217,10 +222,10 @@ function Step1Client({
         <>
           {/* Search */}
           <div style={{ ...fieldStyle, marginBottom: '0.75rem', position: 'relative' }}>
-            <label style={labelStyle}>Rechercher un client existant (min. 2 caractères)</label>
+            <label style={labelStyle}>{t('workOrders:createPage.searchClientLabel', { defaultValue: 'Rechercher un client existant (min. 2 caractères)' })}</label>
             <input
               style={{ ...formStyles.input }}
-              placeholder="Nom, prénom, email..."
+              placeholder={t('workOrders:createPage.searchClientPlaceholder', { defaultValue: 'Nom, prénom, email...' })}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onFocus={() => { if (debouncedSearch.length >= 2) setShowDropdown(true); }}
@@ -244,7 +249,7 @@ function Step1Client({
               >
                 {results.length === 0 ? (
                   <p style={{ padding: '0.75rem', margin: 0, fontSize: theme.font.sizeSm, color: theme.colors.textLight, textAlign: 'center' }}>
-                    Aucun client trouvé pour « {debouncedSearch} »
+                    {t('workOrders:createPage.noClientFound', { defaultValue: 'Aucun client trouvé pour « {{search}} »', search: debouncedSearch })}
                   </p>
                 ) : (
                   results.map((c) => {
@@ -295,22 +300,22 @@ function Step1Client({
               onClick={() => setShowNewForm(true)}
               style={{ background: 'none', border: `1px dashed ${theme.colors.focusRing}`, color: theme.colors.primary, padding: '0.5rem 1rem', borderRadius: theme.radius.md, cursor: 'pointer', fontSize: theme.font.sizeSm }}
             >
-              + Nouveau client
+              + {t('workOrders:createPage.newClient', { defaultValue: 'Nouveau client' })}
             </button>
           ) : (
             <div style={{ background: theme.colors.surfaceAlt, border: theme.borders.default, borderRadius: theme.radius.md, padding: '1rem', marginTop: '0.75rem' }}>
-              <p style={{ margin: '0 0 0.75rem', fontWeight: theme.font.weightSemibold, color: theme.colors.text, fontSize: theme.font.sizeSm }}>Nouveau client</p>
+              <p style={{ margin: '0 0 0.75rem', fontWeight: theme.font.weightSemibold, color: theme.colors.text, fontSize: theme.font.sizeSm }}>{t('workOrders:createPage.newClientHeading', { defaultValue: 'Nouveau client' })}</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
                 <div style={fieldStyle}>
-                  <label style={labelStyle}>Prénom *</label>
-                  <input style={{ ...formStyles.input }} value={ncFirstName} onChange={(e) => setNcFirstName(e.target.value)} placeholder="Prénom" />
+                  <label style={labelStyle}>{t('workOrders:createPage.firstNameLabel', { defaultValue: 'Prénom *' })}</label>
+                  <input style={{ ...formStyles.input }} value={ncFirstName} onChange={(e) => setNcFirstName(e.target.value)} placeholder={t('workOrders:createPage.firstNamePlaceholder', { defaultValue: 'Prénom' })} />
                 </div>
                 <div style={fieldStyle}>
-                  <label style={labelStyle}>Nom *</label>
-                  <input style={{ ...formStyles.input }} value={ncLastName} onChange={(e) => setNcLastName(e.target.value)} placeholder="Nom" />
+                  <label style={labelStyle}>{t('workOrders:createPage.lastNameLabel', { defaultValue: 'Nom *' })}</label>
+                  <input style={{ ...formStyles.input }} value={ncLastName} onChange={(e) => setNcLastName(e.target.value)} placeholder={t('workOrders:createPage.lastNamePlaceholder', { defaultValue: 'Nom' })} />
                 </div>
                 <div style={fieldStyle}>
-                  <label style={labelStyle}>Type</label>
+                  <label style={labelStyle}>{t('workOrders:createPage.type', { defaultValue: 'Type' })}</label>
                   <select style={{ ...formStyles.select }} value={ncType} onChange={(e) => setNcType(e.target.value as ClientType)}>
                     {Object.values(ClientType).map((code) => (
                       <option key={code} value={code}>{clientTypeLabel(t, code)}</option>
@@ -318,11 +323,11 @@ function Step1Client({
                   </select>
                 </div>
                 <div style={fieldStyle}>
-                  <label style={labelStyle}>Email</label>
-                  <input style={{ ...formStyles.input }} type="email" value={ncEmail} onChange={(e) => setNcEmail(e.target.value)} placeholder="email@exemple.com" />
+                  <label style={labelStyle}>{t('workOrders:createPage.email', { defaultValue: 'Email' })}</label>
+                  <input style={{ ...formStyles.input }} type="email" value={ncEmail} onChange={(e) => setNcEmail(e.target.value)} placeholder={t('workOrders:createPage.emailPlaceholder', { defaultValue: 'email@exemple.com' })} />
                 </div>
                 <div style={fieldStyle}>
-                  <label style={labelStyle}>Téléphone</label>
+                  <label style={labelStyle}>{t('workOrders:createPage.phone', { defaultValue: 'Téléphone' })}</label>
                   <input style={{ ...formStyles.input }} value={ncPhone} onChange={(e) => setNcPhone(e.target.value)} placeholder="514-000-0000" />
                 </div>
               </div>
@@ -333,14 +338,14 @@ function Step1Client({
                   disabled={!ncFirstName.trim() || !ncLastName.trim() || createClient.isPending}
                   style={{ ...buttonStyles.primary, opacity: (!ncFirstName.trim() || !ncLastName.trim()) ? 0.5 : 1 }}
                 >
-                  {createClient.isPending ? 'Création...' : 'Créer et sélectionner'}
+                  {createClient.isPending ? t('workOrders:createPage.creating', { defaultValue: 'Création...' }) : t('workOrders:createPage.createAndSelect', { defaultValue: 'Créer et sélectionner' })}
                 </button>
                 <button type="button" onClick={() => setShowNewForm(false)} style={{ ...buttonStyles.secondary }}>
-                  Annuler
+                  {t('workOrders:createPage.cancel', { defaultValue: 'Annuler' })}
                 </button>
               </div>
               {createClient.isError && (
-                <p style={{ ...formStyles.fieldError, marginTop: '0.5rem' }}>Erreur lors de la création du client.</p>
+                <p style={{ ...formStyles.fieldError, marginTop: '0.5rem' }}>{t('workOrders:createPage.createClientError', { defaultValue: 'Erreur lors de la création du client.' })}</p>
               )}
             </div>
           )}
@@ -388,15 +393,15 @@ function Step2Address({
 
   return (
     <div style={cardStyle}>
-      <p style={sectionTitleStyle}>Étape 2 — Adresse d'intervention</p>
+      <p style={sectionTitleStyle}>{t('workOrders:createPage.step2Title', { defaultValue: 'Étape 2 — Adresse d\'intervention' })}</p>
       <p style={{ margin: '0 0 1rem', fontSize: theme.font.sizeSm, color: theme.colors.textSecondary }}>
-        Client : <strong>{client.firstName} {client.lastName}</strong>
+        {t('workOrders:createPage.clientLabel', { defaultValue: 'Client :' })} <strong>{client.firstName} {client.lastName}</strong>
       </p>
 
       {addresses.length === 0 ? (
         <div style={{ padding: '1rem', background: theme.colors.warningLight, borderRadius: theme.radius.md, border: `1px solid ${theme.colors.warning}40`, marginBottom: '1rem' }}>
           <p style={{ margin: 0, fontSize: theme.font.sizeSm, color: 'var(--c-warningBadgeText)' }}>
-            ⚠️ Ce client n'a aucune adresse enregistrée. Vous pouvez continuer sans adresse ou en ajouter une depuis la page Clients.
+            ⚠️ {t('workOrders:createPage.noAddressWarning', { defaultValue: 'Ce client n\'a aucune adresse enregistrée. Vous pouvez continuer sans adresse ou en ajouter une depuis la page Clients.' })}
           </p>
         </div>
       ) : (
@@ -431,7 +436,7 @@ function Step2Address({
                     {formatAddress(addr)}
                     {addr.isDefault && (
                       <span style={{ marginLeft: '0.5rem', fontSize: '0.65rem', fontWeight: theme.font.weightSemibold, background: theme.colors.primaryLight, color: theme.colors.primary, padding: '0.1rem 0.4rem', borderRadius: theme.radius.full }}>
-                        Défaut
+                        {t('workOrders:createPage.default', { defaultValue: 'Défaut' })}
                       </span>
                     )}
                   </p>
@@ -452,7 +457,7 @@ function Step2Address({
         onClick={() => onSelectAddress('', null as unknown as ClientAddress)}
         style={{ ...buttonStyles.ghost, ...buttonStyles.sm, color: theme.colors.textMuted }}
       >
-        Continuer sans adresse →
+        {t('workOrders:createPage.continueWithoutAddress', { defaultValue: 'Continuer sans adresse' })} →
       </button>
     </div>
   );
@@ -494,11 +499,11 @@ function Step3Details({
 
   return (
     <div style={cardStyle}>
-      <p style={sectionTitleStyle}>Étape 3 — Détails du bon de travail</p>
+      <p style={sectionTitleStyle}>{t('workOrders:createPage.step3Title', { defaultValue: 'Étape 3 — Détails du bon de travail' })}</p>
 
       {/* Title */}
       <div style={{ ...fieldStyle, marginBottom: '1rem' }}>
-        <label style={labelStyle}>Titre <span style={{ color: theme.colors.danger }}>*</span></label>
+        <label style={labelStyle}>{t('workOrders:createPage.title', { defaultValue: 'Titre' })} <span style={{ color: theme.colors.danger }}>*</span></label>
         <input
           style={{ ...formStyles.input }}
           placeholder={t('fields.titlePlaceholder', { defaultValue: 'Ex: Installation fibre optique' })}
@@ -510,13 +515,13 @@ function Step3Details({
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
         {/* Task type */}
         <div style={fieldStyle}>
-          <label style={labelStyle}>Type de tâche</label>
+          <label style={labelStyle}>{t('workOrders:createPage.taskType', { defaultValue: 'Type de tâche' })}</label>
           <select
             style={{ ...formStyles.select }}
             value={values.taskTypeId}
             onChange={(e) => set('taskTypeId', e.target.value)}
           >
-            <option value="">— Sélectionner —</option>
+            <option value="">{t('workOrders:createPage.selectPlaceholder', { defaultValue: '— Sélectionner —' })}</option>
             {(taskTypes ?? []).map((tt) => (
               <option key={tt.id} value={tt.id}>
                 {tt.icon ? `${tt.icon} ` : ''}{tt.name}
@@ -527,7 +532,7 @@ function Step3Details({
 
         {/* Priority */}
         <div style={fieldStyle}>
-          <label style={labelStyle}>Priorité</label>
+          <label style={labelStyle}>{t('workOrders:createPage.priority', { defaultValue: 'Priorité' })}</label>
           <select
             style={{ ...formStyles.select }}
             value={values.priority}
@@ -542,7 +547,7 @@ function Step3Details({
 
       {/* Description */}
       <div style={{ ...fieldStyle, marginBottom: '1rem' }}>
-        <label style={labelStyle}>Description</label>
+        <label style={labelStyle}>{t('workOrders:createPage.description', { defaultValue: 'Description' })}</label>
         <textarea
           style={{ ...formStyles.textarea }}
           placeholder={t('fields.descriptionPlaceholder', { defaultValue: 'Détails du travail à effectuer...' })}
@@ -554,15 +559,15 @@ function Step3Details({
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem' }}>
         <div style={fieldStyle}>
-          <label style={labelStyle}>Date planifiée</label>
+          <label style={labelStyle}>{t('workOrders:createPage.scheduledDate', { defaultValue: 'Date planifiée' })}</label>
           <input style={{ ...formStyles.input }} type="date" value={values.scheduledDate} onChange={(e) => set('scheduledDate', e.target.value)} />
         </div>
         <div style={fieldStyle}>
-          <label style={labelStyle}>Heure début</label>
+          <label style={labelStyle}>{t('workOrders:createPage.startTime', { defaultValue: 'Heure début' })}</label>
           <input style={{ ...formStyles.input }} type="time" value={values.scheduledStartTime} onChange={(e) => set('scheduledStartTime', e.target.value)} />
         </div>
         <div style={fieldStyle}>
-          <label style={labelStyle}>Heure fin</label>
+          <label style={labelStyle}>{t('workOrders:createPage.endTime', { defaultValue: 'Heure fin' })}</label>
           <input style={{ ...formStyles.input }} type="time" value={values.scheduledEndTime} onChange={(e) => set('scheduledEndTime', e.target.value)} />
         </div>
       </div>
@@ -571,7 +576,7 @@ function Step3Details({
       {template && template.sections.length > 0 && (
         <div style={{ marginTop: '1.5rem' }}>
           <p style={{ ...sectionTitleStyle, marginBottom: '0.75rem' }}>
-            Formulaire — {template.name}
+            {t('workOrders:createPage.formLabel', { defaultValue: 'Formulaire' })} — {template.name}
           </p>
           <TemplateFormRenderer
             template={template}
@@ -626,47 +631,47 @@ function Step4Assignment({
     <div>
       {/* Recap card */}
       <div style={{ ...cardStyle }}>
-        <p style={sectionTitleStyle}>Récapitulatif</p>
-        <SummaryRow label="Client" value={`${client.firstName} ${client.lastName}`} />
+        <p style={sectionTitleStyle}>{t('workOrders:createPage.summary', { defaultValue: 'Récapitulatif' })}</p>
+        <SummaryRow label={t('workOrders:createPage.summaryClient', { defaultValue: 'Client' })} value={`${client.firstName} ${client.lastName}`} />
         <SummaryRow
-          label="Adresse"
+          label={t('workOrders:createPage.summaryAddress', { defaultValue: 'Adresse' })}
           value={
             address
               ? `${formatStreet(address)}, ${address.city}${address.postalCode ? ` ${address.postalCode}` : ''}`
-              : 'Aucune adresse'
+              : t('workOrders:createPage.noAddress', { defaultValue: 'Aucune adresse' })
           }
         />
-        <SummaryRow label="Titre" value={details.title} />
+        <SummaryRow label={t('workOrders:createPage.summaryTitle', { defaultValue: 'Titre' })} value={details.title} />
         <SummaryRow
-          label="Priorité"
+          label={t('workOrders:createPage.summaryPriority', { defaultValue: 'Priorité' })}
           value={priorityLabel(t, details.priority)}
         />
         {details.scheduledDate && (
           <SummaryRow
-            label="Date"
+            label={t('workOrders:createPage.summaryDate', { defaultValue: 'Date' })}
             value={`${details.scheduledDate}${details.scheduledStartTime ? ` à ${details.scheduledStartTime}` : ''}${details.scheduledEndTime ? ` → ${details.scheduledEndTime}` : ''}`}
           />
         )}
         {details.description && (
-          <SummaryRow label="Description" value={details.description} />
+          <SummaryRow label={t('workOrders:createPage.summaryDescription', { defaultValue: 'Description' })} value={details.description} />
         )}
       </div>
 
       {/* Assignment card */}
       <div style={{ ...cardStyle }}>
-        <p style={sectionTitleStyle}>Assignation (optionnel)</p>
+        <p style={sectionTitleStyle}>{t('workOrders:createPage.assignmentTitle', { defaultValue: 'Assignation (optionnel)' })}</p>
 
         <div style={{ ...fieldStyle, marginBottom: '1rem' }}>
-          <label style={labelStyle}>Technicien</label>
+          <label style={labelStyle}>{t('workOrders:createPage.technician', { defaultValue: 'Technicien' })}</label>
           <select
             style={{ ...formStyles.select }}
             value={assignedToId}
             onChange={(e) => onAssignedToId(e.target.value)}
           >
-            <option value="">— Non assigné —</option>
-            {(technicians ?? []).map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.firstName} {t.lastName}
+            <option value="">{t('workOrders:createPage.unassigned', { defaultValue: '— Non assigné —' })}</option>
+            {(technicians ?? []).map((tech) => (
+              <option key={tech.id} value={tech.id}>
+                {tech.firstName} {tech.lastName}
               </option>
             ))}
           </select>
@@ -681,14 +686,14 @@ function Step4Assignment({
               style={{ width: '1rem', height: '1rem', accentColor: theme.colors.primary }}
             />
             <span style={{ fontSize: theme.font.sizeSm, color: theme.colors.text }}>
-              Dispatcher immédiatement
+              {t('workOrders:createPage.dispatchNow', { defaultValue: 'Dispatcher immédiatement' })}
             </span>
           </label>
         )}
 
         {submitError && (
           <div style={{ background: theme.colors.dangerLight, border: '1px solid var(--c-dangerBadgeBorder)', color: theme.colors.danger, padding: '0.75rem 1rem', borderRadius: theme.radius.md, fontSize: theme.font.sizeSm, marginTop: '1rem' }}>
-            Une erreur est survenue lors de la création du bon de travail. Veuillez réessayer.
+            {t('workOrders:createPage.submitError', { defaultValue: 'Une erreur est survenue lors de la création du bon de travail. Veuillez réessayer.' })}
           </div>
         )}
       </div>
@@ -825,7 +830,7 @@ export default function WorkOrderCreatePage() {
           to="/bons-de-travail"
           style={{ color: theme.colors.textSecondary, fontSize: theme.font.sizeSm, textDecoration: 'none' }}
         >
-          ← Retour à la liste
+          ← {t('workOrders:createPage.backToList', { defaultValue: 'Retour à la liste' })}
         </Link>
       </div>
 
@@ -873,7 +878,7 @@ export default function WorkOrderCreatePage() {
             pointerEvents: step === 0 ? 'none' : 'auto',
           }}
         >
-          ← Précédent
+          ← {t('workOrders:createPage.previous', { defaultValue: 'Précédent' })}
         </button>
 
         <button
@@ -888,10 +893,10 @@ export default function WorkOrderCreatePage() {
           }}
         >
           {step < 3
-            ? 'Suivant →'
+            ? `${t('workOrders:createPage.next', { defaultValue: 'Suivant' })} →`
             : createWorkOrder.isPending
-            ? 'Création en cours...'
-            : '✓ Créer le bon de travail'}
+            ? t('workOrders:createPage.creatingInProgress', { defaultValue: 'Création en cours...' })
+            : `✓ ${t('workOrders:createPage.createWorkOrder', { defaultValue: 'Créer le bon de travail' })}`}
         </button>
       </div>
     </div>

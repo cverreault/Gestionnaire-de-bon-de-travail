@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { TemplateFieldType, Role } from '../types';
 import type { TemplateField, WorkOrderTemplate } from '../types';
 import { theme, formStyles } from '../theme';
@@ -25,6 +26,7 @@ interface Props {
 }
 
 export default function TemplateFormRenderer({ template, values, onChange, disabled, userRole }: Props) {
+  const { t } = useTranslation('settings');
   function setField(fieldId: string, value: unknown) {
     onChange({ ...values, [fieldId]: value });
   }
@@ -39,7 +41,7 @@ export default function TemplateFormRenderer({ template, values, onChange, disab
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       {visibleSections.length === 0 ? (
         <p style={{ color: theme.colors.textMuted, fontSize: theme.font.sizeSm, fontStyle: 'italic', margin: 0 }}>
-          Aucune section visible pour votre rôle.
+          {t('settings:formRenderer.noVisibleSections', { defaultValue: 'Aucune section visible pour votre rôle.' })}
         </p>
       ) : (
         visibleSections.map((sec) => {
@@ -71,7 +73,7 @@ export default function TemplateFormRenderer({ template, values, onChange, disab
               </legend>
               {visibleFields.length === 0 ? (
                 <p style={{ margin: 0, fontSize: theme.font.sizeXs, color: theme.colors.textMuted, fontStyle: 'italic' }}>
-                  Aucun champ visible dans cette section.
+                  {t('settings:formRenderer.noVisibleFields', { defaultValue: 'Aucun champ visible dans cette section.' })}
                 </p>
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
@@ -114,6 +116,7 @@ function FieldInput({
   disabled?: boolean;
   required?: boolean;
 }) {
+  const { t } = useTranslation('settings');
   const v = value as string | number | boolean | undefined;
   const labelEl = (
     <label style={{ ...formStyles.label }}>
@@ -224,7 +227,7 @@ function FieldInput({
           <input type="email"
             value={(v as string) ?? ''}
             onChange={(e) => onChange(e.target.value)}
-            placeholder={field.placeholder ?? 'nom@exemple.com'} disabled={disabled} style={inputStyle}
+            placeholder={field.placeholder ?? t('settings:formRenderer.emailPlaceholder', { defaultValue: 'nom@exemple.com' })} disabled={disabled} style={inputStyle}
           />
           {helpEl}
         </div>
@@ -237,7 +240,7 @@ function FieldInput({
           <input type="url"
             value={(v as string) ?? ''}
             onChange={(e) => onChange(e.target.value)}
-            placeholder={field.placeholder ?? 'https://exemple.com'} disabled={disabled} style={inputStyle}
+            placeholder={field.placeholder ?? t('settings:formRenderer.urlPlaceholder', { defaultValue: 'https://exemple.com' })} disabled={disabled} style={inputStyle}
           />
           {helpEl}
         </div>
@@ -305,7 +308,7 @@ function FieldInput({
             disabled={disabled}
             style={{ ...formStyles.select, boxSizing: 'border-box' }}
           >
-            <option value="">— Choisir —</option>
+            <option value="">{t('settings:formRenderer.chooseOption', { defaultValue: '— Choisir —' })}</option>
             {(field.options ?? []).map((opt) => (
               <option key={opt} value={opt}>{opt}</option>
             ))}
@@ -335,7 +338,7 @@ function FieldInput({
               </label>
             ))}
             {(field.options ?? []).length === 0 && (
-              <span style={{ fontSize: theme.font.sizeXs, color: theme.colors.textMuted, fontStyle: 'italic' }}>Aucune option configurée.</span>
+              <span style={{ fontSize: theme.font.sizeXs, color: theme.colors.textMuted, fontStyle: 'italic' }}>{t('settings:formRenderer.noOptions', { defaultValue: 'Aucune option configurée.' })}</span>
             )}
           </div>
           {helpEl}
@@ -359,7 +362,7 @@ function FieldInput({
               </label>
             ))}
             {(field.options ?? []).length === 0 && (
-              <span style={{ fontSize: theme.font.sizeXs, color: theme.colors.textMuted, fontStyle: 'italic' }}>Aucune option configurée.</span>
+              <span style={{ fontSize: theme.font.sizeXs, color: theme.colors.textMuted, fontStyle: 'italic' }}>{t('settings:formRenderer.noOptions', { defaultValue: 'Aucune option configurée.' })}</span>
             )}
           </div>
           {helpEl}
@@ -419,15 +422,15 @@ function FieldInput({
             <input type="number" step="any" min={-90} max={90}
               value={g.lat === null ? '' : String(g.lat)}
               onChange={(e) => update({ lat: e.target.value === '' ? null : parseFloat(e.target.value) })}
-              placeholder="Latitude" disabled={disabled} style={inputStyle}
+              placeholder={t('settings:formRenderer.latitudePlaceholder', { defaultValue: 'Latitude' })} disabled={disabled} style={inputStyle}
             />
             <input type="number" step="any" min={-180} max={180}
               value={g.lng === null ? '' : String(g.lng)}
               onChange={(e) => update({ lng: e.target.value === '' ? null : parseFloat(e.target.value) })}
-              placeholder="Longitude" disabled={disabled} style={inputStyle}
+              placeholder={t('settings:formRenderer.longitudePlaceholder', { defaultValue: 'Longitude' })} disabled={disabled} style={inputStyle}
             />
           </div>
-          <p style={{ ...formStyles.fieldHint }}>Décimal — ex: 45.50170, -73.56730 (copier-coller depuis Google Maps).</p>
+          <p style={{ ...formStyles.fieldHint }}>{t('settings:formRenderer.gpsHint', { defaultValue: 'Décimal — ex: 45.50170, -73.56730 (copier-coller depuis Google Maps).' })}</p>
           {helpEl}
         </div>
       );

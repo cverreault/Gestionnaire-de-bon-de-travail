@@ -103,7 +103,7 @@ export default function AuditPage() {
       await exportAuditCsv(params);
     } catch (err) {
       console.error('[audit] CSV export failed', err);
-      window.alert('Export CSV impossible. Réessayez.');
+      window.alert(t('common:auditPage.exportFailed', { defaultValue: 'Export CSV impossible. Réessayez.' }));
     } finally {
       setIsExporting(false);
     }
@@ -115,15 +115,15 @@ export default function AuditPage() {
   return (
     <div style={{ ...layoutStyles.page }}>
       <div style={{ ...layoutStyles.pageHeader }}>
-        <h1 style={{ ...layoutStyles.pageTitle }}>📜 Audit</h1>
+        <h1 style={{ ...layoutStyles.pageTitle }}>📜 {t('common:auditPage.title', { defaultValue: 'Audit' })}</h1>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           <span style={{ fontSize: theme.font.sizeSm, color: theme.colors.textMuted }}>
-            {meta ? `${meta.total} entrées` : '—'}
+            {meta ? t('common:auditPage.entriesCount', { defaultValue: '{{count}} entrées', count: meta.total }) : '—'}
           </span>
           <button
             onClick={handleExportCsv}
             disabled={isExporting || !meta || meta.total === 0}
-            title="Exporter la slice filtrée au format CSV (max 5000 lignes)"
+            title={t('common:auditPage.exportCsvTitle', { defaultValue: 'Exporter la slice filtrée au format CSV (max 5000 lignes)' })}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -140,7 +140,7 @@ export default function AuditPage() {
               whiteSpace: 'nowrap',
             }}
           >
-            {isExporting ? '⏳ Export…' : '⬇ Exporter CSV'}
+            {isExporting ? `⏳ ${t('common:auditPage.exporting', { defaultValue: 'Export…' })}` : `⬇ ${t('common:auditPage.exportCsv', { defaultValue: 'Exporter CSV' })}`}
           </button>
         </div>
       </div>
@@ -162,14 +162,14 @@ export default function AuditPage() {
       >
         <div style={{ flex: '0 1 240px', minWidth: '180px' }}>
           <label style={{ display: 'block', fontSize: theme.font.sizeXs, color: theme.colors.textMuted, marginBottom: '0.25rem' }}>
-            Type d'événement
+            {t('common:auditPage.eventTypeLabel', { defaultValue: "Type d'événement" })}
           </label>
           <select
             value={eventName}
             onChange={(e) => { setEventName(e.target.value); setPage(1); }}
             style={{ ...formStyles.select }}
           >
-            <option value="">— Tous —</option>
+            <option value="">{t('common:auditPage.allOption', { defaultValue: '— Tous —' })}</option>
             {KNOWN_EVENTS.map((n) => (
               <option key={n} value={n}>{eventIcon(n)} {n}</option>
             ))}
@@ -178,27 +178,27 @@ export default function AuditPage() {
 
         <div style={{ flex: '1 1 200px', minWidth: '180px' }}>
           <label style={{ display: 'block', fontSize: theme.font.sizeXs, color: theme.colors.textMuted, marginBottom: '0.25rem' }}>
-            UUID d'agrégat (BT…)
+            {t('common:auditPage.aggregateLabel', { defaultValue: "UUID d'agrégat (BT…)" })}
           </label>
           <input
             type="text"
             value={aggregateId}
             onChange={(e) => { setAggregateId(e.target.value); setPage(1); }}
-            placeholder="ex: workOrderId"
+            placeholder={t('common:auditPage.aggregatePlaceholder', { defaultValue: 'ex: workOrderId' })}
             style={{ ...formStyles.input }}
           />
         </div>
 
         <div style={{ flex: '0 1 220px', minWidth: '180px' }}>
           <label style={{ display: 'block', fontSize: theme.font.sizeXs, color: theme.colors.textMuted, marginBottom: '0.25rem' }}>
-            Acteur
+            {t('common:auditPage.actorLabel', { defaultValue: 'Acteur' })}
           </label>
           <select
             value={actorUserId}
             onChange={(e) => { setActorUserId(e.target.value); setPage(1); }}
             style={{ ...formStyles.select }}
           >
-            <option value="">— Tous —</option>
+            <option value="">{t('common:auditPage.allOption', { defaultValue: '— Tous —' })}</option>
             {users.map((u) => (
               <option key={u.id} value={u.id}>
                 {u.firstName} {u.lastName} ({u.role})
@@ -209,7 +209,7 @@ export default function AuditPage() {
 
         <div style={{ flex: '0 1 170px', minWidth: '140px' }}>
           <label style={{ display: 'block', fontSize: theme.font.sizeXs, color: theme.colors.textMuted, marginBottom: '0.25rem' }}>
-            Depuis
+            {t('common:auditPage.fromLabel', { defaultValue: 'Depuis' })}
           </label>
           <input
             type="datetime-local"
@@ -221,7 +221,7 @@ export default function AuditPage() {
 
         <div style={{ flex: '0 1 170px', minWidth: '140px' }}>
           <label style={{ display: 'block', fontSize: theme.font.sizeXs, color: theme.colors.textMuted, marginBottom: '0.25rem' }}>
-            Jusqu'à
+            {t('common:auditPage.toLabel', { defaultValue: "Jusqu'à" })}
           </label>
           <input
             type="datetime-local"
@@ -264,7 +264,7 @@ export default function AuditPage() {
 
       {!isLoading && !isError && rows.length === 0 && (
         <p style={{ color: theme.colors.textMuted, padding: '1rem', fontStyle: 'italic' }}>
-          Aucune entrée pour ces filtres.
+          {t('common:auditPage.noEntries', { defaultValue: 'Aucune entrée pour ces filtres.' })}
         </p>
       )}
 
@@ -274,11 +274,11 @@ export default function AuditPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead style={{ ...tableStyles.header }}>
                 <tr>
-                  <th style={{ ...tableStyles.headerCell, textAlign: 'left', width: '160px' }}>Quand</th>
-                  <th style={{ ...tableStyles.headerCell, textAlign: 'left' }}>Événement</th>
-                  <th style={{ ...tableStyles.headerCell, textAlign: 'left' }}>Agrégat</th>
-                  <th style={{ ...tableStyles.headerCell, textAlign: 'left' }}>Acteur</th>
-                  <th style={{ ...tableStyles.headerCell, textAlign: 'left' }}>Données</th>
+                  <th style={{ ...tableStyles.headerCell, textAlign: 'left', width: '160px' }}>{t('common:auditPage.colWhen', { defaultValue: 'Quand' })}</th>
+                  <th style={{ ...tableStyles.headerCell, textAlign: 'left' }}>{t('common:auditPage.colEvent', { defaultValue: 'Événement' })}</th>
+                  <th style={{ ...tableStyles.headerCell, textAlign: 'left' }}>{t('common:auditPage.colAggregate', { defaultValue: 'Agrégat' })}</th>
+                  <th style={{ ...tableStyles.headerCell, textAlign: 'left' }}>{t('common:auditPage.colActor', { defaultValue: 'Acteur' })}</th>
+                  <th style={{ ...tableStyles.headerCell, textAlign: 'left' }}>{t('common:auditPage.colData', { defaultValue: 'Données' })}</th>
                 </tr>
               </thead>
               <tbody>
@@ -305,7 +305,7 @@ export default function AuditPage() {
                       <td style={{ ...tableStyles.cell, fontSize: theme.font.sizeSm }}>
                         {r.actor
                           ? `${r.actor.firstName} ${r.actor.lastName}`
-                          : <span style={{ color: theme.colors.textMuted, fontStyle: 'italic' }}>Système</span>}
+                          : <span style={{ color: theme.colors.textMuted, fontStyle: 'italic' }}>{t('common:auditPage.systemActor', { defaultValue: 'Système' })}</span>}
                       </td>
                       <td style={{ ...tableStyles.cell, fontSize: theme.font.sizeXs }}>
                         {r.data && Object.keys(r.data).length > 0 ? (
@@ -321,7 +321,7 @@ export default function AuditPage() {
                               color: theme.colors.textSecondary,
                             }}
                           >
-                            {isOpen ? '▲ Masquer' : '▼ Voir'}
+                            {isOpen ? `▲ ${t('common:auditPage.hide', { defaultValue: 'Masquer' })}` : `▼ ${t('common:auditPage.view', { defaultValue: 'Voir' })}`}
                           </button>
                         ) : (
                           <span style={{ color: theme.colors.textMuted }}>—</span>
@@ -372,10 +372,10 @@ export default function AuditPage() {
                   color: theme.colors.text,
                 }}
               >
-                ← Précédent
+                ← {t('common:auditPage.previous', { defaultValue: 'Précédent' })}
               </button>
               <span style={{ color: theme.colors.textSecondary, minWidth: '140px', textAlign: 'center' }}>
-                Page {meta.page} / {meta.totalPages}
+                {t('common:auditPage.pageOf', { defaultValue: 'Page {{page}} / {{total}}', page: meta.page, total: meta.totalPages })}
               </span>
               <button
                 onClick={() => setPage((p) => p + 1)}
@@ -389,7 +389,7 @@ export default function AuditPage() {
                   color: theme.colors.text,
                 }}
               >
-                Suivant →
+                {t('common:auditPage.next', { defaultValue: 'Suivant' })} →
               </button>
             </div>
           )}

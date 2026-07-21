@@ -51,13 +51,13 @@ export default function SuperAdminAllUsersPage() {
     <div style={layoutStyles.page}>
       <header style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
         <div>
-          <h1 style={{ margin: 0 }}>👥 Tous les utilisateurs</h1>
+          <h1 style={{ margin: 0 }}>👥 {t('superAdmin:allUsers.title', { defaultValue: 'Tous les utilisateurs' })}</h1>
           <p style={{ color: theme.colors.textMuted, margin: '4px 0 0', fontSize: 13 }}>
-            Liste cross-tenant. Cliquez sur une ligne pour changer son tenant ou son rôle.
+            {t('superAdmin:allUsers.subtitle', { defaultValue: 'Liste cross-tenant. Cliquez sur une ligne pour changer son tenant ou son rôle.' })}
           </p>
         </div>
         <button onClick={() => setCreating(true)} style={buttonStyles.primary}>
-          ➕ Ajouter un utilisateur
+          ➕ {t('superAdmin:allUsers.addUser', { defaultValue: 'Ajouter un utilisateur' })}
         </button>
       </header>
 
@@ -68,7 +68,7 @@ export default function SuperAdminAllUsersPage() {
             setPage(1);
             setEmailFilter(e.target.value);
           }}
-          placeholder="Filtrer par email (préfixe)"
+          placeholder={t('superAdmin:allUsers.emailFilterPlaceholder', { defaultValue: 'Filtrer par email (préfixe)' })}
           style={{ ...formStyles.input, flex: 1, minWidth: 220 }}
         />
         <select
@@ -79,10 +79,10 @@ export default function SuperAdminAllUsersPage() {
           }}
           style={{ ...formStyles.input, minWidth: 200 }}
         >
-          <option value="">Tous les tenants</option>
-          {tenantsData?.data.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.slug} — {t.name}
+          <option value="">{t('superAdmin:allUsers.allTenants', { defaultValue: 'Tous les tenants' })}</option>
+          {tenantsData?.data.map((tenant) => (
+            <option key={tenant.id} value={tenant.id}>
+              {tenant.slug} — {tenant.name}
             </option>
           ))}
         </select>
@@ -93,18 +93,23 @@ export default function SuperAdminAllUsersPage() {
       {usersData && (
         <div style={{ ...cardStyles.card, padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: 12, borderBottom: `1px solid ${theme.colors.border}`, fontSize: 13, color: theme.colors.textMuted }}>
-            {usersData.pagination.total} utilisateur{usersData.pagination.total > 1 ? 's' : ''} —
-            page {usersData.pagination.page} / {Math.max(1, Math.ceil(usersData.pagination.total / usersData.pagination.limit))}
+            {t('superAdmin:allUsers.paginationSummary', {
+              defaultValue: '{{total}} utilisateur{{plural}} — page {{page}} / {{pages}}',
+              total: usersData.pagination.total,
+              plural: usersData.pagination.total > 1 ? 's' : '',
+              page: usersData.pagination.page,
+              pages: Math.max(1, Math.ceil(usersData.pagination.total / usersData.pagination.limit)),
+            })}
           </div>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead style={{ background: theme.colors.surfaceAlt }}>
               <tr>
-                <th style={th}>Email</th>
-                <th style={th}>Nom</th>
-                <th style={th}>Rôle</th>
-                <th style={th}>Tenant</th>
-                <th style={th}>Statut</th>
-                <th style={th}>Action</th>
+                <th style={th}>{t('superAdmin:allUsers.colEmail', { defaultValue: 'Email' })}</th>
+                <th style={th}>{t('superAdmin:allUsers.colName', { defaultValue: 'Nom' })}</th>
+                <th style={th}>{t('superAdmin:allUsers.colRole', { defaultValue: 'Rôle' })}</th>
+                <th style={th}>{t('superAdmin:allUsers.colTenant', { defaultValue: 'Tenant' })}</th>
+                <th style={th}>{t('superAdmin:allUsers.colStatus', { defaultValue: 'Statut' })}</th>
+                <th style={th}>{t('superAdmin:allUsers.colAction', { defaultValue: 'Action' })}</th>
               </tr>
             </thead>
             <tbody>
@@ -123,22 +128,22 @@ export default function SuperAdminAllUsersPage() {
                   </td>
                   <td style={td}>
                     {u.isActive ? (
-                      <span style={{ color: theme.colors.success }}>✓ actif</span>
+                      <span style={{ color: theme.colors.success }}>{t('superAdmin:allUsers.active', { defaultValue: '✓ actif' })}</span>
                     ) : (
-                      <span style={{ color: theme.colors.danger }}>✗ inactif</span>
+                      <span style={{ color: theme.colors.danger }}>{t('superAdmin:allUsers.inactive', { defaultValue: '✗ inactif' })}</span>
                     )}
                   </td>
                   <td style={td}>
                     {u.role === 'SUPER_ADMIN' ? (
                       <span style={{ fontSize: 11, color: theme.colors.textMuted }}>
-                        non éditable
+                        {t('superAdmin:allUsers.notEditable', { defaultValue: 'non éditable' })}
                       </span>
                     ) : (
                       <button
                         onClick={() => setEditing(u)}
                         style={{ ...buttonStyles.secondary, fontSize: 11, padding: '3px 8px' }}
                       >
-                        ✏️ Éditer
+                        ✏️ {t('superAdmin:allUsers.edit', { defaultValue: 'Éditer' })}
                       </button>
                     )}
                   </td>
@@ -148,14 +153,14 @@ export default function SuperAdminAllUsersPage() {
           </table>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: 12, borderTop: `1px solid ${theme.colors.border}` }}>
             <button disabled={page <= 1} onClick={() => setPage(page - 1)} style={buttonStyles.secondary}>
-              ◀ Précédent
+              ◀ {t('superAdmin:allUsers.prev', { defaultValue: 'Précédent' })}
             </button>
             <button
               disabled={page * usersData.pagination.limit >= usersData.pagination.total}
               onClick={() => setPage(page + 1)}
               style={buttonStyles.secondary}
             >
-              Suivant ▶
+              {t('superAdmin:allUsers.next', { defaultValue: 'Suivant' })} ▶
             </button>
           </div>
         </div>
@@ -190,6 +195,7 @@ function CreateUserModal({
   onClose: () => void;
 }) {
   const qc = useQueryClient();
+  const { t } = useTranslation('superAdmin');
   const [form, setForm] = useState<CreateUserInput>({
     tenantId: defaultTenantId,
     email: '',
@@ -243,32 +249,32 @@ function CreateUserModal({
         onClick={(e) => e.stopPropagation()}
         style={{ ...cardStyles.card, padding: 24, maxWidth: 480, width: '100%' }}
       >
-        <h2 style={{ margin: '0 0 16px' }}>➕ Nouvel utilisateur</h2>
+        <h2 style={{ margin: '0 0 16px' }}>➕ {t('superAdmin:allUsers.newUser', { defaultValue: 'Nouvel utilisateur' })}</h2>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <Field label="Tenant">
+          <Field label={t('superAdmin:allUsers.tenant', { defaultValue: 'Tenant' })}>
             <select
               value={form.tenantId}
               onChange={(e) => setForm({ ...form, tenantId: e.target.value })}
               style={formStyles.input}
             >
-              {tenants.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.slug} — {t.name}
+              {tenants.map((tenant) => (
+                <option key={tenant.id} value={tenant.id}>
+                  {tenant.slug} — {tenant.name}
                 </option>
               ))}
             </select>
           </Field>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <Field label="Prénom">
+            <Field label={t('superAdmin:allUsers.firstName', { defaultValue: 'Prénom' })}>
               <input
                 value={form.firstName}
                 onChange={(e) => setForm({ ...form, firstName: e.target.value })}
                 style={formStyles.input}
               />
             </Field>
-            <Field label="Nom">
+            <Field label={t('superAdmin:allUsers.lastName', { defaultValue: 'Nom' })}>
               <input
                 value={form.lastName}
                 onChange={(e) => setForm({ ...form, lastName: e.target.value })}
@@ -277,7 +283,7 @@ function CreateUserModal({
             </Field>
           </div>
 
-          <Field label="Email">
+          <Field label={t('superAdmin:allUsers.email', { defaultValue: 'Email' })}>
             <input
               type="email"
               value={form.email}
@@ -286,7 +292,7 @@ function CreateUserModal({
             />
           </Field>
 
-          <Field label="Mot de passe (≥ 8 caractères)">
+          <Field label={t('superAdmin:allUsers.password', { defaultValue: 'Mot de passe (≥ 8 caractères)' })}>
             <input
               type="password"
               value={form.password}
@@ -296,7 +302,7 @@ function CreateUserModal({
           </Field>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <Field label="Rôle">
+            <Field label={t('superAdmin:allUsers.role', { defaultValue: 'Rôle' })}>
               <select
                 value={form.role}
                 onChange={(e) =>
@@ -311,7 +317,7 @@ function CreateUserModal({
                 ))}
               </select>
             </Field>
-            <Field label="Téléphone (optionnel)">
+            <Field label={t('superAdmin:allUsers.phone', { defaultValue: 'Téléphone (optionnel)' })}>
               <input
                 value={form.phone ?? ''}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
@@ -320,27 +326,27 @@ function CreateUserModal({
             </Field>
           </div>
 
-          <Field label="Statut">
+          <Field label={t('superAdmin:allUsers.status', { defaultValue: 'Statut' })}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <input
                 type="checkbox"
                 checked={form.isActive}
                 onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
               />
-              <span style={{ fontSize: 13 }}>Compte actif</span>
+              <span style={{ fontSize: 13 }}>{t('superAdmin:allUsers.accountActive', { defaultValue: 'Compte actif' })}</span>
             </label>
           </Field>
         </div>
 
         {errorText && (
           <p style={{ color: theme.colors.danger, marginTop: 12, fontSize: 13 }}>
-            Échec : {errorText}
+            {t('superAdmin:allUsers.failureWith', { defaultValue: 'Échec : {{error}}', error: errorText })}
           </p>
         )}
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
           <button onClick={onClose} style={buttonStyles.secondary}>
-            Annuler
+            {t('superAdmin:allUsers.cancel', { defaultValue: 'Annuler' })}
           </button>
           <button
             onClick={() => create.mutate()}
@@ -351,7 +357,7 @@ function CreateUserModal({
               cursor: !canSubmit || create.isPending ? 'not-allowed' : 'pointer',
             }}
           >
-            {create.isPending ? 'Création…' : 'Créer'}
+            {create.isPending ? t('superAdmin:allUsers.creating', { defaultValue: 'Création…' }) : t('superAdmin:allUsers.create', { defaultValue: 'Créer' })}
           </button>
         </div>
       </div>
@@ -395,6 +401,7 @@ function EditUserModal({
   onClose: () => void;
 }) {
   const qc = useQueryClient();
+  const { t } = useTranslation('superAdmin');
   const initialRole: EditableRole =
     user.role === 'SUPER_ADMIN' ? 'ADMIN' : (user.role as EditableRole);
   const [form, setForm] = useState<UpdateUserBySuperAdminInput>({
@@ -430,32 +437,31 @@ function EditUserModal({
         style={{ ...cardStyles.card, padding: 24, maxWidth: 480, width: '100%' }}
       >
         <h2 style={{ margin: '0 0 8px' }}>
-          Éditer <code>{user.email}</code>
+          {t('superAdmin:allUsers.editHeading', { defaultValue: 'Éditer' })} <code>{user.email}</code>
         </h2>
         <p style={{ fontSize: 12, color: theme.colors.textMuted, margin: '0 0 16px' }}>
           {user.firstName} {user.lastName}
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <Field label="Tenant">
+          <Field label={t('superAdmin:allUsers.tenant', { defaultValue: 'Tenant' })}>
             <select
               value={form.tenantId}
               onChange={(e) => setForm({ ...form, tenantId: e.target.value })}
               style={formStyles.input}
             >
-              {tenants.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.slug} — {t.name}
+              {tenants.map((tenant) => (
+                <option key={tenant.id} value={tenant.id}>
+                  {tenant.slug} — {tenant.name}
                 </option>
               ))}
             </select>
             <span style={{ fontSize: 11, color: theme.colors.textMuted, marginTop: 4 }}>
-              ⚠ Déplacer un user vers un autre tenant déplace aussi ses notifications,
-              audit logs et BTs assignés.
+              {t('superAdmin:allUsers.moveTenantWarning', { defaultValue: '⚠ Déplacer un user vers un autre tenant déplace aussi ses notifications, audit logs et BTs assignés.' })}
             </span>
           </Field>
 
-          <Field label="Rôle">
+          <Field label={t('superAdmin:allUsers.role', { defaultValue: 'Rôle' })}>
             <select
               value={form.role}
               onChange={(e) => setForm({ ...form, role: e.target.value as EditableRole })}
@@ -468,34 +474,33 @@ function EditUserModal({
               ))}
             </select>
             <span style={{ fontSize: 11, color: theme.colors.textMuted, marginTop: 4 }}>
-              SUPER_ADMIN n'est pas dans la liste — la promotion SA passe par
-              SUPER_ADMIN_EMAIL en env.
+              {t('superAdmin:allUsers.superAdminNotInList', { defaultValue: "SUPER_ADMIN n'est pas dans la liste — la promotion SA passe par SUPER_ADMIN_EMAIL en env." })}
             </span>
           </Field>
 
-          <Field label="Statut">
+          <Field label={t('superAdmin:allUsers.status', { defaultValue: 'Statut' })}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <input
                 type="checkbox"
                 checked={form.isActive}
                 onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
               />
-              <span style={{ fontSize: 13 }}>Compte actif</span>
+              <span style={{ fontSize: 13 }}>{t('superAdmin:allUsers.accountActive', { defaultValue: 'Compte actif' })}</span>
             </label>
           </Field>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
           <button onClick={onClose} style={buttonStyles.secondary}>
-            Annuler
+            {t('superAdmin:allUsers.cancel', { defaultValue: 'Annuler' })}
           </button>
           <button onClick={() => save.mutate()} disabled={save.isPending} style={buttonStyles.primary}>
-            {save.isPending ? 'Sauvegarde…' : 'Sauvegarder'}
+            {save.isPending ? t('superAdmin:allUsers.saving', { defaultValue: 'Sauvegarde…' }) : t('superAdmin:allUsers.save', { defaultValue: 'Sauvegarder' })}
           </button>
         </div>
         {save.isError && (
           <p style={{ color: theme.colors.danger, marginTop: 8, fontSize: 13 }}>
-            Échec — vérifiez les valeurs (ex: tenant cible désactivé).
+            {t('superAdmin:allUsers.saveError', { defaultValue: 'Échec — vérifiez les valeurs (ex: tenant cible désactivé).' })}
           </p>
         )}
       </div>

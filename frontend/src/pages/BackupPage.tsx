@@ -31,7 +31,7 @@ export default function BackupPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.name.endsWith('.tar.gz')) {
-      alert('Format invalide : seuls les fichiers .tar.gz sont acceptés.');
+      alert(tCommon('common:backupPage.invalidFormat', { defaultValue: 'Format invalide : seuls les fichiers .tar.gz sont acceptés.' }));
       e.target.value = '';
       return;
     }
@@ -96,7 +96,7 @@ export default function BackupPage() {
               marginBottom: '0.25rem',
             }}
           >
-            Version du système
+            {tCommon('common:backupPage.systemVersion', { defaultValue: 'Version du système' })}
           </div>
           <div
             style={{
@@ -111,9 +111,9 @@ export default function BackupPage() {
         </div>
         {infoQuery.data && (
           <div style={{ textAlign: 'right', fontSize: theme.font.sizeSm, color: theme.colors.textMuted }}>
-            <div>Pièces jointes : <strong>{infoQuery.data.attachmentsCount}</strong></div>
+            <div>{tCommon('common:backupPage.attachmentsCount', { defaultValue: 'Pièces jointes :' })} <strong>{infoQuery.data.attachmentsCount}</strong></div>
             <div style={{ fontSize: theme.font.sizeXs, marginTop: '0.25rem' }}>
-              Cette version sera intégrée au nom du fichier de sauvegarde
+              {tCommon('common:backupPage.versionInFilename', { defaultValue: 'Cette version sera intégrée au nom du fichier de sauvegarde' })}
             </div>
           </div>
         )}
@@ -125,8 +125,9 @@ export default function BackupPage() {
           📥 {tCommon('backup.download', { defaultValue: 'Télécharger une sauvegarde' })}
         </h2>
         <p style={{ margin: '0 0 1rem', color: theme.colors.textMuted, fontSize: theme.font.sizeSm }}>
-          Génère une archive <code>tar.gz</code> contenant un dump SQL complet et les pièces jointes MinIO.
-          Le nom de fichier inclut la version courante pour assurer la compatibilité au restore.
+          {tCommon('common:backupPage.downloadDescPrefix', { defaultValue: 'Génère une archive' })}{' '}
+          <code>tar.gz</code>{' '}
+          {tCommon('common:backupPage.downloadDescSuffix', { defaultValue: 'contenant un dump SQL complet et les pièces jointes MinIO. Le nom de fichier inclut la version courante pour assurer la compatibilité au restore.' })}
         </p>
         {infoQuery.data && (
           <div
@@ -157,12 +158,12 @@ export default function BackupPage() {
         </button>
         {download.isError && (
           <p style={{ color: theme.colors.danger, marginTop: '0.75rem', fontSize: theme.font.sizeSm }}>
-            Échec : {(download.error as Error)?.message ?? 'erreur inconnue'}
+            {tCommon('common:backupPage.failurePrefix', { defaultValue: 'Échec :' })} {(download.error as Error)?.message ?? tCommon('common:backupPage.unknownError', { defaultValue: 'erreur inconnue' })}
           </p>
         )}
         {download.isSuccess && download.data && (
           <p style={{ color: theme.colors.success, marginTop: '0.75rem', fontSize: theme.font.sizeSm }}>
-            ✅ Téléchargé : {download.data.filename} ({formatBytes(download.data.size)})
+            ✅ {tCommon('common:backupPage.downloadedPrefix', { defaultValue: 'Téléchargé :' })} {download.data.filename} ({formatBytes(download.data.size)})
           </p>
         )}
       </section>
@@ -183,13 +184,12 @@ export default function BackupPage() {
             color: '#7f1d1d',
           }}
         >
-          ⚠️ <strong>Action destructive.</strong> Toutes les données actuelles
-          (BD + pièces jointes) seront <strong>écrasées</strong>. Téléchargez une
-          sauvegarde de l'état courant avant de procéder.
+          ⚠️ <strong>{tCommon('common:backupPage.destructiveTitle', { defaultValue: 'Action destructive.' })}</strong>{' '}
+          {tCommon('common:backupPage.destructiveBody', { defaultValue: 'Toutes les données actuelles (BD + pièces jointes) seront' })}{' '}
+          <strong>{tCommon('common:backupPage.overwritten', { defaultValue: 'écrasées' })}</strong>{tCommon('common:backupPage.destructiveTail', { defaultValue: ". Téléchargez une sauvegarde de l'état courant avant de procéder." })}
         </div>
         <p style={{ margin: '0 0 0.75rem', color: theme.colors.textMuted, fontSize: theme.font.sizeSm }}>
-          La version contenue dans la sauvegarde doit correspondre à la version
-          courante (<strong>v{version ?? '?'}</strong>). Sinon, la restauration sera refusée.
+          {tCommon('common:backupPage.versionMatchPrefix', { defaultValue: 'La version contenue dans la sauvegarde doit correspondre à la version courante (' })}<strong>v{version ?? '?'}</strong>{tCommon('common:backupPage.versionMatchSuffix', { defaultValue: '). Sinon, la restauration sera refusée.' })}
         </p>
 
         <input
@@ -208,7 +208,7 @@ export default function BackupPage() {
             cursor: 'pointer',
           }}
         >
-          📁 Choisir une archive .tar.gz
+          📁 {tCommon('common:backupPage.chooseArchive', { defaultValue: 'Choisir une archive .tar.gz' })}
         </label>
 
         {restore.isError && (
@@ -218,8 +218,7 @@ export default function BackupPage() {
         )}
         {restore.isSuccess && restore.data && (
           <p style={{ color: theme.colors.success, marginTop: '0.75rem', fontSize: theme.font.sizeSm }}>
-            ✅ Restauration réussie — version {restore.data.backupVersion},{' '}
-            {restore.data.attachmentsRestored} pièce(s) jointe(s).
+            ✅ {tCommon('common:backupPage.restoreSuccess', { defaultValue: 'Restauration réussie — version {{version}}, {{count}} pièce(s) jointe(s).', version: restore.data.backupVersion, count: restore.data.attachmentsRestored })}
           </p>
         )}
       </section>
@@ -248,13 +247,13 @@ export default function BackupPage() {
             }}
           >
             <h3 style={{ margin: '0 0 1rem', color: theme.colors.danger }}>
-              ⚠️ Confirmer la restauration ?
+              ⚠️ {tCommon('common:backupPage.confirmRestoreTitle', { defaultValue: 'Confirmer la restauration ?' })}
             </h3>
             <p style={{ margin: '0 0 0.5rem', fontSize: theme.font.sizeSm }}>
-              Fichier : <strong style={{ wordBreak: 'break-all' }}>{pendingFile.name}</strong>
+              {tCommon('common:backupPage.fileLabel', { defaultValue: 'Fichier :' })} <strong style={{ wordBreak: 'break-all' }}>{pendingFile.name}</strong>
             </p>
             <p style={{ margin: '0 0 0.5rem', fontSize: theme.font.sizeSm }}>
-              Taille : <strong>{formatBytes(pendingFile.size)}</strong>
+              {tCommon('common:backupPage.sizeLabel', { defaultValue: 'Taille :' })} <strong>{formatBytes(pendingFile.size)}</strong>
             </p>
             {detectedVersion && (
               <p
@@ -266,18 +265,18 @@ export default function BackupPage() {
                   fontSize: theme.font.sizeSm,
                 }}
               >
-                Version détectée : <strong>v{detectedVersion}</strong>{' '}
+                {tCommon('common:backupPage.detectedVersion', { defaultValue: 'Version détectée :' })} <strong>v{detectedVersion}</strong>{' '}
                 {versionMatches
-                  ? '✅ compatible'
-                  : `⚠️ ne correspond pas à v${version} — sera refusé`}
+                  ? `✅ ${tCommon('common:backupPage.compatible', { defaultValue: 'compatible' })}`
+                  : `⚠️ ${tCommon('common:backupPage.versionMismatch', { defaultValue: 'ne correspond pas à v{{version}} — sera refusé', version })}`}
               </p>
             )}
             <p style={{ margin: '1rem 0', fontSize: theme.font.sizeSm, color: theme.colors.danger }}>
-              Toutes les données actuelles seront écrasées. Cette action est irréversible.
+              {tCommon('common:backupPage.irreversibleWarning', { defaultValue: 'Toutes les données actuelles seront écrasées. Cette action est irréversible.' })}
             </p>
             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
               <button onClick={handleCancelRestore} style={buttonStyles.ghost}>
-                Annuler
+                {tCommon('common:backupPage.cancel', { defaultValue: 'Annuler' })}
               </button>
               <button
                 onClick={handleConfirmRestore}
@@ -288,7 +287,7 @@ export default function BackupPage() {
                   cursor: restore.isPending ? 'wait' : 'pointer',
                 }}
               >
-                {restore.isPending ? '⏳ Restauration…' : 'Restaurer'}
+                {restore.isPending ? `⏳ ${tCommon('common:backupPage.restoring', { defaultValue: 'Restauration…' })}` : tCommon('common:backupPage.restore', { defaultValue: 'Restaurer' })}
               </button>
             </div>
           </div>

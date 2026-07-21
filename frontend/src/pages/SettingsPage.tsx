@@ -160,11 +160,11 @@ function TaskTypeModal({
                 style={{ ...formStyles.input, fontFamily: 'monospace', textTransform: 'uppercase', maxWidth: '160px' }}
                 placeholder="PLB, ELC, MNT..."
                 {...register('prefix', {
-                  required: 'Le préfixe est obligatoire',
-                  maxLength: { value: 10, message: '10 caractères maximum' },
+                  required: t('settings:page.prefixRequired', { defaultValue: 'Le préfixe est obligatoire' }),
+                  maxLength: { value: 10, message: t('settings:page.prefixMaxLength', { defaultValue: '10 caractères maximum' }) },
                   pattern: {
                     value: /^[A-Z0-9]+$/,
-                    message: 'Lettres et chiffres uniquement (pas de tirets ni espaces)',
+                    message: t('settings:page.prefixPattern', { defaultValue: 'Lettres et chiffres uniquement (pas de tirets ni espaces)' }),
                   },
                   setValueAs: (v: string) => v.toUpperCase(),
                 })}
@@ -187,18 +187,18 @@ function TaskTypeModal({
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                 <input
                   style={{ ...formStyles.input }}
-                  placeholder="FR Français"
-                  {...register('nameFr', { required: 'Le nom (FR) est obligatoire' })}
+                  placeholder={t('settings:page.langFrPlaceholder', { defaultValue: 'FR Français' })}
+                  {...register('nameFr', { required: t('settings:page.nameFrRequired', { defaultValue: 'Le nom (FR) est obligatoire' }) })}
                 />
                 <input
                   style={{ ...formStyles.input }}
-                  placeholder="EN English"
+                  placeholder={t('settings:page.langEnPlaceholder', { defaultValue: 'EN English' })}
                   {...register('nameEn')}
                 />
               </div>
               {errors.nameFr && <span style={{ ...formStyles.fieldError }}>{errors.nameFr.message}</span>}
               <p style={{ ...formStyles.fieldHint }}>
-                Le nom français est utilisé comme valeur canonique. Laisser l'anglais vide = fallback sur le FR.
+                {t('settings:page.nameCanonicalHint', { defaultValue: "Le nom français est utilisé comme valeur canonique. Laisser l'anglais vide = fallback sur le FR." })}
               </p>
             </div>
 
@@ -208,13 +208,13 @@ function TaskTypeModal({
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                 <textarea
                   style={{ ...formStyles.textarea }}
-                  placeholder="FR Français"
+                  placeholder={t('settings:page.langFrPlaceholder', { defaultValue: 'FR Français' })}
                   rows={3}
                   {...register('descriptionFr')}
                 />
                 <textarea
                   style={{ ...formStyles.textarea }}
-                  placeholder="EN English"
+                  placeholder={t('settings:page.langEnPlaceholder', { defaultValue: 'EN English' })}
                   rows={3}
                   {...register('descriptionEn')}
                 />
@@ -286,14 +286,14 @@ function TaskTypeModal({
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <input
                   style={{ ...formStyles.input, maxWidth: '200px' }}
-                  placeholder="Ou saisir un emoji / texte court"
+                  placeholder={t('settings:page.iconInputPlaceholder', { defaultValue: 'Ou saisir un emoji / texte court' })}
                   {...register('icon')}
                 />
                 {watch('icon') && (
                   <span style={{ fontSize: '1.5rem' }}>{watch('icon')}</span>
                 )}
               </div>
-              <p style={{ ...formStyles.fieldHint }}>Choisissez une icône ci-dessus ou saisissez un emoji / une courte abréviation.</p>
+              <p style={{ ...formStyles.fieldHint }}>{t('settings:page.iconHint', { defaultValue: 'Choisissez une icône ci-dessus ou saisissez un emoji / une courte abréviation.' })}</p>
             </div>
 
             {/* Template */}
@@ -304,14 +304,14 @@ function TaskTypeModal({
                 {...register('templateId')}
               >
                 <option value="">{t('taskType.templateNone')}</option>
-                {templates.map((t) => (
-                  <option key={t.id} value={t.id} disabled={!t.isActive}>
-                    {t.name}{!t.isActive ? ' (inactif)' : ''}
+                {templates.map((tpl) => (
+                  <option key={tpl.id} value={tpl.id} disabled={!tpl.isActive}>
+                    {tpl.name}{!tpl.isActive ? t('settings:page.inactiveSuffix', { defaultValue: ' (inactif)' }) : ''}
                   </option>
                 ))}
               </select>
               <p style={{ ...formStyles.fieldHint }}>
-                Si défini, ses sections et champs apparaissent automatiquement à la création/édition d'un BT de ce type.
+                {t('settings:page.templateHint', { defaultValue: "Si défini, ses sections et champs apparaissent automatiquement à la création/édition d'un BT de ce type." })}
                 {' '}<Link to="/parametres/templates" style={{ color: theme.colors.primary }}>{t('taskType.manageTemplates')}</Link>
               </p>
             </div>
@@ -323,22 +323,22 @@ function TaskTypeModal({
                 style={{ ...formStyles.select, boxSizing: 'border-box' }}
                 {...register('processDefinitionId')}
               >
-                <option value="">— Processus par défaut —</option>
+                <option value="">{t('settings:page.processDefaultOption', { defaultValue: '— Processus par défaut —' })}</option>
                 {processes.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name}{p.isDefault ? ' (défaut)' : ''}
+                    {p.name}{p.isDefault ? t('settings:page.defaultSuffix', { defaultValue: ' (défaut)' }) : ''}
                   </option>
                 ))}
               </select>
               <p style={{ ...formStyles.fieldHint }}>
-                Les BT créés pour ce type suivront les étapes de ce processus. Laisser vide pour utiliser le processus par défaut.
+                {t('settings:page.processHint', { defaultValue: 'Les BT créés pour ce type suivront les étapes de ce processus. Laisser vide pour utiliser le processus par défaut.' })}
                 {' '}<Link to="/parametres/processus" style={{ color: theme.colors.primary }}>{t('taskType.manageProcesses')}</Link>
               </p>
             </div>
 
             {isError && (
               <p style={{ ...formStyles.fieldError }}>
-                {errorMessage ?? 'Une erreur est survenue. Veuillez réessayer.'}
+                {errorMessage ?? t('settings:page.genericError', { defaultValue: 'Une erreur est survenue. Veuillez réessayer.' })}
               </p>
             )}
           </div>
@@ -378,6 +378,7 @@ function ConfigTypeModal({
   isLoading: boolean;
   isError: boolean;
 }) {
+  const { t } = useTranslation('settings');
   const { t: tCommon } = useTranslation('common');
   const {
     register,
@@ -423,12 +424,12 @@ function ConfigTypeModal({
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                 <input
                   style={{ ...formStyles.input }}
-                  placeholder="FR Ex: Résidentiel"
-                  {...register('nameFr', { required: 'Le nom (FR) est obligatoire' })}
+                  placeholder={t('settings:page.nameFrExamplePlaceholder', { defaultValue: 'FR Ex: Résidentiel' })}
+                  {...register('nameFr', { required: t('settings:page.nameFrRequired', { defaultValue: 'Le nom (FR) est obligatoire' }) })}
                 />
                 <input
                   style={{ ...formStyles.input }}
-                  placeholder="EN Ex: Residential"
+                  placeholder={t('settings:page.nameEnExamplePlaceholder', { defaultValue: 'EN Ex: Residential' })}
                   {...register('nameEn')}
                 />
               </div>
@@ -438,22 +439,22 @@ function ConfigTypeModal({
             {/* Code */}
             <div style={{ ...formStyles.fieldGroup }}>
               <label style={{ ...formStyles.label }}>
-                Code <span style={{ color: theme.colors.danger }}>*</span>
+                {t('settings:page.codeLabel', { defaultValue: 'Code' })} <span style={{ color: theme.colors.danger }}>*</span>
               </label>
               <input
                 style={{ ...formStyles.input, fontFamily: 'monospace', textTransform: 'uppercase' }}
-                placeholder="Ex: RESIDENTIAL"
+                placeholder={t('settings:page.codePlaceholder', { defaultValue: 'Ex: RESIDENTIAL' })}
                 {...register('code', {
-                  required: 'Le code est obligatoire',
+                  required: t('settings:page.codeRequired', { defaultValue: 'Le code est obligatoire' }),
                   pattern: {
                     value: /^[A-Z0-9_]+$/,
-                    message: 'Majuscules, chiffres et underscores uniquement',
+                    message: t('settings:page.codePattern', { defaultValue: 'Majuscules, chiffres et underscores uniquement' }),
                   },
                   setValueAs: (v: string) => v.toUpperCase(),
                 })}
               />
               {errors.code && <span style={{ ...formStyles.fieldError }}>{errors.code.message}</span>}
-              <p style={{ ...formStyles.fieldHint }}>Identifiant technique unique. Ex : RESIDENTIAL, COMMERCIAL</p>
+              <p style={{ ...formStyles.fieldHint }}>{t('settings:page.codeHint', { defaultValue: 'Identifiant technique unique. Ex : RESIDENTIAL, COMMERCIAL' })}</p>
             </div>
 
             {/* Description — bilingual (B10.2) */}
@@ -462,13 +463,13 @@ function ConfigTypeModal({
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                 <textarea
                   style={{ ...formStyles.textarea }}
-                  placeholder="FR Français"
+                  placeholder={t('settings:page.langFrPlaceholder', { defaultValue: 'FR Français' })}
                   rows={2}
                   {...register('descriptionFr')}
                 />
                 <textarea
                   style={{ ...formStyles.textarea }}
-                  placeholder="EN English"
+                  placeholder={t('settings:page.langEnPlaceholder', { defaultValue: 'EN English' })}
                   rows={2}
                   {...register('descriptionEn')}
                 />
@@ -506,11 +507,11 @@ function ConfigTypeModal({
 
             {/* Icon */}
             <div style={{ ...formStyles.fieldGroup }}>
-              <label style={{ ...formStyles.label }}>Icône (emoji ou texte court)</label>
+              <label style={{ ...formStyles.label }}>{t('settings:page.iconLabel', { defaultValue: 'Icône (emoji ou texte court)' })}</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <input
                   style={{ ...formStyles.input, maxWidth: '200px' }}
-                  placeholder="Ex: 🏠 ou RES"
+                  placeholder={t('settings:page.iconExamplePlaceholder', { defaultValue: 'Ex: 🏠 ou RES' })}
                   {...register('icon')}
                 />
                 {watch('icon') && (
@@ -521,7 +522,7 @@ function ConfigTypeModal({
 
             {/* Sort order */}
             <div style={{ ...formStyles.fieldGroup }}>
-              <label style={{ ...formStyles.label }}>Ordre d'affichage</label>
+              <label style={{ ...formStyles.label }}>{t('settings:page.sortOrderLabel', { defaultValue: "Ordre d'affichage" })}</label>
               <input
                 type="number"
                 style={{ ...formStyles.input, maxWidth: '100px' }}
@@ -532,7 +533,7 @@ function ConfigTypeModal({
 
             {isError && (
               <p style={{ ...formStyles.fieldError }}>
-                Une erreur est survenue. Veuillez réessayer.
+                {t('settings:page.genericError', { defaultValue: 'Une erreur est survenue. Veuillez réessayer.' })}
               </p>
             )}
           </div>
@@ -625,7 +626,7 @@ function ConfigTypeTable<T extends ClientTypeConfig | AddressTypeConfig>({
           onClick={onCreate}
           style={{ ...buttonStyles.primary }}
         >
-          + Nouveau type
+          {t('settings:page.newTypeButton', { defaultValue: '+ Nouveau type' })}
         </button>
       </div>
 
@@ -634,18 +635,18 @@ function ConfigTypeTable<T extends ClientTypeConfig | AddressTypeConfig>({
         <div style={{ padding: '2rem' }}><LoadingSpinner /></div>
       ) : isError ? (
         <div style={{ padding: '1rem', color: theme.colors.danger }}>
-          Erreur lors du chargement des données.
+          {t('settings:page.loadError', { defaultValue: 'Erreur lors du chargement des données.' })}
         </div>
       ) : !items || items.length === 0 ? (
         <div style={{ ...layoutStyles.emptyState }}>
           <span style={{ fontSize: '2.5rem' }}>{sectionIcon}</span>
-          <p style={{ margin: 0 }}>Aucun type configuré. Créez-en un pour commencer.</p>
+          <p style={{ margin: 0 }}>{t('settings:page.emptyTypes', { defaultValue: 'Aucun type configuré. Créez-en un pour commencer.' })}</p>
         </div>
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead style={{ ...tableStyles.header }}>
             <tr>
-              {['Couleur', 'Icône', 'Code', 'Nom', 'Description', 'Statut', ''].map((h) => (
+              {[t('settings:page.colHeaderColor', { defaultValue: 'Couleur' }), t('settings:page.colHeaderIcon', { defaultValue: 'Icône' }), t('settings:page.colHeaderCode', { defaultValue: 'Code' }), t('settings:page.colHeaderName', { defaultValue: 'Nom' }), t('settings:page.colHeaderDescription', { defaultValue: 'Description' }), t('settings:page.colHeaderStatus', { defaultValue: 'Statut' }), ''].map((h) => (
                 <th key={h} style={{ ...tableStyles.headerCell, textAlign: 'left' }}>
                   {h}
                 </th>
@@ -730,7 +731,7 @@ function ConfigTypeTable<T extends ClientTypeConfig | AddressTypeConfig>({
                       transition: 'all 0.15s ease',
                     }}
                   >
-                    {item.isActive ? '✓ Actif' : '✗ Inactif'}
+                    {item.isActive ? t('settings:page.statusActive', { defaultValue: '✓ Actif' }) : t('settings:page.statusInactive', { defaultValue: '✗ Inactif' })}
                   </button>
                 </td>
 
@@ -744,13 +745,13 @@ function ConfigTypeTable<T extends ClientTypeConfig | AddressTypeConfig>({
                         disabled={isDeleting}
                         style={{ ...buttonStyles.danger, ...buttonStyles.sm }}
                       >
-                        Oui
+                        {t('settings:page.yes', { defaultValue: 'Oui' })}
                       </button>
                       <button
                         onClick={() => setDeleteConfirmId(null)}
                         style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}
                       >
-                        Non
+                        {t('settings:page.no', { defaultValue: 'Non' })}
                       </button>
                     </span>
                   ) : (
@@ -759,15 +760,15 @@ function ConfigTypeTable<T extends ClientTypeConfig | AddressTypeConfig>({
                         onClick={() => onEdit(item)}
                         style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}
                       >
-                        ✏️ Modifier
+                        {t('settings:page.editButton', { defaultValue: '✏️ Modifier' })}
                       </button>
                       {onCustomFields && (
                         <button
                           onClick={() => onCustomFields(item)}
                           style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}
-                          title="Champs personnalisés et champ prédominant"
+                          title={t('settings:page.customFieldsTitle', { defaultValue: 'Champs personnalisés et champ prédominant' })}
                         >
-                          🔧 Champs
+                          {t('settings:page.fieldsButton', { defaultValue: '🔧 Champs' })}
                         </button>
                       )}
                       <button
@@ -1026,10 +1027,10 @@ export default function SettingsPage() {
           <span style={{ fontSize: '2rem', flexShrink: 0 }}>📋</span>
           <div>
             <p style={{ margin: 0, fontWeight: theme.font.weightSemibold, fontSize: theme.font.sizeMd, color: theme.colors.text }}>
-              Templates de formulaire
+              {t('settings:page.quickTemplatesTitle', { defaultValue: 'Templates de formulaire' })}
             </p>
             <p style={{ margin: 0, fontSize: theme.font.sizeXs, color: theme.colors.textMuted, marginTop: '0.125rem' }}>
-              Construire des sections et champs personnalisés pour les bons de travail
+              {t('settings:page.quickTemplatesDesc', { defaultValue: 'Construire des sections et champs personnalisés pour les bons de travail' })}
             </p>
           </div>
           <span style={{ marginLeft: 'auto', fontSize: theme.font.sizeLg, color: theme.colors.textLight }}>›</span>
@@ -1066,10 +1067,10 @@ export default function SettingsPage() {
           <span style={{ fontSize: '2rem', flexShrink: 0 }}>🔀</span>
           <div>
             <p style={{ margin: 0, fontWeight: theme.font.weightSemibold, fontSize: theme.font.sizeMd, color: theme.colors.text }}>
-              Moteur de processus
+              {t('settings:page.quickProcessTitle', { defaultValue: 'Moteur de processus' })}
             </p>
             <p style={{ margin: 0, fontSize: theme.font.sizeXs, color: theme.colors.textMuted, marginTop: '0.125rem' }}>
-              Configurer les étapes et transitions des bons de travail
+              {t('settings:page.quickProcessDesc', { defaultValue: 'Configurer les étapes et transitions des bons de travail' })}
             </p>
           </div>
           <span style={{ marginLeft: 'auto', fontSize: theme.font.sizeLg, color: theme.colors.textLight }}>›</span>
@@ -1100,17 +1101,17 @@ export default function SettingsPage() {
         >
           <div>
             <h2 style={{ margin: 0, fontSize: theme.font.sizeLg, fontWeight: theme.font.weightSemibold, color: theme.colors.text }}>
-              📋 Types de tâches
+              📋 {t('settings:page.taskTypesSection', { defaultValue: 'Types de tâches' })}
             </h2>
             <p style={{ margin: 0, fontSize: theme.font.sizeXs, color: theme.colors.textMuted, marginTop: '0.125rem' }}>
-              Catégories de bons de travail disponibles dans le formulaire de création
+              {t('settings:page.taskTypesSectionDesc', { defaultValue: 'Catégories de bons de travail disponibles dans le formulaire de création' })}
             </p>
           </div>
           <button
             onClick={() => setShowCreateTaskTypeModal(true)}
             style={{ ...buttonStyles.primary }}
           >
-            + Nouveau type
+            {t('settings:page.newTypeButton', { defaultValue: '+ Nouveau type' })}
           </button>
         </div>
 
@@ -1119,18 +1120,18 @@ export default function SettingsPage() {
           <div style={{ padding: '2rem' }}><LoadingSpinner /></div>
         ) : ttError ? (
           <div style={{ padding: '1rem', color: theme.colors.danger }}>
-            Erreur lors du chargement des types de tâches.
+            {t('settings:page.taskTypesLoadError', { defaultValue: 'Erreur lors du chargement des types de tâches.' })}
           </div>
         ) : !taskTypes || taskTypes.length === 0 ? (
           <div style={{ ...layoutStyles.emptyState }}>
             <span style={{ fontSize: '2.5rem' }}>📋</span>
-            <p style={{ margin: 0 }}>Aucun type de tâche. Créez-en un pour commencer.</p>
+            <p style={{ margin: 0 }}>{t('settings:page.emptyTaskTypes', { defaultValue: 'Aucun type de tâche. Créez-en un pour commencer.' })}</p>
           </div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead style={{ ...tableStyles.header }}>
               <tr>
-                {['Couleur', 'Icône', 'Préfixe', 'Nom', 'Description', 'Statut', ''].map((h) => (
+                {[t('settings:page.colHeaderColor', { defaultValue: 'Couleur' }), t('settings:page.colHeaderIcon', { defaultValue: 'Icône' }), t('settings:page.colHeaderPrefix', { defaultValue: 'Préfixe' }), t('settings:page.colHeaderName', { defaultValue: 'Nom' }), t('settings:page.colHeaderDescription', { defaultValue: 'Description' }), t('settings:page.colHeaderStatus', { defaultValue: 'Statut' }), ''].map((h) => (
                   <th key={h} style={{ ...tableStyles.headerCell, textAlign: 'left' }}>
                     {h}
                   </th>
@@ -1215,7 +1216,7 @@ export default function SettingsPage() {
                         transition: 'all 0.15s ease',
                       }}
                     >
-                      {tt.isActive ? '✓ Actif' : '✗ Inactif'}
+                      {tt.isActive ? t('settings:page.statusActive', { defaultValue: '✓ Actif' }) : t('settings:page.statusInactive', { defaultValue: '✗ Inactif' })}
                     </button>
                   </td>
 
@@ -1225,10 +1226,10 @@ export default function SettingsPage() {
                       <span style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                         <span style={{ fontSize: theme.font.sizeXs, color: theme.colors.danger, fontWeight: theme.font.weightMedium }}>{t('common:actions.confirm', { defaultValue: 'Confirmer' })} ?</span>
                         <button onClick={() => handleDeleteTaskType(tt.id)} disabled={deleteTaskType.isPending} style={{ ...buttonStyles.danger, ...buttonStyles.sm }}>
-                          Oui
+                          {t('settings:page.yes', { defaultValue: 'Oui' })}
                         </button>
                         <button onClick={() => setDeleteTaskTypeConfirmId(null)} style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}>
-                          Non
+                          {t('settings:page.no', { defaultValue: 'Non' })}
                         </button>
                       </span>
                     ) : (
@@ -1237,7 +1238,7 @@ export default function SettingsPage() {
                           onClick={() => setEditingTaskType(tt)}
                           style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}
                         >
-                          ✏️ Modifier
+                          {t('settings:page.editButton', { defaultValue: '✏️ Modifier' })}
                         </button>
                         <button
                           onClick={() => setDeleteTaskTypeConfirmId(tt.id)}
@@ -1258,8 +1259,8 @@ export default function SettingsPage() {
       {/* ── Section: Types de clients ────────────────────────────────────────── */}
       <ConfigTypeTable
         sectionIcon="👤"
-        title="Types de clients"
-        subtitle="Catégories de clients utilisées dans les fiches client et bons de travail"
+        title={t('settings:page.clientTypesTitle', { defaultValue: 'Types de clients' })}
+        subtitle={t('settings:page.clientTypesSubtitle', { defaultValue: 'Catégories de clients utilisées dans les fiches client et bons de travail' })}
         items={clientTypes}
         isLoading={ctLoading}
         isError={ctError}
@@ -1274,8 +1275,8 @@ export default function SettingsPage() {
       {/* ── Section: Types d'emplacement ─────────────────────────────────────── */}
       <ConfigTypeTable
         sectionIcon="📍"
-        title="Types d'emplacement"
-        subtitle="Catégories d'adresses utilisées dans les fiches client et bons de travail"
+        title={t('settings:page.addressTypesTitle', { defaultValue: "Types d'emplacement" })}
+        subtitle={t('settings:page.addressTypesSubtitle', { defaultValue: "Catégories d'adresses utilisées dans les fiches client et bons de travail" })}
         items={addressTypes}
         isLoading={atLoading}
         isError={atError}
@@ -1298,7 +1299,7 @@ export default function SettingsPage() {
       {/* ── TaskType Modals ─────────────────────────────────────────────────── */}
       {showCreateTaskTypeModal && (
         <TaskTypeModal
-          title="Nouveau type de tâche"
+          title={t('settings:page.newTaskTypeModalTitle', { defaultValue: 'Nouveau type de tâche' })}
           onSubmit={handleCreateTaskType}
           onCancel={() => { setShowCreateTaskTypeModal(false); createTaskType.reset(); }}
           isLoading={createTaskType.isPending}
@@ -1309,7 +1310,7 @@ export default function SettingsPage() {
 
       {editingTaskType && (
         <TaskTypeModal
-          title={`Modifier — ${editingTaskType.name}`}
+          title={t('settings:page.editModalTitle', { defaultValue: 'Modifier — {{name}}', name: editingTaskType.name })}
           defaultValues={{
             prefix: editingTaskType.prefix ?? '',
             name: editingTaskType.name,
@@ -1330,7 +1331,7 @@ export default function SettingsPage() {
       {/* ── ClientType Modals ───────────────────────────────────────────────── */}
       {showCreateClientTypeModal && (
         <ConfigTypeModal
-          title="Nouveau type de client"
+          title={t('settings:page.newClientTypeModalTitle', { defaultValue: 'Nouveau type de client' })}
           onSubmit={handleCreateClientType}
           onCancel={() => { setShowCreateClientTypeModal(false); createClientType.reset(); }}
           isLoading={createClientType.isPending}
@@ -1340,7 +1341,7 @@ export default function SettingsPage() {
 
       {editingClientType && (
         <ConfigTypeModal
-          title={`Modifier — ${editingClientType.name}`}
+          title={t('settings:page.editModalTitle', { defaultValue: 'Modifier — {{name}}', name: editingClientType.name })}
           defaultValues={{
             name: editingClientType.name,
             nameFr: editingClientType.nameFr ?? editingClientType.name,
@@ -1363,7 +1364,7 @@ export default function SettingsPage() {
       {/* ── AddressType Modals ──────────────────────────────────────────────── */}
       {showCreateAddressTypeModal && (
         <ConfigTypeModal
-          title="Nouveau type d'emplacement"
+          title={t('settings:page.newAddressTypeModalTitle', { defaultValue: "Nouveau type d'emplacement" })}
           onSubmit={handleCreateAddressType}
           onCancel={() => { setShowCreateAddressTypeModal(false); createAddressType.reset(); }}
           isLoading={createAddressType.isPending}
@@ -1373,7 +1374,7 @@ export default function SettingsPage() {
 
       {editingAddressType && (
         <ConfigTypeModal
-          title={`Modifier — ${editingAddressType.name}`}
+          title={t('settings:page.editModalTitle', { defaultValue: 'Modifier — {{name}}', name: editingAddressType.name })}
           defaultValues={{
             name: editingAddressType.name,
             nameFr: editingAddressType.nameFr ?? editingAddressType.name,

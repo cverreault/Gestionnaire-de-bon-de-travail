@@ -1,5 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { theme, cardStyles, formStyles, buttonStyles, layoutStyles } from '../theme';
 import { signup } from '../services/signup.service';
 
@@ -11,6 +12,7 @@ import { signup } from '../services/signup.service';
  * a "go to my space" CTA that navigates to /login.
  */
 export default function SignupPage() {
+  const { t } = useTranslation('onboarding');
   const navigate = useNavigate();
   const [form, setForm] = useState({
     slug: '',
@@ -37,7 +39,7 @@ export default function SignupPage() {
           ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
             ((err as any).response?.data?.message as string | undefined)
           : undefined;
-      setError(msg ?? 'Erreur inattendue. Réessayez plus tard.');
+      setError(msg ?? t('onboarding:signup.unexpectedError', { defaultValue: 'Erreur inattendue. Réessayez plus tard.' }));
     } finally {
       setSubmitting(false);
     }
@@ -47,23 +49,23 @@ export default function SignupPage() {
     return (
       <div style={{ ...layoutStyles.page, display: 'flex', justifyContent: 'center' }}>
         <div style={{ ...cardStyles.card, maxWidth: 480, marginTop: 80, padding: 32 }}>
-          <h1 style={{ color: theme.colors.primary, margin: '0 0 12px' }}>🎉 Espace créé</h1>
+          <h1 style={{ color: theme.colors.primary, margin: '0 0 12px' }}>🎉 {t('onboarding:signup.spaceCreatedTitle', { defaultValue: 'Espace créé' })}</h1>
           <p style={{ color: theme.colors.text, lineHeight: 1.6 }}>
-            Votre espace <strong>{created.name}</strong> est en ligne. Vous pouvez
-            maintenant vous connecter sur :
+            {t('onboarding:signup.spaceOnlinePrefix', { defaultValue: 'Votre espace' })}{' '}
+            <strong>{created.name}</strong>{' '}
+            {t('onboarding:signup.spaceOnlineSuffix', { defaultValue: 'est en ligne. Vous pouvez maintenant vous connecter sur :' })}
           </p>
           <p style={{ background: theme.colors.surfaceAlt, padding: 12, borderRadius: 4, fontFamily: 'monospace' }}>
             {created.slug}.taskmgr.com
           </p>
           <p style={{ color: theme.colors.textMuted, fontSize: 13 }}>
-            Pour le moment (dev), accédez à votre espace via le sous-domaine
-            de cet hôte.
+            {t('onboarding:signup.devSubdomainHint', { defaultValue: 'Pour le moment (dev), accédez à votre espace via le sous-domaine de cet hôte.' })}
           </p>
           <button
             onClick={() => navigate('/login')}
             style={{ ...buttonStyles.primary, marginTop: 16 }}
           >
-            Aller à la connexion →
+            {t('onboarding:signup.goToLogin', { defaultValue: 'Aller à la connexion' })} →
           </button>
         </div>
       </div>
@@ -76,33 +78,33 @@ export default function SignupPage() {
         onSubmit={handleSubmit}
         style={{ ...cardStyles.card, maxWidth: 480, marginTop: 40, padding: 32, display: 'flex', flexDirection: 'column', gap: 12 }}
       >
-        <h1 style={{ margin: '0 0 4px', color: theme.colors.primary }}>Créer un espace</h1>
+        <h1 style={{ margin: '0 0 4px', color: theme.colors.primary }}>{t('onboarding:signup.createSpaceTitle', { defaultValue: 'Créer un espace' })}</h1>
         <p style={{ margin: '0 0 12px', color: theme.colors.textMuted, fontSize: 13 }}>
-          Tout est gratuit pour commencer — passez à PRO plus tard si besoin.
+          {t('onboarding:signup.freeToStart', { defaultValue: 'Tout est gratuit pour commencer — passez à PRO plus tard si besoin.' })}
         </p>
 
-        <Field label="Identifiant URL (slug)" hint="3-20 caractères, minuscules + chiffres + tirets">
+        <Field label={t('onboarding:signup.slugLabel', { defaultValue: 'Identifiant URL (slug)' })} hint={t('onboarding:signup.slugHint', { defaultValue: '3-20 caractères, minuscules + chiffres + tirets' })}>
           <input
             required
             value={form.slug}
             onChange={(e) => setForm({ ...form, slug: e.target.value.toLowerCase() })}
             style={formStyles.input}
-            placeholder="ex: campingpleinbois"
+            placeholder={t('onboarding:signup.slugPlaceholder', { defaultValue: 'ex: campingpleinbois' })}
           />
         </Field>
 
-        <Field label="Nom de l'organisation">
+        <Field label={t('onboarding:signup.orgNameLabel', { defaultValue: "Nom de l'organisation" })}>
           <input
             required
             value={form.organizationName}
             onChange={(e) => setForm({ ...form, organizationName: e.target.value })}
             style={formStyles.input}
-            placeholder="ex: Camping Plein Bois"
+            placeholder={t('onboarding:signup.orgNamePlaceholder', { defaultValue: 'ex: Camping Plein Bois' })}
           />
         </Field>
 
         <div style={{ display: 'flex', gap: 12 }}>
-          <Field label="Prénom" style={{ flex: 1 }}>
+          <Field label={t('onboarding:signup.firstNameLabel', { defaultValue: 'Prénom' })} style={{ flex: 1 }}>
             <input
               required
               value={form.firstName}
@@ -110,7 +112,7 @@ export default function SignupPage() {
               style={formStyles.input}
             />
           </Field>
-          <Field label="Nom" style={{ flex: 1 }}>
+          <Field label={t('onboarding:signup.lastNameLabel', { defaultValue: 'Nom' })} style={{ flex: 1 }}>
             <input
               required
               value={form.lastName}
@@ -120,7 +122,7 @@ export default function SignupPage() {
           </Field>
         </div>
 
-        <Field label="Email administrateur">
+        <Field label={t('onboarding:signup.adminEmailLabel', { defaultValue: 'Email administrateur' })}>
           <input
             type="email"
             required
@@ -130,7 +132,7 @@ export default function SignupPage() {
           />
         </Field>
 
-        <Field label="Mot de passe" hint="Minimum 8 caractères">
+        <Field label={t('onboarding:signup.passwordLabel', { defaultValue: 'Mot de passe' })} hint={t('onboarding:signup.passwordHint', { defaultValue: 'Minimum 8 caractères' })}>
           <input
             type="password"
             required
@@ -148,18 +150,18 @@ export default function SignupPage() {
         )}
 
         <button type="submit" disabled={submitting} style={buttonStyles.primary}>
-          {submitting ? 'Création…' : 'Créer mon espace'}
+          {submitting ? t('onboarding:signup.creating', { defaultValue: 'Création…' }) : t('onboarding:signup.createMySpace', { defaultValue: 'Créer mon espace' })}
         </button>
 
         <p style={{ textAlign: 'center', fontSize: 13, color: theme.colors.textMuted, margin: '8px 0 0' }}>
-          Vous avez déjà un compte ?{' '}
+          {t('onboarding:signup.alreadyHaveAccount', { defaultValue: 'Vous avez déjà un compte ?' })}{' '}
           <Link to="/login" style={{ color: theme.colors.primary }}>
-            Se connecter
+            {t('onboarding:signup.signIn', { defaultValue: 'Se connecter' })}
           </Link>
         </p>
         <p style={{ textAlign: 'center', fontSize: 11, marginTop: 4 }}>
           <a href="/confidentialite" style={{ color: theme.colors.textMuted, textDecoration: 'underline' }}>
-            Politique de confidentialité / Privacy policy
+            {t('onboarding:signup.privacyPolicy', { defaultValue: 'Politique de confidentialité / Privacy policy' })}
           </a>
         </p>
       </form>

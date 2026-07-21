@@ -69,7 +69,7 @@ export default function SuperAdminPlatformUsersPage() {
   return (
     <div style={layoutStyles.page}>
       <header style={{ marginBottom: 16 }}>
-        <h1 style={{ margin: 0 }}>👑 SUPER_ADMINs de la plateforme</h1>
+        <h1 style={{ margin: 0 }}>👑 {t('superAdmin:platformUsers.title', { defaultValue: 'SUPER_ADMINs de la plateforme' })}</h1>
         <p
           style={{
             color: theme.colors.textMuted,
@@ -77,8 +77,7 @@ export default function SuperAdminPlatformUsersPage() {
             fontSize: 13,
           }}
         >
-          Crée et liste les administrateurs globaux. Les SUPER_ADMINs ne sont
-          rattachés à aucun tenant — ils peuvent gérer toute la plateforme.
+          {t('superAdmin:platformUsers.subtitle', { defaultValue: 'Crée et liste les administrateurs globaux. Les SUPER_ADMINs ne sont rattachés à aucun tenant — ils peuvent gérer toute la plateforme.' })}
         </p>
       </header>
 
@@ -86,12 +85,12 @@ export default function SuperAdminPlatformUsersPage() {
       <div
         style={{ ...cardStyles.card, padding: 24, maxWidth: 720, marginBottom: 24 }}
       >
-        <h3 style={{ margin: '0 0 16px' }}>Nouveau SUPER_ADMIN</h3>
+        <h3 style={{ margin: '0 0 16px' }}>{t('superAdmin:platformUsers.newSuperAdmin', { defaultValue: 'Nouveau SUPER_ADMIN' })}</h3>
 
         <div
           style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}
         >
-          <Field label="Prénom">
+          <Field label={t('superAdmin:platformUsers.firstName', { defaultValue: 'Prénom' })}>
             <input
               value={form.firstName}
               onChange={(e) =>
@@ -100,7 +99,7 @@ export default function SuperAdminPlatformUsersPage() {
               style={formStyles.input}
             />
           </Field>
-          <Field label="Nom">
+          <Field label={t('superAdmin:platformUsers.lastName', { defaultValue: 'Nom' })}>
             <input
               value={form.lastName}
               onChange={(e) =>
@@ -112,7 +111,7 @@ export default function SuperAdminPlatformUsersPage() {
         </div>
 
         <div style={{ marginTop: 12 }}>
-          <Field label="Email">
+          <Field label={t('superAdmin:platformUsers.email', { defaultValue: 'Email' })}>
             <input
               type="email"
               value={form.email}
@@ -131,7 +130,7 @@ export default function SuperAdminPlatformUsersPage() {
             marginTop: 12,
           }}
         >
-          <Field label="Mot de passe (≥ 8 caractères)">
+          <Field label={t('superAdmin:platformUsers.password', { defaultValue: 'Mot de passe (≥ 8 caractères)' })}>
             <input
               type="password"
               value={form.password}
@@ -142,7 +141,7 @@ export default function SuperAdminPlatformUsersPage() {
               style={formStyles.input}
             />
           </Field>
-          <Field label="Téléphone (optionnel)">
+          <Field label={t('superAdmin:platformUsers.phone', { defaultValue: 'Téléphone (optionnel)' })}>
             <input
               value={form.phone ?? ''}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
@@ -160,7 +159,7 @@ export default function SuperAdminPlatformUsersPage() {
               fontSize: 13,
             }}
           >
-            Échec : {errorText}
+            {t('superAdmin:platformUsers.failureWith', { defaultValue: 'Échec : {{error}}', error: errorText })}
           </p>
         )}
         {create.isSuccess && (
@@ -171,7 +170,7 @@ export default function SuperAdminPlatformUsersPage() {
               fontSize: 13,
             }}
           >
-            ✅ SUPER_ADMIN créé. Il peut se connecter immédiatement.
+            {t('superAdmin:platformUsers.createSuccess', { defaultValue: '✅ SUPER_ADMIN créé. Il peut se connecter immédiatement.' })}
           </p>
         )}
 
@@ -191,7 +190,7 @@ export default function SuperAdminPlatformUsersPage() {
               cursor: !canSubmit || create.isPending ? 'not-allowed' : 'pointer',
             }}
           >
-            {create.isPending ? 'Création…' : '➕ Créer le SUPER_ADMIN'}
+            {create.isPending ? t('superAdmin:platformUsers.creating', { defaultValue: 'Création…' }) : t('superAdmin:platformUsers.createButton', { defaultValue: '➕ Créer le SUPER_ADMIN' })}
           </button>
         </div>
       </div>
@@ -205,7 +204,7 @@ export default function SuperAdminPlatformUsersPage() {
             fontWeight: 600,
           }}
         >
-          SUPER_ADMINs existants ({list?.data.length ?? 0})
+          {t('superAdmin:platformUsers.existingCount', { defaultValue: 'SUPER_ADMINs existants ({{count}})', count: list?.data.length ?? 0 })}
         </div>
         {isLoading ? (
           <div style={{ padding: 16, color: theme.colors.textMuted }}>
@@ -213,17 +212,17 @@ export default function SuperAdminPlatformUsersPage() {
           </div>
         ) : !list || list.data.length === 0 ? (
           <div style={{ padding: 16, color: theme.colors.textMuted }}>
-            Aucun SUPER_ADMIN.
+            {t('superAdmin:platformUsers.noSuperAdmin', { defaultValue: 'Aucun SUPER_ADMIN.' })}
           </div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: theme.colors.surfaceAlt }}>
-                <Th>Email</Th>
-                <Th>Nom</Th>
-                <Th>Téléphone</Th>
-                <Th>Actif</Th>
-                <Th>Créé le</Th>
+                <Th>{t('superAdmin:platformUsers.colEmail', { defaultValue: 'Email' })}</Th>
+                <Th>{t('superAdmin:platformUsers.colName', { defaultValue: 'Nom' })}</Th>
+                <Th>{t('superAdmin:platformUsers.colPhone', { defaultValue: 'Téléphone' })}</Th>
+                <Th>{t('superAdmin:platformUsers.colActive', { defaultValue: 'Actif' })}</Th>
+                <Th>{t('superAdmin:platformUsers.colCreatedAt', { defaultValue: 'Créé le' })}</Th>
               </tr>
             </thead>
             <tbody>

@@ -38,5 +38,30 @@
     "subtitle": "Votre espace est configuré. Créez votre premier bon de travail pour voir le flux complet.",
     "back": "Retour au dashboard",
     "createBt": "➕ Créer un premier BT"
+  },
+  "signup": {
+    "unexpectedError": "Erreur inattendue. Réessayez plus tard.",
+    "spaceCreatedTitle": "Espace créé",
+    "spaceOnlinePrefix": "Votre espace",
+    "spaceOnlineSuffix": "est en ligne. Vous pouvez maintenant vous connecter sur :",
+    "devSubdomainHint": "Pour le moment (dev), accédez à votre espace via le sous-domaine de cet hôte.",
+    "goToLogin": "Aller à la connexion",
+    "createSpaceTitle": "Créer un espace",
+    "freeToStart": "Tout est gratuit pour commencer — passez à PRO plus tard si besoin.",
+    "slugLabel": "Identifiant URL (slug)",
+    "slugHint": "3-20 caractères, minuscules + chiffres + tirets",
+    "slugPlaceholder": "ex: campingpleinbois",
+    "orgNameLabel": "Nom de l'organisation",
+    "orgNamePlaceholder": "ex: Camping Plein Bois",
+    "firstNameLabel": "Prénom",
+    "lastNameLabel": "Nom",
+    "adminEmailLabel": "Email administrateur",
+    "passwordLabel": "Mot de passe",
+    "passwordHint": "Minimum 8 caractères",
+    "creating": "Création…",
+    "createMySpace": "Créer mon espace",
+    "alreadyHaveAccount": "Vous avez déjà un compte ?",
+    "signIn": "Se connecter",
+    "privacyPolicy": "Politique de confidentialité / Privacy policy"
   }
 }
