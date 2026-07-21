@@ -1,6 +1,6 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import type { Request } from 'express';
-import type { ResolvedApiKey } from '../../modules/api-keys/api-keys.service';
+import type { ResolvedApiKey } from '../contracts/api-key.contract';
 import { API_KEY_REQUEST_KEY } from '../guards/api-key-auth.guard';
 
 /**

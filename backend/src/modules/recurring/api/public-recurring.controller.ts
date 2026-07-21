@@ -14,8 +14,8 @@ import {
 import { ApiOperation, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { Scope } from '../../../common/decorators/scope.decorator';
 import { CurrentApiKey } from '../../../common/decorators/current-api-key.decorator';
-import type { ResolvedApiKey } from '../../api-keys/api-keys.service';
-import { PublicApiThrottle } from '../../public-api/public-api-throttle.decorator';
+import type { ResolvedApiKey } from '../../../common/contracts/api-key.contract';
+import { PublicApiThrottle } from '../../../common/decorators/public-api-throttle.decorator';
 import { RecurringWorkOrdersService } from '../application/recurring-work-orders.service';
 import { CreateRecurringDto } from './dto/create-recurring.dto';
 import { UpdateRecurringDto } from './dto/update-recurring.dto';

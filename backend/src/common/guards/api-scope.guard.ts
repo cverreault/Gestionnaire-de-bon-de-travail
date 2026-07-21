@@ -9,8 +9,8 @@ import type { Request } from 'express';
 import {
   ApiKeysService,
   type ApiKeyScope,
-  type ResolvedApiKey,
 } from '../../modules/api-keys/api-keys.service';
+import type { ResolvedApiKey } from '../contracts/api-key.contract';
 import { SCOPE_METADATA_KEY } from '../decorators/scope.decorator';
 import { API_KEY_REQUEST_KEY } from './api-key-auth.guard';
 

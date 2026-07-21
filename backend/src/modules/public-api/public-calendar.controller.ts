@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { Scope } from '../../common/decorators/scope.decorator';
-import { PublicApiThrottle } from './public-api-throttle.decorator';
+import { PublicApiThrottle } from '../../common/decorators/public-api-throttle.decorator';
 import { CalendarService } from '../calendar/calendar.service';
 import { CalendarQueryDto } from '../calendar/dto/calendar-query.dto';
 import { CreateAppointmentDto } from '../calendar/dto/create-appointment.dto';
