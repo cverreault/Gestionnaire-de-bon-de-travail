@@ -57,7 +57,7 @@ function Toast({ message, type = 'success', onDone }: {
   }, [onDone]);
 
   const bgColor =
-    type === 'error' ? '#991b1b' :
+    type === 'error' ? 'var(--c-dangerBadgeText)' :
     type === 'info'  ? '#1e3a8a' :
     '#1e293b';
 
@@ -268,7 +268,7 @@ export default function TechnicianWorkOrderDetailPage() {
           padding: '0.5rem 1rem',
           marginBottom: '0.75rem',
           fontSize: theme.font.sizeSm,
-          color: '#92400e',
+          color: 'var(--c-warningBadgeText)',
           display: 'flex',
           alignItems: 'center',
           gap: '0.5rem',
@@ -420,7 +420,7 @@ export default function TechnicianWorkOrderDetailPage() {
               border: `1px solid ${theme.colors.warning}`,
               borderRadius: theme.radius.md,
               fontSize: theme.font.sizeSm,
-              color: '#92400e',
+              color: 'var(--c-warningBadgeText)',
               display: 'flex',
               alignItems: 'flex-start',
               gap: '0.5rem',

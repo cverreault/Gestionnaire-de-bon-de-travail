@@ -254,7 +254,7 @@ function ProcessList({
             bottom: '1.5rem',
             left: '50%',
             transform: 'translateX(-50%)',
-            background: toast.type === 'error' ? '#991b1b' : '#15803d',
+            background: toast.type === 'error' ? 'var(--c-dangerBadgeText)' : '#15803d',
             color: '#fff',
             padding: '0.875rem 1.5rem',
             borderRadius: theme.radius.lg,
@@ -327,8 +327,8 @@ function ProcessList({
             <div
               style={{
                 background: '#fee2e2',
-                border: '1px solid #fca5a5',
-                color: '#991b1b',
+                border: '1px solid var(--c-dangerBadgeBorder)',
+                color: 'var(--c-dangerBadgeText)',
                 padding: '0.625rem 0.875rem',
                 borderRadius: theme.radius.md,
                 marginBottom: '0.75rem',
@@ -459,7 +459,7 @@ function ProcessList({
                         fontWeight: theme.font.weightSemibold,
                         cursor: 'pointer',
                         background: proc.isActive ? theme.colors.successLight : theme.colors.dangerLight,
-                        color: proc.isActive ? '#065f46' : '#991b1b',
+                        color: proc.isActive ? 'var(--c-successBadgeText)' : 'var(--c-dangerBadgeText)',
                       }}
                     >
                       {proc.isActive ? '✓ Actif' : '✗ Inactif'}
@@ -1136,9 +1136,9 @@ function ProcessEditor({
                           cursor: 'pointer',
                           padding: '0.25rem 0.625rem',
                           borderRadius: theme.radius.full,
-                          background: ntFields.includes(field) ? '#fef3c7' : theme.colors.surfaceAlt,
+                          background: ntFields.includes(field) ? 'var(--c-warningLight)' : theme.colors.surfaceAlt,
                           border: `1px solid ${ntFields.includes(field) ? '#f59e0b' : theme.colors.border}`,
-                          color: ntFields.includes(field) ? '#92400e' : theme.colors.text,
+                          color: ntFields.includes(field) ? 'var(--c-warningBadgeText)' : theme.colors.text,
                           transition: 'all 0.15s',
                         }}
                       >

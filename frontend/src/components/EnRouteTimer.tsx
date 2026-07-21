@@ -73,7 +73,7 @@ export default function EnRouteTimer({ workOrderId }: Props) {
         gap: '0.45rem',
         padding: '0.4rem 0.75rem',
         borderRadius: theme.radius.full,
-        background: theme.colors.warningLight ?? '#fef3c7',
+        background: theme.colors.warningLight ?? 'var(--c-warningLight)',
         border: `1px solid ${theme.colors.warning ?? '#f59e0b'}`,
         color: theme.colors.warning ?? '#b45309',
         fontSize: theme.font.sizeSm,

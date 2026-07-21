@@ -414,7 +414,7 @@ function Step2Address({
 
       {addresses.length === 0 ? (
         <div style={{ padding: '1rem', background: theme.colors.warningLight, borderRadius: theme.radius.md, border: `1px solid ${theme.colors.warning}40`, marginBottom: '1rem' }}>
-          <p style={{ margin: 0, fontSize: theme.font.sizeSm, color: '#92400e' }}>
+          <p style={{ margin: 0, fontSize: theme.font.sizeSm, color: 'var(--c-warningBadgeText)' }}>
             ⚠️ Ce client n'a aucune adresse enregistrée. Vous pouvez continuer sans adresse ou en ajouter une depuis la page Clients.
           </p>
         </div>
@@ -705,7 +705,7 @@ function Step4Assignment({
         )}
 
         {submitError && (
-          <div style={{ background: theme.colors.dangerLight, border: '1px solid #fca5a5', color: theme.colors.danger, padding: '0.75rem 1rem', borderRadius: theme.radius.md, fontSize: theme.font.sizeSm, marginTop: '1rem' }}>
+          <div style={{ background: theme.colors.dangerLight, border: '1px solid var(--c-dangerBadgeBorder)', color: theme.colors.danger, padding: '0.75rem 1rem', borderRadius: theme.radius.md, fontSize: theme.font.sizeSm, marginTop: '1rem' }}>
             Une erreur est survenue lors de la création du bon de travail. Veuillez réessayer.
           </div>
         )}

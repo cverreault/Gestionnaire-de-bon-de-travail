@@ -6,12 +6,12 @@ import { badgeStyles } from '../theme';
 const STATUS_CONFIG: Record<WorkOrderStatus, { label: string; bg: string; color: string; border: string }> = {
   [WorkOrderStatus.REQUESTED]:          { label: 'Demandé',       bg: '#fef9c3', color: '#854d0e', border: '#fde047' },
   [WorkOrderStatus.CREATED]:            { label: 'Créé',          bg: '#dbeafe', color: '#1e40af', border: '#93c5fd' },
-  [WorkOrderStatus.ASSIGNED]:           { label: 'Assigné',       bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
+  [WorkOrderStatus.ASSIGNED]:           { label: 'Assigné',       bg: 'var(--c-warningLight)', color: 'var(--c-warningBadgeText)', border: 'var(--c-warningBadgeBorder)' },
   [WorkOrderStatus.DISPATCHED]:         { label: 'Réparti',       bg: '#e0e7ff', color: '#3730a3', border: '#a5b4fc' },
   [WorkOrderStatus.EN_ROUTE]:           { label: 'En route',      bg: '#ddd6fe', color: '#5b21b6', border: '#a78bfa' },
   [WorkOrderStatus.IN_PROGRESS]:        { label: 'En cours',      bg: '#fde68a', color: '#78350f', border: '#fbbf24' },
-  [WorkOrderStatus.COMPLETED_POSITIVE]: { label: 'Fin positive',  bg: '#d1fae5', color: '#065f46', border: '#6ee7b7' },
-  [WorkOrderStatus.COMPLETED_NEGATIVE]: { label: 'Fin négative',  bg: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
+  [WorkOrderStatus.COMPLETED_POSITIVE]: { label: 'Fin positive',  bg: 'var(--c-successLight)', color: 'var(--c-successBadgeText)', border: 'var(--c-successBadgeBorder)' },
+  [WorkOrderStatus.COMPLETED_NEGATIVE]: { label: 'Fin négative',  bg: 'var(--c-dangerLight)', color: 'var(--c-dangerBadgeText)', border: 'var(--c-dangerBadgeBorder)' },
 };
 
 // ─── Props ────────────────────────────────────────────────────────────────────

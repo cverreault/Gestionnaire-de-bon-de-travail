@@ -468,7 +468,7 @@ function RevealSecretModal({
       <h2 style={{ margin: 0 }}>🔑 {t('reveal.title')}</h2>
       <div
         style={{
-          background: '#fef3c7',
+          background: 'var(--c-warningLight)',
           border: `1px solid ${theme.colors.warning}`,
           borderRadius: 6,
           padding: 12,
@@ -735,10 +735,10 @@ function StatusPill({
   title?: string;
 }) {
   const colors: Record<string, { bg: string; fg: string }> = {
-    ok: { bg: '#d1fae5', fg: '#065f46' },
+    ok: { bg: '#d1fae5', fg: 'var(--c-successBadgeText)' },
     muted: { bg: '#e5e7eb', fg: '#374151' },
-    danger: { bg: '#fee2e2', fg: '#991b1b' },
-    warning: { bg: '#fef3c7', fg: '#92400e' },
+    danger: { bg: '#fee2e2', fg: 'var(--c-dangerBadgeText)' },
+    warning: { bg: 'var(--c-warningLight)', fg: 'var(--c-warningBadgeText)' },
   };
   const c = colors[kind];
   return (

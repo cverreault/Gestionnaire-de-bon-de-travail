@@ -41,8 +41,8 @@ function FeedbackBanner({
         padding: '0.625rem 1rem',
         borderRadius: theme.radius.md,
         background: variant === 'success' ? theme.colors.successLight : theme.colors.dangerLight,
-        color: variant === 'success' ? '#065f46' : '#991b1b',
-        border: `1px solid ${variant === 'success' ? '#6ee7b7' : '#fca5a5'}`,
+        color: variant === 'success' ? 'var(--c-successBadgeText)' : 'var(--c-dangerBadgeText)',
+        border: `1px solid ${variant === 'success' ? 'var(--c-successBadgeBorder)' : 'var(--c-dangerBadgeBorder)'}`,
         fontSize: theme.font.sizeSm,
         marginBottom: '1rem',
       }}
@@ -967,7 +967,7 @@ function TotpSection() {
             <div
               style={{
                 padding: 12,
-                background: '#fef3c7',
+                background: 'var(--c-warningLight)',
                 border: '1px solid #fbbf24',
                 borderRadius: 6,
                 marginBottom: 12,

@@ -22,7 +22,7 @@ const ROLE_COLORS: Record<Role, string> = {
   [Role.SUPER_ADMIN]: '#7e22ce',
   [Role.ADMIN]: '#1e40af',
   [Role.DISPATCHER]: '#7c3aed',
-  [Role.TECHNICIAN]: '#065f46',
+  [Role.TECHNICIAN]: 'var(--c-successBadgeText)',
   [Role.CLIENT]: '#b45309',
 };
 
@@ -155,12 +155,12 @@ function CreateUserModal({ onClose }: CreateUserModalProps) {
             <div
               style={{
                 background: theme.colors.dangerLight,
-                color: '#991b1b',
+                color: 'var(--c-dangerBadgeText)',
                 padding: '0.75rem 1rem',
                 borderRadius: theme.radius.md,
                 fontSize: theme.font.sizeSm,
                 marginBottom: '1rem',
-                border: '1px solid #fca5a5',
+                border: '1px solid var(--c-dangerBadgeBorder)',
               }}
             >
               {errorMsg}
@@ -330,12 +330,12 @@ function EditUserModal({ user, onClose }: EditUserModalProps) {
             <div
               style={{
                 background: theme.colors.dangerLight,
-                color: '#991b1b',
+                color: 'var(--c-dangerBadgeText)',
                 padding: '0.75rem 1rem',
                 borderRadius: theme.radius.md,
                 fontSize: theme.font.sizeSm,
                 marginBottom: '1rem',
-                border: '1px solid #fca5a5',
+                border: '1px solid var(--c-dangerBadgeBorder)',
               }}
             >
               {errorMsg}
@@ -490,12 +490,12 @@ function ResetPasswordModal({ userId, userName, onClose }: ResetPasswordModalPro
             <div
               style={{
                 background: theme.colors.dangerLight,
-                color: '#991b1b',
+                color: 'var(--c-dangerBadgeText)',
                 padding: '0.75rem 1rem',
                 borderRadius: theme.radius.md,
                 fontSize: theme.font.sizeSm,
                 marginBottom: '1rem',
-                border: '1px solid #fca5a5',
+                border: '1px solid var(--c-dangerBadgeBorder)',
               }}
             >
               {errorMsg}
@@ -506,12 +506,12 @@ function ResetPasswordModal({ userId, userName, onClose }: ResetPasswordModalPro
             <div
               style={{
                 background: theme.colors.successLight,
-                color: '#065f46',
+                color: 'var(--c-successBadgeText)',
                 padding: '0.75rem 1rem',
                 borderRadius: theme.radius.md,
                 fontSize: theme.font.sizeSm,
                 marginBottom: '1rem',
-                border: '1px solid #6ee7b7',
+                border: '1px solid var(--c-successBadgeBorder)',
               }}
             >
               {successMsg}
@@ -685,7 +685,7 @@ export default function UsersPage() {
                     <span
                       style={{
                         background: user.isActive ? theme.colors.successLight : theme.colors.dangerLight,
-                        color: user.isActive ? '#065f46' : '#991b1b',
+                        color: user.isActive ? 'var(--c-successBadgeText)' : 'var(--c-dangerBadgeText)',
                         padding: '0.2rem 0.6rem',
                         borderRadius: theme.radius.full,
                         fontSize: theme.font.sizeXs,
@@ -721,13 +721,13 @@ export default function UsersPage() {
                       <button
                         onClick={() => setResetPasswordUser(user)}
                         style={{
-                          background: '#fef3c7',
-                          border: '1px solid #fcd34d',
+                          background: 'var(--c-warningLight)',
+                          border: '1px solid var(--c-warningBadgeBorder)',
                           borderRadius: theme.radius.sm,
                           padding: '0.3rem 0.6rem',
                           cursor: 'pointer',
                           fontSize: theme.font.sizeXs,
-                          color: '#92400e',
+                          color: 'var(--c-warningBadgeText)',
                           fontWeight: theme.font.weightMedium,
                         }}
                         title="Réinitialiser le mot de passe"
@@ -743,12 +743,12 @@ export default function UsersPage() {
                         disabled={togglingId === user.id}
                         style={{
                           background: user.isActive ? theme.colors.dangerLight : theme.colors.successLight,
-                          border: `1px solid ${user.isActive ? '#fca5a5' : '#6ee7b7'}`,
+                          border: `1px solid ${user.isActive ? 'var(--c-dangerBadgeBorder)' : 'var(--c-successBadgeBorder)'}`,
                           borderRadius: theme.radius.sm,
                           padding: '0.3rem 0.6rem',
                           cursor: togglingId === user.id ? 'not-allowed' : 'pointer',
                           fontSize: theme.font.sizeXs,
-                          color: user.isActive ? '#991b1b' : '#065f46',
+                          color: user.isActive ? 'var(--c-dangerBadgeText)' : 'var(--c-successBadgeText)',
                           fontWeight: theme.font.weightMedium,
                           opacity: togglingId === user.id ? 0.6 : 1,
                         }}

@@ -230,7 +230,7 @@ function buildWorkOrderColumnCatalog(t: TFunc, tCommon: TFunc): ColumnDef<WorkOr
                 borderRadius: theme.radius.sm,
                 border: `1px solid ${theme.colors.warning}60`,
                 background: theme.colors.warningLight,
-                color: '#92400e',
+                color: 'var(--c-warningBadgeText)',
                 fontSize: theme.font.sizeXs,
                 fontWeight: theme.font.weightMedium,
                 textDecoration: 'none',

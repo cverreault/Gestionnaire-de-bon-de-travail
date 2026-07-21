@@ -185,7 +185,7 @@ export default function DynamicTransitionModal({
               style={{
                 marginTop: '0.75rem',
                 background: theme.colors.dangerLight,
-                border: '1px solid #fca5a5',
+                border: '1px solid var(--c-dangerBadgeBorder)',
                 color: theme.colors.danger,
                 padding: '0.5rem 0.75rem',
                 borderRadius: theme.radius.md,
