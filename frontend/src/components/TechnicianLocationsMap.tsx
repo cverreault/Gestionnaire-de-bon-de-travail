@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { useQuery } from '@tanstack/react-query';
@@ -63,6 +64,7 @@ function FitBoundsOnce({ rows }: { rows: LatestPositionRow[] }) {
 }
 
 export default function TechnicianLocationsMap() {
+  const { t } = useTranslation();
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ['dispatcher-positions'],
     queryFn: getLatestPositions,
@@ -119,7 +121,7 @@ export default function TechnicianLocationsMap() {
             color: theme.colors.textMuted,
           }}
         >
-          Chargement…
+          {t('common:messages.loading', { defaultValue: 'Chargement…' })}
         </div>
       )}
       {!isLoading && rows.length === 0 && (

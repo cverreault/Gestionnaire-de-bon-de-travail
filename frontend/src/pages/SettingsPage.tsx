@@ -587,6 +587,7 @@ function ConfigTypeTable<T extends ClientTypeConfig | AddressTypeConfig>({
   isUpdating: boolean;
   isDeleting: boolean;
 }) {
+  const { t } = useTranslation();
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
 
@@ -737,7 +738,7 @@ function ConfigTypeTable<T extends ClientTypeConfig | AddressTypeConfig>({
                 <td style={{ ...tableStyles.cell, whiteSpace: 'nowrap' }}>
                   {deleteConfirmId === item.id ? (
                     <span style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                      <span style={{ fontSize: theme.font.sizeXs, color: theme.colors.danger, fontWeight: theme.font.weightMedium }}>Confirmer ?</span>
+                      <span style={{ fontSize: theme.font.sizeXs, color: theme.colors.danger, fontWeight: theme.font.weightMedium }}>{t('common:actions.confirm', { defaultValue: 'Confirmer' })} ?</span>
                       <button
                         onClick={() => { onDelete(item.id); setDeleteConfirmId(null); }}
                         disabled={isDeleting}
@@ -1222,7 +1223,7 @@ export default function SettingsPage() {
                   <td style={{ ...tableStyles.cell, whiteSpace: 'nowrap' }}>
                     {deleteTaskTypeConfirmId === tt.id ? (
                       <span style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                        <span style={{ fontSize: theme.font.sizeXs, color: theme.colors.danger, fontWeight: theme.font.weightMedium }}>Confirmer ?</span>
+                        <span style={{ fontSize: theme.font.sizeXs, color: theme.colors.danger, fontWeight: theme.font.weightMedium }}>{t('common:actions.confirm', { defaultValue: 'Confirmer' })} ?</span>
                         <button onClick={() => handleDeleteTaskType(tt.id)} disabled={deleteTaskType.isPending} style={{ ...buttonStyles.danger, ...buttonStyles.sm }}>
                           Oui
                         </button>

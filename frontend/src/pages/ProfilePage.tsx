@@ -589,6 +589,7 @@ const EVENT_LABELS: Record<string, string> = {
 };
 
 function NotificationPreferencesSection() {
+  const { t } = useTranslation();
   const { data, isLoading, isError } = useNotificationPreferences();
   const mutation = useUpdateNotificationPreferences();
 
@@ -644,7 +645,7 @@ function NotificationPreferencesSection() {
       </div>
       <div style={{ ...cardStyles.cardBody }}>
         {isLoading && (
-          <p style={{ color: theme.colors.textMuted, margin: 0 }}>Chargement…</p>
+          <p style={{ color: theme.colors.textMuted, margin: 0 }}>{t('common:messages.loading', { defaultValue: 'Chargement…' })}</p>
         )}
         {isError && (
           <p style={{ color: theme.colors.danger, margin: 0 }}>
@@ -849,6 +850,7 @@ function GpsTrackingSection() {
 // ─── B14 — 2FA/TOTP section ──────────────────────────────────────────────
 
 function TotpSection() {
+  const { t } = useTranslation();
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [setup, setSetup] = useState<TotpSetupResult | null>(null);
   const [code, setCode] = useState('');
@@ -912,7 +914,7 @@ function TotpSection() {
         <h2 style={cardStyles.cardTitle}>🔐 Sécurité — Double authentification (2FA)</h2>
       </div>
       <div style={cardStyles.cardBody}>
-        {enabled === null && <p style={{ color: theme.colors.textMuted }}>Chargement…</p>}
+        {enabled === null && <p style={{ color: theme.colors.textMuted }}>{t('common:messages.loading', { defaultValue: 'Chargement…' })}</p>}
 
         {enabled === false && !setup && (
           <>

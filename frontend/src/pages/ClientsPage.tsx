@@ -653,7 +653,7 @@ function ClientDetailModal({
         </div>
 
         <div style={{ ...modalStyles.footer }}>
-          <button onClick={onClose} style={{ ...buttonStyles.secondary }}>Fermer</button>
+          <button onClick={onClose} style={{ ...buttonStyles.secondary }}>{t('common:actions.close', { defaultValue: 'Fermer' })}</button>
         </div>
       </div>
     </div>
@@ -891,7 +891,7 @@ export default function ClientsPage() {
                     <td style={{ ...tableStyles.cell, whiteSpace: 'nowrap' }}>
                       {deleteConfirmId === client.id ? (
                         <span style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                          <span style={{ fontSize: theme.font.sizeXs, color: theme.colors.danger, fontWeight: theme.font.weightMedium }}>Confirmer ?</span>
+                          <span style={{ fontSize: theme.font.sizeXs, color: theme.colors.danger, fontWeight: theme.font.weightMedium }}>{t('common:actions.confirm', { defaultValue: 'Confirmer' })} ?</span>
                           <button onClick={() => handleDelete(client.id)} disabled={deleteClient.isPending} style={{ ...buttonStyles.danger, ...buttonStyles.sm }}>
                             Oui
                           </button>

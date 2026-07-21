@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useState } from 'react';
 import { useBreakpoint } from '../hooks/useBreakpoint';
 import { useQuery } from '@tanstack/react-query';
@@ -55,6 +56,7 @@ function periodRange(period: Period): { from: string; to: string } | null {
  * the ordered WO ids and we draw a polyline connecting them.
  */
 export default function DispatchMapPage() {
+  const { t } = useTranslation();
   const { isDesktop } = useBreakpoint();
   const [period, setPeriod] = useState<Period>('all');
   const [includeUnscheduled, setIncludeUnscheduled] = useState(true);
@@ -268,7 +270,7 @@ export default function DispatchMapPage() {
       >
         <div style={{ ...cardStyles.card, padding: 0, overflow: 'hidden', minHeight: isDesktop ? 560 : 420 }}>
           {isLoading ? (
-            <div style={{ padding: 24 }}>Chargement…</div>
+            <div style={{ padding: 24 }}>{t('common:messages.loading', { defaultValue: 'Chargement…' })}</div>
           ) : (
             <MapContainer
               center={initialCenter}

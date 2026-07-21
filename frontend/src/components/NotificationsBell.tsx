@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications, useMarkRead, useMarkAllRead } from '../hooks/useNotifications';
@@ -33,6 +34,7 @@ function destination(n: NotificationRow): string | null {
 }
 
 export default function NotificationsBell() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -158,7 +160,7 @@ export default function NotificationsBell() {
 
           {isLoading && (
             <p style={{ padding: '1rem', margin: 0, color: theme.colors.textMuted, fontSize: theme.font.sizeSm }}>
-              Chargement…
+              {t('common:messages.loading', { defaultValue: 'Chargement…' })}
             </p>
           )}
 

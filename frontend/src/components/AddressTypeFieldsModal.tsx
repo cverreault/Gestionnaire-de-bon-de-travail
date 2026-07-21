@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { TemplateFieldType } from '../types';
 import type { AddressTypeConfig, AddressTypeConfigField } from '../types';
@@ -44,6 +45,7 @@ const TYPES_WITH_OPTIONS = new Set<TemplateFieldType>([
 ]);
 
 export default function AddressTypeFieldsModal({ config, onClose }: Props) {
+  const { t } = useTranslation();
   const fields = config.fields ?? [];
   const addField = useAddAddressTypeField();
   const updateField = useUpdateAddressTypeField();
@@ -136,7 +138,7 @@ export default function AddressTypeFieldsModal({ config, onClose }: Props) {
         </div>
 
         <div style={{ ...modalStyles.footer }}>
-          <button type="button" onClick={onClose} style={{ ...buttonStyles.secondary }}>Fermer</button>
+          <button type="button" onClick={onClose} style={{ ...buttonStyles.secondary }}>{t('common:actions.close', { defaultValue: 'Fermer' })}</button>
         </div>
       </div>
     </div>

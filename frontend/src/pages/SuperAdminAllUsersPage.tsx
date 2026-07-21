@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { theme, cardStyles, layoutStyles, buttonStyles, formStyles } from '../theme';
@@ -22,6 +23,7 @@ type EditableRole = (typeof EDITABLE_ROLES)[number];
  * la promotion SA passe par le bootstrap (SUPER_ADMIN_EMAIL env).
  */
 export default function SuperAdminAllUsersPage() {
+  const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [emailFilter, setEmailFilter] = useState('');
   const [tenantFilter, setTenantFilter] = useState('');
@@ -86,7 +88,7 @@ export default function SuperAdminAllUsersPage() {
         </select>
       </div>
 
-      {isFetching && <p>Chargement…</p>}
+      {isFetching && <p>{t('common:messages.loading', { defaultValue: 'Chargement…' })}</p>}
 
       {usersData && (
         <div style={{ ...cardStyles.card, padding: 0, overflow: 'hidden' }}>
