@@ -15,33 +15,20 @@ import TransitionActionBar from '../components/transitions/TransitionActionBar';
 import WorkOrderAuditTimeline from '../components/WorkOrderAuditTimeline';
 import EnRouteTimer from '../components/EnRouteTimer';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { WorkOrderStatus, ClientType, AddressType } from '../types';
+import { WorkOrderStatus, ClientType } from '../types';
 import type { WorkOrder } from '../types';
+import { clientTypeLabel, addressTypeLabel } from '../utils/entityLabels';
 import { theme, cardStyles, buttonStyles, formStyles } from '../theme';
 import { offlineStore } from '../services/offline-store';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 
 // ─── Labels ───────────────────────────────────────────────────────────────────
 
-const CLIENT_TYPE_LABELS: Record<ClientType, string> = {
-  [ClientType.RESIDENTIAL]: 'Résidentiel',
-  [ClientType.COMMERCIAL]: 'Commercial',
-  [ClientType.INDUSTRIAL]: 'Industriel',
-  [ClientType.INSTITUTIONAL]: 'Institutionnel',
-};
-
 const CLIENT_TYPE_COLORS: Record<ClientType, { bg: string; color: string }> = {
   [ClientType.RESIDENTIAL]: { bg: '#dbeafe', color: '#1e40af' },
   [ClientType.COMMERCIAL]: { bg: '#ede9fe', color: '#6d28d9' },
   [ClientType.INDUSTRIAL]: { bg: '#ffedd5', color: '#c2410c' },
   [ClientType.INSTITUTIONAL]: { bg: '#dcfce7', color: '#15803d' },
-};
-
-const ADDRESS_TYPE_LABELS: Record<string, string> = {
-  [AddressType.OFFICE]: 'Bureau',
-  [AddressType.WAREHOUSE]: 'Entrepôt',
-  [AddressType.RESIDENCE]: 'Résidence',
-  [AddressType.WORKSITE]: 'Chantier',
 };
 
 // ─── Toast component ──────────────────────────────────────────────────────────
@@ -317,7 +304,7 @@ export default function TechnicianWorkOrderDetailPage() {
                   color: CLIENT_TYPE_COLORS[clientType].color,
                   marginBottom: '0.5rem',
                 }}>
-                  {CLIENT_TYPE_LABELS[clientType]}
+                  {clientTypeLabel(t, clientType)}
                 </span>
               )}
               {predominant && (
@@ -334,7 +321,7 @@ export default function TechnicianWorkOrderDetailPage() {
                   {!predominant && '📍 '}{addressLine}
                   {addressType && (
                     <span style={{ marginLeft: '0.4rem', fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>
-                      ({ADDRESS_TYPE_LABELS[addressType] ?? addressType})
+                      ({addressTypeLabel(t, addressType)})
                     </span>
                   )}
                 </p>

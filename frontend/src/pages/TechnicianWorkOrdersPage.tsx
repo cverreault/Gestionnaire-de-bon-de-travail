@@ -14,6 +14,7 @@ import { offlineStore } from '../services/offline-store';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { formatStreet } from '../utils/addressFormat';
 import { getPredominantDisplay } from '../utils/addressPredominant';
+import { clientTypeLabel } from '../utils/entityLabels';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -37,13 +38,6 @@ const CLIENT_TYPE_COLORS: Record<ClientType, { bg: string; color: string }> = {
   [ClientType.COMMERCIAL]: { bg: '#ede9fe', color: '#6d28d9' },
   [ClientType.INDUSTRIAL]: { bg: '#ffedd5', color: '#c2410c' },
   [ClientType.INSTITUTIONAL]: { bg: '#dcfce7', color: '#15803d' },
-};
-
-const CLIENT_TYPE_LABELS: Record<ClientType, string> = {
-  [ClientType.RESIDENTIAL]: 'Résidentiel',
-  [ClientType.COMMERCIAL]: 'Commercial',
-  [ClientType.INDUSTRIAL]: 'Industriel',
-  [ClientType.INSTITUTIONAL]: 'Institutionnel',
 };
 
 function getStatusAccentColor(status: WorkOrderStatus): string {
@@ -221,7 +215,7 @@ export default function TechnicianWorkOrdersPage() {
                             whiteSpace: 'nowrap',
                           }}
                         >
-                          {CLIENT_TYPE_LABELS[clientType]}
+                          {clientTypeLabel(t, clientType)}
                         </span>
                       )}
                     </div>

@@ -123,5 +123,13 @@
     "priorityMin": "Min priority",
     "noMatch": "No work order matches the selected filters",
     "hiddenCompletedSuffix": "completed hidden"
+  },
+  "priorityLevels": {
+    "0": "0 — None",
+    "1": "1 — Very low",
+    "2": "2 — Low",
+    "3": "3 — Normal",
+    "4": "4 — High",
+    "5": "5 — Urgent"
   }
 }

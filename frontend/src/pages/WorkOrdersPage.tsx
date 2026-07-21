@@ -14,6 +14,7 @@ import { useUserPreferences, useUpdateUserPreferences } from '../hooks/useUserPr
 import usersService from '../services/users.service';
 import { theme, tableStyles, buttonStyles, formStyles, layoutStyles, getRowStyle } from '../theme';
 import { formatStreet } from '../utils/addressFormat';
+import { priorityLabel } from '../utils/entityLabels';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -76,15 +77,6 @@ const STATUS_LABELS: Record<WorkOrderStatus, string> = {
   [WorkOrderStatus.IN_PROGRESS]: 'En cours',
   [WorkOrderStatus.COMPLETED_POSITIVE]: 'Complété (positif)',
   [WorkOrderStatus.COMPLETED_NEGATIVE]: 'Complété (négatif)',
-};
-
-const PRIORITY_LABELS: Record<number, string> = {
-  0: '0 — Aucune',
-  1: '1 — Faible',
-  2: '2 — Normale',
-  3: '3 — Élevée',
-  4: '4 — Urgente',
-  5: '5 — Critique',
 };
 
 // ─── Active filter counter ────────────────────────────────────────────────────
@@ -843,7 +835,7 @@ export default function WorkOrdersPage() {
               >
                 <option value="">{tCommon('labels.all')}</option>
                 {[1, 2, 3, 4, 5].map((p) => (
-                  <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>
+                  <option key={p} value={p}>{priorityLabel(t, p)}</option>
                 ))}
               </select>
             </div>

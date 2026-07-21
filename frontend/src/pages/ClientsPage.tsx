@@ -13,6 +13,7 @@ import {
 } from '../hooks/useClients';
 import type { Client, ClientAddress } from '../types';
 import { ClientType, AddressType } from '../types';
+import { clientTypeLabel, addressTypeLabel } from '../utils/entityLabels';
 import type { CreateV3ClientDto, CreateClientAddressDto } from '../services/clients.service';
 import LoadingSpinner from '../components/LoadingSpinner';
 import CsvImportExportPanel from '../components/CsvImportExportPanel';
@@ -30,31 +31,6 @@ import {
   layoutStyles,
   getRowStyle,
 } from '../theme';
-
-// ─── Labels français ──────────────────────────────────────────────────────────
-
-const CLIENT_TYPE_LABELS: Record<ClientType, string> = {
-  [ClientType.RESIDENTIAL]: 'Résidentiel',
-  [ClientType.COMMERCIAL]: 'Commercial',
-  [ClientType.INDUSTRIAL]: 'Industriel',
-  [ClientType.INSTITUTIONAL]: 'Institutionnel',
-};
-
-/**
- * Friendly labels for the historical 4 built-in AddressType codes.
- * For custom codes (CAMP, MARINA, etc.), we fall back to the raw code.
- * The Settings page is the source of truth — use `useAddressTypes()` if a
- * config-managed label is needed.
- */
-const ADDRESS_TYPE_LABELS: Record<string, string> = {
-  [AddressType.OFFICE]: 'Bureau',
-  [AddressType.WAREHOUSE]: 'Entrepôt',
-  [AddressType.RESIDENCE]: 'Résidence',
-  [AddressType.WORKSITE]: 'Chantier',
-};
-function addressTypeLabel(code: string): string {
-  return ADDRESS_TYPE_LABELS[code] ?? code;
-}
 
 // ─── Client type badge colors ─────────────────────────────────────────────────
 
@@ -90,6 +66,7 @@ import { formatStreet } from '../utils/addressFormat';
 // ─── Client Type Badge ────────────────────────────────────────────────────────
 
 function ClientTypeBadge({ type }: { type: ClientType }) {
+  const { t } = useTranslation('clients');
   const colors = CLIENT_TYPE_COLORS[type];
   return (
     <span
@@ -105,7 +82,7 @@ function ClientTypeBadge({ type }: { type: ClientType }) {
         whiteSpace: 'nowrap',
       }}
     >
-      {CLIENT_TYPE_LABELS[type]}
+      {clientTypeLabel(t, type)}
     </span>
   );
 }
@@ -288,8 +265,8 @@ function ClientModal({
               <div>
                 <label style={{ ...formStyles.label }}>{t('fields.clientType')} <span style={{ color: theme.colors.danger }}>*</span></label>
                 <select style={{ ...formStyles.select }} {...register('clientType', { required: true })}>
-                  {Object.values(ClientType).map((t) => (
-                    <option key={t} value={t}>{CLIENT_TYPE_LABELS[t]}</option>
+                  {Object.values(ClientType).map((code) => (
+                    <option key={code} value={code}>{clientTypeLabel(t, code)}</option>
                   ))}
                 </select>
               </div>
@@ -371,7 +348,7 @@ function ClientModal({
                           )}
                         </p>
                         <p style={{ margin: 0, fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>
-                          {addressTypeLabel(addr.addressType)}
+                          {addressTypeLabel(t, addr.addressType)}
                           {addr.label && ` · ${addr.label}`}
                         </p>
                       </div>
@@ -632,7 +609,7 @@ function ClientDetailModal({
                         )}
                       </p>
                       <p style={{ margin: '0.125rem 0 0', fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>
-                        {addressTypeLabel(addr.addressType)}
+                        {addressTypeLabel(t, addr.addressType)}
                         {addr.label && ` · ${addr.label}`}
                         {addr.province && ` · ${addr.province}`}
                       </p>
@@ -806,8 +783,8 @@ export default function ClientsPage() {
           onChange={(e) => { setFilterType(e.target.value as ClientType | ''); setPage(1); }}
         >
           <option value="">Tous les types</option>
-          {Object.values(ClientType).map((t) => (
-            <option key={t} value={t}>{CLIENT_TYPE_LABELS[t]}</option>
+          {Object.values(ClientType).map((code) => (
+            <option key={code} value={code}>{clientTypeLabel(t, code)}</option>
           ))}
         </select>
         {(searchInput || filterType) && (

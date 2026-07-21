@@ -9,6 +9,7 @@ import { useTaskTypes } from '../hooks/useSettings';
 import { useTechnicians } from '../hooks/useUsers';
 import { ClientType, AddressType, Role } from '../types';
 import type { Client, ClientAddress } from '../types';
+import { clientTypeLabel, addressTypeLabel, priorityLabel } from '../utils/entityLabels';
 import { useAuthStore } from '../context/auth.store';
 import { theme, cardStyles, buttonStyles, formStyles, layoutStyles } from '../theme';
 import type { CreateWorkOrderDto } from '../services/work-orders.service';
@@ -16,28 +17,6 @@ import api from '../services/api';
 import { formatStreet } from '../utils/addressFormat';
 
 // ─── Labels ───────────────────────────────────────────────────────────────────
-
-const CLIENT_TYPE_LABELS: Record<ClientType, string> = {
-  [ClientType.RESIDENTIAL]: 'Résidentiel',
-  [ClientType.COMMERCIAL]: 'Commercial',
-  [ClientType.INDUSTRIAL]: 'Industriel',
-  [ClientType.INSTITUTIONAL]: 'Institutionnel',
-};
-
-const ADDRESS_TYPE_LABELS: Record<string, string> = {
-  [AddressType.OFFICE]: 'Bureau',
-  [AddressType.WAREHOUSE]: 'Entrepôt',
-  [AddressType.RESIDENCE]: 'Résidence',
-  [AddressType.WORKSITE]: 'Chantier',
-};
-
-const PRIORITY_LABELS: Record<number, string> = {
-  1: '1 — Très basse',
-  2: '2 — Basse',
-  3: '3 — Normale',
-  4: '4 — Haute',
-  5: '5 — Urgente',
-};
 
 // ─── Stepper indicator ────────────────────────────────────────────────────────
 
@@ -146,6 +125,7 @@ function Step1Client({
   selectedClient: Client | null;
   onSelectClient: (c: Client) => void;
 }) {
+  const { t } = useTranslation('workOrders');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
@@ -218,7 +198,7 @@ function Step1Client({
                   {selectedClient.firstName} {selectedClient.lastName}
                 </p>
                 <p style={{ margin: 0, fontSize: theme.font.sizeXs, color: theme.colors.textSecondary }}>
-                  {CLIENT_TYPE_LABELS[selectedClient.clientType]}
+                  {clientTypeLabel(t, selectedClient.clientType)}
                   {selectedClient.email && ` · ${selectedClient.email}`}
                   {selectedClient.phone && ` · ${selectedClient.phone}`}
                 </p>
@@ -298,7 +278,7 @@ function Step1Client({
                           )}
                         </span>
                         <span style={{ fontSize: theme.font.sizeXs, fontWeight: theme.font.weightSemibold, padding: '0.15rem 0.5rem', borderRadius: theme.radius.full, background: cc.bg, color: cc.color }}>
-                          {CLIENT_TYPE_LABELS[c.clientType]}
+                          {clientTypeLabel(t, c.clientType)}
                         </span>
                       </button>
                     );
@@ -332,8 +312,8 @@ function Step1Client({
                 <div style={fieldStyle}>
                   <label style={labelStyle}>Type</label>
                   <select style={{ ...formStyles.select }} value={ncType} onChange={(e) => setNcType(e.target.value as ClientType)}>
-                    {Object.values(ClientType).map((t) => (
-                      <option key={t} value={t}>{CLIENT_TYPE_LABELS[t]}</option>
+                    {Object.values(ClientType).map((code) => (
+                      <option key={code} value={code}>{clientTypeLabel(t, code)}</option>
                     ))}
                   </select>
                 </div>
@@ -381,6 +361,7 @@ function Step2Address({
   selectedAddressId: string | null;
   onSelectAddress: (id: string, addr: ClientAddress) => void;
 }) {
+  const { t } = useTranslation('workOrders');
   const [showNewForm, setShowNewForm] = useState(false);
   const [naStreet, setNaStreet] = useState('');
   const [naCity, setNaCity] = useState('');
@@ -455,7 +436,7 @@ function Step2Address({
                     )}
                   </p>
                   <p style={{ margin: 0, fontSize: theme.font.sizeXs, color: theme.colors.textMuted, marginTop: '0.125rem' }}>
-                    {ADDRESS_TYPE_LABELS[addr.addressType] ?? addr.addressType}
+                    {addressTypeLabel(t, addr.addressType)}
                     {addr.label && ` · ${addr.label}`}
                   </p>
                 </div>
@@ -553,7 +534,7 @@ function Step3Details({
             onChange={(e) => set('priority', Number(e.target.value))}
           >
             {[1, 2, 3, 4, 5].map((p) => (
-              <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>
+              <option key={p} value={p}>{priorityLabel(t, p)}</option>
             ))}
           </select>
         </div>
@@ -629,6 +610,7 @@ function Step4Assignment({
   isSubmitting: boolean;
   submitError: boolean;
 }) {
+  const { t } = useTranslation('workOrders');
   const { data: technicians } = useTechnicians();
 
   function SummaryRow({ label, value }: { label: string; value: React.ReactNode }) {
@@ -657,7 +639,7 @@ function Step4Assignment({
         <SummaryRow label="Titre" value={details.title} />
         <SummaryRow
           label="Priorité"
-          value={PRIORITY_LABELS[details.priority]}
+          value={priorityLabel(t, details.priority)}
         />
         {details.scheduledDate && (
           <SummaryRow

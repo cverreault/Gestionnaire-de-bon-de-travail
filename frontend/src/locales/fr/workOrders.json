@@ -123,5 +123,13 @@
     "priorityMin": "Priorité minimum",
     "noMatch": "Aucun bon de travail ne correspond aux filtres sélectionnés",
     "hiddenCompletedSuffix": "complétés masqués"
+  },
+  "priorityLevels": {
+    "0": "0 — Aucune",
+    "1": "1 — Très basse",
+    "2": "2 — Basse",
+    "3": "3 — Normale",
+    "4": "4 — Haute",
+    "5": "5 — Urgente"
   }
 }
