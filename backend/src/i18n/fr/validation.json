@@ -12,5 +12,6 @@
   "MAX": "Doit être au maximum {{constraints.0}}",
   "ALPHANUM_ONLY": "Lettres et chiffres uniquement (pas de tirets ni espaces)",
   "PREFIX_REQUIRED": "Le préfixe est obligatoire",
-  "NAME_REQUIRED": "Le nom est obligatoire"
+  "NAME_REQUIRED": "Le nom est obligatoire",
+  "IS_DATA_URL_PNG": "Doit être un data-URL image/png en base64"
 }

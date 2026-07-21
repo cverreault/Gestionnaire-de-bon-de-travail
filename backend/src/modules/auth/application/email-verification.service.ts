@@ -64,10 +64,17 @@ export class EmailVerificationService {
       data: { userId, tokenHash, expiresAt },
     });
 
-    // Build the link the email will carry. In dev / no SMTP, we log
-    // it so the developer can grab the link from the container logs.
+    // B29 — the raw token lives in the link. Only log the full link when
+    // SMTP is NOT configured (dev / console-fallback mode) so a developer
+    // can grab it from the container logs; in production log the user id
+    // only, never the token.
     const link = await this.buildLink(slug, raw);
-    this.logger.log(`📧 Verification link issued for user=${userId} : ${link}`);
+    const smtpHost = await this.configs.resolve('smtp.host', 'SMTP_HOST');
+    if (smtpHost) {
+      this.logger.log(`📧 Verification link issued for user=${userId}`);
+    } else {
+      this.logger.log(`📧 Verification link issued for user=${userId} : ${link}`);
+    }
     return raw;
   }
 

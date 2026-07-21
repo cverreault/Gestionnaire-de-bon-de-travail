@@ -52,6 +52,8 @@ export class EmailChannelService {
   async send(input: SendEmailInput): Promise<boolean> {
     const host = await this.configs.resolve('smtp.host', 'SMTP_HOST');
     if (!host) {
+      // Dev-only fallback (no SMTP configured): the operator sees their own
+      // instance's outgoing mail in the logs. Never reached in production.
       this.logger.log(
         `[CONSOLE EMAIL] to=${input.to} subject="${input.subject}"\n${input.text}`,
       );
@@ -69,7 +71,8 @@ export class EmailChannelService {
         text: input.text,
         html: input.html,
       });
-      this.logger.log(`✉️  Email sent to ${input.to}: ${input.subject}`);
+      // B29 — don't log the recipient address (PII / Loi 25); subject only.
+      this.logger.log(`✉️  Email sent: ${input.subject}`);
       return true;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
