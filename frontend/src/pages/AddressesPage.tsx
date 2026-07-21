@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAllAddresses } from '../hooks/useClients';
 import { useAddressTypes } from '../hooks/useSettings';
-import { AddressType, ClientType } from '../types';
+import { ClientType } from '../types';
+import { clientTypeLabel, addressTypeLabel } from '../utils/entityLabels';
 import LoadingSpinner from '../components/LoadingSpinner';
 import AddressCreateModal from '../components/AddressCreateModal';
 import CsvImportExportPanel from '../components/CsvImportExportPanel';
@@ -21,20 +22,6 @@ import {
   getRowStyle,
 } from '../theme';
 import { formatStreet } from '../utils/addressFormat';
-
-const ADDRESS_TYPE_LABELS: Record<string, string> = {
-  [AddressType.OFFICE]: 'Bureau',
-  [AddressType.WAREHOUSE]: 'Entrepôt',
-  [AddressType.RESIDENCE]: 'Résidence',
-  [AddressType.WORKSITE]: 'Chantier',
-};
-
-const CLIENT_TYPE_LABELS: Record<ClientType, string> = {
-  [ClientType.RESIDENTIAL]: 'Résidentiel',
-  [ClientType.COMMERCIAL]: 'Commercial',
-  [ClientType.INDUSTRIAL]: 'Industriel',
-  [ClientType.INSTITUTIONAL]: 'Institutionnel',
-};
 
 const CLIENT_TYPE_COLORS: Record<ClientType, { bg: string; color: string }> = {
   [ClientType.RESIDENTIAL]: { bg: '#dbeafe', color: '#1e40af' },
@@ -202,7 +189,7 @@ export default function AddressesPage() {
                       })()}
                     </td>
                     <td style={{ ...tableStyles.cellMuted }}>
-                      {ADDRESS_TYPE_LABELS[a.addressType] ?? a.addressType}
+                      {addressTypeLabel(t, a.addressType)}
                     </td>
                     <td style={{ ...tableStyles.cell }}>
                       {a.client ? (
@@ -244,7 +231,7 @@ export default function AddressesPage() {
                           color: cc.color,
                           whiteSpace: 'nowrap',
                         }}>
-                          {CLIENT_TYPE_LABELS[a.client.clientType]}
+                          {clientTypeLabel(t, a.client.clientType)}
                         </span>
                       ) : (
                         <span style={{ color: theme.colors.textLight }}>—</span>
