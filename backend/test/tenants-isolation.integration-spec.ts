@@ -141,15 +141,27 @@ describe('Tenant isolation (integration)', () => {
     expect(res.status).toBe(201);
     const tenantId = res.body.tenant.id as string;
 
-    // Verify the catalog landed — direct DB query bypassing middleware.
-    const taskTypes = await ctx.prisma.taskType.findMany({
-      where: { tenantId },
-    });
-    expect(taskTypes.length).toBeGreaterThanOrEqual(5);
-
+    // Verify the minimal catalog landed — the seed (TenantBootstrapService)
+    // gives a fresh tenant a default process (so it can run work orders) and
+    // a default template. Task types are NOT seeded — they're optional and
+    // the tenant configures its own. Direct DB queries bypass the middleware.
     const processes = await ctx.prisma.processDefinition.findMany({
       where: { tenantId },
     });
     expect(processes.length).toBeGreaterThanOrEqual(1);
+    expect(processes.some((p) => p.isDefault)).toBe(true);
+
+    const statuses = await ctx.prisma.processStatus.findMany({
+      where: { tenantId },
+    });
+    // Seeded workflow: Créé → Assigné → En progrès → Complété (+).
+    expect(statuses.length).toBeGreaterThanOrEqual(4);
+    expect(statuses.some((s) => s.isInitial)).toBe(true);
+    expect(statuses.some((s) => s.isTerminalPositive)).toBe(true);
+
+    const templates = await ctx.prisma.workOrderTemplate.findMany({
+      where: { tenantId },
+    });
+    expect(templates.length).toBeGreaterThanOrEqual(1);
   });
 });
