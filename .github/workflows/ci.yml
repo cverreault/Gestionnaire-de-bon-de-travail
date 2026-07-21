@@ -40,11 +40,6 @@ jobs:
   backend-integration:
     name: Backend (integration tests, real Postgres)
     runs-on: ubuntu-latest
-    # Non-blocking for now: it runs and leaves a trace on every PR, but one
-    # pre-existing test (tenant-isolation "signup seeds the catalog") depends
-    # on state that isn't present in a pristine CI database — tracked as a
-    # follow-up. The blocking gate is the backend + frontend jobs.
-    continue-on-error: true
     defaults:
       run:
         working-directory: backend
