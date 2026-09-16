@@ -13,6 +13,7 @@
 ## Stack Technologique
 - **Backend** : NestJS 10 (TypeScript) sur Node.js 20 LTS — `backend/`
 - **Frontend** : React 18 + Vite + Zustand + React Query — `frontend/`
+- **Mobile** : React Native + Expo (iOS + Android, technicien) — `mobile/` ; code partagé mobile dans `packages/shared/` (workspaces npm racine : `mobile` + `packages/*` seulement) — voir [ADR-014](docs/adrs/ADR-014-native-mobile-app-platform.md)
 - **Base de données** : PostgreSQL 16 (Prisma ORM)
 - **Stockage fichiers** : MinIO (S3-compatible)
 - **Cache/Queue** : *À introduire si besoin (Redis + BullMQ)*
@@ -47,6 +48,7 @@ backend/src/modules/{module}/
 - `calendar` — événements calendrier (BT planifiés)
 - `dashboard` — statistiques admin et technicien
 - `backup` — sauvegarde/restauration
+- `mobile` — registre d'appareils, push natif (Expo), sync delta pour l'app technicien ([spec](docs/modules/mobile.md))
 
 **Communication inter-module** :
 - ✅ Via **events NestJS** (`@nestjs/event-emitter`) — pattern `domain.events.*`
@@ -132,6 +134,7 @@ docker exec -it taskmgr_postgres psql -U taskmgr -d taskmgr
 - [ADRs](docs/adrs/) — décisions architecturales
 - [Modules](docs/modules/) — spec par module métier
 - [docs/modules/dispatch-logic.md](docs/modules/dispatch-logic.md) — logique de répartition (cœur du système)
+- [docs/mobile/roadmap.md](docs/mobile/roadmap.md) — feuille de route de l'app mobile (lots B37 backend / B38 app)
 - [.claude/skills/](.claude/skills/) — skills réutilisables pour Claude
 
 ## Règles Importantes
@@ -145,3 +148,5 @@ docker exec -it taskmgr_postgres psql -U taskmgr -d taskmgr
 8. **Les secrets restent dans `.env`** (gitignored). `.env.example` documente la forme attendue.
 9. **Tester les permissions** — chaque endpoint doit avoir un test qui vérifie le rôle requis.
 10. **Documenter les domain events** — chaque event publié doit avoir sa fiche dans le module spec.
+11. **Le backend n'importe jamais `packages/shared`** — le contrat API reste défini côté serveur dans `common/contracts/` ; `packages/shared` est à destination de `mobile/` (et du frontend plus tard).
+12. **Toute mutation rejouable depuis le mobile porte `Idempotency-Key` et `expectedUpdatedAt`** — endpoints marqués `@Idempotent()`, conflits en 409 `OPTIMISTIC_LOCK_CONFLICT`, jamais de merge serveur (ADR-016).
