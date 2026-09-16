@@ -57,3 +57,18 @@ backup_*.sql
 # Playwright e2e artifacts
 e2e/test-results/
 e2e/playwright-report/
+
+# ── Mobile (Expo / EAS) ──────────────────────────────────────────────────────
+mobile/.expo/
+mobile/ios/
+mobile/android/
+mobile/expo-env.d.ts
+mobile/.kotlin/
+mobile/dist/
+mobile/google-services.json
+mobile/GoogleService-Info.plist
+mobile/.maestro/tests-output/
+*.jks
+*.p8
+*.p12
+*.mobileprovision

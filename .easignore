@@ -1,0 +1,20 @@
+# Fichiers exclus de l'archive envoyée à EAS Build.
+# EAS téléverse la racine du dépôt git ; sans ce fichier chaque build embarque
+# le backend, le frontend et la doc.
+backend/
+frontend/
+e2e/
+docs/
+nginx/
+scripts/
+.github/
+.claude/
+*.md
+!mobile/**/*.md
+!packages/**/*.md
+docker-compose*.yml
+mobile/.expo/
+mobile/ios/
+mobile/android/
+**/node_modules/
+**/coverage/
