@@ -99,7 +99,7 @@ jobs:
         run: npm run build
 
   mobile:
-    name: Mobile (shared + Expo app: typecheck, lint, jest)
+    name: "Mobile (shared + Expo app — typecheck, lint, jest)"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
