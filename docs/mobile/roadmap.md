@@ -4,6 +4,26 @@ Décisions d'architecture : [ADR-014](../adrs/ADR-014-native-mobile-app-platform
 
 Deux lots : **B37** = contrat backend (module `mobile` + contrats), **B38** = l'app (`mobile/` + `packages/shared/`). Numérotation séparée parce que l'app a son propre job CI, son propre cycle de release (EAS, TestFlight) et ses propres relecteurs ; « B37 terminé » doit vouloir dire « le backend est prêt ».
 
+## Pré-requis hors code (à lancer maintenant, délais incompressibles)
+
+| Pré-requis | Responsable | Pourquoi maintenant |
+|---|---|---|
+| Activer les comptes Apple Developer Program et Google Play Console (déjà créés) | cverreault | Sans eux : pas de TestFlight, pas de clé APNs, pas de build EAS signé. L'activation Apple prend plusieurs jours |
+| Identité de l'app : nom **Dispatch2Go**, bundle id `com.dispatch2go.app` (iOS et Android), schéma `dispatch2go://` | décidé | Se change mal après un premier build distribué |
+| Domaine SaaS pour l'entrée par slug (`https://<slug>.<domaine>`) | cverreault | Conditionne le certificat et le champ workspace de l'app |
+| Certificat TLS **d'une autorité publique** (Let's Encrypt ou équivalent) couvrant le domaine et le wildcard `*.<domaine>`, terminé sur le nginx frontal | cverreault | iOS et Android refusent un certificat auto-signé sans configuration spéciale ; le `nginx/default.conf` du repo écoute en HTTP seulement, le TLS est donc sur le proxy frontal |
+| Déclaration Google Play « localisation en arrière-plan » (formulaire + vidéo de démonstration) | cverreault, à B38.8 | Refus possible ; prévoir le repli « pendant l'utilisation » dans le consentement et le runbook |
+| Compte Expo (EAS) et `projectId` | cverreault, à B38.1 | Builds, credentials APNs/FCM, EAS Update |
+
+## Décisions ouvertes (à trancher avant l'item indiqué)
+
+| Décision | Avant | Recommandation |
+|---|---|---|
+| Version d'Expo SDK figée (conditionne React, expo-sqlite, expo-background-task) | B38.1 | Dernière SDK stable au moment de B38.1, notée dans `mobile/package.json` et ici |
+| Génération des types de `packages/shared` depuis l'OpenAPI du backend (`/api/docs`) plutôt que miroir à la main | B38.2 | Générer avec `openapi-typescript` en script `npm run shared:gen` ; les types manuels restent pour ce que Swagger ne décrit pas |
+| Estimation d'effort par item (tailles S/M/L) | avant de planifier un calendrier | À faire ensemble une fois la PR 25 fusionnée |
+| Double notification PWA + app | tranché | Un utilisateur avec un appareil actif reçoit le push natif seulement (ADR-015 §3) |
+
 ## Périmètre v1
 
 - Persona : **technicien seulement**. Admin et dispatcher restent sur le web.
@@ -26,6 +46,7 @@ Conventions : une PR par item, commit conventionnel avec le scope du module touc
 | B37.7 | `feat(locations)` | DTO batch ; consentement, clamp, dédup ; `POST /api/me/locations/batch` ; `@Idempotent()` ; `locations.md` | B37.2, B37.5 |
 | B37.8 | `feat(mobile)` | `MobileConfigService` / `MobileConfigController` (`GET /api/mobile/config`) ; heartbeat `upgradeRequired` ; clés `mobile.*` | B37.3 |
 | B37.9 | `feat(attachments)` | `GET /api/attachments/:id/content` (proxy streaming, même RBAC objet que `download`) | — |
+| B37.10 | `feat(auth)` | Réinitialisation de mot de passe en libre-service : `POST /api/auth/password-reset/request` (email, réponse neutre) + `POST /api/auth/password-reset/confirm` (token 30 min à usage unique) ; un technicien bloqué sur son téléphone n'a aucun recours aujourd'hui | — |
 
 Parallélisable après B37.2 : {B37.3 → B37.4 → B37.8}, B37.5 → B37.7, B37.6, B37.9. Les statuts des ADRs passent à `Accepted` dans la dernière PR du lot.
 
@@ -43,6 +64,7 @@ Moteur hors ligne (`mobile/src/sync/`) : les lignes serveur ne sont jamais muté
 
 | Item | Scope | Contenu | Dépend de |
 |---|---|---|---|
+| B38.0 | `spike(mobile)` | Spike jetable : build dev client Expo sur un iPhone et un Android réels avec localisation en arrière-plan et un push de test. Valide comptes, credentials EAS, permissions OS et chaîne d'outils avant d'investir. Aucun code conservé | comptes développeur activés |
 | B38.1 | `chore(mobile)` | Racine workspaces, `.easignore`, squelette `packages/shared`, `create-expo-app mobile` (dev client, router, TS), `metro.config.js`, `jest.config.js`, job CI `mobile`, `.gitignore`, `CLAUDE.md` | — |
 | B38.2 | `feat(shared)` | Types, contrats, utilitaires, `resolveAvailableTransitions`, `projectWorkOrder`, locales + test de parité | — |
 | B38.3 | `feat(mobile)` | Shell : router, thème, i18n, écran workspace + branding, device id, config publique + gate de version, secure store, client HTTP + refresh, login / 2FA / logout, enregistrement + heartbeat | B37.3, B37.8 |
@@ -51,11 +73,12 @@ Moteur hors ligne (`mobile/src/sync/`) : les lignes serveur ne sont jamais muté
 | B38.6 | `feat(mobile)` | Caméra + compression + upload avec retry, signature, visualisation via le proxy | B37.9 |
 | B38.7 | `feat(mobile)` | Catalogue et stock dans le pull, ajout / retrait de pièces sur BT, scan, écran Mon stock | B37.6 |
 | B38.8 | `feat(mobile)` | Consentement + permissions, tâche d'arrière-plan, table `location_fixes`, envoi groupé, démarrage / arrêt automatique | B37.7 |
-| B38.9 | `feat(mobile)` | expo-notifications, enregistrement du token, deep link `taskmgr://work-orders/:id`, pull à la réception | B37.4 |
+| B38.9 | `feat(mobile)` | expo-notifications, enregistrement du token, deep link `dispatch2go://work-orders/:id`, pull à la réception | B37.4 |
 | B38.10 | `chore(mobile)` | Flows Maestro, `eas.json` (development / preview / production, EAS Update `appVersion`), `docs/mobile/release.md` | B38.3 à B38.9 |
+| B38.11 | `feat(frontend)` | QR code de workspace sur `/profil` (URL du tenant encodée côté client, aucun endpoint) pour l'écran `(setup)/workspace` de l'app | B38.3 |
 | B38.12 | `refactor(frontend)` | Le frontend consomme `@taskmgr/shared` (compose `context: .`, alias Vite, suppression des copies) | — |
 
-Ordre : B38.1 → (B38.2 ∥ B38.3) → B38.4 → B38.5 → (B38.6 ∥ B38.7) → B38.8 → B38.9 → B38.10. B38.4 et B38.5 sont le centre de risque et se font avant média et GPS.
+Ordre : B38.0 → B38.1 → (B38.2 ∥ B38.3) → B38.4 → B38.5 → (B38.6 ∥ B38.7) → B38.8 → B38.9 → B38.10. B38.4 et B38.5 sont le centre de risque et se font avant média et GPS.
 
 ### Écrans v1 (`mobile/app/`)
 

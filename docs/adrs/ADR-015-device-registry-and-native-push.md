@@ -72,8 +72,11 @@ interface IMobilePushSender {
 
 `MobileModule` is `@Global()` and binds the token to `MobilePushService`,
 exactly like `SYSTEM_CONFIG_RESOLVER` is bound today.
-`PushChannelService.send()` injects it `@Optional()` and ORs its result
-with the web-push outcome. `notifications` never imports
+`PushChannelService.send()` injects it `@Optional()`. **A user with an
+active device (not revoked, token present, seen in the last 30 days) gets
+the native push only; web-push subscriptions are skipped for that user.**
+Otherwise web-push runs as today. Without the rule, a technician who also
+kept the PWA on the same phone would be notified twice for every event. `notifications` never imports
 `modules/mobile`; `npm run arch:check` stays at zero exceptions.
 
 **Rejected** because:

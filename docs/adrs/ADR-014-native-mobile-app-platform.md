@@ -34,6 +34,10 @@ GPS, camera, push). B37 is the backend contract, B38 the app itself.
 
 ### 1. React Native + Expo (managed workflow, dev client, EAS Build)
 
+The app is published as **Dispatch2Go** (bundle id `com.dispatch2go.app` on
+both stores, URL scheme `dispatch2go://`); TaskMgr stays the internal code
+name.
+
 One TypeScript codebase for iOS and Android, built with Expo's managed
 workflow plus `expo-dev-client` so the config plugins we need (background
 location, camera, notifications, SQLite, secure store) work without
@@ -152,5 +156,5 @@ API.
 - The web frontend consuming `@taskmgr/shared` (B38.12).
 - Universal links / App Links across wildcard tenant subdomains (needs
   AASA and `assetlinks.json` served by nginx on every subdomain); v1 uses
-  the custom `taskmgr://` scheme only.
+  the custom `dispatch2go://` scheme only.
 - EAS builds in CI (paid minutes); builds are triggered manually.
