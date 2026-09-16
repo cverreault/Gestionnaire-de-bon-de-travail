@@ -19,7 +19,7 @@ Deux lots : **B37** = contrat backend (module `mobile` + contrats), **B38** = l'
 
 | Décision | Avant | Recommandation |
 |---|---|---|
-| Version d'Expo SDK figée (conditionne React, expo-sqlite, expo-background-task) | B38.1 | Dernière SDK stable au moment de B38.1, notée dans `mobile/package.json` et ici |
+| Version d'Expo SDK figée (conditionne React, expo-sqlite, expo-background-task) | tranché | **Expo SDK 57** (React 19.2, React Native 0.86, TypeScript 6), posé en B38.1 dans `mobile/package.json` |
 | Génération des types de `packages/shared` depuis l'OpenAPI du backend (`/api/docs`) plutôt que miroir à la main | B38.2 | Générer avec `openapi-typescript` en script `npm run shared:gen` ; les types manuels restent pour ce que Swagger ne décrit pas |
 | Estimation d'effort par item (tailles S/M/L) | avant de planifier un calendrier | À faire ensemble une fois la PR 25 fusionnée |
 | Double notification PWA + app | tranché | Un utilisateur avec un appareil actif reçoit le push natif seulement (ADR-015 §3) |
@@ -65,7 +65,7 @@ Moteur hors ligne (`mobile/src/sync/`) : les lignes serveur ne sont jamais muté
 | Item | Scope | Contenu | Dépend de |
 |---|---|---|---|
 | B38.0 | `spike(mobile)` | Spike jetable : build dev client Expo sur un iPhone et un Android réels avec localisation en arrière-plan et un push de test. Valide comptes, credentials EAS, permissions OS et chaîne d'outils avant d'investir. Aucun code conservé | comptes développeur activés |
-| B38.1 | `chore(mobile)` | Racine workspaces, `.easignore`, squelette `packages/shared`, `create-expo-app mobile` (dev client, router, TS), `metro.config.js`, `jest.config.js`, job CI `mobile`, `.gitignore`, `CLAUDE.md` | — |
+| B38.1 ✅ | `chore(mobile)` | Racine workspaces, `.easignore`, squelette `packages/shared`, `create-expo-app mobile` (dev client, router, TS), `metro.config.js`, `jest.config.js`, job CI `mobile`, `.gitignore`, `CLAUDE.md` | — |
 | B38.2 | `feat(shared)` | Types, contrats, utilitaires, `resolveAvailableTransitions`, `projectWorkOrder`, locales + test de parité | — |
 | B38.3 | `feat(mobile)` | Shell : router, thème, i18n, écran workspace + branding, device id, config publique + gate de version, secure store, client HTTP + refresh, login / 2FA / logout, enregistrement + heartbeat | B37.3, B37.8 |
 | B38.4 | `feat(mobile)` | Schéma drizzle + migrations, pull, `fullResync`, snapshots, liste et détail de BT en lecture seule | B37.6 |

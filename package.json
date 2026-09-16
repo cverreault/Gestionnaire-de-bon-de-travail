@@ -1,0 +1,21 @@
+{
+  "name": "taskmgr-monorepo",
+  "private": true,
+  "description": "Racine des workspaces npm : app mobile Dispatch2Go (mobile/) et code partagé (packages/shared). backend/, frontend/ et e2e/ restent des projets npm indépendants (ADR-014).",
+  "workspaces": [
+    "mobile",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "mobile:start": "npm run -w mobile start",
+    "mobile:typecheck": "npm run -w mobile typecheck",
+    "mobile:lint": "npm run -w mobile lint",
+    "mobile:test": "npm run -w mobile test",
+    "shared:typecheck": "npm run -w @taskmgr/shared typecheck",
+    "shared:test": "npm run -w @taskmgr/shared test",
+    "check": "npm run shared:typecheck && npm run shared:test && npm run mobile:typecheck && npm run mobile:lint && npm run mobile:test"
+  }
+}

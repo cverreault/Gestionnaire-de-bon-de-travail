@@ -126,6 +126,12 @@ cd frontend && npm run lint
 cd backend && npm test
 cd frontend && npm test
 
+# Mobile (workspaces npm racine : mobile + packages/*)
+npm ci                      # à la racine, une fois
+npm run check               # shared + mobile : typecheck, lint, tests
+cd mobile && npx expo run:ios      # dev client sur simulateur iOS (Mac + Xcode)
+cd mobile && npx expo run:android  # dev client sur émulateur / appareil Android
+
 # Connexion DB
 docker exec -it taskmgr_postgres psql -U taskmgr -d taskmgr
 ```
