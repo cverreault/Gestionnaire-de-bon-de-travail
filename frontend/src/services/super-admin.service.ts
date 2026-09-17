@@ -413,7 +413,15 @@ export interface PlatformSuperAdminRow {
   lastName: string;
   phone: string | null;
   isActive: boolean;
+  totpEnabled: boolean;
   createdAt: string;
+}
+
+export interface UpdatePlatformSuperAdminInput {
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string | null;
 }
 
 export interface CreatePlatformSuperAdminInput {
@@ -441,6 +449,51 @@ export async function createPlatformSuperAdmin(
     input,
   );
   return data.data;
+}
+
+export async function updatePlatformSuperAdmin(
+  id: string,
+  input: UpdatePlatformSuperAdminInput,
+): Promise<PlatformSuperAdminRow> {
+  const { data } = await api.patch<ApiResponse<PlatformSuperAdminRow>>(
+    `/super-admin/platform-users/${id}`,
+    input,
+  );
+  return data.data;
+}
+
+/** Sets a new password and ends every active session of that SA. */
+export async function resetPlatformSuperAdminPassword(
+  id: string,
+  newPassword: string,
+): Promise<void> {
+  await api.patch(`/super-admin/platform-users/${id}/password`, { newPassword });
+}
+
+export async function suspendPlatformSuperAdmin(id: string): Promise<PlatformSuperAdminRow> {
+  const { data } = await api.patch<ApiResponse<PlatformSuperAdminRow>>(
+    `/super-admin/platform-users/${id}/suspend`,
+  );
+  return data.data;
+}
+
+export async function reactivatePlatformSuperAdmin(id: string): Promise<PlatformSuperAdminRow> {
+  const { data } = await api.patch<ApiResponse<PlatformSuperAdminRow>>(
+    `/super-admin/platform-users/${id}/reactivate`,
+  );
+  return data.data;
+}
+
+/** Disables 2FA for an SA who lost their authenticator. */
+export async function resetPlatformSuperAdminTotp(id: string): Promise<PlatformSuperAdminRow> {
+  const { data } = await api.patch<ApiResponse<PlatformSuperAdminRow>>(
+    `/super-admin/platform-users/${id}/totp/reset`,
+  );
+  return data.data;
+}
+
+export async function deletePlatformSuperAdmin(id: string): Promise<void> {
+  await api.delete(`/super-admin/platform-users/${id}`);
 }
 
 // ─── Public tenant branding (B7.5) ──────────────────────────────────

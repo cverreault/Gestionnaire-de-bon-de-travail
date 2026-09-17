@@ -44,6 +44,14 @@ Owns the `Tenant` entity and the cross-cutting plumbing that makes TaskMgr serve
 | `GET`  | `/api/super-admin/stats` | SUPER_ADMIN | Snapshot cross-tenant (B7) : counts tenants / users / BTs / storage |
 | `GET`  | `/api/super-admin/audit?from&to&tenantSlug&actor&eventName&page&limit` | SUPER_ADMIN | Recherche dans les audit_logs cross-tenant (B7) |
 | `GET`  | `/api/super-admin/users?email=<prefix>` | SUPER_ADMIN | Recherche user par email cross-tenant — max 50 (B7) |
+| `GET`  | `/api/super-admin/platform-users` | SUPER_ADMIN | Liste des SUPER_ADMINs (B7.6) |
+| `POST` | `/api/super-admin/platform-users` | SUPER_ADMIN | Créer un SUPER_ADMIN (tenant DEFAULT, rôle forcé côté serveur) |
+| `PATCH`| `/api/super-admin/platform-users/:id` | SUPER_ADMIN | Modifier email / prénom / nom / téléphone (B39) |
+| `PATCH`| `/api/super-admin/platform-users/:id/password` | SUPER_ADMIN | Nouveau mot de passe + révocation des refresh tokens (B39) |
+| `PATCH`| `/api/super-admin/platform-users/:id/suspend` | SUPER_ADMIN | `is_active=false` + révocation des sessions ; refus sur soi-même (403) et sur le dernier SA actif (409) (B39) |
+| `PATCH`| `/api/super-admin/platform-users/:id/reactivate` | SUPER_ADMIN | `is_active=true` (B39) |
+| `PATCH`| `/api/super-admin/platform-users/:id/totp/reset` | SUPER_ADMIN | Désactive la 2FA d'un SA qui a perdu son authentificateur (B39) |
+| `DELETE`| `/api/super-admin/platform-users/:id` | SUPER_ADMIN | Suppression définitive ; 409 si des données lui sont rattachées (FK) → suspendre plutôt (B39) |
 | `GET`  | `/api/tenant/configs` | ADMIN | List capabilities |
 | `PUT`  | `/api/tenant/configs/:key` | ADMIN | Upsert override TENANT |
 | `DELETE` | `/api/tenant/configs/:key` | ADMIN | Drop l'override TENANT |

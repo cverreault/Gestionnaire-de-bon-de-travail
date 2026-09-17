@@ -59,6 +59,25 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.8.0',
+    name: 'Gestion des SUPER_ADMINs (B39)',
+    date: 'Septembre 2026',
+    entries: [
+      {
+        type: 'new',
+        text: "👑 Page SUPER_ADMINs : chaque compte plateforme peut maintenant être édité (email, nom, téléphone), recevoir un nouveau mot de passe, être suspendu puis réactivé, voir sa 2FA réinitialisée s'il a perdu son authentificateur, ou être supprimé définitivement",
+      },
+      {
+        type: 'security',
+        text: "🔒 Garde-fous : impossible de se suspendre ou de se supprimer soi-même, la plateforme garde toujours au moins un SUPER_ADMIN actif, et un changement de mot de passe, une suspension ou une suppression ferment toutes les sessions ouvertes du compte visé",
+      },
+      {
+        type: 'improvement',
+        text: "📜 Les actions sur les SUPER_ADMINs (création, édition, mot de passe, suspension, réactivation, 2FA, suppression) sont journalisées dans l'audit de la plateforme",
+      },
+    ],
+  },
+  {
     version: '2.7.0',
     name: 'Inventaire & pièces + politique de confidentialité (B24)',
     date: 'Juillet 2026',

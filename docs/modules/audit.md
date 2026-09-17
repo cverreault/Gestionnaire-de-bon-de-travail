@@ -55,8 +55,9 @@ Aucun pour l'instant. Le module est exclusivement **consommateur**. (Évolution 
 |---|---|
 | `workOrders.**` (wildcard) | `record()` — persiste l'event en base |
 | `security.**` (wildcard) | `record()` — événements sécurité cross-cutting (RBAC denials, depuis [`common/events/security-events.ts`](../../backend/src/common/events/security-events.ts)) |
+| `platform.**` (wildcard) | `record()` — cycle de vie des SUPER_ADMINs (`platform.super_admin.created/updated/password_reset/suspended/reactivated/totp_reset/deleted`), émis avec le tenant DEFAULT par `tenants/api/super-admin-platform-users.controller.ts` (B39) |
 
-Les listeners vivent dans `application/audit.listener.ts` avec `@OnEvent('workOrders.**')` + `@OnEvent('security.**')`, tous deux `{ async: true, promisify: true }`. **Important** : tout throw du listener est avalé — l'audit ne doit jamais bloquer le flux métier d'origine.
+Les listeners vivent dans `application/audit.listener.ts` avec `@OnEvent('workOrders.**')`, `@OnEvent('security.**')` et `@OnEvent('platform.**')`, tous `{ async: true, promisify: true }`. **Important** : tout throw du listener est avalé — l'audit ne doit jamais bloquer le flux métier d'origine.
 
 ## Jobs nocturnes
 
