@@ -61,6 +61,7 @@ Consommé automatiquement par `audit` via le wildcard listener (timeline de deli
 | Event source | Action |
 |---|---|
 | `workOrders.workOrder.assigned` | Crée une notif `workOrder.assigned` pour le tech assigné, dispatche sur les canaux opt-in |
+| `platform.super_admin.password_reset`, `platform.super_admin.totp_reset` | Avis de sécurité au SUPER_ADMIN concerné : email + SMS (si téléphone), dans sa locale ; le destinataire voyage dans `data.recipient` (aucune lecture DB). Pas de row in-app, pas de préférence : un changement de mot de passe ou de 2FA imposé par un tiers se notifie toujours (B39) |
 
 À étendre : `workOrder.completed`, `workOrder.statusChanged` (escalade SLA), `auth.passwordReset` (lien magique), etc.
 

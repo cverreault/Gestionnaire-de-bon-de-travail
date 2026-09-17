@@ -34,4 +34,14 @@ export class AuditListener {
   async onSecurityEvent(event: IDomainEvent & { data?: unknown }) {
     await this.auditService.record(event);
   }
+
+  /**
+   * Platform-level events (SUPER_ADMIN lifecycle from
+   * `tenants/api/super-admin-platform-users.controller.ts`). They carry the
+   * DEFAULT tenant id so they show up in the SA audit page.
+   */
+  @OnEvent('platform.**', { async: true, promisify: true })
+  async onPlatformEvent(event: IDomainEvent & { data?: unknown }) {
+    await this.auditService.record(event);
+  }
 }

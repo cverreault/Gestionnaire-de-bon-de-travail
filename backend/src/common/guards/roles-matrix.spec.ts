@@ -262,6 +262,12 @@ const ALL_ROWS: { name: string; rows: MatrixRow[] }[] = [
     rows: [
       { controller: SuperAdminPlatformUsersController, method: 'list',   expectedRoles: [Role.SUPER_ADMIN], note: 'GET /super-admin/platform-users' },
       { controller: SuperAdminPlatformUsersController, method: 'create', expectedRoles: [Role.SUPER_ADMIN], note: 'POST /super-admin/platform-users' },
+      { controller: SuperAdminPlatformUsersController, method: 'update',        expectedRoles: [Role.SUPER_ADMIN], note: 'PATCH /super-admin/platform-users/:id' },
+      { controller: SuperAdminPlatformUsersController, method: 'resetPassword', expectedRoles: [Role.SUPER_ADMIN], note: 'PATCH /super-admin/platform-users/:id/password' },
+      { controller: SuperAdminPlatformUsersController, method: 'suspend',       expectedRoles: [Role.SUPER_ADMIN], note: 'PATCH /super-admin/platform-users/:id/suspend' },
+      { controller: SuperAdminPlatformUsersController, method: 'reactivate',    expectedRoles: [Role.SUPER_ADMIN], note: 'PATCH /super-admin/platform-users/:id/reactivate' },
+      { controller: SuperAdminPlatformUsersController, method: 'resetTotp',     expectedRoles: [Role.SUPER_ADMIN], note: 'PATCH /super-admin/platform-users/:id/totp/reset' },
+      { controller: SuperAdminPlatformUsersController, method: 'remove',        expectedRoles: [Role.SUPER_ADMIN], note: 'DELETE /super-admin/platform-users/:id' },
     ],
   },
   {

@@ -16,16 +16,25 @@
  * columns and the audit event payload is well-formed.
  */
 
-import { ConflictException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Role } from '@prisma/client';
 import {
   PLATFORM_SUPER_ADMIN_CREATED,
+  PLATFORM_SUPER_ADMIN_DELETED,
+  PLATFORM_SUPER_ADMIN_PASSWORD_RESET,
+  PLATFORM_SUPER_ADMIN_SUSPENDED,
+  PLATFORM_SUPER_ADMIN_TOTP_RESET,
+  PLATFORM_SUPER_ADMIN_UPDATED,
   SuperAdminPlatformUsersController,
 } from './super-admin-platform-users.controller';
 import { DEFAULT_TENANT_ID } from '../../../common/contracts/tenant-context.contract';
 
 function makePrisma() {
-  return { $queryRawUnsafe: jest.fn() };
+  return { $queryRawUnsafe: jest.fn(), $executeRawUnsafe: jest.fn() };
 }
 function makeEmitter() {
   return { emit: jest.fn() };
@@ -170,6 +179,208 @@ describe('SuperAdminPlatformUsersController', () => {
       const clashCall = prisma.$queryRawUnsafe.mock.calls[0];
       expect(clashCall[1]).toBe(DEFAULT_TENANT_ID);
       expect(clashCall[2]).toBe(dto.email);
+    });
+  });
+
+  // ── Mutations on an existing SA (B39) ──────────────────────────────────
+
+  const saRow = (over: Partial<Record<string, unknown>> = {}) => ({
+    id: 'u-2',
+    email: 'other@x.io',
+    first_name: 'Other',
+    last_name: 'SA',
+    phone: null,
+    is_active: true,
+    totp_enabled: false,
+    created_at: new Date('2026-06-30'),
+    locale: 'fr',
+    ...over,
+  });
+
+  describe('update', () => {
+    it('404s when the id is not a SUPER_ADMIN (no probing of tenant users)', async () => {
+      const prisma = makePrisma();
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([]); // findSuperAdmin
+      await expect(
+        make(prisma, makeEmitter()).update(actor, 'u-2', { firstName: 'X' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('updates the row, restricts the UPDATE to role SUPER_ADMIN and emits an audit event', async () => {
+      const prisma = makePrisma();
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([saRow()]); // findSuperAdmin
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([saRow({ first_name: 'Renamed' })]); // UPDATE
+      const emitter = makeEmitter();
+
+      const out = await make(prisma, emitter).update(actor, 'u-2', { firstName: 'Renamed' });
+
+      const updateCall = prisma.$queryRawUnsafe.mock.calls[1];
+      expect(updateCall[0]).toMatch(/UPDATE\s+users/i);
+      expect(updateCall[0]).toMatch(/role = 'SUPER_ADMIN'/);
+      expect(updateCall[1]).toBe('u-2');
+      expect(out.firstName).toBe('Renamed');
+      expect(emitter.emit).toHaveBeenCalledWith(
+        PLATFORM_SUPER_ADMIN_UPDATED,
+        expect.objectContaining({ aggregateId: 'u-2', actorUserId: actor.id }),
+      );
+    });
+
+    it('409s when the new email belongs to another platform user', async () => {
+      const prisma = makePrisma();
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([saRow()]); // findSuperAdmin
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([{ id: 'u-3' }]); // clash
+      await expect(
+        make(prisma, makeEmitter()).update(actor, 'u-2', { email: 'taken@x.io' }),
+      ).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('hashes the password, revokes every refresh token and emits an audit event', async () => {
+      const prisma = makePrisma();
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([saRow()]); // findSuperAdmin
+      prisma.$executeRawUnsafe.mockResolvedValue(1);
+      const emitter = makeEmitter();
+
+      await make(prisma, emitter).resetPassword(actor, 'u-2', { newPassword: 'longenough' });
+
+      const [pwdCall, revokeCall] = prisma.$executeRawUnsafe.mock.calls;
+      expect(pwdCall[0]).toMatch(/SET password/i);
+      expect(pwdCall[2]).not.toBe('longenough'); // stored hashed, never in clear
+      expect(revokeCall[0]).toMatch(/UPDATE refresh_tokens SET revoked_at/i);
+      expect(revokeCall[1]).toBe('u-2');
+      expect(emitter.emit).toHaveBeenCalledWith(
+        PLATFORM_SUPER_ADMIN_PASSWORD_RESET,
+        expect.objectContaining({
+          aggregateId: 'u-2',
+          // Recipient travels in the event so notifications can email/SMS
+          // the affected SA without a cross-module lookup.
+          data: { recipient: { email: 'other@x.io', phone: null, firstName: 'Other', locale: 'fr' } },
+        }),
+      );
+    });
+  });
+
+  describe('suspend', () => {
+    it('403s when an SA tries to suspend themself', async () => {
+      const prisma = makePrisma();
+      await expect(
+        make(prisma, makeEmitter()).suspend(actor, actor.id),
+      ).rejects.toThrow(ForbiddenException);
+      expect(prisma.$queryRawUnsafe).not.toHaveBeenCalled();
+    });
+
+    it('409s when the target is the last active SA', async () => {
+      const prisma = makePrisma();
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([saRow()]); // findSuperAdmin
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([{ count: 0 }]); // others active
+      await expect(
+        make(prisma, makeEmitter()).suspend(actor, 'u-2'),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('sets is_active=false, revokes sessions and emits an audit event', async () => {
+      const prisma = makePrisma();
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([saRow()]); // findSuperAdmin
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([{ count: 1 }]); // others active
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([saRow({ is_active: false })]); // UPDATE
+      prisma.$executeRawUnsafe.mockResolvedValue(1);
+      const emitter = makeEmitter();
+
+      const out = await make(prisma, emitter).suspend(actor, 'u-2');
+
+      expect(prisma.$queryRawUnsafe.mock.calls[2][0]).toMatch(/is_active = false/);
+      expect(prisma.$executeRawUnsafe.mock.calls[0][0]).toMatch(/refresh_tokens/);
+      expect(out.isActive).toBe(false);
+      expect(emitter.emit).toHaveBeenCalledWith(
+        PLATFORM_SUPER_ADMIN_SUSPENDED,
+        expect.objectContaining({ aggregateId: 'u-2' }),
+      );
+    });
+  });
+
+  describe('reactivate', () => {
+    it('sets is_active=true without touching sessions', async () => {
+      const prisma = makePrisma();
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([saRow({ is_active: false })]);
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([saRow({ is_active: true })]);
+
+      const out = await make(prisma, makeEmitter()).reactivate(actor, 'u-2');
+
+      expect(prisma.$queryRawUnsafe.mock.calls[1][0]).toMatch(/is_active = true/);
+      expect(prisma.$executeRawUnsafe).not.toHaveBeenCalled();
+      expect(out.isActive).toBe(true);
+    });
+  });
+
+  describe('resetTotp', () => {
+    it('clears every TOTP column and emits an audit event', async () => {
+      const prisma = makePrisma();
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([saRow({ totp_enabled: true })]);
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([saRow({ totp_enabled: false })]);
+      const emitter = makeEmitter();
+
+      const out = await make(prisma, emitter).resetTotp(actor, 'u-2');
+
+      const sql = prisma.$queryRawUnsafe.mock.calls[1][0] as string;
+      expect(sql).toMatch(/totp_secret = NULL/);
+      expect(sql).toMatch(/totp_enabled = false/);
+      expect(sql).toMatch(/totp_backup_codes_hash = NULL/);
+      expect(out.totpEnabled).toBe(false);
+      expect(emitter.emit).toHaveBeenCalledWith(
+        PLATFORM_SUPER_ADMIN_TOTP_RESET,
+        expect.objectContaining({ aggregateId: 'u-2' }),
+      );
+    });
+  });
+
+  describe('remove', () => {
+    it('403s on self-deletion', async () => {
+      await expect(
+        make(makePrisma(), makeEmitter()).remove(actor, actor.id),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('409s when the target is the last active SA', async () => {
+      const prisma = makePrisma();
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([saRow()]);
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([{ count: 0 }]);
+      await expect(
+        make(prisma, makeEmitter()).remove(actor, 'u-2'),
+      ).rejects.toThrow(ConflictException);
+      expect(prisma.$executeRawUnsafe).not.toHaveBeenCalled();
+    });
+
+    it('revokes sessions, hard-deletes the row and emits an audit event', async () => {
+      const prisma = makePrisma();
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([saRow()]);
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([{ count: 2 }]);
+      prisma.$executeRawUnsafe.mockResolvedValue(1);
+      const emitter = makeEmitter();
+
+      await make(prisma, emitter).remove(actor, 'u-2');
+
+      const [revokeCall, deleteCall] = prisma.$executeRawUnsafe.mock.calls;
+      expect(revokeCall[0]).toMatch(/refresh_tokens/);
+      expect(deleteCall[0]).toMatch(/DELETE FROM users WHERE id = \$1 AND role = 'SUPER_ADMIN'/);
+      expect(emitter.emit).toHaveBeenCalledWith(
+        PLATFORM_SUPER_ADMIN_DELETED,
+        expect.objectContaining({ aggregateId: 'u-2', data: { email: 'other@x.io' } }),
+      );
+    });
+
+    it('translates a foreign-key violation into a 409 (suspend instead)', async () => {
+      const prisma = makePrisma();
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([saRow()]);
+      prisma.$queryRawUnsafe.mockResolvedValueOnce([{ count: 2 }]);
+      prisma.$executeRawUnsafe.mockResolvedValueOnce(1); // revoke
+      prisma.$executeRawUnsafe.mockRejectedValueOnce(Object.assign(new Error('fk'), { meta: { code: '23503' } }));
+      const emitter = makeEmitter();
+
+      await expect(
+        make(prisma, emitter).remove(actor, 'u-2'),
+      ).rejects.toThrow(ConflictException);
+      expect(emitter.emit).not.toHaveBeenCalled();
     });
   });
 
