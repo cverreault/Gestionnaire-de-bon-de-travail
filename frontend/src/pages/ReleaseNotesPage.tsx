@@ -75,6 +75,10 @@ const VERSIONS: ReleaseVersion[] = [
         type: 'improvement',
         text: "📜 Les actions sur les SUPER_ADMINs (création, édition, mot de passe, suspension, réactivation, 2FA, suppression) sont journalisées dans l'audit de la plateforme",
       },
+      {
+        type: 'security',
+        text: "✉️ Le SUPER_ADMIN concerné reçoit un courriel et un SMS (si un téléphone est au dossier) dès qu'un autre administrateur change son mot de passe ou désactive sa 2FA, dans sa langue",
+      },
     ],
   },
   {

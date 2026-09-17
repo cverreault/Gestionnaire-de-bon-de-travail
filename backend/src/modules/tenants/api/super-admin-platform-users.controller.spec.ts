@@ -193,6 +193,7 @@ describe('SuperAdminPlatformUsersController', () => {
     is_active: true,
     totp_enabled: false,
     created_at: new Date('2026-06-30'),
+    locale: 'fr',
     ...over,
   });
 
@@ -250,7 +251,12 @@ describe('SuperAdminPlatformUsersController', () => {
       expect(revokeCall[1]).toBe('u-2');
       expect(emitter.emit).toHaveBeenCalledWith(
         PLATFORM_SUPER_ADMIN_PASSWORD_RESET,
-        expect.objectContaining({ aggregateId: 'u-2' }),
+        expect.objectContaining({
+          aggregateId: 'u-2',
+          // Recipient travels in the event so notifications can email/SMS
+          // the affected SA without a cross-module lookup.
+          data: { recipient: { email: 'other@x.io', phone: null, firstName: 'Other', locale: 'fr' } },
+        }),
       );
     });
   });

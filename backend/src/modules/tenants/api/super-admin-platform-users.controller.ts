@@ -44,6 +44,8 @@ type PlatformSuperAdminRow = {
   is_active: boolean;
   totp_enabled: boolean;
   created_at: Date;
+  /** `preferences->>'locale'` — drives the language of security emails/SMS. */
+  locale: string | null;
 };
 
 function toDto(r: PlatformSuperAdminRow) {
@@ -60,7 +62,21 @@ function toDto(r: PlatformSuperAdminRow) {
 }
 
 const SA_COLUMNS =
-  'id, email, first_name, last_name, phone, is_active, totp_enabled, created_at';
+  "id, email, first_name, last_name, phone, is_active, totp_enabled, created_at, preferences->>'locale' AS locale";
+
+/**
+ * Payload of the security events (`password_reset`, `totp_reset`) : the
+ * notifications module sends an email + SMS to the affected SA from these
+ * fields alone, without a cross-module lookup.
+ */
+function securityRecipient(r: PlatformSuperAdminRow) {
+  return {
+    email: r.email,
+    phone: r.phone,
+    firstName: r.first_name,
+    locale: r.locale === 'en' ? 'en' : 'fr',
+  };
+}
 
 class CreatePlatformSuperAdminDto {
   @IsEmail({}, { message: i18nValidationMessage('validation.IS_EMAIL') })
@@ -277,7 +293,7 @@ export class SuperAdminPlatformUsersController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ResetPlatformSuperAdminPasswordDto,
   ) {
-    await this.findSuperAdmin(id);
+    const target = await this.findSuperAdmin(id);
     const passwordHash = await bcrypt.hash(dto.newPassword, 10);
     await this.prisma.$executeRawUnsafe(
       `UPDATE users SET password = $2, updated_at = NOW()
@@ -286,7 +302,9 @@ export class SuperAdminPlatformUsersController {
       passwordHash,
     );
     await this.revokeSessions(id);
-    this.emitPlatformEvent(PLATFORM_SUPER_ADMIN_PASSWORD_RESET, id, actor.id, {});
+    this.emitPlatformEvent(PLATFORM_SUPER_ADMIN_PASSWORD_RESET, id, actor.id, {
+      recipient: securityRecipient(target),
+    });
   }
 
   @Patch(':id/suspend')
@@ -353,6 +371,7 @@ export class SuperAdminPlatformUsersController {
     );
     this.emitPlatformEvent(PLATFORM_SUPER_ADMIN_TOTP_RESET, id, actor.id, {
       email: target.email,
+      recipient: securityRecipient(target),
     });
     return toDto(rows[0]);
   }

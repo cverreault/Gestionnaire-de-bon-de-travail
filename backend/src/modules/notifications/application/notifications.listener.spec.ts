@@ -63,12 +63,13 @@ function buildListener(opts: {
   } as unknown as PrismaService;
 
   const configs = { resolve: jest.fn().mockResolvedValue(undefined) } as never;
-  const listener = new NotificationsListener(notifications, email, push, prisma, configs);
+  const sms = { send: jest.fn().mockResolvedValue(true) };
+  const listener = new NotificationsListener(notifications, email, push, prisma, configs, sms as never);
 
   // Silence the in-test logger noise.
   jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
 
-  return { listener, notifications: notifications as any, email: email as any, push: push as any, prisma: prisma as any };
+  return { listener, notifications: notifications as any, email: email as any, push: push as any, prisma: prisma as any, sms };
 }
 
 const ASSIGNED_EVENT = {
@@ -256,5 +257,49 @@ describe('NotificationsListener.onWorkOrderSlaBreached', () => {
 
     await expect(listener.onWorkOrderSlaBreached(SLA_BREACHED_EVENT as any))
       .resolves.toBeUndefined();
+  });
+});
+
+// ─── B39 — SUPER_ADMIN security notices ───────────────────────────────────────
+
+describe('platform.super_admin.* security notices', () => {
+  const recipient = { email: 'sa@x.io', phone: '+15145550199', firstName: 'Alex', locale: 'fr' as const };
+
+  it('password_reset → email + SMS in the recipient locale', async () => {
+    const { listener, email, sms } = buildListener({});
+    await listener.onSuperAdminPasswordReset({ data: { recipient } });
+
+    expect(email.send).toHaveBeenCalledTimes(1);
+    expect(email.send.mock.calls[0][0]).toMatchObject({ to: 'sa@x.io' });
+    expect(email.send.mock.calls[0][0].subject).toMatch(/mot de passe/);
+    expect(sms.send).toHaveBeenCalledWith({ to: '+15145550199', body: expect.stringMatching(/mot de passe/) });
+  });
+
+  it('password_reset → English copy when locale=en, no SMS without a phone', async () => {
+    const { listener, email, sms } = buildListener({});
+    await listener.onSuperAdminPasswordReset({
+      data: { recipient: { ...recipient, phone: null, locale: 'en' } },
+    });
+
+    expect(email.send.mock.calls[0][0].subject).toMatch(/password/);
+    expect(sms.send).not.toHaveBeenCalled();
+  });
+
+  it('totp_reset → email + SMS', async () => {
+    const { listener, email, sms } = buildListener({});
+    await listener.onSuperAdminTotpReset({ data: { recipient } });
+
+    expect(email.send.mock.calls[0][0].subject).toMatch(/double authentification/);
+    expect(sms.send).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores events without a recipient and never throws on channel failure', async () => {
+    const { listener, email, sms } = buildListener({});
+    await listener.onSuperAdminPasswordReset({ data: {} });
+    expect(email.send).not.toHaveBeenCalled();
+
+    email.send.mockRejectedValueOnce(new Error('smtp down'));
+    await expect(listener.onSuperAdminPasswordReset({ data: { recipient } })).resolves.toBeUndefined();
+    expect(sms.send).not.toHaveBeenCalled(); // email threw first, SMS skipped, error logged
   });
 });

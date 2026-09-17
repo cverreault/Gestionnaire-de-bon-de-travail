@@ -9,6 +9,7 @@ import { PrismaService } from '../../../common/prisma/prisma.service';
 import { NotificationsService } from './notifications.service';
 import { EmailChannelService } from '../infrastructure/channels/email-channel.service';
 import { PushChannelService } from '../infrastructure/channels/push-channel.service';
+import { SmsChannelService } from '../infrastructure/channels/sms-channel.service';
 import type { NotifiableEvent } from './notification-preferences';
 
 /**
@@ -48,6 +49,13 @@ interface WorkOrderSlaBreachedEvent extends IDomainEvent {
   data: WorkOrderSlaBreachedData;
 }
 
+interface SecurityRecipient {
+  email: string;
+  phone: string | null;
+  firstName: string;
+  locale: 'fr' | 'en';
+}
+
 @Injectable()
 export class NotificationsListener {
   private readonly logger = new Logger(NotificationsListener.name);
@@ -59,7 +67,73 @@ export class NotificationsListener {
     private readonly prisma: PrismaService,
     @Inject(SYSTEM_CONFIG_RESOLVER)
     private readonly configs: ISystemConfigResolver,
+    private readonly sms: SmsChannelService,
   ) {}
+
+  /**
+   * B39 — a platform SUPER_ADMIN's password was set by another SA.
+   * Security notice on both channels (email + SMS when a phone is on file)
+   * so the affected person learns about it even if their session was
+   * just revoked. Recipient data travels in the event (no lookup).
+   */
+  @OnEvent('platform.super_admin.password_reset', { async: true, promisify: true })
+  async onSuperAdminPasswordReset(event: { data?: { recipient?: SecurityRecipient } }) {
+    const r = event.data?.recipient;
+    if (!r) return;
+    const en = r.locale === 'en';
+    await this.sendSecurityNotice(r, {
+      subject: en
+        ? 'Dispatch2Go — your password was changed'
+        : 'Dispatch2Go — votre mot de passe a été modifié',
+      text: en
+        ? `Hello ${r.firstName},\n\nA platform administrator has just set a new password on your Dispatch2Go account. ` +
+          `Your open sessions have been closed.\n\nIf you did not expect this, contact the platform owner immediately.`
+        : `Bonjour ${r.firstName},\n\nUn administrateur de la plateforme vient de définir un nouveau mot de passe sur votre compte Dispatch2Go. ` +
+          `Vos sessions ouvertes ont été fermées.\n\nSi vous n'attendiez pas ce changement, contactez le responsable de la plateforme immédiatement.`,
+      sms: en
+        ? 'Dispatch2Go: your password was just changed by a platform administrator. Contact the platform owner if unexpected.'
+        : "Dispatch2Go : votre mot de passe vient d'être modifié par un administrateur de la plateforme. Contactez le responsable si ce n'est pas attendu.",
+    });
+  }
+
+  /** B39 — 2FA disabled by another SA: same security notice. */
+  @OnEvent('platform.super_admin.totp_reset', { async: true, promisify: true })
+  async onSuperAdminTotpReset(event: { data?: { recipient?: SecurityRecipient } }) {
+    const r = event.data?.recipient;
+    if (!r) return;
+    const en = r.locale === 'en';
+    await this.sendSecurityNotice(r, {
+      subject: en
+        ? 'Dispatch2Go — two-factor authentication disabled'
+        : 'Dispatch2Go — double authentification désactivée',
+      text: en
+        ? `Hello ${r.firstName},\n\nA platform administrator has disabled two-factor authentication on your Dispatch2Go account. ` +
+          `You can set it up again from your profile.\n\nIf you did not expect this, contact the platform owner immediately.`
+        : `Bonjour ${r.firstName},\n\nUn administrateur de la plateforme a désactivé la double authentification sur votre compte Dispatch2Go. ` +
+          `Vous pouvez la reconfigurer depuis votre profil.\n\nSi vous n'attendiez pas ce changement, contactez le responsable de la plateforme immédiatement.`,
+      sms: en
+        ? 'Dispatch2Go: 2FA was just disabled on your account by a platform administrator. Contact the platform owner if unexpected.'
+        : "Dispatch2Go : la 2FA vient d'être désactivée sur votre compte par un administrateur. Contactez le responsable si ce n'est pas attendu.",
+    });
+  }
+
+  private async sendSecurityNotice(
+    r: SecurityRecipient,
+    msg: { subject: string; text: string; sms: string },
+  ): Promise<void> {
+    try {
+      await this.email.send({ to: r.email, subject: msg.subject, text: msg.text });
+      if (r.phone) {
+        await this.sms.send({ to: r.phone, body: msg.sms });
+      }
+    } catch (err) {
+      this.logger.error(
+        `Failed to send security notice to ${r.email}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+  }
 
   @OnEvent('workOrders.workOrder.assigned', { async: true, promisify: true })
   async onWorkOrderAssigned(event: WorkOrderEvent) {
