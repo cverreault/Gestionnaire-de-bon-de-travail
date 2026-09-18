@@ -6,7 +6,7 @@ import { db } from '../../db/client';
 import { getSnapshot, getWorkOrder } from '../../db/repo';
 import { useSession } from '../../stores/session.store';
 import { useSyncStore } from '../../sync/sync.store';
-import type { AttachmentPayload, NotePayload, QueuedOp, SignaturePayload, TransitionPayload } from '../../sync/queue';
+import type { AttachmentPayload, NotePayload, PartAddPayload, PartRemovePayload, QueuedOp, SignaturePayload, TransitionPayload } from '../../sync/queue';
 import { useQueueOps } from '../../sync/useSync';
 import { font, radius, spacing, useTheme } from '../../theme/tokens';
 
@@ -49,6 +49,8 @@ export default function SyncScreen() {
       const p = op.payload as SignaturePayload;
       return t('queue.signature', { who: p.signatureClient !== undefined ? t('workOrder.signClient') : t('workOrder.signTechnician') });
     }
+    if (op.kind === 'part_add') return t('queue.part_add', { qty: (op.payload as PartAddPayload).quantity, sku: (op.payload as PartAddPayload).sku });
+    if (op.kind === 'part_remove') return t('queue.part_remove', { sku: (op.payload as PartRemovePayload).sku });
     return t('queue.attachment', { name: (op.payload as AttachmentPayload).name });
   }
 

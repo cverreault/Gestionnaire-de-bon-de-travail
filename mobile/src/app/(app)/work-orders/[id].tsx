@@ -12,6 +12,7 @@ import {
 } from '@taskmgr/shared';
 import AttachmentsCard from '../../../components/AttachmentsCard';
 import SignaturePad from '../../../components/SignaturePad';
+import PartsCard from '../../../components/PartsCard';
 import StatusBadge from '../../../components/StatusBadge';
 import { useSession } from '../../../stores/session.store';
 import { useSyncStore } from '../../../sync/sync.store';
@@ -247,6 +248,8 @@ export default function WorkOrderDetailScreen() {
               })}
               {w.signedAt && <Text style={{ color: theme.textMuted, fontSize: font.xs }}>{new Date(w.signedAt).toLocaleString(lang, { dateStyle: 'short', timeStyle: 'short' })}</Text>}
             </View>
+
+            <PartsCard workOrderId={id} parts={w.parts} ops={ops} editable={!w.status.startsWith('COMPLETED')} />
 
             <AttachmentsCard workOrderId={id} attachments={w.attachments} pendingIds={pendingIds} canUpload onChanged={refresh} />
             <SignaturePad

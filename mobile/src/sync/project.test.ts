@@ -50,4 +50,14 @@ describe('projectWorkOrder (ADR-016 §3)', () => {
     expect(out.hasSignatureTechnician).toBe(false);
     expect(out.signedAt).toBe('2026-09-18T10:00:00Z');
   });
+
+  it('projects part additions and removals (server rows and queued rows)', () => {
+    const base = { ...wo, parts: [{ id: 'row1', partId: 'p1', quantity: 1, source: 'TECHNICIAN_STOCK' as const, sku: 'A', name: 'A', nameFr: 'A', nameEn: 'A', unit: 'un' }] };
+    const out = projectWorkOrder(base, [
+      op('pa1', 1, 'part_add', { partId: 'p2', quantity: 3, source: 'TECHNICIAN_STOCK', sku: 'B', name: 'B', unit: 'un' }),
+      op('pr1', 2, 'part_remove', { rowId: 'row1', sku: 'A' }),
+    ], snap, me);
+    expect(out.parts.map((p) => [p.id, p.sku, p.quantity])).toEqual([['pa1', 'B', 3]]);
+    expect(base.parts).toHaveLength(1);
+  });
 });

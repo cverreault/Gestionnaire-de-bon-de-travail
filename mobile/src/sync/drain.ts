@@ -19,7 +19,12 @@ export interface Sender {
   note(op: QueuedOp): Promise<{ workOrderUpdatedAt?: string }>;
   attachment(op: QueuedOp): Promise<{ workOrderUpdatedAt?: string }>;
   signature(op: QueuedOp, expectedUpdatedAt: string | null): Promise<{ updatedAt: string }>;
+  partAdd(op: QueuedOp): Promise<{ workOrderUpdatedAt?: string }>;
+  partRemove(op: QueuedOp): Promise<{ workOrderUpdatedAt?: string }>;
 }
+
+/** Ops that must not be replayed blindly after a conflict (ADR-016 §4). */
+const BLOCKING_KINDS = new Set<QueuedOp['kind']>(['transition', 'part_remove']);
 
 export interface DrainResult {
   sent: number;
@@ -47,7 +52,7 @@ async function bumpLocal(db: AppDb, workOrderId: string, updatedAt: string | und
 /**
  * Drains the queue sequentially by seq (ADR-016 §3/§4).
  *  - 2xx → op deleted, local updatedAt fed forward
- *  - 409 OPTIMISTIC_LOCK_CONFLICT → pull ; additive ops retry (≤ 3), transitions stop in CONFLICT
+ *  - 409 OPTIMISTIC_LOCK_CONFLICT → pull ; additive ops retry (≤ 3), transitions and part removals stop in CONFLICT
  *  - other 4xx → FAILED
  *  - 5xx / transport / idempotency in progress → stays PENDING, drain stops
  * A CONFLICT (any kind) or a FAILED transition blocks later ops of that work order.
@@ -56,7 +61,7 @@ export async function drain(db: AppDb, sender: Sender, pull: () => Promise<void>
   await recoverInFlight(db);
   const result: DrainResult = { sent: 0, conflicts: 0, failed: 0, stopped: false };
   const ops = await listOps(db);
-  const blocked = new Set(ops.filter((o) => o.status === 'CONFLICT' || (o.status === 'FAILED' && o.kind === 'transition')).map((o) => o.workOrderId));
+  const blocked = new Set(ops.filter((o) => o.status === 'CONFLICT' || (o.status === 'FAILED' && BLOCKING_KINDS.has(o.kind))).map((o) => o.workOrderId));
 
   for (const op of ops) {
     if (op.status !== 'PENDING' || blocked.has(op.workOrderId)) continue;
@@ -73,6 +78,12 @@ export async function drain(db: AppDb, sender: Sender, pull: () => Promise<void>
         } else if (op.kind === 'signature') {
           const res = await sender.signature(op, await localUpdatedAt(db, op.workOrderId));
           await bumpLocal(db, op.workOrderId, res.updatedAt);
+        } else if (op.kind === 'part_add') {
+          const res = await sender.partAdd(op);
+          await bumpLocal(db, op.workOrderId, res.workOrderUpdatedAt);
+        } else if (op.kind === 'part_remove') {
+          const res = await sender.partRemove(op);
+          await bumpLocal(db, op.workOrderId, res.workOrderUpdatedAt);
         } else {
           const res = await sender.attachment(op);
           await bumpLocal(db, op.workOrderId, res.workOrderUpdatedAt);
@@ -85,7 +96,7 @@ export async function drain(db: AppDb, sender: Sender, pull: () => Promise<void>
         const message = f.message ?? `HTTP ${f.status}`;
         if (f.status === 409 && f.code === OPTIMISTIC_LOCK_CONFLICT) {
           await pull();
-          if (op.kind !== 'transition' && attempts + 1 < MAX_ADDITIVE_RETRIES) {
+          if (!BLOCKING_KINDS.has(op.kind) && attempts + 1 < MAX_ADDITIVE_RETRIES) {
             attempts += 1;
             continue;
           }
@@ -101,7 +112,7 @@ export async function drain(db: AppDb, sender: Sender, pull: () => Promise<void>
         }
         await setOpStatus(db, op.id, 'FAILED', { attempts: attempts + 1, lastError: message });
         result.failed += 1;
-        if (op.kind === 'transition') blocked.add(op.workOrderId);
+        if (BLOCKING_KINDS.has(op.kind)) blocked.add(op.workOrderId);
         break;
       }
     }

@@ -1,8 +1,8 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { ApiError } from '../api/client';
-import { addNote, saveSignatures, transitionWorkOrder, uploadAttachment } from '../api/endpoints';
+import { addNote, addWorkOrderPart, removeWorkOrderPart, saveSignatures, transitionWorkOrder, uploadAttachment } from '../api/endpoints';
 import type { SendFailure, Sender } from './drain';
-import type { AttachmentPayload, NotePayload, QueuedOp, SignaturePayload, TransitionPayload } from './queue';
+import type { AttachmentPayload, NotePayload, PartAddPayload, PartRemovePayload, QueuedOp, SignaturePayload, TransitionPayload } from './queue';
 
 function toFailure(err: unknown): SendFailure {
   if (err instanceof ApiError) {
@@ -41,6 +41,17 @@ export const httpSender: Sender = {
     guard(async () => {
       const wo = await saveSignatures(op.workOrderId, { ...(op.payload as SignaturePayload), expectedUpdatedAt: expectedUpdatedAt ?? undefined }, op.id);
       return { updatedAt: wo.updatedAt };
+    }),
+  partAdd: (op: QueuedOp) =>
+    guard(async () => {
+      const p = op.payload as PartAddPayload;
+      const res = await addWorkOrderPart(op.workOrderId, { partId: p.partId, quantity: p.quantity, source: p.source }, op.id);
+      return { workOrderUpdatedAt: res.workOrderUpdatedAt };
+    }),
+  partRemove: (op: QueuedOp) =>
+    guard(async () => {
+      const res = await removeWorkOrderPart(op.workOrderId, (op.payload as PartRemovePayload).rowId, op.id);
+      return { workOrderUpdatedAt: res.workOrderUpdatedAt };
     }),
   attachment: (op: QueuedOp) =>
     guard(async () => {

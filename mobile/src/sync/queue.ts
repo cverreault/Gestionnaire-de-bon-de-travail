@@ -2,7 +2,7 @@ import { asc, eq, sql } from 'drizzle-orm';
 import * as s from '../db/schema';
 import type { AppDb } from '../db/types';
 
-export type OpKind = 'transition' | 'note' | 'attachment' | 'signature';
+export type OpKind = 'transition' | 'note' | 'attachment' | 'signature' | 'part_add' | 'part_remove';
 export type OpStatus = 'PENDING' | 'IN_FLIGHT' | 'FAILED' | 'CONFLICT';
 
 export interface TransitionPayload {
@@ -24,7 +24,21 @@ export interface SignaturePayload {
   signatureClient?: string | null;
   signatureTechnician?: string | null;
 }
-export type OpPayload = TransitionPayload | NotePayload | AttachmentPayload | SignaturePayload;
+export interface PartAddPayload {
+  partId: string;
+  quantity: number;
+  source: 'WAREHOUSE' | 'TECHNICIAN_STOCK';
+  /** Display only (catalog may change) : sku + localized name. */
+  sku: string;
+  name: string;
+  unit: string;
+}
+export interface PartRemovePayload {
+  /** Server row id (work_order_parts) or a queued part_add op id (removed locally, never sent). */
+  rowId: string;
+  sku: string;
+}
+export type OpPayload = TransitionPayload | NotePayload | AttachmentPayload | SignaturePayload | PartAddPayload | PartRemovePayload;
 
 export interface QueuedOp {
   id: string;

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useSyncStore } from '../../sync/sync.store';
 import { useTheme } from '../../theme/tokens';
 
-/** Authenticated area: bottom tabs (work orders, sync queue with badge, profile ; stock comes with B38.7). */
+/** Authenticated area: bottom tabs (work orders, truck stock, sync queue with badge, profile). */
 export default function AppLayout() {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -29,6 +29,10 @@ export default function AppLayout() {
       <Tabs.Screen
         name="work-orders/[id]"
         options={{ href: null, title: '' }}
+      />
+      <Tabs.Screen
+        name="stock"
+        options={{ title: t('tabs.stock'), tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>🧰</Text> }}
       />
       <Tabs.Screen
         name="sync"

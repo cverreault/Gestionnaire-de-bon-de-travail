@@ -1,5 +1,5 @@
 import type { ProcessSnapshot, ProcessSnapshotStatus, SyncWorkOrder, WorkOrderStatus } from '@taskmgr/shared';
-import type { AttachmentPayload, NotePayload, QueuedOp, SignaturePayload, TransitionPayload } from './queue';
+import type { AttachmentPayload, NotePayload, PartAddPayload, PartRemovePayload, QueuedOp, SignaturePayload, TransitionPayload } from './queue';
 
 export interface Me {
   id: string;
@@ -31,7 +31,7 @@ export interface ProjectedWorkOrder extends SyncWorkOrder {
  * server row itself is never mutated locally.
  */
 export function projectWorkOrder(wo: SyncWorkOrder, ops: QueuedOp[], snapshot: ProcessSnapshot | null, me: Me): ProjectedWorkOrder {
-  const out: ProjectedWorkOrder = { ...wo, notes: [...wo.notes], attachments: [...wo.attachments], pendingOpIds: [] };
+  const out: ProjectedWorkOrder = { ...wo, notes: [...(wo.notes ?? [])], attachments: [...(wo.attachments ?? [])], parts: [...(wo.parts ?? [])], pendingOpIds: [] };
   const statusById = new Map((snapshot?.statuses ?? []).map((st) => [st.id, st]));
   for (const op of [...ops].sort((a, b) => a.seq - b.seq)) {
     if (op.workOrderId !== wo.id) continue;
@@ -52,6 +52,12 @@ export function projectWorkOrder(wo: SyncWorkOrder, ops: QueuedOp[], snapshot: P
     } else if (op.kind === 'attachment') {
       const p = op.payload as AttachmentPayload;
       out.attachments.unshift({ id: op.id, fileName: p.name, fileSize: 0, mimeType: p.type, uploadedAt: op.createdAt });
+    } else if (op.kind === 'part_add') {
+      const p = op.payload as PartAddPayload;
+      out.parts.push({ id: op.id, partId: p.partId, quantity: p.quantity, source: p.source, sku: p.sku, name: p.name, nameFr: p.name, nameEn: p.name, unit: p.unit });
+    } else if (op.kind === 'part_remove') {
+      const p = op.payload as PartRemovePayload;
+      out.parts = out.parts.filter((row) => row.id !== p.rowId);
     } else if (op.kind === 'signature') {
       const p = op.payload as SignaturePayload;
       if (p.signatureClient !== undefined) out.hasSignatureClient = !!p.signatureClient;

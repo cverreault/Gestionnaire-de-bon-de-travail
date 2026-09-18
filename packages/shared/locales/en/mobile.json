@@ -36,7 +36,8 @@
   "tabs": {
     "workOrders": "My WOs",
     "profile": "Profile",
-    "sync": "Sync"
+    "sync": "Sync",
+    "stock": "Stock"
   },
   "workOrders": {
     "title": "My work orders",
@@ -87,7 +88,19 @@
     "clear": "Clear",
     "save": "Save signature",
     "signatureQueued": "Signature waiting to be sent",
-    "signatureHint": "Have the customer sign on the screen, then save."
+    "signatureHint": "Have the customer sign on the screen, then save.",
+    "parts": "Parts used",
+    "noParts": "No part.",
+    "addPart": "Add a part",
+    "partSearch": "SKU or name…",
+    "partQty": "Quantity",
+    "fromTruck": "My truck",
+    "fromWarehouse": "Warehouse",
+    "scan": "Scan",
+    "removePart": "Remove",
+    "removePartConfirm": "Remove this part from the work order? Stock will be credited back.",
+    "noMatch": "No part found",
+    "scanHint": "Point at the part's barcode"
   },
   "status": {
     "REQUESTED": "Requested",
@@ -142,6 +155,13 @@
     "retry": "Retry",
     "discard": "Discard",
     "discardConfirm": "Discard this operation? It will never be sent.",
-    "signature": "Signature ({{who}})"
+    "signature": "Signature ({{who}})",
+    "part_add": "Part added: {{qty}} × {{sku}}",
+    "part_remove": "Part removed: {{sku}}"
+  },
+  "stock": {
+    "title": "My stock",
+    "empty": "No part in your truck.",
+    "hint": "Stock is synced with the server; queued additions are not deducted yet."
   }
 }
