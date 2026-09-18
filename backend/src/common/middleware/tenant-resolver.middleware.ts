@@ -14,6 +14,7 @@ import {
   TenantContext,
   extractTenantSlug,
 } from '../contracts/tenant-context.contract';
+import { DEVICE_ID_HEADER, extractDeviceId } from '../contracts/device-context.contract';
 
 /**
  * TenantResolver — runs at the head of every HTTP request (B6.2).
@@ -98,7 +99,10 @@ export class TenantResolverMiddleware implements NestMiddleware {
     // Open the AsyncLocalStorage scope so deep services can read the
     // tenant without threading it through every signature. userId is
     // filled in later by JwtAuthGuard — start as null.
-    this.context.run({ tenantId: tenant.id, userId: null }, () => next());
+    // B37.3 — the mobile app tags every request with its installation id so
+    // auth can bind refresh tokens to the device (ADR-015 §4).
+    const deviceId = extractDeviceId(req.headers[DEVICE_ID_HEADER]);
+    this.context.run({ tenantId: tenant.id, userId: null, deviceId }, () => next());
   }
 
   /** Test-only — wipe the slug→tenant cache. */

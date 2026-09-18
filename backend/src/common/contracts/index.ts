@@ -27,3 +27,6 @@ export {
   toTransitionCreateData,
 } from './default-process.contract';
 export type { DefaultProcessStatusDef, DefaultProcessTransitionDef } from './default-process.contract';
+export { DEVICE_ID_HEADER, extractDeviceId } from './device-context.contract';
+export { MOBILE_DEVICE_REGISTERED_EVENT, MOBILE_DEVICE_REVOKED_EVENT } from './mobile-events.contract';
+export type { MobileDeviceRegisteredPayload, MobileDeviceRevokedPayload } from './mobile-events.contract';

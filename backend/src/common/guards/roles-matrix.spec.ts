@@ -35,6 +35,8 @@ import { AuditController } from '../../modules/audit/api/audit.controller';
 import { BackupController } from '../../modules/backup/backup.controller';
 import { SearchController } from '../../modules/search/api/search.controller';
 import { NotificationsController } from '../../modules/notifications/api/notifications.controller';
+import { DevicesController } from '../../modules/mobile/api/devices.controller';
+import { MobileConfigController } from '../../modules/mobile/api/mobile-config.controller';
 import { SmsAdminController } from '../../modules/notifications/api/sms-admin.controller';
 import { BillingController } from '../../modules/billing/api/billing.controller';
 import { PartsController } from '../../modules/parts/api/parts.controller';
@@ -108,6 +110,16 @@ const USERS_MATRIX: MatrixRow[] = [
   { controller: UsersController, method: 'getMyPreferences',    expectedRoles: 'ANY', note: 'GET /users/me/preferences' },
   { controller: UsersController, method: 'updateMyPreferences', expectedRoles: 'ANY', note: 'PATCH /users/me/preferences' },
   { controller: UsersController, method: 'changeMyPassword',    expectedRoles: 'ANY', note: 'PATCH /users/me/password' },
+];
+
+const MOBILE_MATRIX: MatrixRow[] = [
+  // B37.3 — self-service device registry (object-level scope in the service: 404 on someone else's installation)
+  { controller: DevicesController, method: 'list',      expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'GET /me/devices' },
+  { controller: DevicesController, method: 'register',  expectedRoles: [Role.TECHNICIAN], note: 'PUT /me/devices/:installationId — only the app registers phones' },
+  { controller: DevicesController, method: 'heartbeat', expectedRoles: [Role.TECHNICIAN], note: 'POST /me/devices/:installationId/heartbeat' },
+  { controller: DevicesController, method: 'revoke',    expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'DELETE /me/devices/:installationId — own devices only' },
+  // B37.8 — public bootstrap config (@Public, tenant from Host, nothing sensitive)
+  { controller: MobileConfigController, method: 'getConfig', expectedRoles: 'ANY', note: 'GET /mobile/config — @Public' },
 ];
 
 const CALENDAR_MATRIX: MatrixRow[] = [
@@ -228,6 +240,7 @@ const ALL_ROWS: { name: string; rows: MatrixRow[] }[] = [
   { name: 'LocationsController',     rows: LOCATIONS_MATRIX },
   { name: 'TenantConfigsController', rows: TENANT_CONFIGS_MATRIX },
   { name: 'SuperAdminTenantsController', rows: SUPER_ADMIN_TENANTS_MATRIX },
+  { name: 'MobileControllers',       rows: MOBILE_MATRIX },
   {
     name: 'ImpersonateController',
     rows: [

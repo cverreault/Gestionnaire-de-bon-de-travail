@@ -82,6 +82,12 @@ Aucun pour l'instant. (Évolution future possible : `auth.login.success`, `auth.
 
 Aucun.
 
+| Event source | Action |
+|---|---|
+| `mobile.device.revoked` (module `mobile`, B37.3) | `DeviceRevokedListener` révoque tous les refresh tokens dont `device_id` = `installationId` pour cet utilisateur ; émis avec `emitAsync`, donc terminé avant la réponse du `DELETE /api/me/devices/:id` |
+
+`refresh_tokens.device_id` est posé par `AuthService.generateTokens` depuis `RequestContext.deviceId` (en-tête `X-Device-Id`, rempli par `TenantResolverMiddleware`) ; null pour le web.
+
 ## Données possédées
 
 - `users` (Prisma : `User`)

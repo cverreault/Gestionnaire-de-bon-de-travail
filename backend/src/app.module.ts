@@ -34,6 +34,7 @@ import { SystemConfigsModule } from './modules/system-configs/system-configs.mod
 import { ReportsModule } from './modules/reports/reports.module';
 import { LocationsModule } from './modules/locations/locations.module';
 import { GeoModule } from './modules/geo/geo.module';
+import { MobileModule } from './modules/mobile/mobile.module';
 import { TenantResolverMiddleware } from './common/middleware/tenant-resolver.middleware';
 import { RequestContextModule } from './common/context/request-context.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
@@ -149,6 +150,7 @@ import { PartsModule } from './modules/parts/parts.module';
     ReportsModule,
     LocationsModule,
     GeoModule,
+    MobileModule,
   ],
   providers: [
     // ── Guards globaux ─────────────────────────────────────────────────────

@@ -94,6 +94,16 @@
     "device": "Device identifier",
     "version": "App version",
     "logout": "Sign out",
-    "logoutConfirm": "Sign out of this device?"
+    "logoutConfirm": "Sign out of this device?",
+    "devices": "Connected devices",
+    "thisDevice": "this device",
+    "revoke": "Sign out",
+    "revokeConfirm": "Sign this device out? It will need to log in again.",
+    "lastSeen": "Seen {{date}}"
+  },
+  "upgrade": {
+    "title": "Update required",
+    "body": "This version of Dispatch2Go ({{current}}) is no longer supported by your workspace. Install version {{min}} or newer to continue.",
+    "retry": "Check again"
   }
 }

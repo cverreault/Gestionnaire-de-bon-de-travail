@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **Type** | Core |
-| **Status** | Draft |
+| **Status** | In progress — B37.3 (appareils) et B37.8 (config + porte de version) livrés ; push, idempotence et sync à venir |
 | **Phase** | 4 (B37) |
 | **ADR References** | [ADR-014](../adrs/ADR-014-native-mobile-app-platform.md), [ADR-015](../adrs/ADR-015-device-registry-and-native-push.md), [ADR-016](../adrs/ADR-016-mobile-offline-sync-protocol.md), [ADR-017](../adrs/ADR-017-mobile-background-gps.md) |
 | **Owner** | Carl Verreault |
@@ -38,9 +38,9 @@ C'est un module de surface, au même titre que `portal` (surface client) : il tr
 | Méthode | Route | Auth | Description |
 |---|---|---|---|
 | `GET` | `/api/mobile/config` | `@Public` | Tenant depuis le Host. `{ minAppVersion{ios,android}, latestAppVersion, features, tenant{slug,name,logoUrl}, limits, push{provider}, serverTime, backendVersion }` |
-| `PUT` | `/api/me/devices/:installationId` | TECHNICIAN | Enregistre ou met à jour l'appareil ; 400 si `:installationId` ≠ header `X-Device-Id` |
+| `PUT` | `/api/me/devices/:installationId` | TECHNICIAN | Enregistre ou met à jour l'appareil ; 400 si `:installationId` ≠ header `X-Device-Id` ; la réponse expose `hasPushToken`, jamais le token |
 | `GET` | `/api/me/devices` | TECHNICIAN, DISPATCHER, ADMIN | Mes appareils (self-service) |
-| `POST` | `/api/me/devices/:installationId/heartbeat` | TECHNICIAN | Rafraîchit `lastSeenAt`, `appVersion`, `pushToken` ; renvoie `{ upgradeRequired, minAppVersion }` |
+| `POST` | `/api/me/devices/:installationId/heartbeat` | TECHNICIAN | Rafraîchit `lastSeenAt`, `appVersion`, `pushToken` ; renvoie `{ upgradeRequired, minAppVersion, latestAppVersion, serverTime }` ; même contrôle d'en-tête que `PUT` |
 | `DELETE` | `/api/me/devices/:installationId` | TECHNICIAN, DISPATCHER, ADMIN | Révoque l'appareil (204) ; émet `mobile.device.revoked` |
 | `GET` | `/api/me/sync` | TECHNICIAN | `?cursor&limit(≤200)` → `{ cursor, hasMore, fullResync, serverTime, visibleWorkOrderIds, workOrders[], processSnapshots{}, partsStock[], partsCatalog[] }` |
 
@@ -52,8 +52,8 @@ Endpoints **hors de ce module** mais requis par l'app (voir la [feuille de route
 
 | Event | Quand | Payload |
 |---|---|---|
-| `mobile.device.registered` | Première inscription d'un `installationId` ou re-liaison à un autre utilisateur | `{ installationId, userId, platform, appVersion }` |
-| `mobile.device.revoked` | `DELETE /api/me/devices/:installationId` | `{ installationId, userId, reason: 'user' \| 'admin' }` |
+| `mobile.device.registered` | Première inscription d'un `installationId`, re-liaison à un autre utilisateur, ou réinscription après révocation | `{ tenantId, installationId, userId, platform, appVersion, relinked }` |
+| `mobile.device.revoked` | `DELETE /api/me/devices/:installationId` | `{ tenantId, installationId, userId, reason: 'user' \| 'admin' }` |
 
 Les deux sont enregistrés par `audit` via le listener wildcard. `mobile.device.revoked` est émis avec `emitAsync` : la révocation des refresh tokens par `auth` est terminée avant la réponse HTTP.
 
