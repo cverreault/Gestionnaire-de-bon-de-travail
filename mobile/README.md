@@ -32,10 +32,13 @@ Le SDK iOS 27 fait planter au lancement (`EXC_BREAKPOINT` dans `___UIApplication
 mobile/
 ├── app.config.ts     # identité (Dispatch2Go, com.dispatch2go.app, dispatch2go://), plugins
 ├── plugins/          # config plugins maison (cycle de vie UIScene pour iOS 27)
-├── metro.config.js   # résolution monorepo (packages/shared)
+├── metro.config.js   # résolution monorepo (packages/shared) + .sql (migrations drizzle)
+├── drizzle/          # migrations SQLite générées (npm run db:generate après src/db/schema.ts)
 ├── jest.config.js    # jest-expo, transforme @taskmgr/shared
 └── src/
     ├── app/          # routes expo-router
+    ├── db/           # schéma drizzle, client expo-sqlite, requêtes locales
+    ├── sync/         # moteur de tirage delta (apply-pull, testé sur better-sqlite3), store et hooks
     ├── components/
     ├── hooks/
     └── constants/
@@ -46,3 +49,7 @@ mobile/
 ## Builds EAS
 
 Les profils `development`, `preview` et `production` seront ajoutés en B38.10. Les credentials (APNs, FCM, keystore) vivent dans EAS, jamais dans le dépôt.
+
+## Base locale (B38.4)
+
+Les BT du technicien vivent dans SQLite (`dispatch2go.db`, expo-sqlite + drizzle). Le tirage delta `GET /api/me/sync` s'exécute à l'ouverture de session, au retour au premier plan, au retour du réseau et en tirant la liste. Après avoir modifié `src/db/schema.ts`, lancer `npm run db:generate` et committer `drizzle/`. Le moteur (`src/sync/apply-pull.ts`) est testé sans natif sur better-sqlite3 avec les mêmes migrations.

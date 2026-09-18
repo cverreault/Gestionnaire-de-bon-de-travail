@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import * as Crypto from 'expo-crypto';
 import { useTranslation } from 'react-i18next';
 import type { AttachmentRef } from '@taskmgr/shared';
 import { ApiError } from '../api/client';
-import { attachmentContentSource, fetchAttachments, uploadAttachment, type LocalFile } from '../api/endpoints';
+import { attachmentContentSource, uploadAttachment, type LocalFile } from '../api/endpoints';
 import { font, radius, spacing, useTheme } from '../theme/tokens';
 
 const MAX_EDGE = 1600;
@@ -29,18 +29,19 @@ async function prepareForUpload(asset: ImagePicker.ImagePickerAsset): Promise<Lo
 
 interface Props {
   workOrderId: string;
-  /** Uploads are allowed only on the technician's active work orders. */
+  /** Metadata from the local work order row (delta pull). */
+  attachments: AttachmentRef[];
+  /** Uploads need the network until the offline queue lands (B38.5). */
   canUpload: boolean;
+  /** Called after a successful upload : the caller pulls the fresh row. */
+  onChanged: () => void;
 }
 
-/** Photos card (B38.6, online slice): list via the streaming proxy, camera / library upload. */
-export default function AttachmentsCard({ workOrderId, canUpload }: Props) {
+/** Photos card (B38.6, online slice): thumbnails via the streaming proxy, camera / library upload. */
+export default function AttachmentsCard({ workOrderId, attachments, canUpload, onChanged }: Props) {
   const { t } = useTranslation();
   const theme = useTheme();
-  const qc = useQueryClient();
   const [error, setError] = useState<string | null>(null);
-
-  const list = useQuery({ queryKey: ['work-order', workOrderId, 'attachments'], queryFn: () => fetchAttachments(workOrderId) });
 
   const upload = useMutation({
     mutationFn: async (assets: ImagePicker.ImagePickerAsset[]) => {
@@ -50,8 +51,7 @@ export default function AttachmentsCard({ workOrderId, canUpload }: Props) {
     },
     onSuccess: () => {
       setError(null);
-      void qc.invalidateQueries({ queryKey: ['work-order', workOrderId, 'attachments'] });
-      void qc.invalidateQueries({ queryKey: ['work-order', workOrderId] });
+      onChanged();
     },
     onError: (err) => setError(err instanceof ApiError ? err.message : t('workOrder.uploadFailed')),
   });
@@ -76,8 +76,8 @@ export default function AttachmentsCard({ workOrderId, canUpload }: Props) {
     if (!res.canceled) upload.mutate(res.assets);
   }
 
-  const images = (list.data ?? []).filter((a) => a.mimeType.startsWith('image/'));
-  const others = (list.data ?? []).filter((a) => !a.mimeType.startsWith('image/'));
+  const images = attachments.filter((a) => a.mimeType.startsWith('image/'));
+  const others = attachments.filter((a) => !a.mimeType.startsWith('image/'));
   const btn = (label: string, onPress: () => void, primary = false) => (
     <Pressable
       disabled={upload.isPending}
@@ -96,8 +96,7 @@ export default function AttachmentsCard({ workOrderId, canUpload }: Props) {
   return (
     <View style={{ backgroundColor: theme.surface, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.sm, borderWidth: 1, borderColor: theme.border }}>
       <Text style={{ color: theme.textMuted, fontSize: font.xs, fontWeight: '700', textTransform: 'uppercase' }}>{t('workOrder.photos')}</Text>
-      {list.isLoading && <ActivityIndicator color={theme.primary} />}
-      {list.data && list.data.length === 0 && <Text style={{ color: theme.textMuted }}>{t('workOrder.noPhotos')}</Text>}
+      {attachments.length === 0 && <Text style={{ color: theme.textMuted }}>{t('workOrder.noPhotos')}</Text>}
       {images.length > 0 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
           {images.map((a) => (
