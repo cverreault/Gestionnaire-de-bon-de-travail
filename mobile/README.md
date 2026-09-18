@@ -61,3 +61,7 @@ Chaque geste du technicien (transition, note, photo) est écrit dans `sync_queue
 ## GPS en arrière-plan (B38.8)
 
 `src/gps/` : la tâche `dispatch2go-background-location` (expo-task-manager) ne fait qu'écrire les positions dans `location_fixes` ; le contrôleur au premier plan décide du mode avec `decideTracking` (consentement serveur `preferences.gps.enabled`, permission OS, au moins un BT en route ou en cours — ADR-017 §3) et envoie les lots à `POST /api/me/locations/batch`. Un 403 (consentement retiré depuis le web) arrête la collecte et l'affiche dans le profil. Sur le simulateur iOS, simuler un trajet via Features › Location.
+
+## Notifications push (B38.9)
+
+`src/push/` : permission et canal Android au démarrage de session, token Expo obtenu avec le `projectId` EAS (`EAS_PROJECT_ID` dans l'environnement de build ; absent en dev client → statut « indisponible » sur le profil, rien ne casse) et transmis au serveur par l'enregistrement de l'appareil. Réception → tirage delta ; toucher → ouverture du BT (`data.workOrderId` ou `data.url`). Le serveur relaie via Expo Push Service (B37.4).

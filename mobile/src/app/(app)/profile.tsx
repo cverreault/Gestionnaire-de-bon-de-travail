@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import * as Application from 'expo-application';
 import { fetchMyDevices, logout, revokeDevice, updateMyPreferences } from '../../api/endpoints';
 import { useGpsStore } from '../../gps/gps.store';
+import { usePushStore } from '../../push/push.store';
 import { refreshPermissions } from '../../gps/useGpsController';
 import { useSession } from '../../stores/session.store';
 import { font, radius, spacing, useTheme } from '../../theme/tokens';
@@ -24,6 +25,16 @@ export default function ProfileScreen() {
   });
 
   const gps = useGpsStore();
+  const push = usePushStore();
+  const pushLine = push.token
+    ? t('push.on')
+    : push.permission === 'denied'
+      ? t('push.denied')
+      : push.reason === 'no-project-id'
+        ? t('push.noProject')
+        : push.reason
+          ? t('push.error', { reason: push.reason })
+          : '…';
   const setSession = useSession((s) => s.setSession);
   const { accessToken, refreshToken } = useSession();
 
@@ -82,6 +93,7 @@ export default function ProfileScreen() {
         {row('profile.workspace', workspace ? `${workspace.name || ''} ${workspace.baseUrl}`.trim() : null)}
         {row('profile.device', deviceId)}
         {row('profile.version', `${Application.nativeApplicationVersion ?? '0.0.0'} (${Application.nativeBuildVersion ?? '-'})`)}
+        {user?.role === 'TECHNICIAN' && row('push.title', pushLine)}
       </View>
       {user?.role === 'TECHNICIAN' && (
         <View style={{ backgroundColor: theme.surface, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.sm, borderWidth: 1, borderColor: theme.border }}>

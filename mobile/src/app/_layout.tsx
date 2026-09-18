@@ -7,6 +7,7 @@ import '../i18n';
 // Registers the headless background-location task before any render (expo-task-manager).
 import '../gps/location-task';
 import { useGpsController } from '../gps/useGpsController';
+import { usePushNotifications } from '../push/usePushNotifications';
 import i18n from '../i18n';
 import { useSession } from '../stores/session.store';
 import { useUpgradeGate } from '../stores/upgrade.store';
@@ -38,6 +39,7 @@ export default function RootLayout() {
   const { ready: dbReady, error: dbError } = useDbReady();
   useSyncScheduler(dbReady);
   useGpsController(dbReady);
+  usePushNotifications();
 
   useEffect(() => {
     void hydrate();

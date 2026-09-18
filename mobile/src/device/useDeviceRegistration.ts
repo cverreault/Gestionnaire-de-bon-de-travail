@@ -3,6 +3,7 @@ import { AppState, type AppStateStatus } from 'react-native';
 import { heartbeat, registerDevice } from '../api/endpoints';
 import { useSession } from '../stores/session.store';
 import { useUpgradeGate } from '../stores/upgrade.store';
+import { usePushStore } from '../push/push.store';
 import { appVersion, devicePayload } from './device-info';
 
 const HEARTBEAT_MIN_INTERVAL_MS = 15 * 60_000;
@@ -11,21 +12,26 @@ const HEARTBEAT_MIN_INTERVAL_MS = 15 * 60_000;
  * B38.3 — registers this installation once per session (PUT /me/devices/:id)
  * and sends a heartbeat when the app comes to the foreground, at most every
  * 15 min. The heartbeat answer drives the version gate (ADR-015 §5).
+ * B38.9 — the Expo push token rides along and triggers a re-registration
+ * whenever it changes.
  * Technician-only: the server rejects other roles, so we don't even try.
  */
 export function useDeviceRegistration(): void {
   const { accessToken, user, deviceId } = useSession();
+  const pushToken = usePushStore((s) => s.token);
   const setGate = useUpgradeGate((s) => s.set);
   const lastBeat = useRef(0);
+  /** `${userId}:${pushToken}` of the last successful registration. */
   const registeredFor = useRef<string | null>(null);
 
   useEffect(() => {
     if (!accessToken || !deviceId || user?.role !== 'TECHNICIAN') return;
     let cancelled = false;
 
+    const key = `${user?.id ?? ''}:${pushToken ?? ''}`;
     async function beat() {
       try {
-        const res = await heartbeat(deviceId, { appVersion: appVersion() });
+        const res = await heartbeat(deviceId, { appVersion: appVersion(), ...(pushToken ? { pushToken } : {}) });
         if (!cancelled) {
           lastBeat.current = Date.now();
           setGate({ upgradeRequired: res.upgradeRequired, minAppVersion: res.minAppVersion, latestAppVersion: res.latestAppVersion });
@@ -37,19 +43,19 @@ export function useDeviceRegistration(): void {
 
     async function register() {
       try {
-        await registerDevice(deviceId, devicePayload());
-        registeredFor.current = user?.id ?? null;
+        await registerDevice(deviceId, { ...devicePayload(), ...(pushToken ? { pushToken } : {}) });
+        registeredFor.current = key;
         await beat();
       } catch {
         // Retried at the next foreground.
       }
     }
 
-    if (registeredFor.current !== (user?.id ?? null)) void register();
+    if (registeredFor.current !== key) void register();
 
     const sub = AppState.addEventListener('change', (state: AppStateStatus) => {
       if (state !== 'active') return;
-      if (registeredFor.current !== (user?.id ?? null)) {
+      if (registeredFor.current !== key) {
         void register();
       } else if (Date.now() - lastBeat.current > HEARTBEAT_MIN_INTERVAL_MS) {
         void beat();
@@ -59,5 +65,5 @@ export function useDeviceRegistration(): void {
       cancelled = true;
       sub.remove();
     };
-  }, [accessToken, deviceId, user?.id, user?.role, setGate]);
+  }, [accessToken, deviceId, user?.id, user?.role, pushToken, setGate]);
 }
