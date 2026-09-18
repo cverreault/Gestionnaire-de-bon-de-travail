@@ -1,12 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
+import { createDefaultProcess } from '../../../common/contracts/default-process.contract';
 
 /**
  * Minimal catalog every new tenant needs to be operable right after
  * signup (B6.7 → refined B7.6 to a true blank slate).
  *
  * Seeded :
- *   1. A default process (CREATED → ASSIGNED → IN_PROGRESS → COMPLETED)
+ *   1. The canonical « Standard BT » process (8 statuses, 12 transitions —
+ *      see common/contracts/default-process.contract.ts). Before B43 the
+ *      bootstrap seeded 4 statuses and no transition, leaving new tenants
+ *      unable to move a work order.
  *   2. A default WO template (1 empty "Notes" section) so the admin
  *      can create their first BT before customizing the catalog.
  *
@@ -33,28 +37,10 @@ export class TenantBootstrapService {
     tx: Prisma.TransactionClient,
     tenantId: string,
   ): Promise<void> {
-    const proc = await tx.processDefinition.create({
-      data: {
-        tenantId,
-        name: 'Standard BT',
-        description: 'Processus standard pour les bons de travail',
-        isDefault: true,
-        isActive: true,
-      },
+    await createDefaultProcess(tx, {
+      tenantId,
+      description: 'Processus standard pour les bons de travail',
     });
-
-    const statuses = [
-      { code: 0, name: 'Créé', color: '#6B7280', position: 1, isInitial: true },
-      { code: 100, name: 'Assigné', color: '#3B82F6', position: 2 },
-      { code: 200, name: 'En progrès', color: '#F59E0B', position: 3, isStart: true },
-      { code: 900, name: 'Complété (+)', color: '#10B981', position: 4, isTerminalPositive: true },
-    ];
-
-    for (const s of statuses) {
-      await tx.processStatus.create({
-        data: { tenantId, processDefinitionId: proc.id, ...s },
-      });
-    }
   }
 
   private async seedDefaultTemplate(

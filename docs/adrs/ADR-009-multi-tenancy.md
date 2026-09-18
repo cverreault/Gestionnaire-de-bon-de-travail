@@ -50,7 +50,7 @@ Sub-domain identifies the tenant (`{slug}.taskmgr.com`), JWT carries the tenantI
 - **Self-hosted preserved** : the DEFAULT tenant exists from the Genesis migration onward. Existing deployments don't notice the change.
 - **No FORCE ROW LEVEL SECURITY** today : the DB owner (`taskmgr`) bypasses RLS so seeders / crons / migrations keep working without a SET app.tenant_id dance. Tightening this requires creating a separate non-owner app role — out of scope for B6.
 - **Quotas are runtime-tunable per tenant** : the SA endpoint can override `max_users` / `max_work_orders_per_month` / `max_storage_mb` / `max_clients` per row without code changes.
-- **Catalog bootstrap on signup** : every new tenant gets a default process (4 statuses) + 5 task types + 2 client types + 3 address types — runs in the same transaction as the tenant + first user, so a partial seed never leaves orphaned rows.
+- **Catalog bootstrap on signup** : every new tenant gets the canonical « Standard BT » process (8 statuses + 12 transitions, `common/contracts/default-process.contract.ts`, shared with the platform seed) + 1 WO template — runs in the same transaction as the tenant + first user, so a partial seed never leaves orphaned rows. Task/client/address types are created on demand by the admin (B7.6). Until B43 the bootstrap seeded 4 statuses and no transition, leaving new tenants unable to move a work order ; `ProcessSeedService.repairDefaultProcesses()` brings such tenants up to the canonical process at boot.
 - **Monthly counter reset** : `@Cron('5 0 1 * *')` flips `current_work_orders_this_month` back to 0 for every tenant on the 1st.
 
 ## Consequences

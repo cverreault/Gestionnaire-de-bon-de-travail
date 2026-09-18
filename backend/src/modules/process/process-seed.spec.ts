@@ -14,35 +14,13 @@
 
 import { Role, WorkOrderStatus } from '@prisma/client';
 
-// ── Inline copy of the seed data (extracted from process-seed.service.ts) ──────
-// This ensures the spec stays in sync with the service; if someone changes the seed,
-// these tests will fail and signal the change.
-
-const STATUS_DEFS = [
-  { code: 50,  name: 'Demandé',            color: '#eab308', position: -1, isRequested: true },
-  { code: 0,   name: 'Créé',              color: '#6b7280', position: 0, isInitial: true  },
-  { code: 100, name: 'Assigné',            color: '#3b82f6', position: 1 },
-  { code: 200, name: 'Dispatché',          color: '#8b5cf6', position: 2, isDispatch: true },
-  { code: 300, name: 'En route',           color: '#f59e0b', position: 3 },
-  { code: 400, name: 'En cours',           color: '#f97316', position: 4, isStart: true    },
-  { code: 500, name: 'Complété (positif)', color: '#22c55e', position: 5, isTerminalPositive: true },
-  { code: 600, name: 'Complété (négatif)', color: '#ef4444', position: 6, isTerminalNegative: true },
-];
-
-const TRANSITION_DEFS = [
-  { fromCode: 50,  toCode: 0,   label: 'Approuver la demande', roles: [Role.ADMIN, Role.DISPATCHER],                               required: [], sort: 0 },
-  { fromCode: 50,  toCode: 600, label: 'Rejeter la demande',   roles: [Role.ADMIN, Role.DISPATCHER],                               required: ['negativeReason'], sort: 1 },
-  { fromCode: 0,   toCode: 100, label: 'Assigner',             roles: [Role.ADMIN, Role.DISPATCHER],                               required: ['assignedToId'], sort: 0 },
-  { fromCode: 100, toCode: 200, label: 'Dispatcher',           roles: [Role.ADMIN, Role.DISPATCHER],                               required: [], sort: 0 },
-  { fromCode: 200, toCode: 300, label: 'Partir en route',      roles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN],              required: [], sort: 0 },
-  { fromCode: 300, toCode: 400, label: 'Commencer le travail', roles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN],              required: [], sort: 0 },
-  { fromCode: 400, toCode: 500, label: 'Terminer (succès)',    roles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN],              required: ['completionNotes'], sort: 0 },
-  { fromCode: 400, toCode: 600, label: 'Terminer (échec)',     roles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN],              required: ['negativeReason'], sort: 1 },
-  { fromCode: 100, toCode: 0,   label: 'Désassigner',          roles: [Role.ADMIN, Role.DISPATCHER],                               required: [], sort: 1 },
-  { fromCode: 200, toCode: 100, label: 'Annuler dispatch',     roles: [Role.ADMIN, Role.DISPATCHER],                               required: [], sort: 1 },
-  { fromCode: 500, toCode: 0,   label: 'Réouvrir',             roles: [Role.ADMIN],                                                required: ['reopenReason'], sort: 0 },
-  { fromCode: 600, toCode: 0,   label: 'Réouvrir',             roles: [Role.ADMIN],                                                required: [], sort: 0 },
-];
+// The seed data lives in common/contracts/default-process.contract.ts (shared
+// with the tenant bootstrap) ; the assertions below lock its invariants.
+import {
+  DEFAULT_PROCESS_STATUSES as STATUS_DEFS,
+  DEFAULT_PROCESS_TRANSITIONS as TRANSITION_DEFS,
+} from '../../common/contracts/default-process.contract';
+import { ProcessSeedService } from './process-seed.service';
 
 const ALLOWED_REQUIRED_FIELDS = ['assignedToId', 'negativeReason', 'completionNotes', 'reopenReason'];
 
@@ -205,6 +183,9 @@ describe('Process Seed — idempotence mock', () => {
             tenantId: 't-1',
             name: 'Standard BT',
             statuses: [{ id: 's-50', code: 50, position: -1, isInitial: false, isTerminalNegative: false, isRequested: true }],
+            // repairDefaultProcesses (B43) skips definitions that already
+            // carry the 12 canonical transitions.
+            transitions: new Array(12).fill({ fromStatusId: 'x', toStatusId: 'y' }),
           },
         ]),
       },
@@ -218,13 +199,113 @@ describe('Process Seed — idempotence mock', () => {
       taskType: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
     };
 
-    // Import and instantiate ProcessSeedService with mock
-    const { ProcessSeedService } = await import('./process-seed.service');
     const svc = new ProcessSeedService(mockPrisma as any);
 
     await svc.seedAndBackfill();
 
     // processDefinition.create should NOT have been called (idempotent)
     expect(mockCreate).not.toHaveBeenCalled();
+  });
+});
+
+describe('Process Seed — repair of tenants bootstrapped without transitions (B43)', () => {
+  function brokenDefinition() {
+    return {
+      id: 'proc-norda',
+      tenantId: 't-norda',
+      name: 'Standard BT',
+      statuses: [
+        { id: 's-0', code: 0, name: 'Créé', position: 1, isInitial: true, isDispatch: false },
+        { id: 's-100', code: 100, name: 'Assigné', position: 2, isInitial: false, isDispatch: false },
+        { id: 's-200', code: 200, name: 'En progrès', position: 3, isInitial: false, isDispatch: false, isStart: true },
+        { id: 's-900', code: 900, name: 'Complété (+)', position: 4, isInitial: false, isDispatch: false, isTerminalPositive: true },
+        { id: 's-50', code: 50, name: 'Demandé', position: 0, isInitial: false, isDispatch: false, isRequested: true },
+      ],
+      transitions: [{ id: 'tr-1', fromStatusId: 's-50', toStatusId: 's-0' }],
+    };
+  }
+
+  function makePrisma(def: ReturnType<typeof brokenDefinition>, workOrdersOn200 = 0) {
+    const tx = {
+      processStatus: {
+        create: jest
+          .fn()
+          .mockImplementation(({ data }: { data: { code: number } }) =>
+            Promise.resolve({ id: `s-${data.code}`, ...data }),
+          ),
+        update: jest
+          .fn()
+          .mockImplementation(({ where, data }: { where: { id: string }; data: Record<string, unknown> }) =>
+            Promise.resolve({ id: where.id, ...data }),
+          ),
+        delete: jest.fn().mockResolvedValue({}),
+      },
+      processTransition: { create: jest.fn().mockResolvedValue({}) },
+      workOrder: { count: jest.fn().mockResolvedValue(0) },
+    };
+    const prisma = {
+      processDefinition: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'existing-proc' }),
+        create: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([def]),
+      },
+      processStatus: { create: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
+      processTransition: { create: jest.fn() },
+      workOrder: {
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+        count: jest.fn().mockResolvedValue(workOrdersOn200),
+      },
+      taskType: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      $transaction: jest.fn().mockImplementation((fn: (t: typeof tx) => Promise<unknown>) => fn(tx)),
+    };
+    return { prisma, tx };
+  }
+
+  it('adds the missing statuses and transitions, fixes code 200 and drops the orphan 900', async () => {
+    const { prisma, tx } = makePrisma(brokenDefinition());
+    await new ProcessSeedService(prisma as any).seedAndBackfill();
+
+    const createdCodes = tx.processStatus.create.mock.calls
+      .map((c: [{ data: { code: number } }]) => c[0].data.code)
+      .sort((a: number, b: number) => a - b);
+    expect(createdCodes).toEqual([300, 400, 500, 600]);
+    for (const call of tx.processStatus.create.mock.calls) {
+      expect(call[0].data.tenantId).toBe('t-norda');
+      expect(call[0].data.processDefinitionId).toBe('proc-norda');
+    }
+
+    const fix200 = tx.processStatus.update.mock.calls.find(
+      (c: [{ where: { id: string } }]) => c[0].where.id === 's-200',
+    );
+    expect(fix200[0].data).toMatchObject({ name: 'Dispatché', isDispatch: true, isStart: false });
+
+    expect(tx.processStatus.delete).toHaveBeenCalledWith({ where: { id: 's-900' } });
+
+    // 12 canonical transitions minus the one (50 → 0) that already existed.
+    expect(tx.processTransition.create).toHaveBeenCalledTimes(11);
+    const pairs = tx.processTransition.create.mock.calls.map(
+      (c: [{ data: { fromStatusId: string; toStatusId: string } }]) =>
+        `${c[0].data.fromStatusId}→${c[0].data.toStatusId}`,
+    );
+    expect(pairs).not.toContain('s-50→s-0');
+    expect(pairs).toEqual(expect.arrayContaining(['s-100→s-200', 's-200→s-300', 's-300→s-400', 's-400→s-500']));
+  });
+
+  it('leaves a definition untouched when work orders sit on the mis-seeded code 200', async () => {
+    const { prisma, tx } = makePrisma(brokenDefinition(), 3);
+    await new ProcessSeedService(prisma as any).seedAndBackfill();
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(tx.processTransition.create).not.toHaveBeenCalled();
+  });
+
+  it('is a no-op for a definition that already carries the canonical transitions', async () => {
+    const def = brokenDefinition();
+    def.transitions = new Array(12).fill({ fromStatusId: 'x', toStatusId: 'y' });
+    const { prisma, tx } = makePrisma(def);
+    await new ProcessSeedService(prisma as any).seedAndBackfill();
+
+    expect(tx.processStatus.create).not.toHaveBeenCalled();
+    expect(tx.processTransition.create).not.toHaveBeenCalled();
   });
 });

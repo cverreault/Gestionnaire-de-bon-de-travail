@@ -18,3 +18,12 @@ export { GEOCODER, propertyFactsToAddressColumns, ADDRESS_GEO_RESET } from './ge
 export type { IGeocoder, GeocodeInput, GeocodeResult, GeocodeSource, PropertyFacts, PropertyLookupInput } from './geocoder.contract';
 export { GEO_ROLL_IMPORTED_EVENT } from './geo-events.contract';
 export type { GeoRollImportedPayload } from './geo-events.contract';
+export {
+  DEFAULT_PROCESS_NAME,
+  DEFAULT_PROCESS_STATUSES,
+  DEFAULT_PROCESS_TRANSITIONS,
+  createDefaultProcess,
+  toStatusCreateData,
+  toTransitionCreateData,
+} from './default-process.contract';
+export type { DefaultProcessStatusDef, DefaultProcessTransitionDef } from './default-process.contract';
