@@ -612,25 +612,23 @@ export class WorkOrdersService {
 
   /**
    * B42 — « Mandaté par » : explicit value wins; otherwise inherit the
-   * client's own principal (« client de »). A client cannot mandate itself.
+   * client's own principal (« client de »), or the client itself when it is
+   * a principal (a job on Lumii's own site, ordered by Lumii, is « mandated
+   * by Lumii »). The principal may therefore equal the client.
    */
   private async resolvePrincipalClientId(
     explicit: string | null | undefined,
     clientId: string | null | undefined,
   ): Promise<string | null> {
     if (explicit === null) return null;
-    if (explicit) {
-      if (explicit === clientId) {
-        throw new BadRequestException('Le donneur d’ordre ne peut pas être le client du BT');
-      }
-      return explicit;
-    }
+    if (explicit) return explicit;
     if (!clientId) return null;
     const client = await this.prisma.client.findUnique({
       where: { id: clientId },
-      select: { principalClientId: true },
+      select: { principalClientId: true, clientType: true },
     });
-    return client?.principalClientId ?? null;
+    if (!client) return null;
+    return client.principalClientId ?? (client.clientType === 'PRINCIPAL' ? clientId : null);
   }
 
   async update(id: string, dto: UpdateWorkOrderDto, currentUser: CurrentUserRef) {
@@ -772,9 +770,6 @@ export class WorkOrdersService {
         : { disconnect: true };
     }
     if (dto.principalClientId !== undefined) {
-      if (dto.principalClientId && dto.principalClientId === (dto.clientId ?? existingWo.clientId)) {
-        throw new BadRequestException('Le donneur d’ordre ne peut pas être le client du BT');
-      }
       data.principalClient = dto.principalClientId
         ? { connect: { id: dto.principalClientId } }
         : { disconnect: true };

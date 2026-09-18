@@ -227,7 +227,6 @@ function Step1Client({
             <PrincipalClientPicker
               value={principalClient}
               onChange={onPrincipalChange}
-              excludeId={selectedClient.id}
               label={t('workOrders:fields.principalClient', { defaultValue: 'Mandaté par' })}
               hint={t('workOrders:fields.principalClientHint', { defaultValue: 'sous-traitance : le donneur d’ordre pour qui ce BT est exécuté' })}
             />
@@ -772,7 +771,7 @@ export default function WorkOrderCreatePage() {
 
   function handleSelectClient(c: Client | null) {
     setSelectedClient(c);
-    setPrincipalClient(c?.principalClient ?? null);
+    setPrincipalClient(c?.principalClient ?? (c?.clientType === ClientType.PRINCIPAL ? { id: c.id, firstName: c.firstName, lastName: c.lastName, companyName: c.companyName ?? null, clientType: c.clientType } : null));
     setSelectedAddressId(null);
     setSelectedAddress(null);
   }

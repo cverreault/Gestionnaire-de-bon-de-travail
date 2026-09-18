@@ -1024,7 +1024,6 @@ export default function WorkOrderDetailPage() {
                 <PrincipalClientPicker
                   value={editPrincipalClient}
                   onChange={setEditPrincipalClient}
-                  excludeId={editSelectedClient?.id ?? null}
                   label={t('workOrders:fields.principalClient', { defaultValue: 'Mandaté par' })}
                   hint={t('workOrders:fields.principalClientHint', { defaultValue: 'sous-traitance : le donneur d’ordre pour qui ce BT est exécuté' })}
                 />

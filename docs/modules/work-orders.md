@@ -62,8 +62,8 @@ RBAC objet :
 
 Un BT peut être exécuté chez un client (ou un emplacement) **pour le compte d'un donneur d'ordre** : `work_orders.principal_client_id` → `clients.id` (FK `SET NULL`, index). Règles :
 
-- `principalClientId` explicite dans `POST/PATCH /work-orders` ; à la création, s'il est absent, le BT hérite du « client de » de son client (`clients.principal_client_id`). `null` retire le mandat.
-- Le donneur d'ordre ne peut pas être le client du BT (400).
+- `principalClientId` explicite dans `POST/PATCH /work-orders` ; à la création, s'il est absent, le BT hérite du « client de » de son client (`clients.principal_client_id`), ou du client lui-même s'il est de type `PRINCIPAL` (une job sur un site de Lumii, commandée par Lumii, est « mandatée par Lumii »). `null` retire le mandat.
+- Le donneur d'ordre **peut** être le client du BT. Seule la fiche client refuse d'être son propre « client de ».
 - Filtre `?principalClientId=` sur `GET /work-orders` ; `principalClient` (id, nom, société, type) est inclus dans le détail et la liste.
 - Affiché sur le détail admin et technicien, la liste technicien, l'impression PDF, avec le filtre « Mandaté par » sur la liste admin.
 - Côté `clients` : champ « Client de (donneur d'ordre) », type de client `PRINCIPAL` (« Donneur d'ordre », ajouté à l'enum et à la configuration de chaque tenant par la migration).

@@ -27,7 +27,7 @@
     "principalCreating": "Création…",
     "principalCreateConfirm": "Créer et sélectionner",
     "principalCreateError": "Création impossible, vérifiez les champs.",
-    "principalSelfExcluded": "{{name}} est déjà le client de ce BT : un donneur d’ordre ne peut pas se mandater lui-même. Choisissez comme client la personne chez qui la job est faite, puis {{name}} ici.",
+    "principalSelfExcluded": "{{name}} ne peut pas être son propre donneur d’ordre.",
     "principalNoOther": "Aucun autre donneur d’ordre."
   },
   "types": {
