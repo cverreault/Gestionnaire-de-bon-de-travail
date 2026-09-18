@@ -5,10 +5,13 @@ import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { useMutation } from '@tanstack/react-query';
 import * as Crypto from 'expo-crypto';
+import { useSession } from '../stores/session.store';
+import { useSyncStore } from '../sync/sync.store';
+import { persistForQueue } from '../sync/senders';
 import { useTranslation } from 'react-i18next';
 import type { AttachmentRef } from '@taskmgr/shared';
 import { ApiError } from '../api/client';
-import { attachmentContentSource, uploadAttachment, type LocalFile } from '../api/endpoints';
+import { attachmentContentSource, type LocalFile } from '../api/endpoints';
 import { font, radius, spacing, useTheme } from '../theme/tokens';
 
 const MAX_EDGE = 1600;
@@ -29,24 +32,33 @@ async function prepareForUpload(asset: ImagePicker.ImagePickerAsset): Promise<Lo
 
 interface Props {
   workOrderId: string;
-  /** Metadata from the local work order row (delta pull). */
+  /** Metadata from the local work order row, pending uploads projected. */
   attachments: AttachmentRef[];
-  /** Uploads need the network until the offline queue lands (B38.5). */
+  /** Ids of attachments that are still in the offline queue. */
+  pendingIds: Set<string>;
   canUpload: boolean;
-  /** Called after a successful upload : the caller pulls the fresh row. */
+  /** Called after an upload was queued. */
   onChanged: () => void;
 }
 
 /** Photos card (B38.6, online slice): thumbnails via the streaming proxy, camera / library upload. */
-export default function AttachmentsCard({ workOrderId, attachments, canUpload, onChanged }: Props) {
+export default function AttachmentsCard({ workOrderId, attachments, pendingIds, canUpload, onChanged }: Props) {
   const { t } = useTranslation();
   const theme = useTheme();
+  const user = useSession((s) => s.user);
+  const enqueueOp = useSyncStore((s) => s.enqueueOp);
   const [error, setError] = useState<string | null>(null);
 
+  // Offline-first (B38.5): the compressed copy is persisted in the sandbox and
+  // queued ; the drain uploads it with op.id as Idempotency-Key.
   const upload = useMutation({
     mutationFn: async (assets: ImagePicker.ImagePickerAsset[]) => {
+      if (!user) return;
       for (const asset of assets) {
-        await uploadAttachment(workOrderId, await prepareForUpload(asset), Crypto.randomUUID());
+        const file = await prepareForUpload(asset);
+        const opId = Crypto.randomUUID();
+        const uri = await persistForQueue(opId, file.uri, 'jpg');
+        await enqueueOp(user.id, workOrderId, 'attachment', { uri, name: file.name, type: file.type }, opId);
       }
     },
     onSuccess: () => {
@@ -100,7 +112,7 @@ export default function AttachmentsCard({ workOrderId, attachments, canUpload, o
       {images.length > 0 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
           {images.map((a) => (
-            <Thumb key={a.id} attachment={a} />
+            <Thumb key={a.id} attachment={a} pending={pendingIds.has(a.id)} />
           ))}
         </ScrollView>
       )}
@@ -120,8 +132,15 @@ export default function AttachmentsCard({ workOrderId, attachments, canUpload, o
   );
 }
 
-function Thumb({ attachment }: { attachment: AttachmentRef }) {
+function Thumb({ attachment, pending }: { attachment: AttachmentRef; pending: boolean }) {
   const theme = useTheme();
+  if (pending) {
+    return (
+      <View style={{ width: 96, height: 96, borderRadius: radius.md, backgroundColor: theme.surfaceAlt, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ fontSize: 24 }}>⏳</Text>
+      </View>
+    );
+  }
   const source = attachmentContentSource(attachment.id);
   return (
     <Image

@@ -35,7 +35,8 @@
   },
   "tabs": {
     "workOrders": "Mes BT",
-    "profile": "Profil"
+    "profile": "Profil",
+    "sync": "Sync"
   },
   "workOrders": {
     "title": "Mes bons de travail",
@@ -113,5 +114,23 @@
     "offline": "Hors ligne — données locales",
     "failed": "Synchronisation impossible",
     "now": "Synchroniser"
+  },
+  "queue": {
+    "title": "Synchronisation",
+    "empty": "Rien en attente. Tout est synchronisé.",
+    "pending": "{{count}} en attente",
+    "transition": "Changement de statut → {{label}}",
+    "note": "Note : {{text}}",
+    "attachment": "Photo {{name}}",
+    "statusPENDING": "En attente",
+    "statusIN_FLIGHT": "Envoi…",
+    "statusFAILED": "Refusé",
+    "statusCONFLICT": "Conflit",
+    "conflictHint": "Le BT a changé sur le serveur entre-temps. Appliquer quand même, ou abandonner ?",
+    "unavailableHint": "Cette action n'est plus possible depuis le statut actuel du BT.",
+    "apply": "Appliquer quand même",
+    "retry": "Réessayer",
+    "discard": "Abandonner",
+    "discardConfirm": "Abandonner cette opération ? Elle ne sera jamais envoyée."
   }
 }
