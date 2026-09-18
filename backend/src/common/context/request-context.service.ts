@@ -32,6 +32,16 @@ export class RequestContextService {
     return this.als.run(ctx, callback);
   }
 
+  /**
+   * Run the callback in a copy of the current context with some fields
+   * overridden — e.g. auth flows on an implicit host (apex / www) that must
+   * operate in the tenant carried by the credential, not by the Host header.
+   */
+  runWith<R>(patch: Partial<RequestContext>, callback: () => R): R {
+    const base: RequestContext = this.current() ?? { tenantId: patch.tenantId ?? '', userId: null };
+    return this.als.run({ ...base, ...patch }, callback);
+  }
+
   /** Read the current context. Returns null when called outside any request. */
   current(): RequestContext | null {
     return this.als.getStore() ?? null;

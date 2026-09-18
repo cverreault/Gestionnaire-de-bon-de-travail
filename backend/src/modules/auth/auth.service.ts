@@ -1,6 +1,7 @@
 import {
   Injectable,
   Logger,
+  Optional,
   UnauthorizedException,
   ConflictException,
 } from '@nestjs/common';
@@ -9,9 +10,17 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { RequestContextService } from '../../common/context/request-context.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './types/jwt-payload.interface';
+import type { User } from '@prisma/client';
+
+type SafeUser = Omit<User, 'password'>;
+type TokenPair = { accessToken: string; refreshToken: string };
+type LoginResult =
+  | { requires2fa: true; pendingToken: string; userId: string }
+  | (TokenPair & { user: SafeUser });
 
 /** Projection utilisateur sans le hash de mot de passe */
 const USER_SELECT = {
@@ -42,17 +51,65 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    /** Optional so existing unit tests keep constructing the service with three deps. */
+    @Optional() private readonly requestContext?: RequestContextService,
   ) {}
+
+  // ── Hôte implicite (apex / www / localhost) ─────────────────────────────────
+  //
+  // Sur ces hôtes le middleware résout le tenant DEFAULT ; un utilisateur d'un
+  // autre tenant serait invisible (tenant-scope) et ses tokens seraient créés
+  // dans le mauvais tenant. Les flux d'auth basculent donc dans le contexte
+  // du tenant porté par la credential : email unique → tenant de l'utilisateur,
+  // refresh / pending token → claim `tenantId` (signature vérifiée).
+
+  /** Runs `fn` inside `tenantId`'s context when it differs from the current one. */
+  private inTenant<R>(tenantId: string | undefined, fn: () => Promise<R>): Promise<R> {
+    if (!tenantId || !this.requestContext) return fn();
+    if (this.requestContext.current()?.tenantId === tenantId) return fn();
+    return this.requestContext.runWith({ tenantId }, fn);
+  }
+
+  /**
+   * Tenant of the only active account carrying this email (raw SQL: the
+   * tenant-scope middleware would hide other tenants' rows). Null when
+   * unknown or ambiguous — an ambiguous email must use its subdomain.
+   */
+  private async resolveTenantByEmail(email: string): Promise<string | null> {
+    const rows = await this.prisma.$queryRawUnsafe<Array<{ tenant_id: string }>>(
+      `SELECT u.tenant_id FROM users u JOIN tenants t ON t.id = u.tenant_id
+       WHERE lower(u.email) = lower($1) AND u.is_active = true AND t.is_active = true
+       LIMIT 2`,
+      email,
+    );
+    if (rows.length === 1) return rows[0].tenant_id;
+    if (rows.length > 1) {
+      this.logger.warn(
+        'Login sur hôte implicite : email présent dans plusieurs tenants — connexion via le sous-domaine requise',
+      );
+    }
+    return null;
+  }
 
   // ── Login ──────────────────────────────────────────────────────────────────
 
-  async login(dto: LoginDto, tenantId: string) {
+  async login(dto: LoginDto, tenantId: string, tenantIsImplicit = false): Promise<LoginResult> {
     // Email is now per-tenant unique (B6.3) — same gmail address can
     // exist in two tenants. The sub-domain decides which one is
     // logging in.
     const user = await this.prisma.user.findFirst({
       where: { email: dto.email, tenantId },
     });
+
+    // Apex / www: no subdomain to pick the tenant. When the email exists in
+    // exactly one tenant, log in there (the JWT guard already trusts the
+    // token's tenant on implicit hosts).
+    if (!user && tenantIsImplicit) {
+      const resolved = await this.resolveTenantByEmail(dto.email);
+      if (resolved && resolved !== tenantId) {
+        return this.inTenant(resolved, () => this.login(dto, resolved, false));
+      }
+    }
 
     // Message volontairement identique pour les deux cas (email inconnu / mauvais mdp)
     // afin d'éviter l'énumération de comptes.
@@ -106,7 +163,11 @@ export class AuthService {
    * step 1 + the TOTP (or backup) code, then issues the real access +
    * refresh pair.
    */
-  async login2fa(pendingToken: string, code: string, verifyTotp: (userId: string, code: string) => Promise<boolean>) {
+  async login2fa(
+    pendingToken: string,
+    code: string,
+    verifyTotp: (userId: string, code: string) => Promise<boolean>,
+  ): Promise<TokenPair & { user: SafeUser }> {
     let payload: { sub?: string; typ?: string; tenantId?: string };
     try {
       payload = await this.jwtService.verifyAsync(pendingToken);
@@ -115,6 +176,9 @@ export class AuthService {
     }
     if (payload.typ !== '2fa-pending' || !payload.sub) {
       throw new UnauthorizedException('Session 2FA invalide.');
+    }
+    if (payload.tenantId && this.requestContext && this.requestContext.current()?.tenantId !== payload.tenantId) {
+      return this.inTenant(payload.tenantId, () => this.login2fa(pendingToken, code, verifyTotp));
     }
     await verifyTotp(payload.sub, code);
 
@@ -143,14 +207,20 @@ export class AuthService {
 
     // Vérifier la signature avant de toucher à la DB — évite un round-trip
     // sur les tokens manifestement bogus.
+    let claims: { tenantId?: string } = {};
     try {
-      this.jwtService.verify(refreshToken, {
+      claims = (this.jwtService.verify(refreshToken, {
         secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
-      });
+      }) ?? {}) as { tenantId?: string };
     } catch {
       throw new UnauthorizedException('Refresh token invalide ou expiré');
     }
 
+    return this.inTenant(claims.tenantId, () => this.rotate(refreshToken));
+  }
+
+  /** Rotation proper — runs inside the token's tenant context (see `refresh`). */
+  private async rotate(refreshToken: string) {
     const tokenHash = hashToken(refreshToken);
     const row = await this.prisma.refreshToken.findUnique({
       where: { tokenHash },
@@ -212,6 +282,19 @@ export class AuthService {
   async logout(refreshToken: string): Promise<void> {
     if (!refreshToken) return;
 
+    // Best effort: read the tenant claim so the row is found on an implicit host.
+    let claims: { tenantId?: string } = {};
+    try {
+      claims = (this.jwtService.verify(refreshToken, {
+        secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
+      }) ?? {}) as { tenantId?: string };
+    } catch {
+      claims = {};
+    }
+    return this.inTenant(claims.tenantId, () => this.revokeToken(refreshToken));
+  }
+
+  private async revokeToken(refreshToken: string): Promise<void> {
     const tokenHash = hashToken(refreshToken);
     // Best-effort : si le token n'existe pas ou est déjà révoqué, on ignore.
     await this.prisma.refreshToken

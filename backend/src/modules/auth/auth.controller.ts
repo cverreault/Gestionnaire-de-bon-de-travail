@@ -5,6 +5,7 @@ import {
   Body,
   HttpCode,
   HttpStatus,
+  Req,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,6 +19,8 @@ import { IsString, IsNotEmpty } from 'class-validator';
 import { AuthService } from './auth.service';
 import { EmailVerificationService } from './application/email-verification.service';
 import { TotpService } from './totp/totp.service';
+import type { Request } from 'express';
+import { TENANT_IS_IMPLICIT_KEY } from '../../common/contracts/tenant-context.contract';
 import { LoginDto } from './dto/login.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { Public } from '../../common/decorators/public.decorator';
@@ -67,8 +70,10 @@ export class AuthController {
   login(
     @Body() dto: LoginDto,
     @CurrentTenant() tenant: TenantContext,
+    @Req() req: Request,
   ) {
-    return this.authService.login(dto, tenant.id);
+    const implicit = (req as Request & { [TENANT_IS_IMPLICIT_KEY]?: boolean })[TENANT_IS_IMPLICIT_KEY] === true;
+    return this.authService.login(dto, tenant.id, implicit);
   }
 
   // ── POST /api/auth/login/2fa ───────────────────────────────────────────────

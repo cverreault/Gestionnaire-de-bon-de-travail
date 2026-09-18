@@ -133,8 +133,21 @@ function makeMockConfig() {
   };
 }
 
-async function buildService(prisma: any, jwt = makeMockJwt(), config = makeMockConfig()) {
-  return new AuthService(prisma as any, jwt as any, config as any);
+async function buildService(prisma: any, jwt = makeMockJwt(), config = makeMockConfig(), context?: any) {
+  return new AuthService(prisma as any, jwt as any, config as any, context);
+}
+
+/** Request context stub: current tenant + a runWith that records the switch and runs the callback. */
+function makeMockContext(tenantId = 'test-tenant') {
+  const switches: string[] = [];
+  return {
+    switches,
+    current: jest.fn(() => ({ tenantId, userId: null })),
+    runWith: jest.fn((patch: { tenantId: string }, fn: () => unknown) => {
+      switches.push(patch.tenantId);
+      return fn();
+    }),
+  };
 }
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
@@ -377,5 +390,65 @@ describe('AuthService.logout', () => {
     const svc = await buildService(prisma);
     await expect(svc.logout('')).resolves.toBeUndefined();
     expect(prisma.refreshToken.updateMany).not.toHaveBeenCalled();
+  });
+});
+
+// ─── Hôte implicite (apex / www) — le tenant vient de la credential ──────────
+
+describe('AuthService — implicit host', () => {
+  it('login: falls back to the only tenant holding the email and runs inside that tenant', async () => {
+    const user = await makeUser({ password: 'correct-pw' });
+    const prisma: any = makeMockPrisma({ user });
+    // Host resolved DEFAULT ('test-tenant'); the account lives in 'norda'.
+    prisma.user.findFirst = jest.fn(({ where }: { where: { tenantId?: string } }) =>
+      Promise.resolve(where.tenantId === 'norda' ? user : null),
+    );
+    prisma.$queryRawUnsafe = jest.fn().mockResolvedValue([{ tenant_id: 'norda' }]);
+    const ctx = makeMockContext('test-tenant');
+    const svc = await buildService(prisma, makeMockJwt(), makeMockConfig(), ctx);
+
+    const raw = await svc.login({ email: user.email, password: 'correct-pw' } as LoginDto, 'test-tenant', true);
+    if ('requires2fa' in raw) throw new Error('unexpected 2FA');
+    expect(raw.accessToken).toMatch(/^mock-access-/);
+    expect(ctx.switches).toEqual(['norda']);
+    expect(prisma.$queryRawUnsafe).toHaveBeenCalledWith(expect.stringMatching(/lower\(u\.email\)/), user.email);
+  });
+
+  it('login: stays a plain 401 on an explicit subdomain (no cross-tenant lookup)', async () => {
+    const user = await makeUser({ password: 'correct-pw' });
+    const prisma: any = makeMockPrisma({ user });
+    prisma.user.findFirst = jest.fn().mockResolvedValue(null);
+    prisma.$queryRawUnsafe = jest.fn();
+    const svc = await buildService(prisma, makeMockJwt(), makeMockConfig(), makeMockContext());
+    await expect(svc.login({ email: user.email, password: 'correct-pw' } as LoginDto, 'test-tenant', false)).rejects.toThrow(UnauthorizedException);
+    expect(prisma.$queryRawUnsafe).not.toHaveBeenCalled();
+  });
+
+  it('login: an email present in several tenants stays 401 (must use its subdomain)', async () => {
+    const user = await makeUser({ password: 'correct-pw' });
+    const prisma: any = makeMockPrisma({ user });
+    prisma.user.findFirst = jest.fn().mockResolvedValue(null);
+    prisma.$queryRawUnsafe = jest.fn().mockResolvedValue([{ tenant_id: 'a' }, { tenant_id: 'b' }]);
+    const ctx = makeMockContext();
+    const svc = await buildService(prisma, makeMockJwt(), makeMockConfig(), ctx);
+    await expect(svc.login({ email: user.email, password: 'correct-pw' } as LoginDto, 'test-tenant', true)).rejects.toThrow(UnauthorizedException);
+    expect(ctx.switches).toEqual([]);
+  });
+
+  it('refresh: rotates inside the tenant carried by the token claims', async () => {
+    const user = await makeUser();
+    const tok1 = 'tok1';
+    const prisma: any = makeMockPrisma({
+      user,
+      initialTokens: [{ id: 'rt-seed', tokenHash: hashToken(tok1), userId: user.id, family: 'fam', createdAt: new Date(), expiresAt: new Date(Date.now() + 60_000), revokedAt: null }],
+    });
+    const jwt = makeMockJwt();
+    jwt.verify = jest.fn(() => ({ sub: user.id, email: user.email, role: 'TECHNICIAN', tenantId: 'norda' }));
+    const ctx = makeMockContext('test-tenant');
+    const svc = await buildService(prisma, jwt, makeMockConfig(), ctx);
+
+    const result = await svc.refresh(tok1);
+    expect(result.refreshToken).toMatch(/^mock-refresh-/);
+    expect(ctx.switches).toEqual(['norda']);
   });
 });
