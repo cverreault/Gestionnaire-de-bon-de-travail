@@ -105,7 +105,10 @@ no origin, so the first screen asks for a **workspace**:
 - a QR code that encodes that same URL, generated client-side on the web
   profile page (no backend).
 
-The app validates the workspace with the already-public
+Since 2026-09-18 the auth flows also work on an implicit host (apex /
+`www`) when the email exists in exactly one tenant — the app may therefore
+offer the apex as a default workspace and only ask for a slug when the
+login answers that the email is ambiguous. The app validates the workspace with the already-public
 `GET /api/tenants/branding` and shows the tenant name and logo before the
 login form. `JwtAuthGuard`'s anti-spoof check (JWT `tenantId` must match
 the host-pinned tenant), per-tenant email uniqueness and the tenant-scope

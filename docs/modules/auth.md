@@ -63,6 +63,17 @@ Sécurité opérationnelle :
 - `UserScopedThrottlerGuard` (C7) — rate limit scopé `user:<id>` après auth, `ip:<addr>` sinon
 - `RolesGuard` (C13) — émet `security.access.denied` (warn Pino) sur tout refus
 
+## Connexion depuis l'hôte principal (apex / www) — hôte implicite
+
+Le tenant est normalement résolu par le sous-domaine (ADR-009). Sur un hôte implicite (`dispatch2go.com`, `www.`, `localhost`, IP), le middleware résout le tenant DEFAULT et le tenant-scope Prisma masquerait les lignes des autres tenants : un utilisateur d'un autre espace ne pouvait pas se connecter (401 « Email ou mot de passe invalide » même avec le bon mot de passe — incident Kevin / Norda, 2026-09-18, aucun DNS `norda.dispatch2go.com`).
+
+Depuis, les flux d'auth basculent dans le contexte du tenant porté par la **credential** (`AuthService.inTenant` → `RequestContextService.runWith`) :
+
+- `login` : si l'email n'existe pas dans le tenant de l'hôte **et** que l'hôte est implicite (`TENANT_IS_IMPLICIT_KEY`), recherche brute (`$queryRawUnsafe`, hors tenant-scope) de l'email parmi les comptes actifs de tenants actifs ; **exactement un** résultat → connexion dans ce tenant ; plusieurs → 401 (l'email doit passer par son sous-domaine, avertissement journalisé).
+- `refresh`, `logout`, `login/2fa` : le claim `tenantId` du token (signature vérifiée) fixe le contexte avant toute lecture ou écriture de `refresh_tokens` / `users`.
+
+Sur un sous-domaine explicite, rien ne change : pas de recherche cross-tenant. Le `JwtAuthGuard` continue de faire confiance au tenant du JWT sur les hôtes implicites (comportement préexistant).
+
 ## Domain events publiés
 
 Aucun pour l'instant. (Évolution future possible : `auth.login.success`, `auth.token.replay-detected` consommé par `audit`.)
