@@ -5,6 +5,8 @@ import type { ProcessSnapshot, SyncWorkOrder } from '@taskmgr/shared';
 import { db } from '../db/client';
 import { getMeta, getSnapshot, getWorkOrder, listWorkOrders, META } from '../db/repo';
 import { useSession } from '../stores/session.store';
+import { projectWorkOrder, type ProjectedWorkOrder } from './project';
+import { listOps, listOpsForWorkOrder, type QueuedOp } from './queue';
 import { useSyncStore } from './sync.store';
 
 const PULL_MIN_INTERVAL_MS = 60_000;
@@ -28,6 +30,7 @@ export function useSyncScheduler(dbReady: boolean): void {
       void pullNow(userId);
     };
     void getMeta(db, META.lastSyncAt).then((v) => useSyncStore.setState({ lastSyncAt: v }));
+    void useSyncStore.getState().refreshCounts();
     pull(true);
     const app = AppState.addEventListener('change', (st) => st === 'active' && pull());
     const net = NetInfo.addEventListener((state) => {
@@ -42,34 +45,75 @@ export function useSyncScheduler(dbReady: boolean): void {
   }, [dbReady, accessToken, user?.id, user?.role, pullNow, setOnline]);
 }
 
-/** Local list, re-read after every pull. */
-export function useLocalWorkOrders(): { rows: SyncWorkOrder[]; loaded: boolean } {
+/** Local list with pending ops projected (status chips reflect queued transitions). */
+export function useLocalWorkOrders(): { rows: ProjectedWorkOrder[]; loaded: boolean } {
   const version = useSyncStore((s) => s.version);
-  const [state, setState] = useState<{ rows: SyncWorkOrder[]; loaded: boolean }>({ rows: [], loaded: false });
+  const user = useSession((s) => s.user);
+  const [state, setState] = useState<{ rows: ProjectedWorkOrder[]; loaded: boolean }>({ rows: [], loaded: false });
   useEffect(() => {
-    let alive = true;
-    void listWorkOrders(db).then((rows) => alive && setState({ rows, loaded: true }));
-    return () => {
-      alive = false;
-    };
-  }, [version]);
-  return state;
-}
-
-export function useLocalWorkOrder(id: string | undefined): { wo: SyncWorkOrder | null; snapshot: ProcessSnapshot | null; loaded: boolean } {
-  const version = useSyncStore((s) => s.version);
-  const [state, setState] = useState<{ wo: SyncWorkOrder | null; snapshot: ProcessSnapshot | null; loaded: boolean }>({ wo: null, snapshot: null, loaded: false });
-  useEffect(() => {
-    if (!id) return;
     let alive = true;
     void (async () => {
-      const wo = await getWorkOrder(db, id);
-      const snapshot = await getSnapshot(db, wo?.processDefinitionId);
-      if (alive) setState({ wo, snapshot, loaded: true });
+      const [rows, ops] = await Promise.all([listWorkOrders(db), listOps(db)]);
+      const me = { id: user?.id ?? '', firstName: user?.firstName ?? '', lastName: user?.lastName ?? '' };
+      const snapshots = new Map<string, ProcessSnapshot | null>();
+      const projected: ProjectedWorkOrder[] = [];
+      for (const wo of rows) {
+        const mine = ops.filter((o) => o.workOrderId === wo.id);
+        if (mine.length > 0 && wo.processDefinitionId && !snapshots.has(wo.processDefinitionId)) {
+          snapshots.set(wo.processDefinitionId, await getSnapshot(db, wo.processDefinitionId));
+        }
+        projected.push(projectWorkOrder(wo, mine, wo.processDefinitionId ? snapshots.get(wo.processDefinitionId) ?? null : null, me));
+      }
+      if (alive) setState({ rows: projected, loaded: true });
     })();
     return () => {
       alive = false;
     };
-  }, [id, version]);
+  }, [version, user?.id, user?.firstName, user?.lastName]);
+  return state;
+}
+
+/** Every queued op, for the sync screen. */
+export function useQueueOps(): QueuedOp[] {
+  const version = useSyncStore((s) => s.version);
+  const [ops, setOps] = useState<QueuedOp[]>([]);
+  useEffect(() => {
+    let alive = true;
+    void listOps(db).then((rows) => alive && setOps(rows));
+    return () => {
+      alive = false;
+    };
+  }, [version]);
+  return ops;
+}
+
+export interface LocalWorkOrderView {
+  /** Server row with pending ops projected (null when unknown locally). */
+  wo: ProjectedWorkOrder | null;
+  /** Untouched server row (for expectedUpdatedAt, conflicts). */
+  server: SyncWorkOrder | null;
+  snapshot: ProcessSnapshot | null;
+  ops: QueuedOp[];
+  loaded: boolean;
+}
+
+export function useLocalWorkOrder(id: string | undefined): LocalWorkOrderView {
+  const version = useSyncStore((s) => s.version);
+  const user = useSession((s) => s.user);
+  const [state, setState] = useState<LocalWorkOrderView>({ wo: null, server: null, snapshot: null, ops: [], loaded: false });
+  useEffect(() => {
+    if (!id) return;
+    let alive = true;
+    void (async () => {
+      const server = await getWorkOrder(db, id);
+      const snapshot = await getSnapshot(db, server?.processDefinitionId);
+      const ops = await listOpsForWorkOrder(db, id);
+      const me = { id: user?.id ?? '', firstName: user?.firstName ?? '', lastName: user?.lastName ?? '' };
+      if (alive) setState({ wo: server ? projectWorkOrder(server, ops, snapshot, me) : null, server, snapshot, ops, loaded: true });
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [id, version, user?.id, user?.firstName, user?.lastName]);
   return state;
 }

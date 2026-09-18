@@ -38,7 +38,7 @@ mobile/
 └── src/
     ├── app/          # routes expo-router
     ├── db/           # schéma drizzle, client expo-sqlite, requêtes locales
-    ├── sync/         # moteur de tirage delta (apply-pull, testé sur better-sqlite3), store et hooks
+    ├── sync/         # tirage delta (apply-pull), file hors ligne (queue, project, drain, senders), store et hooks — testés sur better-sqlite3
     ├── components/
     ├── hooks/
     └── constants/
@@ -53,3 +53,7 @@ Les profils `development`, `preview` et `production` seront ajoutés en B38.10. 
 ## Base locale (B38.4)
 
 Les BT du technicien vivent dans SQLite (`dispatch2go.db`, expo-sqlite + drizzle). Le tirage delta `GET /api/me/sync` s'exécute à l'ouverture de session, au retour au premier plan, au retour du réseau et en tirant la liste. Après avoir modifié `src/db/schema.ts`, lancer `npm run db:generate` et committer `drizzle/`. Le moteur (`src/sync/apply-pull.ts`) est testé sans natif sur better-sqlite3 avec les mêmes migrations.
+
+## File hors ligne (B38.5)
+
+Chaque geste du technicien (transition, note, photo) est écrit dans `sync_queue` puis envoyé par le drain séquentiel (`src/sync/drain.ts`) avec `Idempotency-Key = id de l'opération` et `expectedUpdatedAt` propagé. Sur 409 de verrou optimiste, l'app tire d'abord, rejoue les opérations additives (3 essais) et met les transitions en conflit ; l'onglet Sync permet d'appliquer quand même ou d'abandonner (ADR-016 §4). Les photos sont copiées dans `documentDirectory/queue/` en attendant l'envoi.

@@ -48,3 +48,22 @@ export const partsStock = sqliteTable('parts_stock', {
   quantity: integer('quantity').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
+
+/**
+ * Offline mutation queue (ADR-016 §3/§4, B38.5). `id` doubles as the
+ * Idempotency-Key ; ops drain sequentially by `seq`.
+ */
+export const syncQueue = sqliteTable('sync_queue', {
+  id: text('id').primaryKey(),
+  seq: integer('seq').notNull(),
+  workOrderId: text('work_order_id').notNull(),
+  /** transition | note | attachment */
+  kind: text('kind').notNull(),
+  /** Kind-specific payload as JSON. */
+  payload: text('payload').notNull(),
+  /** PENDING | IN_FLIGHT | FAILED | CONFLICT */
+  status: text('status').notNull(),
+  attempts: integer('attempts').notNull().default(0),
+  lastError: text('last_error'),
+  createdAt: text('created_at').notNull(),
+});

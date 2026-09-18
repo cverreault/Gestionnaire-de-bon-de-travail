@@ -35,7 +35,8 @@
   },
   "tabs": {
     "workOrders": "My WOs",
-    "profile": "Profile"
+    "profile": "Profile",
+    "sync": "Sync"
   },
   "workOrders": {
     "title": "My work orders",
@@ -113,5 +114,23 @@
     "offline": "Offline — local data",
     "failed": "Sync failed",
     "now": "Sync now"
+  },
+  "queue": {
+    "title": "Sync",
+    "empty": "Nothing pending. Everything is synced.",
+    "pending": "{{count}} pending",
+    "transition": "Status change → {{label}}",
+    "note": "Note: {{text}}",
+    "attachment": "Photo {{name}}",
+    "statusPENDING": "Pending",
+    "statusIN_FLIGHT": "Sending…",
+    "statusFAILED": "Rejected",
+    "statusCONFLICT": "Conflict",
+    "conflictHint": "The work order changed on the server in the meantime. Apply anyway, or discard?",
+    "unavailableHint": "This action is no longer possible from the work order's current status.",
+    "apply": "Apply anyway",
+    "retry": "Retry",
+    "discard": "Discard",
+    "discardConfirm": "Discard this operation? It will never be sent."
   }
 }
