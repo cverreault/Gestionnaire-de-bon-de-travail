@@ -85,7 +85,11 @@ by the `@Global()` `GeoModule`, like `SYSTEM_CONFIG_RESOLVER`. `clients`
 calls it fire-and-forget after an address is created or its postal parts
 change without explicit coordinates; `dispatch-map` keeps its sweep
 (button + new 10-minute cron). Adresses Québec is tried first for Québec
-addresses (civic number must match, score ≥ 90), Nominatim otherwise.
+addresses (score ≥ 90 with a matching civic number, or score ≥ 78 when both the
+civic number and the municipality match — a missing « rue » or a light typo
+must not block), Nominatim otherwise. Suggestions merge the strict `suggest`
+with the fuzzy `findAddressCandidates` for the same reason: best match, not
+exact match.
 
 **Rejected**: `clients` importing the `geo` module (ADR-001) and an event
 round-trip (`clients.address.created` → geo writes `client_addresses`):

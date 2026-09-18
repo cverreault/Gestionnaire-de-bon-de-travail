@@ -9,11 +9,14 @@ import type {
 import { PropertyService } from './property.service';
 import { AdressesQuebecClient, type AqCandidate } from '../infrastructure/adresses-quebec.client';
 import { NominatimClient, sleep } from '../infrastructure/nominatim.client';
-import { formatPostalCode, isQuebec, parseCivicNumber } from './address-normalize';
+import { formatPostalCode, isQuebec, parseCivicNumber, stripAccents } from './address-normalize';
 
 export interface AddressSuggestion {
   text: string;
-  magicKey: string;
+  /** Absent when the suggestion comes from the fuzzy candidate search: resolve by text. */
+  magicKey?: string;
+  /** Provider score for fuzzy entries (exact suggestions have none). */
+  score?: number;
 }
 
 /** What the form receives when the user picks a suggestion. */
@@ -44,8 +47,16 @@ const ORIENTATION_LABEL: Record<string, string> = {
 export class AddressLookupService implements IGeocoder {
   private readonly logger = new Logger(AddressLookupService.name);
 
-  /** Below this score Adresses Québec is guessing another town (observed: 73–76 on misses, 100 on hits). */
+  /** Above this score Adresses Québec is sure (observed: 100 on exact hits). */
   static readonly MIN_AQ_SCORE = 90;
+  /**
+   * Best-match floor: a fuzzy hit (missing « rue », typo) scores ~80–85 while a
+   * wrong-town guess scores ~73–76. Accepted only when the civic number and
+   * the municipality also match the input.
+   */
+  static readonly MIN_AQ_FUZZY_SCORE = 78;
+  /** Candidates fetched for the fuzzy half of suggest(). */
+  private static readonly SUGGEST_CANDIDATES = 6;
 
   constructor(
     private readonly aq: AdressesQuebecClient,
@@ -62,10 +73,33 @@ export class AddressLookupService implements IGeocoder {
     }
   }
 
+  /**
+   * Best-match suggestions. Adresses Québec's `suggest` only matches when the
+   * street generic is typed (« 669 rue principale » yes, « 669 principale » no),
+   * while `findAddressCandidates` is fuzzy. We run both and merge: exact
+   * suggestions first, then fuzzy candidates above the floor, de-duplicated.
+   */
   async suggest(q: string, max = 6): Promise<AddressSuggestion[]> {
     const text = q.trim();
     if (text.length < 3) return [];
-    return this.aq.suggest(text, max);
+    const [exact, fuzzy] = await Promise.all([
+      this.aq.suggest(text, max),
+      this.aq.findCandidates({ singleLine: text, maxLocations: AddressLookupService.SUGGEST_CANDIDATES }),
+    ]);
+    const seen = new Set<string>();
+    const out: AddressSuggestion[] = [];
+    const push = (item: AddressSuggestion) => {
+      const key = stripAccents(item.text.toLowerCase()).replace(/[^a-z0-9]+/g, ' ').trim();
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      out.push(item);
+    };
+    exact.forEach(push);
+    fuzzy
+      .filter((c) => c.score >= AddressLookupService.MIN_AQ_FUZZY_SCORE && c.address)
+      .sort((a, b) => b.score - a.score)
+      .forEach((c) => push({ text: c.address, score: c.score }));
+    return out.slice(0, max);
   }
 
   async resolve(text: string, magicKey?: string): Promise<ResolvedAddress | null> {
@@ -93,13 +127,21 @@ export class AddressLookupService implements IGeocoder {
     ]
       .filter(Boolean)
       .join(', ');
-    const candidates = await this.aq.findCandidates({ singleLine, maxLocations: 3 });
+    const candidates = await this.aq.findCandidates({ singleLine, maxLocations: 5 });
     const wanted = parseCivicNumber(number);
-    const best = candidates.find(
-      (c) =>
-        c.score >= AddressLookupService.MIN_AQ_SCORE &&
-        (wanted === null || c.civicNumber === wanted),
-    );
+    const wantedCity = normalizeCity(input.city);
+    const best = candidates.find((c) => {
+      const numberOk = wanted === null || c.civicNumber === wanted;
+      if (!numberOk) return false;
+      if (c.score >= AddressLookupService.MIN_AQ_SCORE) return true;
+      // Best match: fuzzy score is enough when number AND municipality agree.
+      return (
+        c.score >= AddressLookupService.MIN_AQ_FUZZY_SCORE &&
+        wanted !== null &&
+        wantedCity !== '' &&
+        normalizeCity(c.city) === wantedCity
+      );
+    });
     if (!best) return null;
     return {
       latitude: best.latitude,
@@ -149,4 +191,13 @@ function toResolved(c: AqCandidate): ResolvedAddress {
     score: c.score,
     source: 'adresses-quebec',
   };
+}
+
+/** « Sainte-Marthe » / « ste-marthe » → « sainte marthe » (accents, punctuation, common abbreviations). */
+function normalizeCity(raw: string | null | undefined): string {
+  if (!raw) return '';
+  return stripAccents(raw.toLowerCase())
+    .replace(/\bste?\b\.?/g, (m) => (m.startsWith('ste') ? 'sainte' : 'saint'))
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
 }

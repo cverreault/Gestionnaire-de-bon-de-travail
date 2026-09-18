@@ -12,7 +12,10 @@ import { Injectable, Logger } from '@nestjs/common';
 
 export interface AqSuggestion {
   text: string;
-  magicKey: string;
+  /** Absent for suggestions built from fuzzy candidates: resolve by text. */
+  magicKey?: string;
+  /** Provider score when the entry comes from findAddressCandidates. */
+  score?: number;
 }
 
 export interface AqCandidate {

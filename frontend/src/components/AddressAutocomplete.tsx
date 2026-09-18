@@ -12,7 +12,8 @@ interface Props {
 const DEBOUNCE_MS = 300;
 
 /**
- * Search box backed by Adresses Québec (B40). Type « 451 principale sainte-m »,
+ * Search box backed by Adresses Québec (B40). Type « 669 principale sainte-m »
+ * (no need for « rue » — best-match suggestions),
  * pick a line, and the caller fills its form with number, street, city,
  * postal code and coordinates. Purely additive: the classic fields below
  * stay editable.
@@ -156,7 +157,7 @@ export default function AddressAutocomplete({ onSelect, disabled }: Props) {
         >
           {items.map((s, i) => (
             <li
-              key={s.magicKey}
+              key={s.magicKey ?? s.text}
               role="option"
               aria-selected={i === active}
               onMouseDown={(e) => e.preventDefault()}
