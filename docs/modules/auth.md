@@ -80,8 +80,6 @@ Aucun pour l'instant. (Évolution future possible : `auth.login.success`, `auth.
 
 ## Domain events consommés
 
-Aucun.
-
 | Event source | Action |
 |---|---|
 | `mobile.device.revoked` (module `mobile`, B37.3) | `DeviceRevokedListener` révoque tous les refresh tokens dont `device_id` = `installationId` pour cet utilisateur ; émis avec `emitAsync`, donc terminé avant la réponse du `DELETE /api/me/devices/:id` |
