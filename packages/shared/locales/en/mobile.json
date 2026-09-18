@@ -176,5 +176,12 @@
     "revoked": "Sharing was turned off from the web. Turn it back on here if you wish.",
     "buffered": "{{count}} fix(es) waiting to be sent",
     "lastFlush": "Last sent {{time}}"
+  },
+  "push": {
+    "title": "Push notifications",
+    "on": "On",
+    "denied": "Denied — allow them in Settings",
+    "noProject": "Unavailable on this development build (EAS project not initialised)",
+    "error": "Unavailable: {{reason}}"
   }
 }

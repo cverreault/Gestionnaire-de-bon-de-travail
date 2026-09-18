@@ -176,5 +176,12 @@
     "revoked": "Le partage a été désactivé depuis le web. Réactivez-le ici si vous le souhaitez.",
     "buffered": "{{count}} position(s) en attente d'envoi",
     "lastFlush": "Dernier envoi {{time}}"
+  },
+  "push": {
+    "title": "Notifications push",
+    "on": "Actives",
+    "denied": "Refusées — autorisez-les dans les réglages",
+    "noProject": "Indisponibles sur ce build de développement (projet EAS non initialisé)",
+    "error": "Indisponibles : {{reason}}"
   }
 }
