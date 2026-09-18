@@ -6,6 +6,8 @@ import { StatusBar } from 'expo-status-bar';
 import '../i18n';
 import i18n from '../i18n';
 import { useSession } from '../stores/session.store';
+import { useUpgradeGate } from '../stores/upgrade.store';
+import { useDeviceRegistration } from '../device/useDeviceRegistration';
 import { useTheme } from '../theme/tokens';
 
 const queryClient = new QueryClient({
@@ -16,15 +18,18 @@ const queryClient = new QueryClient({
 
 /**
  * Root layout (B38.3): providers + navigation gate.
- *   no workspace  → /workspace
- *   no session    → /login
- *   otherwise     → /(app)
+ *   no workspace     → /workspace
+ *   no session       → /login
+ *   upgrade required → /upgrade-required (heartbeat says this build is too old)
+ *   otherwise        → /(app)
  */
 export default function RootLayout() {
   const theme = useTheme();
   const { hydrated, hydrate, workspace, accessToken, user } = useSession();
+  const upgradeRequired = useUpgradeGate((s) => s.upgradeRequired);
   const segments = useSegments();
   const router = useRouter();
+  useDeviceRegistration();
 
   useEffect(() => {
     void hydrate();
@@ -39,10 +44,12 @@ export default function RootLayout() {
       if (top !== 'workspace') router.replace('/workspace');
     } else if (!accessToken) {
       if (top !== 'login' && top !== 'workspace') router.replace('/login');
+    } else if (upgradeRequired) {
+      if (top !== 'upgrade-required') router.replace('/upgrade-required');
     } else if (top !== '(app)') {
       router.replace('/(app)');
     }
-  }, [hydrated, workspace, accessToken, user, segments, router]);
+  }, [hydrated, workspace, accessToken, user, upgradeRequired, segments, router]);
 
   if (!hydrated) {
     return (

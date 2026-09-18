@@ -362,11 +362,15 @@ export class AuthService {
     );
 
     // Persister la rangée DB pour pouvoir révoquer.
+    // B37.3 — bind the row to the mobile installation (X-Device-Id) so a
+    // revoked device loses its sessions (ADR-015 §4). Null for web clients.
+    const deviceId = this.requestContext?.current()?.deviceId ?? null;
     await this.prisma.refreshToken.create({
       data: {
         tokenHash: hashToken(refreshToken),
         userId,
         family,
+        deviceId,
         expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
       },
     });

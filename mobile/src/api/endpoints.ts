@@ -97,3 +97,70 @@ export function attachmentContentSource(attachmentId: string): { uri: string; he
     headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
   };
 }
+
+// ── Devices (B37.3 / B37.8) ──────────────────────────────────────────────────
+
+export interface DeviceView {
+  installationId: string;
+  platform: 'IOS' | 'ANDROID';
+  appVersion: string;
+  osVersion: string | null;
+  model: string | null;
+  locale: string | null;
+  hasPushToken: boolean;
+  lastSeenAt: string;
+  createdAt: string;
+}
+
+export interface RegisterDevicePayload {
+  platform: 'IOS' | 'ANDROID';
+  appVersion: string;
+  osVersion?: string;
+  model?: string;
+  locale?: string;
+  pushToken?: string;
+}
+
+export interface HeartbeatResponse {
+  upgradeRequired: boolean;
+  minAppVersion: string;
+  latestAppVersion: string | null;
+  serverTime: string;
+}
+
+export interface MobileConfig {
+  minAppVersion: { ios: string; android: string };
+  latestAppVersion: string | null;
+  tenant: { slug: string; name: string } | null;
+  features: Record<string, boolean>;
+  limits: { attachmentMaxBytes: number; locationBatchMax: number; syncPageMax: number };
+  serverTime: string;
+  backendVersion: string;
+}
+
+export function registerDevice(installationId: string, payload: RegisterDevicePayload): Promise<DeviceView> {
+  return api<DeviceView>(`/me/devices/${installationId}`, { method: 'PUT', body: payload });
+}
+
+export function heartbeat(installationId: string, payload: { appVersion?: string; osVersion?: string; pushToken?: string }): Promise<HeartbeatResponse> {
+  return api<HeartbeatResponse>(`/me/devices/${installationId}/heartbeat`, { method: 'POST', body: payload });
+}
+
+export function fetchMyDevices(): Promise<DeviceView[]> {
+  return api<DeviceView[]>('/me/devices');
+}
+
+export function revokeDevice(installationId: string): Promise<void> {
+  return api<void>(`/me/devices/${installationId}`, { method: 'DELETE' });
+}
+
+/** Public bootstrap config; validated on the workspace screen (no token). */
+export async function fetchMobileConfig(baseUrl: string): Promise<MobileConfig> {
+  const res = await fetch(`${baseUrl.replace(/\/+$/, '')}/api/mobile/config`, {
+    headers: { Accept: 'application/json' },
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = (await res.json()) as { data?: MobileConfig } & MobileConfig;
+  return json.data ?? json;
+}

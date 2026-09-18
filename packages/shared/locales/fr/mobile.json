@@ -94,6 +94,16 @@
     "device": "Identifiant de l'appareil",
     "version": "Version de l'app",
     "logout": "Se déconnecter",
-    "logoutConfirm": "Se déconnecter de cet appareil ?"
+    "logoutConfirm": "Se déconnecter de cet appareil ?",
+    "devices": "Appareils connectés",
+    "thisDevice": "cet appareil",
+    "revoke": "Déconnecter",
+    "revokeConfirm": "Déconnecter cet appareil ? Il devra se reconnecter.",
+    "lastSeen": "Vu le {{date}}"
+  },
+  "upgrade": {
+    "title": "Mise à jour requise",
+    "body": "Cette version de Dispatch2Go ({{current}}) n'est plus prise en charge par votre espace. Installez la version {{min}} ou plus récente pour continuer.",
+    "retry": "Revérifier"
   }
 }

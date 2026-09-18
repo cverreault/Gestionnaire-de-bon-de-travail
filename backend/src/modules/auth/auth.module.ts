@@ -10,6 +10,7 @@ import { SuperAdminBootstrapService } from './super-admin-bootstrap.service';
 import { EmailVerificationService } from './application/email-verification.service';
 import { TotpService } from './totp/totp.service';
 import { TotpController } from './totp/totp.controller';
+import { DeviceRevokedListener } from './application/device-revoked.listener';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { TotpController } from './totp/totp.controller';
     SuperAdminBootstrapService,
     EmailVerificationService,
     TotpService,
+    DeviceRevokedListener,
   ],
   /**
    * JwtModule est exporté pour que d'autres modules (ex. UsersModule)

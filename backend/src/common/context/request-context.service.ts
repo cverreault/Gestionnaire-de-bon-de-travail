@@ -21,6 +21,8 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 export interface RequestContext {
   tenantId: string;
   userId: string | null;
+  /** `X-Device-Id` of the mobile app (ADR-014 §4); null for web / API clients. */
+  deviceId?: string | null;
 }
 
 @Injectable()
