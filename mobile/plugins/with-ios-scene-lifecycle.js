@@ -14,7 +14,7 @@ const path = require('path');
 const { withAppDelegate, withDangerousMod, withInfoPlist, withXcodeProject, IOSConfig } = require('expo/config-plugins');
 
 const SCENE_DELEGATE_FILE = 'SceneDelegate.swift';
-const SCENE_DELEGATE_SOURCE = `import Expo
+const SCENE_DELEGATE_SOURCE = `internal import Expo
 import UIKit
 
 /// Scene-based life cycle (required by the iOS 27 SDK). ExpoAppSceneDelegate creates the
