@@ -1,3 +1,9 @@
+/**
+ * @jest-environment node
+ *
+ * better-sqlite3 is a native addon : it must load in the plain Node
+ * environment, not in jest-expo's React Native VM context (SIGSEGV on CI).
+ */
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
