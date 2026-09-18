@@ -1,5 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { IDEMPOTENCY_STORE } from '../../common/contracts/idempotency.contract';
+import { MOBILE_PUSH_SENDER } from '../../common/contracts/mobile-push.contract';
 import { DevicesController } from './api/devices.controller';
 import { MobileConfigController } from './api/mobile-config.controller';
 import { SyncController } from './api/sync.controller';
@@ -8,6 +9,8 @@ import { DevicesService } from './application/devices/devices.service';
 import { IdempotencyStore } from './application/idempotency/idempotency.store';
 import { SyncService } from './application/sync/sync.service';
 import { MobileRepository } from './infrastructure/mobile.repository';
+import { ExpoPushAdapter } from './infrastructure/expo-push.adapter';
+import { MobilePushService } from './application/push/mobile-push.service';
 import { MobileModuleRegistration } from './mobile.registration';
 
 /**
@@ -17,7 +20,8 @@ import { MobileModuleRegistration } from './mobile.registration';
  * `IDEMPOTENCY_STORE` consommé par l'interceptor de `common/` depuis
  * n'importe quel contrôleur `@Idempotent()` — d'où `@Global()`.
  * B37.6 : tirage delta `GET /api/me/sync` (lectures directes documentées).
- * Push (B37.4) suit.
+ * B37.4 : push natif Expo, lié au contrat `MOBILE_PUSH_SENDER` consommé par
+ * `notifications` en `@Optional()`.
  */
 @Global()
 @Module({
@@ -29,8 +33,11 @@ import { MobileModuleRegistration } from './mobile.registration';
     MobileRepository,
     SyncService,
     { provide: IDEMPOTENCY_STORE, useExisting: IdempotencyStore },
+    ExpoPushAdapter,
+    MobilePushService,
+    { provide: MOBILE_PUSH_SENDER, useExisting: MobilePushService },
     { provide: 'MOBILE_MODULE_REGISTRATION', useValue: MobileModuleRegistration },
   ],
-  exports: [IDEMPOTENCY_STORE],
+  exports: [IDEMPOTENCY_STORE, MOBILE_PUSH_SENDER],
 })
 export class MobileModule {}

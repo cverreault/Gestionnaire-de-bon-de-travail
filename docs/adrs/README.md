@@ -9,22 +9,22 @@ Ce dossier contient les décisions architecturales structurantes du projet TaskM
 | ADR | Statut | Sujet |
 |---|---|---|
 | [001](ADR-001-modular-monolith-architecture.md) | Accepted | Modular Monolith en Clean Architecture |
-| [002](ADR-002-tech-stack-selection.md) | Accepted (amendement proposé par ADR-014) | Sélection de la stack technologique |
+| [002](ADR-002-tech-stack-selection.md) | Accepted (amendée par ADR-014) | Sélection de la stack technologique |
 | [003](ADR-003-dispatch-engine.md) | Accepted | Moteur de répartition de tâches |
 | [004](ADR-004-authentication-authorization.md) | Accepted | Authentification et autorisation (JWT + rôles) |
 | [005](ADR-005-i18n-bilingual-app.md) | Accepted | Internationalisation bilingue FR/EN |
 | [006](ADR-006-theme-css-variables.md) | Accepted | Thème clair/sombre via CSS variables |
 | [007](ADR-007-extension-points-and-contracts.md) | Accepted | Extension points et contrats de module (IDomainEvent, IWorkOrderHook, IModuleRegistration) |
-| [008](ADR-008-gps-tracking-privacy.md) | Accepted (amendement proposé par ADR-017) | Suivi GPS opt-in et rétention 7 jours |
+| [008](ADR-008-gps-tracking-privacy.md) | Accepted (amendée par ADR-017) | Suivi GPS opt-in et rétention 7 jours |
 | [009](ADR-009-multi-tenancy.md) | Accepted | Multi-tenancy (B6) |
 | 010 | — | Numéro non attribué (référencé par les release notes, jamais rédigé) — ne pas réutiliser |
 | [011](ADR-011-public-api-authentication.md) | Accepted | Authentification de l'API publique (clés API) |
 | [012](ADR-012-outbound-webhooks.md) | Accepted | Webhooks sortants (event subscriptions) |
 | [013](ADR-013-alert-rules-engine.md) | Accepted | Moteur de règles d'alertes configurables |
-| [014](ADR-014-native-mobile-app-platform.md) | Proposed | App mobile native : React Native + Expo, monorepo, entrée tenant par URL de workspace |
-| [015](ADR-015-device-registry-and-native-push.md) | Proposed | Registre d'appareils, push natif via Expo Push Service, sessions par appareil |
-| [016](ADR-016-mobile-offline-sync-protocol.md) | Proposed | Protocole de sync hors ligne : pull delta, rejeux idempotents, verrou optimiste |
-| [017](ADR-017-mobile-background-gps.md) | Proposed | GPS mobile en arrière-plan : envoi groupé et horodatage client |
+| [014](ADR-014-native-mobile-app-platform.md) | Accepted | App mobile native : React Native + Expo, monorepo, entrée tenant par URL de workspace |
+| [015](ADR-015-device-registry-and-native-push.md) | Accepted | Registre d'appareils, push natif via Expo Push Service, sessions par appareil |
+| [016](ADR-016-mobile-offline-sync-protocol.md) | Accepted | Protocole de sync hors ligne : pull delta, rejeux idempotents, verrou optimiste |
+| [017](ADR-017-mobile-background-gps.md) | Accepted | GPS mobile en arrière-plan : envoi groupé et horodatage client |
 | [018](ADR-018-address-reference-and-geocoding.md) | Accepted | Référentiel d'adresses : géocodeur Adresses Québec + rôle d'évaluation importé (fiche propriété) |
 
 ## Comment écrire une nouvelle ADR

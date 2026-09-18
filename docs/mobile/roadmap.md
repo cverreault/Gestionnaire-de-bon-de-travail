@@ -40,7 +40,7 @@ Conventions : une PR par item, commit conventionnel avec le scope du module touc
 | B37.1 | `docs(adrs)` | ADR-014 à 017, index des ADRs rattrapé, `docs/modules/mobile.md`, cette feuille de route, `CLAUDE.md` | — |
 | B37.2 ✅ | `feat(mobile)` | Enums `DevicePlatform`, `PushProvider`, `LocationSource` ; modèles `Device`, `IdempotencyKey` ; `RefreshToken.deviceId?` ; `TechnicianLocation.source` + unique `(technicianId, recordedAt)` ; index `work_orders(tenant_id, assigned_to_id, updated_at)` ; migration ; `TENANT_SCOPED_MODELS` ; TRUNCATE des tests d'intégration | — |
 | B37.3 ✅ | `feat(mobile)` | Contrats `device-context` et `mobile-events` ; `RequestContext.deviceId` rempli par `TenantResolverMiddleware` ; squelette du module + `MobileModuleRegistration` ; `DevicesService` / `DevicesController` ; `AuthService` stocke `deviceId` ; listener `@OnEvent('mobile.device.revoked')` dans `auth` ; lignes `roles-matrix.spec.ts` | B37.2 |
-| B37.4 | `feat(notifications)` | Contrat `mobile-push` ; `ExpoPushAdapter` ; `MobilePushService` ; cron receipts ; branche `@Optional()` dans `PushChannelService.send()` ; `notifications.md` | B37.3 |
+| B37.4 ✅ | `feat(notifications)` | Contrat `mobile-push` ; `ExpoPushAdapter` ; `MobilePushService` ; cron receipts ; branche `@Optional()` dans `PushChannelService.send()` ; `notifications.md` | B37.3 |
 | B37.5 ✅ | `feat(common)` | Contrat `idempotency` ; décorateur `@Idempotent()` ; interceptor global (replay, 422, 409, 5xx non stocké) ; cron de nettoyage 48 h dans `mobile` ; décorateur posé sur transition, notes, signatures, upload, pièces sur BT | B37.2 |
 | B37.6 ✅ | `feat(mobile)` | Touch de l'agrégat dans `WorkOrdersService.createNote/saveSignatures`, `AttachmentsService.upload/remove`, `PartsService` (BT) + `workOrderUpdatedAt` dans les réponses ; `mobile.repository.ts` ; `SyncService` ; curseur ; `SyncController` ; `work-orders.md` | B37.2 |
 | B37.7 ✅ | `feat(locations)` | DTO batch ; consentement, clamp, dédup ; `POST /api/me/locations/batch` ; `@Idempotent()` ; `locations.md` | B37.2, B37.5 |
@@ -48,7 +48,7 @@ Conventions : une PR par item, commit conventionnel avec le scope du module touc
 | B37.9 ✅ | `feat(attachments)` | `GET /api/attachments/:id/content` (proxy streaming, même RBAC objet que `download`) — livré en PR | — |
 | B37.10 | `feat(auth)` | Réinitialisation de mot de passe en libre-service : `POST /api/auth/password-reset/request` (email, réponse neutre) + `POST /api/auth/password-reset/confirm` (token 30 min à usage unique) ; un technicien bloqué sur son téléphone n'a aucun recours aujourd'hui | — |
 
-Parallélisable après B37.2 : {B37.3 → B37.4 → B37.8}, B37.5 → B37.7, B37.6, B37.9. Les statuts des ADRs passent à `Accepted` dans la dernière PR du lot.
+Parallélisable après B37.2 : {B37.3 → B37.4 → B37.8}, B37.5 → B37.7, B37.6, B37.9. **Lot B37 livré le 2026-09-18 ; ADR 014–017 passées à `Accepted`.**
 
 Pré-requis transverse : `GET /api/auth/me` doit renvoyer `preferences` (thème, locale, gps).
 

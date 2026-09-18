@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **Type** | Core |
-| **Status** | In progress — B37.3 (appareils), B37.8 (config + porte de version), B37.5 (idempotence) et B37.6 (sync delta) livrés ; push (B37.4) à venir |
+| **Status** | Active — lot B37 livré (appareils, config + porte de version, idempotence, sync delta, push Expo B37.4) ; ADR 014–017 acceptées |
 | **Phase** | 4 (B37) |
 | **ADR References** | [ADR-014](../adrs/ADR-014-native-mobile-app-platform.md), [ADR-015](../adrs/ADR-015-device-registry-and-native-push.md), [ADR-016](../adrs/ADR-016-mobile-offline-sync-protocol.md), [ADR-017](../adrs/ADR-017-mobile-background-gps.md) |
 | **Owner** | Carl Verreault |
