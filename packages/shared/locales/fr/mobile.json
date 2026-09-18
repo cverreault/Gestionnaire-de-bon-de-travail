@@ -1,0 +1,86 @@
+{
+  "app": { "name": "Dispatch2Go" },
+  "common": {
+    "loading": "Chargement…",
+    "retry": "Réessayer",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "back": "Retour",
+    "offline": "Hors ligne",
+    "error": "Une erreur est survenue"
+  },
+  "workspace": {
+    "title": "Votre espace de travail",
+    "subtitle": "Entrez l'adresse de votre espace Dispatch2Go. Votre administrateur vous l'a transmise.",
+    "urlLabel": "Adresse de l'espace",
+    "urlPlaceholder": "https://www.dispatch2go.com",
+    "connect": "Continuer",
+    "checking": "Vérification…",
+    "invalid": "Adresse invalide ou serveur injoignable",
+    "found": "Espace trouvé : {{name}}",
+    "change": "Changer d'espace"
+  },
+  "login": {
+    "title": "Connexion",
+    "email": "Courriel",
+    "password": "Mot de passe",
+    "submit": "Se connecter",
+    "submitting": "Connexion…",
+    "failed": "Courriel ou mot de passe invalide",
+    "twoFactorTitle": "Code de vérification",
+    "twoFactorHint": "Entrez le code à 6 chiffres de votre application d'authentification.",
+    "twoFactorSubmit": "Valider"
+  },
+  "tabs": {
+    "workOrders": "Mes BT",
+    "profile": "Profil"
+  },
+  "workOrders": {
+    "title": "Mes bons de travail",
+    "empty": "Aucun bon de travail actif.",
+    "today": "Aujourd'hui",
+    "upcoming": "À venir",
+    "unscheduled": "Non planifié",
+    "refresh": "Actualiser",
+    "count_one": "{{count}} BT actif",
+    "count_other": "{{count}} BT actifs"
+  },
+  "workOrder": {
+    "client": "Client",
+    "mandatedBy": "Mandaté par {{name}}",
+    "address": "Adresse",
+    "navigate": "Y aller",
+    "call": "Appeler",
+    "description": "Description",
+    "schedule": "Planification",
+    "scheduledAt": "Planifié le {{date}}",
+    "notes": "Notes",
+    "noNotes": "Aucune note.",
+    "actions": "Actions",
+    "transitioning": "Mise à jour…",
+    "transitionFailed": "Impossible de changer le statut",
+    "conflict": "Ce BT a été modifié entre-temps. Il a été rechargé, vérifiez avant de réessayer.",
+    "reasonRequired": "Un motif est requis",
+    "reasonLabel": "Motif",
+    "completionNotesLabel": "Notes de fin",
+    "confirm": "Confirmer"
+  },
+  "status": {
+    "REQUESTED": "Demandé",
+    "CREATED": "Créé",
+    "ASSIGNED": "Assigné",
+    "DISPATCHED": "Réparti",
+    "EN_ROUTE": "En route",
+    "IN_PROGRESS": "En cours",
+    "COMPLETED_POSITIVE": "Terminé",
+    "COMPLETED_NEGATIVE": "Terminé (échec)"
+  },
+  "profile": {
+    "title": "Profil",
+    "workspace": "Espace de travail",
+    "device": "Identifiant de l'appareil",
+    "version": "Version de l'app",
+    "logout": "Se déconnecter",
+    "logoutConfirm": "Se déconnecter de cet appareil ?"
+  }
+}

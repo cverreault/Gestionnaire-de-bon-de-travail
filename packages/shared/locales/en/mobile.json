@@ -1,0 +1,86 @@
+{
+  "app": { "name": "Dispatch2Go" },
+  "common": {
+    "loading": "Loading…",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "save": "Save",
+    "back": "Back",
+    "offline": "Offline",
+    "error": "Something went wrong"
+  },
+  "workspace": {
+    "title": "Your workspace",
+    "subtitle": "Enter the address of your Dispatch2Go workspace. Your administrator gave it to you.",
+    "urlLabel": "Workspace address",
+    "urlPlaceholder": "https://www.dispatch2go.com",
+    "connect": "Continue",
+    "checking": "Checking…",
+    "invalid": "Invalid address or server unreachable",
+    "found": "Workspace found: {{name}}",
+    "change": "Change workspace"
+  },
+  "login": {
+    "title": "Sign in",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "failed": "Invalid email or password",
+    "twoFactorTitle": "Verification code",
+    "twoFactorHint": "Enter the 6-digit code from your authenticator app.",
+    "twoFactorSubmit": "Verify"
+  },
+  "tabs": {
+    "workOrders": "My WOs",
+    "profile": "Profile"
+  },
+  "workOrders": {
+    "title": "My work orders",
+    "empty": "No active work order.",
+    "today": "Today",
+    "upcoming": "Upcoming",
+    "unscheduled": "Unscheduled",
+    "refresh": "Refresh",
+    "count_one": "{{count}} active WO",
+    "count_other": "{{count}} active WOs"
+  },
+  "workOrder": {
+    "client": "Client",
+    "mandatedBy": "Mandated by {{name}}",
+    "address": "Address",
+    "navigate": "Navigate",
+    "call": "Call",
+    "description": "Description",
+    "schedule": "Schedule",
+    "scheduledAt": "Scheduled {{date}}",
+    "notes": "Notes",
+    "noNotes": "No notes.",
+    "actions": "Actions",
+    "transitioning": "Updating…",
+    "transitionFailed": "Could not change the status",
+    "conflict": "This work order changed in the meantime. It was reloaded, check before retrying.",
+    "reasonRequired": "A reason is required",
+    "reasonLabel": "Reason",
+    "completionNotesLabel": "Completion notes",
+    "confirm": "Confirm"
+  },
+  "status": {
+    "REQUESTED": "Requested",
+    "CREATED": "Created",
+    "ASSIGNED": "Assigned",
+    "DISPATCHED": "Dispatched",
+    "EN_ROUTE": "En route",
+    "IN_PROGRESS": "In progress",
+    "COMPLETED_POSITIVE": "Completed",
+    "COMPLETED_NEGATIVE": "Completed (failed)"
+  },
+  "profile": {
+    "title": "Profile",
+    "workspace": "Workspace",
+    "device": "Device identifier",
+    "version": "App version",
+    "logout": "Sign out",
+    "logoutConfirm": "Sign out of this device?"
+  }
+}
