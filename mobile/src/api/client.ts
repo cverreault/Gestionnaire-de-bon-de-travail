@@ -1,5 +1,5 @@
 import { useSession } from '../stores/session.store';
-import { DEVICE_ID_HEADER } from '@taskmgr/shared';
+import { DEVICE_ID_HEADER, IDEMPOTENCY_KEY_HEADER } from '@taskmgr/shared';
 import i18n from '../i18n';
 
 /**
@@ -73,10 +73,12 @@ export interface RequestOptions {
   /** Skip the bearer token (login, branding). */
   anonymous?: boolean;
   timeoutMs?: number;
+  /** Replay-safe mutation (ADR-016 §3): UUID generated once per operation, reused on retry. */
+  idempotencyKey?: string;
 }
 
 export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, query, headers = {}, allowRefresh = true, anonymous = false, timeoutMs = 15_000 } = opts;
+  const { method = 'GET', body, query, headers = {}, allowRefresh = true, anonymous = false, timeoutMs = 15_000, idempotencyKey } = opts;
   const url = new URL(`${apiBase()}${path}`);
   if (query) {
     for (const [k, v] of Object.entries(query)) {
@@ -95,6 +97,7 @@ export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T
     const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
     if (body !== undefined && !isForm) h['Content-Type'] = 'application/json';
     if (!anonymous && accessToken) h.Authorization = `Bearer ${accessToken}`;
+    if (idempotencyKey) h[IDEMPOTENCY_KEY_HEADER] = idempotencyKey;
     return fetch(url.toString(), {
       method,
       headers: h,

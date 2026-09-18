@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **Type** | Core |
-| **Status** | In progress — B37.3 (appareils) et B37.8 (config + porte de version) livrés ; push, idempotence et sync à venir |
+| **Status** | In progress — B37.3 (appareils), B37.8 (config + porte de version) et B37.5 (idempotence) livrés ; push et sync à venir |
 | **Phase** | 4 (B37) |
 | **ADR References** | [ADR-014](../adrs/ADR-014-native-mobile-app-platform.md), [ADR-015](../adrs/ADR-015-device-registry-and-native-push.md), [ADR-016](../adrs/ADR-016-mobile-offline-sync-protocol.md), [ADR-017](../adrs/ADR-017-mobile-background-gps.md) |
 | **Owner** | Carl Verreault |
@@ -31,7 +31,7 @@ C'est un module de surface, au même titre que `portal` (surface client) : il tr
 - Heartbeat : `lastSeenAt`, `appVersion`, `pushToken`, réponse `{ upgradeRequired }`
 - Expose une configuration publique (`/api/mobile/config`) : versions minimales par plateforme, features, limites, branding tenant
 - Projection de sync delta : curseur keyset `(updatedAt, id)`, liste complète des BT visibles, snapshots de processus, stock et catalogue de pièces
-- Stocke et nettoie (48 h) les clés d'idempotence utilisées par l'interceptor global `@Idempotent()` de `common/`
+- Stocke et nettoie (48 h, cron 04:20) les clés d'idempotence utilisées par l'interceptor `@Idempotent()` de `common/` (contrat `IDEMPOTENCY_STORE`, lié ici car le module est `@Global()`). Marqués en v1 : transition, notes, signatures, upload de pièce jointe, ajout / retrait de pièce sur un BT. Sémantique ADR-016 §3 : rejeu → même réponse + `Idempotency-Replayed: true` ; même clé, autre corps → 422 `IDEMPOTENCY_KEY_REUSED` ; en vol → 409 `IDEMPOTENCY_IN_PROGRESS` ; erreur du handler → clé libérée ; réclamation orpheline > 2 min → reprise
 
 ## API publique
 

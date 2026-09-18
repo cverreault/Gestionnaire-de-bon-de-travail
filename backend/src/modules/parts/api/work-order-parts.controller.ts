@@ -12,6 +12,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { Roles } from '../../../common/decorators/roles.decorator';
+import { Idempotent } from '../../../common/decorators/idempotent.decorator';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { StockService, StockActor } from '../application/stock.service';
 import { AddWorkOrderPartDto } from './dto/add-work-order-part.dto';
@@ -37,6 +38,7 @@ export class WorkOrderPartsController {
   }
 
   @Post()
+  @Idempotent() // B37.5
   @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
@@ -52,6 +54,7 @@ export class WorkOrderPartsController {
   }
 
   @Delete(':rowId')
+  @Idempotent() // B37.5
   @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN)
   @ApiOperation({ summary: 'Retirer une pièce (re-crédite le stock source)' })
   remove(

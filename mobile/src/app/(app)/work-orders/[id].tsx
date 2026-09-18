@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import * as Crypto from 'expo-crypto';
 import { useTranslation } from 'react-i18next';
 import {
   OPTIMISTIC_LOCK_CONFLICT,
@@ -31,14 +32,20 @@ export default function WorkOrderDetailScreen() {
   const wo = useQuery({ queryKey: ['work-order', id], queryFn: () => fetchWorkOrder(id), enabled: !!id });
   const transitions = useQuery({ queryKey: ['work-order', id, 'transitions'], queryFn: () => fetchAvailableTransitions(id), enabled: !!id });
 
+  // One Idempotency-Key per user gesture (ADR-016 §3): a network retry of the
+  // same gesture replays the stored answer instead of transitioning twice.
   const run = useMutation({
     mutationFn: (tr: AvailableTransition) =>
-      transitionWorkOrder(id, {
-        targetStepId: tr.toStatusId,
-        expectedUpdatedAt: wo.data?.updatedAt,
-        ...(tr.requiredFields.includes('negativeReason') ? { negativeReason: reason.trim() } : {}),
-        ...(tr.requiredFields.includes('completionNotes') ? { completionNotes: reason.trim() } : {}),
-      }),
+      transitionWorkOrder(
+        id,
+        {
+          targetStepId: tr.toStatusId,
+          expectedUpdatedAt: wo.data?.updatedAt,
+          ...(tr.requiredFields.includes('negativeReason') ? { negativeReason: reason.trim() } : {}),
+          ...(tr.requiredFields.includes('completionNotes') ? { completionNotes: reason.trim() } : {}),
+        },
+        Crypto.randomUUID(),
+      ),
     onSuccess: () => {
       setPending(null);
       setReason('');
@@ -58,7 +65,7 @@ export default function WorkOrderDetailScreen() {
   });
 
   const saveNote = useMutation({
-    mutationFn: () => addNote(id, note.trim()),
+    mutationFn: () => addNote(id, note.trim(), Crypto.randomUUID()),
     onSuccess: () => {
       setNote('');
       setNoteError(null);

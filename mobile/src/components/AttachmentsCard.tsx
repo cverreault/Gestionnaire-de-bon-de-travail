@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import * as Crypto from 'expo-crypto';
 import { useTranslation } from 'react-i18next';
 import type { AttachmentRef } from '@taskmgr/shared';
 import { ApiError } from '../api/client';
@@ -44,7 +45,7 @@ export default function AttachmentsCard({ workOrderId, canUpload }: Props) {
   const upload = useMutation({
     mutationFn: async (assets: ImagePicker.ImagePickerAsset[]) => {
       for (const asset of assets) {
-        await uploadAttachment(workOrderId, await prepareForUpload(asset));
+        await uploadAttachment(workOrderId, await prepareForUpload(asset), Crypto.randomUUID());
       }
     },
     onSuccess: () => {
