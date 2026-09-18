@@ -48,7 +48,7 @@ We use each for what it is good at instead of forcing one to do both.
 
 ### 2. The roll is imported locally, reduced to what the sheet needs
 
-`scripts/geo/import-role.py` (Python stdlib + `psql COPY`) loads
+`backend/scripts/geo/import-role.py` (Python stdlib + `psql COPY`) loads
 `property_units`, `municipalities` and `land_use_codes` from the
 GeoPackage; ~3.8 M rows, ~1.5 GB with indexes. Tables are platform-wide
 (no `tenant_id`), read-only for the application, refreshed once a year

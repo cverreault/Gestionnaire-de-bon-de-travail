@@ -50,6 +50,7 @@ import SuperAdminAuditPage from './pages/SuperAdminAuditPage';
 import SuperAdminUsersPage from './pages/SuperAdminUsersPage';
 import SuperAdminAllUsersPage from './pages/SuperAdminAllUsersPage';
 import SuperAdminPlatformUsersPage from './pages/SuperAdminPlatformUsersPage';
+import SuperAdminGeoPage from './pages/SuperAdminGeoPage';
 import SuperAdminPlansPage from './pages/SuperAdminPlansPage';
 import MySubscriptionPage from './pages/MySubscriptionPage';
 import ApiKeysPage from './pages/ApiKeysPage';
@@ -257,6 +258,7 @@ export default function App() {
             <Route path="/super-admin/users" element={<SuperAdminUsersPage />} />
             <Route path="/super-admin/all-users" element={<SuperAdminAllUsersPage />} />
             <Route path="/super-admin/platform-users" element={<SuperAdminPlatformUsersPage />} />
+            <Route path="/super-admin/geo" element={<SuperAdminGeoPage />} />
             <Route path="/super-admin/plans" element={<SuperAdminPlansPage />} />
             <Route path="/super-admin/sauvegarde" element={<BackupPage />} />
           </Route>

@@ -34,5 +34,6 @@
   "admin": "Administration",
   "techniciansDragHint": "Techniciens — glisser un BT",
   "inventory": "Inventaire",
-  "myStock": "Mon stock"
+  "myStock": "Mon stock",
+  "saGeo": "Référentiel d’adresses"
 }

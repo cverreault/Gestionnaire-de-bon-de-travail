@@ -54,6 +54,7 @@ import { TenantSubscriptionController } from '../../modules/tenants/api/tenant-s
 import { TenantApiKeysController } from '../../modules/tenants/api/tenant-api-keys.controller';
 import { LocationsController } from '../../modules/locations/api/locations.controller';
 import { GeoController } from '../../modules/geo/api/geo.controller';
+import { SuperAdminGeoController } from '../../modules/geo/api/super-admin-geo.controller';
 
 // ─── Matrix rows ─────────────────────────────────────────────────────────────
 
@@ -278,6 +279,16 @@ const ALL_ROWS: { name: string; rows: MatrixRow[] }[] = [
       { controller: GeoController, method: 'suggest',  expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'GET /geo/suggest' },
       { controller: GeoController, method: 'resolve',  expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'GET /geo/resolve' },
       { controller: GeoController, method: 'property', expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'GET /geo/property' },
+    ],
+  },
+  {
+    name: 'SuperAdminGeoController',
+    rows: [
+      { controller: SuperAdminGeoController, method: 'status',    expectedRoles: [Role.SUPER_ADMIN], note: 'GET /super-admin/geo/status' },
+      { controller: SuperAdminGeoController, method: 'available', expectedRoles: [Role.SUPER_ADMIN], note: 'GET /super-admin/geo/available' },
+      { controller: SuperAdminGeoController, method: 'jobs',      expectedRoles: [Role.SUPER_ADMIN], note: 'GET /super-admin/geo/jobs' },
+      { controller: SuperAdminGeoController, method: 'job',       expectedRoles: [Role.SUPER_ADMIN], note: 'GET /super-admin/geo/jobs/:id' },
+      { controller: SuperAdminGeoController, method: 'start',     expectedRoles: [Role.SUPER_ADMIN], note: 'POST /super-admin/geo/import' },
     ],
   },
   {

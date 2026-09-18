@@ -134,6 +134,7 @@ export default function AdminSidebar() {
     { to: '/super-admin/users',    label: `🔍 ${t('nav:saUsers', { defaultValue: 'Rechercher utilisateur' })}` },
     { to: '/super-admin/all-users', label: `👥 ${t('nav:saAllUsers', { defaultValue: 'Tous les utilisateurs' })}` },
     { to: '/super-admin/platform-users', label: `🛡️ ${t('nav:saPlatformUsers', { defaultValue: 'SUPER_ADMINs' })}` },
+    { to: '/super-admin/geo',      label: `🗺️ ${t('nav:saGeo', { defaultValue: 'Référentiel d’adresses' })}` },
     { to: '/super-admin/sauvegarde', label: `💾 ${t('nav:backup')}` },
     { to: '/super-admin',          label: `⚙️ ${t('nav:saConfig', { defaultValue: 'Configuration plateforme' })}` },
   ];

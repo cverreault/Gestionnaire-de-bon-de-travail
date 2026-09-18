@@ -21,7 +21,7 @@ Le module possède les tables de référence plateforme-wide (`property_units`, 
 | **Admin / Dispatcher** | Champ « Rechercher une adresse » dans tous les formulaires d'adresse (client, adresse autonome, création de BT) : une suggestion remplit numéro, rue, unité, ville, code postal, province et position GPS |
 | **Dispatcher** | Les adresses sont géocodées automatiquement : la carte de répartition n'a plus besoin du bouton « Géocoder » (qui reste disponible) |
 | **Technicien** | Fiche propriété sur le détail d'un BT (usage, logements, étages, année, superficies, lot, matricule, valeur au rôle) pour anticiper l'intervention |
-| **Admin** | Rafraîchissement annuel du rôle via `scripts/geo/import-role.py` |
+| **Admin** | Rafraîchissement annuel du rôle via `backend/scripts/geo/import-role.py` |
 
 ## Capabilities
 
@@ -53,7 +53,11 @@ Les attributs de la propriété sont **copiés sur `client_addresses`** au momen
 
 ## Domain events publiés
 
-Aucun.
+| Event | Quand | Payload |
+|---|---|---|
+| `geo.roll.imported` | Fin réussie d'un import de rôle (portail super-admin) | `{ rollYear, rowsImported, actorUserId, aggregateId: jobId }` |
+
+Consommé par `clients` (`GeoRollListener` : ré-appariement de toutes les adresses) et enregistré par `audit` s'il écoute `geo.**` (non branché en v1).
 
 ## Domain events consommés
 
@@ -61,11 +65,12 @@ Aucun. Le module est appelé par contrat (`GEOCODER`) ou par HTTP.
 
 ## Données possédées
 
-Tables **plateforme-wide** (pas de `tenant_id`, absentes de `TENANT_SCOPED_MODELS`), chargées par `scripts/geo/import-role.py` et **jamais écrites par l'application** :
+Tables **plateforme-wide** (pas de `tenant_id`, absentes de `TENANT_SCOPED_MODELS`), chargées par `backend/scripts/geo/import-role.py` et **jamais écrites par l'application** :
 
 - `property_units` (Prisma `PropertyUnit`) — une ligne par adresse d'unité d'évaluation (~3,8 M) : `id_provinc + address_seq` PK, `code_mun`, `matricule`, `civic_number/_suffix/_end`, `street_generic`, `street_link`, `street_name`, `street_norm`, `orientation`, `unit_number`, `latitude`, `longitude`, `land_use_code`, `year_built`, `storeys`, `dwellings`, `land_area_m2`, `floor_area_m2`, `value_land/building/total` (DOUBLE PRECISION : certains immeubles dépassent 2^31 $), `lot_numbers`, `roll_year`. Index `(latitude, longitude)` et `(code_mun, street_norm, civic_number)`
 - `municipalities` (`Municipality`) — code géographique → nom, ~1 130 lignes
 - `land_use_codes` (`LandUseCode`) — CUBF 4 chiffres → libellé, ~1 750 lignes
+- `geo_import_jobs` (`GeoImportJob`) — journal des imports lancés depuis le portail (statut, dates, lignes, log, erreur)
 
 Lecture directe de `client_addresses` (par `addressId`) : même exception documentée que `dashboard` / `search`.
 
@@ -80,7 +85,20 @@ Lecture directe de `client_addresses` (par `addressId`) : même exception docume
 
 Contrat : `backend/src/common/contracts/geocoder.contract.ts` (`GEOCODER`, `IGeocoder`, `GeocodeInput`, `GeocodeResult`). `GeoModule` est `@Global()` et lie le token, comme `SystemConfigsModule`.
 
-## Import et rafraîchissement du rôle
+## Mise à jour du rôle depuis le portail super-admin (B40.3)
+
+Page `/super-admin/geo` (« Référentiel d'adresses ») : état du rôle chargé (année, lignes, municipalités, dernier import), bouton « Vérifier les mises à jour » (HEAD sur `https://donneesouvertes.affmunqc.net/role/ROLE<année>_GEOPACKAGE.zip` de l'année chargée à l'année prochaine), bouton « Importer le rôle <année> », journal en direct et historique.
+
+| Méthode | Route | Auth | Description |
+|---|---|---|---|
+| `GET` | `/api/super-admin/geo/status` | SUPER_ADMIN | Année chargée, comptes, dernier job, job en cours |
+| `GET` | `/api/super-admin/geo/available` | SUPER_ADMIN | Années publiées par le MAMH |
+| `GET` | `/api/super-admin/geo/jobs`, `/jobs/:id` | SUPER_ADMIN | Historique et journal |
+| `POST` | `/api/super-admin/geo/import` `{ year }` | SUPER_ADMIN | 202 — lance le job en arrière-plan ; 409 si un import tourne déjà |
+
+`RollUpdateService` télécharge le zip et l'index dans `GEO_IMPORT_WORKDIR` (défaut `/tmp`), décompresse, exécute `scripts/geo/import-role.py` (copié dans l'image ; `python3` et `psql` y sont présents) avec `DATABASE_URL`, journalise la sortie (`geo_import_jobs.log`, 16 ko), puis émet **`geo.roll.imported`** (`common/contracts/geo-events.contract.ts`). `clients` l'écoute (`GeoRollListener`) et remet `property_matched_at` à NULL sur toutes les adresses : le balayage de `dispatch-map` les ré-apparie au nouveau rôle. Le répertoire de travail est supprimé à la fin. Adresses Québec est un service en ligne : aucune mise à jour à gérer.
+
+## Import manuel en ligne de commande
 
 ```bash
 # 1. Télécharger (≈ 570 Mo zip → 2,8 Go GeoPackage) + index des municipalités
@@ -89,7 +107,7 @@ curl -o /tmp/role/indexRole2026.csv       https://donneesouvertes.affmunqc.net/r
 unzip -q /tmp/role/ROLE2026_GEOPACKAGE.zip -d /tmp/role
 
 # 2. Importer (≈ 10 min ; TRUNCATE + COPY par table dans une transaction : l'ancien contenu reste en cas d'échec)
-python3 scripts/geo/import-role.py \
+python3 backend/scripts/geo/import-role.py \
   --gpkg /tmp/role/Role2026_geopackage/Role_2026_2.gpkg \
   --index /tmp/role/indexRole2026.csv --year 2026 \
   --dsn taskmgr --psql "docker exec -i taskmgr_postgres psql -U taskmgr"

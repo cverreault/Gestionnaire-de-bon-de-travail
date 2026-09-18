@@ -1655,3 +1655,21 @@ model PropertyUnit {
   @@index([codeMun, streetNorm, civicNumber], map: "idx_property_units_mun_street_num")
   @@map("property_units")
 }
+
+/// B40.3 — journal des imports du rôle d'évaluation déclenchés depuis le portail
+/// super-admin (plateforme-wide, un seul job RUNNING à la fois).
+model GeoImportJob {
+  id            String    @id @default(uuid())
+  rollYear      Int       @map("roll_year")
+  status        String    @default("PENDING")
+  triggeredById String?   @map("triggered_by_id")
+  startedAt     DateTime  @default(now()) @map("started_at")
+  finishedAt    DateTime? @map("finished_at")
+  rowsImported  Int?      @map("rows_imported")
+  /// Dernières lignes de sortie du script (tronquées à ~16 ko).
+  log           String    @default("")
+  error         String?
+
+  @@index([startedAt], map: "idx_geo_import_jobs_started_at")
+  @@map("geo_import_jobs")
+}

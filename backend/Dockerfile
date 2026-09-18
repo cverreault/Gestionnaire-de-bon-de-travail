@@ -50,6 +50,8 @@ COPY --from=builder /app/node_modules/@prisma  ./node_modules/@prisma
 
 # Copier le schéma Prisma (nécessaire pour migrate deploy)
 COPY prisma ./prisma
+# B40.3 — import du rôle d'évaluation déclenché depuis le portail super-admin (python3 + psql présents)
+COPY scripts ./scripts
 
 # Utilisateur non-root pour la sécurité
 RUN addgroup -g 1001 -S nodejs && \

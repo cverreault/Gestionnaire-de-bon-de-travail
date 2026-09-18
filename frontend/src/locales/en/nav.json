@@ -34,5 +34,6 @@
   "admin": "Administration",
   "techniciansDragHint": "Technicians — drag a work order",
   "inventory": "Inventory",
-  "myStock": "My stock"
+  "myStock": "My stock",
+  "saGeo": "Address reference"
 }
