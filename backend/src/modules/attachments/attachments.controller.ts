@@ -10,7 +10,10 @@ import {
   HttpStatus,
   BadRequestException,
   ParseUUIDPipe,
+  Res,
+  StreamableFile,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
@@ -140,6 +143,35 @@ export class AttachmentsController {
     @CurrentUser() currentUser: JwtUser,
   ) {
     return this.attachmentsService.getDownloadUrl(id, currentUser);
+  }
+
+  // ── Content (streaming proxy) ──────────────────────────────────────────────
+
+  @Get('attachments/:id/content')
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN)
+  @ApiOperation({
+    summary: 'Contenu de la pièce jointe (proxy)',
+    description:
+      'Diffuse le fichier via l\'API (B37.9) — utilisé par l\'app mobile, pour qui l\'hôte MinIO pré-signé n\'est pas joignable.',
+  })
+  @ApiParam({ name: 'id', description: 'UUID de la pièce jointe' })
+  @ApiResponse({ status: 200, description: 'Flux du fichier' })
+  @ApiResponse({ status: 404, description: 'Pièce jointe introuvable' })
+  async getContent(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() currentUser: JwtUser,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile> {
+    const { stream, fileName, mimeType, fileSize } =
+      await this.attachmentsService.getContent(id, currentUser);
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Length', String(fileSize));
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+    );
+    res.setHeader('Cache-Control', 'private, max-age=3600');
+    return new StreamableFile(stream);
   }
 
   // ── Delete ─────────────────────────────────────────────────────────────────

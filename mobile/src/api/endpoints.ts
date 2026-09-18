@@ -1,7 +1,9 @@
 import type {
+  AttachmentRef,
   AuthUser,
   AvailableTransitionsResponse,
   LoginResponse,
+  NoteRef,
   PaginatedResponse,
   TenantBranding,
   TransitionDto,
@@ -62,4 +64,36 @@ export function fetchAvailableTransitions(id: string): Promise<AvailableTransiti
 
 export function transitionWorkOrder(id: string, dto: TransitionDto): Promise<WorkOrderSummary> {
   return api<WorkOrderSummary>(`/work-orders/${id}/transition`, { method: 'POST', body: dto });
+}
+
+export function addNote(workOrderId: string, content: string): Promise<NoteRef> {
+  return api<NoteRef>(`/work-orders/${workOrderId}/notes`, { method: 'POST', body: { content } });
+}
+
+export function fetchAttachments(workOrderId: string): Promise<AttachmentRef[]> {
+  return api<AttachmentRef[]>(`/work-orders/${workOrderId}/attachments`);
+}
+
+export interface LocalFile {
+  uri: string;
+  name: string;
+  type: string;
+}
+
+/** Multipart upload (field `file`), same endpoint as the web app. */
+export function uploadAttachment(workOrderId: string, file: LocalFile): Promise<AttachmentRef> {
+  const form = new FormData();
+  // React Native's FormData accepts { uri, name, type } for files.
+  form.append('file', file as unknown as Blob);
+  return api<AttachmentRef>(`/work-orders/${workOrderId}/attachments`, { method: 'POST', body: form, timeoutMs: 60_000 });
+}
+
+/** Image source for the streaming proxy (B37.9): bearer token in headers. */
+export function attachmentContentSource(attachmentId: string): { uri: string; headers: Record<string, string> } {
+  const { workspace, accessToken } = useSession.getState();
+  const base = (workspace?.baseUrl ?? '').replace(/\/+$/, '');
+  return {
+    uri: `${base}/api/attachments/${attachmentId}/content`,
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+  };
 }

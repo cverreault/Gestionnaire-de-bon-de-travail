@@ -177,6 +177,42 @@ export class AttachmentsService {
     };
   }
 
+  // ── Content (streaming proxy, B37.9 / ADR-016 §5) ─────────────────────────
+
+  /**
+   * Streams the object through the API instead of handing out a presigned
+   * URL : MinIO is usually internal-only in self-hosted deployments, so the
+   * mobile app (and any client outside the Docker network) cannot reach the
+   * presigned host. Same object-level RBAC as `getDownloadUrl`.
+   */
+  async getContent(attachmentId: string, currentUser?: CurrentUserRef) {
+    const attachment = await this.prisma.attachment.findUnique({
+      where: { id: attachmentId },
+      include: { workOrder: { select: { assignedToId: true } } },
+    });
+
+    if (!attachment) {
+      throw new NotFoundException(`Pièce jointe #${attachmentId} introuvable`);
+    }
+
+    if (
+      currentUser?.role === Role.TECHNICIAN &&
+      attachment.workOrder.assignedToId !== currentUser.id
+    ) {
+      throw new ForbiddenException(
+        'Vous ne pouvez consulter que les pièces jointes de vos propres bons de travail',
+      );
+    }
+
+    const stream = await this.minio.getObjectStream(attachment.storageKey);
+    return {
+      stream,
+      fileName: attachment.fileName,
+      mimeType: attachment.mimeType,
+      fileSize: attachment.fileSize,
+    };
+  }
+
   // ── Delete ─────────────────────────────────────────────────────────────────
 
   async remove(attachmentId: string) {

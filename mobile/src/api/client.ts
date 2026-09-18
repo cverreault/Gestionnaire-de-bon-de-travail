@@ -92,12 +92,13 @@ export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T
       [DEVICE_ID_HEADER]: deviceId,
       ...headers,
     };
-    if (body !== undefined) h['Content-Type'] = 'application/json';
+    const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
+    if (body !== undefined && !isForm) h['Content-Type'] = 'application/json';
     if (!anonymous && accessToken) h.Authorization = `Bearer ${accessToken}`;
     return fetch(url.toString(), {
       method,
       headers: h,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined ? undefined : isForm ? (body as FormData) : JSON.stringify(body),
       signal: AbortSignal.timeout(timeoutMs),
     });
   };

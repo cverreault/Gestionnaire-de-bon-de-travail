@@ -82,6 +82,14 @@ export interface NoteRef {
   author?: { id: string; firstName: string; lastName: string } | null;
 }
 
+export interface AttachmentRef {
+  id: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  uploadedAt: string;
+}
+
 export interface WorkOrderSummary {
   id: string;
   referenceNumber: string;

@@ -1,5 +1,7 @@
 {
-  "app": { "name": "Dispatch2Go" },
+  "app": {
+    "name": "Dispatch2Go"
+  },
   "common": {
     "loading": "Loading…",
     "retry": "Retry",
@@ -63,7 +65,18 @@
     "reasonRequired": "A reason is required",
     "reasonLabel": "Reason",
     "completionNotesLabel": "Completion notes",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "addNote": "Add a note",
+    "notePlaceholder": "Write a note…",
+    "noteFailed": "Could not save the note",
+    "photos": "Photos and attachments",
+    "noPhotos": "No photo.",
+    "takePhoto": "Take a photo",
+    "choosePhoto": "Choose",
+    "uploading": "Uploading…",
+    "uploadFailed": "Upload failed",
+    "cameraDenied": "Camera access denied. Allow it in Settings.",
+    "photosDenied": "Photo library access denied. Allow it in Settings."
   },
   "status": {
     "REQUESTED": "Requested",

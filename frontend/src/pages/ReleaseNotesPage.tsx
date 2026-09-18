@@ -59,6 +59,25 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.11.0',
+    name: 'App mobile Dispatch2Go : premières actions terrain (B38, B43)',
+    date: 'Septembre 2026',
+    entries: [
+      {
+        type: 'fix',
+        text: "🔁 Les espaces créés depuis l'inscription avaient un processus « Standard BT » sans aucune transition : personne ne pouvait faire avancer un BT. Chaque espace reçoit maintenant le processus complet (8 statuts, 12 transitions) et les espaces existants ont été réparés automatiquement",
+      },
+      {
+        type: 'new',
+        text: "📱 App mobile (iOS / Android, technicien) : connexion à l'espace, liste de mes BT, détail avec appel et navigation, transitions du processus, ajout de notes, prise et envoi de photos",
+      },
+      {
+        type: 'improvement',
+        text: "🖼 Les pièces jointes sont servies par l'API (proxy) et non plus seulement par une URL MinIO pré-signée, injoignable hors du serveur",
+      },
+    ],
+  },
+  {
     version: '2.10.0',
     name: 'Sous-traitance : « Mandaté par » (B42)',
     date: 'Septembre 2026',
