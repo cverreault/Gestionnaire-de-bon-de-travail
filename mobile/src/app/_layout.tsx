@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
@@ -8,6 +8,8 @@ import i18n from '../i18n';
 import { useSession } from '../stores/session.store';
 import { useUpgradeGate } from '../stores/upgrade.store';
 import { useDeviceRegistration } from '../device/useDeviceRegistration';
+import { useDbReady } from '../db/client';
+import { useSyncScheduler } from '../sync/useSync';
 import { useTheme } from '../theme/tokens';
 
 const queryClient = new QueryClient({
@@ -30,6 +32,8 @@ export default function RootLayout() {
   const segments = useSegments();
   const router = useRouter();
   useDeviceRegistration();
+  const { ready: dbReady, error: dbError } = useDbReady();
+  useSyncScheduler(dbReady);
 
   useEffect(() => {
     void hydrate();
@@ -51,7 +55,15 @@ export default function RootLayout() {
     }
   }, [hydrated, workspace, accessToken, user, upgradeRequired, segments, router]);
 
-  if (!hydrated) {
+  if (dbError) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: theme.background }}>
+        <Text style={{ color: theme.danger }}>{String(dbError.message)}</Text>
+      </View>
+    );
+  }
+
+  if (!hydrated || !dbReady) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.background }}>
         <ActivityIndicator color={theme.primary} />

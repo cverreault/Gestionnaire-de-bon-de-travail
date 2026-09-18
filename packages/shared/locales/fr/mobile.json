@@ -105,5 +105,13 @@
     "title": "Mise à jour requise",
     "body": "Cette version de Dispatch2Go ({{current}}) n'est plus prise en charge par votre espace. Installez la version {{min}} ou plus récente pour continuer.",
     "retry": "Revérifier"
+  },
+  "sync": {
+    "syncing": "Synchronisation…",
+    "lastSync": "Synchronisé {{time}}",
+    "never": "Jamais synchronisé",
+    "offline": "Hors ligne — données locales",
+    "failed": "Synchronisation impossible",
+    "now": "Synchroniser"
   }
 }

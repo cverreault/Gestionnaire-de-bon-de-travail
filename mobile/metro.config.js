@@ -18,5 +18,7 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, 'node_modules'),
 ];
 config.resolver.disableHierarchicalLookup = true;
+// drizzle migrations (B38.4) are imported as .sql text through babel inline-import.
+config.resolver.sourceExts.push('sql');
 
 module.exports = config;

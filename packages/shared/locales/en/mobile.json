@@ -105,5 +105,13 @@
     "title": "Update required",
     "body": "This version of Dispatch2Go ({{current}}) is no longer supported by your workspace. Install version {{min}} or newer to continue.",
     "retry": "Check again"
+  },
+  "sync": {
+    "syncing": "Syncing…",
+    "lastSync": "Synced {{time}}",
+    "never": "Never synced",
+    "offline": "Offline — local data",
+    "failed": "Sync failed",
+    "now": "Sync now"
   }
 }

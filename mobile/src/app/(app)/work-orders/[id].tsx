@@ -1,46 +1,58 @@
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import * as Crypto from 'expo-crypto';
 import { useTranslation } from 'react-i18next';
 import {
   OPTIMISTIC_LOCK_CONFLICT,
   formatAddressLine,
   navigationUrl,
+  resolveAvailableTransitions,
   toTelUrl,
-  type AvailableTransition,
+  transitionLabel,
+  type ProcessSnapshotTransition,
 } from '@taskmgr/shared';
 import { ApiError } from '../../../api/client';
-import { addNote, fetchAvailableTransitions, fetchWorkOrder, transitionWorkOrder } from '../../../api/endpoints';
+import { addNote, transitionWorkOrder } from '../../../api/endpoints';
 import AttachmentsCard from '../../../components/AttachmentsCard';
 import StatusBadge from '../../../components/StatusBadge';
+import { useSession } from '../../../stores/session.store';
+import { useSyncStore } from '../../../sync/sync.store';
+import { useLocalWorkOrder } from '../../../sync/useSync';
 import { font, radius, spacing, useTheme } from '../../../theme/tokens';
 
-/** Work-order detail (B38.3): client, address with call/navigate, process transitions, notes, photos. */
+/**
+ * Work-order detail (B38.4): read from the local database (works offline),
+ * transitions resolved from the process snapshot (ADR-016 §7). Mutations are
+ * still sent online and followed by a pull ; the offline queue is B38.5.
+ */
 export default function WorkOrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, i18n } = useTranslation();
   const theme = useTheme();
-  const qc = useQueryClient();
-  const [pending, setPending] = useState<AvailableTransition | null>(null);
+  const user = useSession((s) => s.user);
+  const { pullNow, online } = useSyncStore();
+  const { wo: w, snapshot, loaded } = useLocalWorkOrder(id);
+  const [pending, setPending] = useState<ProcessSnapshotTransition | null>(null);
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [noteError, setNoteError] = useState<string | null>(null);
 
-  const wo = useQuery({ queryKey: ['work-order', id], queryFn: () => fetchWorkOrder(id), enabled: !!id });
-  const transitions = useQuery({ queryKey: ['work-order', id, 'transitions'], queryFn: () => fetchAvailableTransitions(id), enabled: !!id });
+  const locale: 'fr' | 'en' = i18n.language.startsWith('en') ? 'en' : 'fr';
+  const lang = locale === 'en' ? 'en-CA' : 'fr-CA';
+  const transitions = resolveAvailableTransitions(snapshot, w?.currentStepId, user?.role ?? 'TECHNICIAN');
+  const statusById = new Map((snapshot?.statuses ?? []).map((s) => [s.id, s]));
+  const refresh = () => user && void pullNow(user.id);
 
-  // One Idempotency-Key per user gesture (ADR-016 §3): a network retry of the
-  // same gesture replays the stored answer instead of transitioning twice.
   const run = useMutation({
-    mutationFn: (tr: AvailableTransition) =>
+    mutationFn: (tr: ProcessSnapshotTransition) =>
       transitionWorkOrder(
         id,
         {
           targetStepId: tr.toStatusId,
-          expectedUpdatedAt: wo.data?.updatedAt,
+          expectedUpdatedAt: w?.updatedAt,
           ...(tr.requiredFields.includes('negativeReason') ? { negativeReason: reason.trim() } : {}),
           ...(tr.requiredFields.includes('completionNotes') ? { completionNotes: reason.trim() } : {}),
         },
@@ -50,14 +62,13 @@ export default function WorkOrderDetailScreen() {
       setPending(null);
       setReason('');
       setError(null);
-      void qc.invalidateQueries({ queryKey: ['work-order', id] });
-      void qc.invalidateQueries({ queryKey: ['my-work-orders'] });
+      refresh();
     },
     onError: (err) => {
       const code = (err instanceof ApiError && err.body && typeof err.body === 'object' && (err.body as { code?: string }).code) || null;
       if (code === OPTIMISTIC_LOCK_CONFLICT || (err instanceof ApiError && err.status === 409)) {
         setError(t('workOrder.conflict'));
-        void qc.invalidateQueries({ queryKey: ['work-order', id] });
+        refresh();
       } else {
         setError(err instanceof ApiError ? err.message : t('workOrder.transitionFailed'));
       }
@@ -69,25 +80,23 @@ export default function WorkOrderDetailScreen() {
     onSuccess: () => {
       setNote('');
       setNoteError(null);
-      void qc.invalidateQueries({ queryKey: ['work-order', id] });
+      refresh();
     },
     onError: (err) => setNoteError(err instanceof ApiError ? err.message : t('workOrder.noteFailed')),
   });
 
-  function start(tr: AvailableTransition) {
+  function start(tr: ProcessSnapshotTransition) {
     const needsText = tr.requiredFields.some((f) => f === 'negativeReason' || f === 'completionNotes');
     if (needsText) {
       setPending(tr);
       return;
     }
-    Alert.alert(tr.label, undefined, [
+    Alert.alert(transitionLabel(tr, locale), undefined, [
       { text: t('common.cancel'), style: 'cancel' },
       { text: t('workOrder.confirm'), onPress: () => run.mutate(tr) },
     ]);
   }
 
-  const w = wo.data;
-  const lang = i18n.language.startsWith('en') ? 'en-CA' : 'fr-CA';
   const cardStyle = { backgroundColor: theme.surface, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.sm, borderWidth: 1, borderColor: theme.border } as const;
   const label = (k: string) => <Text style={{ color: theme.textMuted, fontSize: font.xs, fontWeight: '700', textTransform: 'uppercase' }}>{t(k)}</Text>;
 
@@ -95,8 +104,8 @@ export default function WorkOrderDetailScreen() {
     <>
       <Stack.Screen options={{ title: w?.referenceNumber ?? '' }} />
       <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md, paddingBottom: 60 }}>
-        {wo.isLoading && <ActivityIndicator color={theme.primary} />}
-        {wo.isError && <Text style={{ color: theme.danger }}>{t('common.error')}</Text>}
+        {!loaded && <ActivityIndicator color={theme.primary} />}
+        {loaded && !w && <Text style={{ color: theme.textMuted }}>{t('workOrders.empty')}</Text>}
         {w && (
           <>
             <View style={{ gap: spacing.xs }}>
@@ -165,21 +174,18 @@ export default function WorkOrderDetailScreen() {
 
             <View style={cardStyle}>
               {label('workOrder.actions')}
-              {transitions.isLoading && <ActivityIndicator color={theme.primary} />}
-              {transitions.data?.transitions.length === 0 && <Text style={{ color: theme.textMuted }}>—</Text>}
-              {transitions.data?.transitions
-                .slice()
-                .sort((a, b) => a.sortOrder - b.sortOrder)
-                .map((tr) => (
-                  <Pressable
-                    key={tr.id}
-                    disabled={run.isPending}
-                    onPress={() => start(tr)}
-                    style={({ pressed }) => ({ backgroundColor: tr.toStatusColor || theme.primary, opacity: pressed || run.isPending ? 0.7 : 1, padding: spacing.md, borderRadius: radius.md, alignItems: 'center' })}
-                  >
-                    <Text style={{ color: '#fff', fontWeight: '700', fontSize: font.md }}>{tr.label}</Text>
-                  </Pressable>
-                ))}
+              {!online && <Text style={{ color: theme.textMuted, fontSize: font.xs }}>{t('sync.offline')}</Text>}
+              {transitions.length === 0 && <Text style={{ color: theme.textMuted }}>—</Text>}
+              {transitions.map((tr) => (
+                <Pressable
+                  key={tr.id}
+                  disabled={run.isPending || !online}
+                  onPress={() => start(tr)}
+                  style={({ pressed }) => ({ backgroundColor: statusById.get(tr.toStatusId)?.color || theme.primary, opacity: pressed || run.isPending || !online ? 0.6 : 1, padding: spacing.md, borderRadius: radius.md, alignItems: 'center' })}
+                >
+                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: font.md }}>{transitionLabel(tr, locale)}</Text>
+                </Pressable>
+              ))}
               {pending && (
                 <View style={{ gap: spacing.sm, marginTop: spacing.sm }}>
                   <Text style={{ color: theme.textSecondary, fontSize: font.sm }}>
@@ -210,8 +216,8 @@ export default function WorkOrderDetailScreen() {
 
             <View style={cardStyle}>
               {label('workOrder.notes')}
-              {(w.notes ?? []).length === 0 && <Text style={{ color: theme.textMuted }}>{t('workOrder.noNotes')}</Text>}
-              {(w.notes ?? []).map((n) => (
+              {w.notes.length === 0 && <Text style={{ color: theme.textMuted }}>{t('workOrder.noNotes')}</Text>}
+              {w.notes.map((n) => (
                 <View key={n.id} style={{ gap: 2 }}>
                   <Text style={{ color: theme.text, fontSize: font.sm }}>{n.content}</Text>
                   <Text style={{ color: theme.textMuted, fontSize: font.xs }}>
@@ -228,16 +234,16 @@ export default function WorkOrderDetailScreen() {
                 style={{ borderWidth: 1, borderColor: theme.border, borderRadius: radius.md, padding: spacing.md, minHeight: 64, color: theme.text, backgroundColor: theme.surfaceAlt, marginTop: spacing.xs }}
               />
               <Pressable
-                disabled={!note.trim() || saveNote.isPending}
+                disabled={!note.trim() || saveNote.isPending || !online}
                 onPress={() => saveNote.mutate()}
-                style={{ padding: spacing.md, borderRadius: radius.md, alignItems: 'center', backgroundColor: theme.primary, opacity: !note.trim() || saveNote.isPending ? 0.6 : 1 }}
+                style={{ padding: spacing.md, borderRadius: radius.md, alignItems: 'center', backgroundColor: theme.primary, opacity: !note.trim() || saveNote.isPending || !online ? 0.6 : 1 }}
               >
                 <Text style={{ color: theme.onPrimary, fontWeight: '700' }}>{saveNote.isPending ? t('common.loading') : t('workOrder.addNote')}</Text>
               </Pressable>
               {noteError && <Text style={{ color: theme.danger, fontSize: font.sm }}>{noteError}</Text>}
             </View>
 
-            <AttachmentsCard workOrderId={id} canUpload />
+            <AttachmentsCard workOrderId={id} attachments={w.attachments} canUpload={online} onChanged={refresh} />
           </>
         )}
       </ScrollView>

@@ -1,5 +1,6 @@
 import type {
   AttachmentRef,
+  SyncPullResponse,
   AuthUser,
   AvailableTransitionsResponse,
   LoginResponse,
@@ -163,4 +164,10 @@ export async function fetchMobileConfig(baseUrl: string): Promise<MobileConfig> 
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json = (await res.json()) as { data?: MobileConfig } & MobileConfig;
   return json.data ?? json;
+}
+
+// ── Sync (B37.6 / B38.4) ─────────────────────────────────────────────────────
+
+export function pullSync(cursor: string | null, limit: number): Promise<SyncPullResponse> {
+  return api<SyncPullResponse>('/me/sync', { query: { cursor: cursor ?? undefined, limit }, timeoutMs: 30_000 });
 }

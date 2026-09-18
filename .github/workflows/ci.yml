@@ -105,7 +105,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Node 22 comme sur les postes de dev : better-sqlite3 (tests du moteur de sync, B38.4)
+          node-version: 22
           cache: npm
           # Lockfile racine : couvre uniquement les workspaces mobile + packages/* (ADR-014)
           cache-dependency-path: package-lock.json
