@@ -1,5 +1,5 @@
 import type { ProcessSnapshot, ProcessSnapshotStatus, SyncWorkOrder, WorkOrderStatus } from '@taskmgr/shared';
-import type { AttachmentPayload, NotePayload, QueuedOp, TransitionPayload } from './queue';
+import type { AttachmentPayload, NotePayload, QueuedOp, SignaturePayload, TransitionPayload } from './queue';
 
 export interface Me {
   id: string;
@@ -52,6 +52,11 @@ export function projectWorkOrder(wo: SyncWorkOrder, ops: QueuedOp[], snapshot: P
     } else if (op.kind === 'attachment') {
       const p = op.payload as AttachmentPayload;
       out.attachments.unshift({ id: op.id, fileName: p.name, fileSize: 0, mimeType: p.type, uploadedAt: op.createdAt });
+    } else if (op.kind === 'signature') {
+      const p = op.payload as SignaturePayload;
+      if (p.signatureClient !== undefined) out.hasSignatureClient = !!p.signatureClient;
+      if (p.signatureTechnician !== undefined) out.hasSignatureTechnician = !!p.signatureTechnician;
+      if (p.signatureClient || p.signatureTechnician) out.signedAt = op.createdAt;
     }
   }
   return out;

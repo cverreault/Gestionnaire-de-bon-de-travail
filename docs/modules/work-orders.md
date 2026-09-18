@@ -68,6 +68,8 @@ Un BT peut être exécuté chez un client (ou un emplacement) **pour le compte d
 - Affiché sur le détail admin et technicien, la liste technicien, l'impression PDF, avec le filtre « Mandaté par » sur la liste admin.
 - Côté `clients` : champ « Client de (donneur d'ordre) », type de client `PRINCIPAL` (« Donneur d'ordre », ajouté à l'enum et à la configuration de chaque tenant par la migration).
 
+> **ADR-016 §4 (B38.6)** — `POST /:id/signatures` accepte `expectedUpdatedAt` (409 `OPTIMISTIC_LOCK_CONFLICT` si périmé) et renvoie `updatedAt`, comme la transition.
+
 > **ADR-016 §2 (B37.6)** — toute mutation enfant rafraîchit `work_orders.updated_at` : `createNote` (ici), upload / suppression de pièce jointe (`attachments`), ajout / retrait de pièce (`parts`). Chaque réponse porte `workOrderUpdatedAt`, que l'app mobile renvoie comme prochain `expectedUpdatedAt`. Conséquence acceptée : un technicien peut recevoir 409 `OPTIMISTIC_LOCK_CONFLICT` après une note du répartiteur ; l'app resynchronise puis rejoue.
 
 ## Domain events publiés

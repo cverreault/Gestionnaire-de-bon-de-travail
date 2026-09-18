@@ -1209,7 +1209,7 @@ export class WorkOrdersService {
   ) {
     const workOrder = await this.prisma.workOrder.findUnique({
       where: { id: workOrderId },
-      select: { id: true, assignedToId: true },
+      select: { id: true, assignedToId: true, updatedAt: true },
     });
     if (!workOrder) {
       throw new NotFoundException(`Bon de travail #${workOrderId} introuvable`);
@@ -1221,6 +1221,16 @@ export class WorkOrdersService {
       throw new ForbiddenException(
         'Seul le technicien assigné peut enregistrer les signatures',
       );
+    }
+    // ADR-016 §4 — same optimistic lock as transition ; the mobile queue
+    // pulls then retries (signatures are additive).
+    if (dto.expectedUpdatedAt && workOrder.updatedAt.toISOString() !== dto.expectedUpdatedAt) {
+      throw new ConflictException({
+        code: 'OPTIMISTIC_LOCK_CONFLICT',
+        message: 'The work order was modified since you last fetched it.',
+        currentUpdatedAt: workOrder.updatedAt.toISOString(),
+        expectedUpdatedAt: dto.expectedUpdatedAt,
+      });
     }
     const data: Record<string, unknown> = {};
     if (dto.signatureClient !== undefined) {
@@ -1247,6 +1257,8 @@ export class WorkOrdersService {
         signatureClient: true,
         signatureTechnician: true,
         signedAt: true,
+        // Fed forward by the mobile queue as the next expectedUpdatedAt.
+        updatedAt: true,
       },
     });
     this.eventEmitter.emit(WO_EVENT_NAMES.STATUS_CHANGED, {

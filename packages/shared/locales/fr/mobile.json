@@ -77,7 +77,17 @@
     "uploading": "Envoi…",
     "uploadFailed": "Envoi impossible",
     "cameraDenied": "Accès à l'appareil photo refusé. Autorisez-le dans les réglages.",
-    "photosDenied": "Accès aux photos refusé. Autorisez-le dans les réglages."
+    "photosDenied": "Accès aux photos refusé. Autorisez-le dans les réglages.",
+    "signatures": "Signatures",
+    "signClient": "Signature du client",
+    "signTechnician": "Ma signature",
+    "signed": "Signée",
+    "notSigned": "Non signée",
+    "signTitle": "Signer ici",
+    "clear": "Effacer",
+    "save": "Enregistrer la signature",
+    "signatureQueued": "Signature en attente d'envoi",
+    "signatureHint": "Faites signer le client sur l'écran, puis enregistrez."
   },
   "status": {
     "REQUESTED": "Demandé",
@@ -131,6 +141,7 @@
     "apply": "Appliquer quand même",
     "retry": "Réessayer",
     "discard": "Abandonner",
-    "discardConfirm": "Abandonner cette opération ? Elle ne sera jamais envoyée."
+    "discardConfirm": "Abandonner cette opération ? Elle ne sera jamais envoyée.",
+    "signature": "Signature ({{who}})"
   }
 }

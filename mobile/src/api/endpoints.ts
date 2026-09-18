@@ -99,6 +99,14 @@ export function attachmentContentSource(attachmentId: string): { uri: string; he
   };
 }
 
+export function saveSignatures(
+  workOrderId: string,
+  dto: { signatureClient?: string | null; signatureTechnician?: string | null; expectedUpdatedAt?: string },
+  idempotencyKey?: string,
+): Promise<WorkOrderSummary> {
+  return api<WorkOrderSummary>(`/work-orders/${workOrderId}/signatures`, { method: 'POST', body: dto, idempotencyKey });
+}
+
 // ── Devices (B37.3 / B37.8) ──────────────────────────────────────────────────
 
 export interface DeviceView {

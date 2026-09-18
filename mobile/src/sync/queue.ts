@@ -2,7 +2,7 @@ import { asc, eq, sql } from 'drizzle-orm';
 import * as s from '../db/schema';
 import type { AppDb } from '../db/types';
 
-export type OpKind = 'transition' | 'note' | 'attachment';
+export type OpKind = 'transition' | 'note' | 'attachment' | 'signature';
 export type OpStatus = 'PENDING' | 'IN_FLIGHT' | 'FAILED' | 'CONFLICT';
 
 export interface TransitionPayload {
@@ -19,7 +19,12 @@ export interface AttachmentPayload {
   name: string;
   type: string;
 }
-export type OpPayload = TransitionPayload | NotePayload | AttachmentPayload;
+export interface SignaturePayload {
+  /** PNG data-URL ; null clears (ADR-016 §6 : signatures stay inline on the work order). */
+  signatureClient?: string | null;
+  signatureTechnician?: string | null;
+}
+export type OpPayload = TransitionPayload | NotePayload | AttachmentPayload | SignaturePayload;
 
 export interface QueuedOp {
   id: string;

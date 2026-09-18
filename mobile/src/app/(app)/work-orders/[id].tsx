@@ -11,6 +11,7 @@ import {
   type ProcessSnapshotTransition,
 } from '@taskmgr/shared';
 import AttachmentsCard from '../../../components/AttachmentsCard';
+import SignaturePad from '../../../components/SignaturePad';
 import StatusBadge from '../../../components/StatusBadge';
 import { useSession } from '../../../stores/session.store';
 import { useSyncStore } from '../../../sync/sync.store';
@@ -33,6 +34,7 @@ export default function WorkOrderDetailScreen() {
   const [pending, setPending] = useState<ProcessSnapshotTransition | null>(null);
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
+  const [signing, setSigning] = useState<'signatureClient' | 'signatureTechnician' | null>(null);
   const blocked = ops.some((o) => o.status === 'CONFLICT' || (o.status === 'FAILED' && o.kind === 'transition'));
   const pendingIds = new Set(ops.map((o) => o.id));
 
@@ -52,6 +54,12 @@ export default function WorkOrderDetailScreen() {
     });
     setPending(null);
     setReason('');
+  }
+
+  async function queueSignature(field: 'signatureClient' | 'signatureTechnician', png: string) {
+    setSigning(null);
+    if (!user) return;
+    await enqueueOp(user.id, id, 'signature', { [field]: png });
   }
 
   async function queueNote() {
@@ -221,7 +229,32 @@ export default function WorkOrderDetailScreen() {
               </Pressable>
             </View>
 
+            <View style={cardStyle}>
+              {label('workOrder.signatures')}
+              {ops.some((o) => o.kind === 'signature') && <Text style={{ color: theme.textMuted, fontSize: font.xs }}>⏳ {t('workOrder.signatureQueued')}</Text>}
+              {(['signatureClient', 'signatureTechnician'] as const).map((field) => {
+                const signed = field === 'signatureClient' ? w.hasSignatureClient : w.hasSignatureTechnician;
+                return (
+                  <View key={field} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm }}>
+                    <Text style={{ color: theme.text, fontSize: font.sm }}>
+                      {t(field === 'signatureClient' ? 'workOrder.signClient' : 'workOrder.signTechnician')} · {signed ? '✅ ' + t('workOrder.signed') : t('workOrder.notSigned')}
+                    </Text>
+                    <Pressable onPress={() => setSigning(field)} style={{ paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: theme.primary }}>
+                      <Text style={{ color: theme.primary, fontWeight: '600', fontSize: font.sm }}>✍️ {t('workOrder.signTitle')}</Text>
+                    </Pressable>
+                  </View>
+                );
+              })}
+              {w.signedAt && <Text style={{ color: theme.textMuted, fontSize: font.xs }}>{new Date(w.signedAt).toLocaleString(lang, { dateStyle: 'short', timeStyle: 'short' })}</Text>}
+            </View>
+
             <AttachmentsCard workOrderId={id} attachments={w.attachments} pendingIds={pendingIds} canUpload onChanged={refresh} />
+            <SignaturePad
+              visible={signing !== null}
+              title={t(signing === 'signatureClient' ? 'workOrder.signClient' : 'workOrder.signTechnician')}
+              onCancel={() => setSigning(null)}
+              onSave={(png) => signing && void queueSignature(signing, png)}
+            />
           </>
         )}
       </ScrollView>

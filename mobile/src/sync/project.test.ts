@@ -41,4 +41,13 @@ describe('projectWorkOrder (ADR-016 §3)', () => {
     expect(statusFromStep(snap.statuses[1], 'CREATED')).toBe('EN_ROUTE');
     expect(statusFromStep({ ...snap.statuses[1], code: 999 }, 'ASSIGNED')).toBe('ASSIGNED');
   });
+
+  it('projects queued signatures as flags', () => {
+    const out = projectWorkOrder({ ...wo, hasSignatureClient: false, hasSignatureTechnician: false, signedAt: null }, [
+      op('s1', 1, 'signature', { signatureClient: 'data:image/png;base64,AAA' }),
+    ], snap, me);
+    expect(out.hasSignatureClient).toBe(true);
+    expect(out.hasSignatureTechnician).toBe(false);
+    expect(out.signedAt).toBe('2026-09-18T10:00:00Z');
+  });
 });
