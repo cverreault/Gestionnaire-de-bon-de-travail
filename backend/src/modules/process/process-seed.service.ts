@@ -1,6 +1,13 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { Role, WorkOrderStatus } from '@prisma/client';
+import {
+  DEFAULT_PROCESS_STATUSES,
+  DEFAULT_PROCESS_TRANSITIONS,
+  createDefaultProcess,
+  toStatusCreateData,
+  toTransitionCreateData,
+} from '../../common/contracts/default-process.contract';
 
 @Injectable()
 export class ProcessSeedService implements OnModuleInit {
@@ -21,100 +28,25 @@ export class ProcessSeedService implements OnModuleInit {
       this.logger.log('Default process already exists — checking backfill...');
       await this.backfillWorkOrders(existing.id);
       await this.backfillRequestedStatus();
+      await this.repairDefaultProcesses();
       return;
     }
 
-    // Static definition data (no DB dependency)
-    const statusDefs = [
-      // B21 — client-portal work requests park here until an admin approves.
-      { code: 50,  name: 'Demandé',            color: '#eab308', position: -1, isRequested: true },
-      { code: 0,   name: 'Créé',              color: '#6b7280', position: 0, isInitial: true },
-      { code: 100, name: 'Assigné',            color: '#3b82f6', position: 1 },
-      { code: 200, name: 'Dispatché',          color: '#8b5cf6', position: 2, isDispatch: true },
-      { code: 300, name: 'En route',           color: '#f59e0b', position: 3 },
-      { code: 400, name: 'En cours',           color: '#f97316', position: 4, isStart: true },
-      { code: 500, name: 'Complété (positif)', color: '#22c55e', position: 5, isTerminalPositive: true },
-      { code: 600, name: 'Complété (négatif)', color: '#ef4444', position: 6, isTerminalNegative: true },
-    ];
-
-    const transitionDefs = [
-      { fromCode: 50,  toCode: 0,   label: 'Approuver la demande', roles: [Role.ADMIN, Role.DISPATCHER], required: [], sort: 0 },
-      { fromCode: 50,  toCode: 600, label: 'Rejeter la demande',   roles: [Role.ADMIN, Role.DISPATCHER], required: ['negativeReason'], sort: 1 },
-      { fromCode: 0,   toCode: 100, label: 'Assigner',             roles: [Role.ADMIN, Role.DISPATCHER], required: ['assignedToId'], sort: 0 },
-      { fromCode: 100, toCode: 200, label: 'Dispatcher',           roles: [Role.ADMIN, Role.DISPATCHER], required: [], sort: 0 },
-      { fromCode: 200, toCode: 300, label: 'Partir en route',      roles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], required: [], sort: 0 },
-      { fromCode: 300, toCode: 400, label: 'Commencer le travail', roles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], required: [], sort: 0 },
-      { fromCode: 400, toCode: 500, label: 'Terminer (succès)',    roles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], required: ['completionNotes'], sort: 0 },
-      { fromCode: 400, toCode: 600, label: 'Terminer (échec)',     roles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], required: ['negativeReason'], sort: 1 },
-      { fromCode: 100, toCode: 0,   label: 'Désassigner',          roles: [Role.ADMIN, Role.DISPATCHER], required: [], sort: 1 },
-      { fromCode: 200, toCode: 100, label: 'Annuler dispatch',     roles: [Role.ADMIN, Role.DISPATCHER], required: [], sort: 1 },
-      { fromCode: 500, toCode: 0,   label: 'Réouvrir',             roles: [Role.ADMIN], required: ['reopenReason'], sort: 0 },
-      { fromCode: 600, toCode: 0,   label: 'Réouvrir',             roles: [Role.ADMIN, Role.DISPATCHER], required: [], sort: 0 },
-    ];
-
-    // 2-4. Create process definition, statuses, and transitions atomically.
-    // A partial failure would otherwise leave the DB in an inconsistent state.
-    const { process, createdStatuses } = await this.prisma.$transaction(async (tx) => {
-      // 2. Create default process definition
-      const process = await tx.processDefinition.create({
-        data: {
-          name: 'Standard BT',
-          description: 'Processus de bon de travail standard (7 étapes)',
-          version: 1,
-          isDefault: true,
-          isActive: true,
-        },
-      });
-
-      // 3. Create 7 statuses (aligned with WorkOrderStatus enum values)
-      const createdStatuses: Array<{ id: string; code: number }> = [];
-      for (const def of statusDefs) {
-        const status = await tx.processStatus.create({
-          data: {
-            processDefinitionId: process.id,
-            code: def.code,
-            name: def.name,
-            color: def.color,
-            position: def.position,
-            isInitial: def.isInitial ?? false,
-            isDispatch: def.isDispatch ?? false,
-            isStart: def.isStart ?? false,
-            isTerminalPositive: def.isTerminalPositive ?? false,
-            isTerminalNegative: def.isTerminalNegative ?? false,
-            isRequested: def.isRequested ?? false,
-          },
-        });
-        createdStatuses.push(status);
-      }
-
-      // Map by code for transition creation
-      const byCode = new Map(createdStatuses.map((s) => [s.code, s]));
-
-      // 4. Create transitions (matching current VALID_TRANSITIONS business rules)
-      for (const t of transitionDefs) {
-        await tx.processTransition.create({
-          data: {
-            processDefinitionId: process.id,
-            fromStatusId: byCode.get(t.fromCode)!.id,
-            toStatusId: byCode.get(t.toCode)!.id,
-            label: t.label,
-            allowedRoles: t.roles,
-            requiredFields: t.required,
-            sortOrder: t.sort,
-          },
-        });
-      }
-
-      return { process, createdStatuses };
-    });
+    // 2-4. Create process definition, statuses, and transitions atomically
+    // (canonical definition shared with the tenant bootstrap).
+    const { processId, statusIdsByCode } = await this.prisma.$transaction((tx) =>
+      createDefaultProcess(tx),
+    );
+    const process = { id: processId, name: 'Standard BT' };
 
     this.logger.log(`Created default process: ${process.name} (${process.id})`);
-    this.logger.log(`Created ${createdStatuses.length} statuses`);
-    this.logger.log(`Created ${transitionDefs.length} transitions`);
+    this.logger.log(`Created ${statusIdsByCode.size} statuses`);
+    this.logger.log(`Created ${DEFAULT_PROCESS_TRANSITIONS.length} transitions`);
 
     // 5. Backfill existing work orders
     await this.backfillWorkOrders(process.id);
     await this.backfillRequestedStatus();
+    await this.repairDefaultProcesses();
 
     // 6. Associate existing TaskTypes to default process
     const updated = await this.prisma.taskType.updateMany({
@@ -259,6 +191,97 @@ export class ProcessSeedService implements OnModuleInit {
       this.logger.log(
         `B21 — added « Demandé » status + approval transitions to ${patched} process definition(s).`,
       );
+    }
+  }
+
+  /**
+   * B43 — tenants created by the old TenantBootstrapService got a default
+   * process with 4 statuses (0, 100, 200 « En progrès », 900) and no
+   * transition at all, so nobody could move a work order. Bring every
+   * default process up to the canonical definition: add missing statuses
+   * (matched by code), fix the mis-seeded code 200 (only when no work order
+   * sits on it), drop the orphan 900 when unused, and add missing
+   * transitions (matched by from/to code). Idempotent; runs at every boot.
+   */
+  private async repairDefaultProcesses(): Promise<void> {
+    const definitions = await this.prisma.processDefinition.findMany({
+      where: { isDefault: true },
+      include: { statuses: true, transitions: true },
+    });
+
+    let repaired = 0;
+    for (const def of definitions) {
+      if (def.transitions.length >= DEFAULT_PROCESS_TRANSITIONS.length) continue;
+
+      const byCode = new Map(def.statuses.map((st) => [st.code, st]));
+      const legacyDispatch = byCode.get(200);
+      if (legacyDispatch && !legacyDispatch.isDispatch) {
+        const inUse = await this.prisma.workOrder.count({
+          where: { currentStepId: legacyDispatch.id },
+        });
+        if (inUse > 0) {
+          this.logger.warn(
+            `Process "${def.name}" (${def.id}) : status 200 « ${legacyDispatch.name} » is not the dispatch step but ${inUse} work order(s) use it — skipping automatic repair, fix it in the process editor.`,
+          );
+          continue;
+        }
+      }
+
+      await this.prisma.$transaction(async (tx) => {
+        for (const canon of DEFAULT_PROCESS_STATUSES) {
+          const data = toStatusCreateData(canon);
+          const current = byCode.get(canon.code);
+          if (!current) {
+            const created = await tx.processStatus.create({
+              data: { tenantId: def.tenantId, processDefinitionId: def.id, ...data },
+            });
+            byCode.set(canon.code, created);
+          } else if (canon.code === 200 && !current.isDispatch) {
+            const updated = await tx.processStatus.update({
+              where: { id: current.id },
+              data,
+            });
+            byCode.set(canon.code, updated);
+          } else if (current.position !== canon.position) {
+            await tx.processStatus.update({
+              where: { id: current.id },
+              data: { position: canon.position },
+            });
+          }
+        }
+
+        const orphan = byCode.get(900);
+        if (orphan) {
+          const referenced =
+            (await tx.workOrder.count({ where: { currentStepId: orphan.id } })) +
+            def.transitions.filter((t) => t.fromStatusId === orphan.id || t.toStatusId === orphan.id).length;
+          if (referenced === 0) {
+            await tx.processStatus.delete({ where: { id: orphan.id } });
+            byCode.delete(900);
+          }
+        }
+
+        const existingPairs = new Set(def.transitions.map((t) => `${t.fromStatusId}→${t.toStatusId}`));
+        for (const canon of DEFAULT_PROCESS_TRANSITIONS) {
+          const from = byCode.get(canon.fromCode);
+          const to = byCode.get(canon.toCode);
+          if (!from || !to || existingPairs.has(`${from.id}→${to.id}`)) continue;
+          await tx.processTransition.create({
+            data: {
+              tenantId: def.tenantId,
+              processDefinitionId: def.id,
+              fromStatusId: from.id,
+              toStatusId: to.id,
+              ...toTransitionCreateData(canon),
+            },
+          });
+        }
+      });
+      repaired += 1;
+    }
+
+    if (repaired > 0) {
+      this.logger.log(`B43 — repaired ${repaired} default process definition(s) missing statuses/transitions.`);
     }
   }
 }

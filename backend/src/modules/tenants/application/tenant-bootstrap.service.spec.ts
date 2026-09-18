@@ -4,7 +4,8 @@
  * Locks the "minimal blank slate" contract :
  *   1. A new tenant gets exactly :
  *      - 1 process definition (isDefault=true, isActive=true)
- *      - 4 process status nodes (Créé → Assigné → En progrès → Complété)
+ *      - the canonical « Standard BT » process : 8 statuses + 12 transitions
+ *        (B43 — the previous 4-status seed had no transition at all)
  *      - 1 WO template + 1 "Notes" section
  *   2. The seed does NOT create task types, client types, or address types
  *      (the admin builds those on demand).
@@ -19,7 +20,14 @@ import { TenantBootstrapService } from './tenant-bootstrap.service';
 function makeTx() {
   return {
     processDefinition: { create: jest.fn().mockResolvedValue({ id: 'proc-1' }) },
-    processStatus: { create: jest.fn().mockResolvedValue({ id: 'st' }) },
+    processStatus: {
+      create: jest
+        .fn()
+        .mockImplementation(({ data }: { data: { code: number } }) =>
+          Promise.resolve({ id: `st-${data.code}`, code: data.code }),
+        ),
+    },
+    processTransition: { create: jest.fn().mockResolvedValue({ id: 'tr' }) },
     workOrderTemplate: {
       create: jest.fn().mockResolvedValue({ id: 'tpl-1' }),
     },
@@ -34,7 +42,7 @@ function makeTx() {
 }
 
 describe('TenantBootstrapService — minimal seed (B7.6)', () => {
-  it('seeds exactly one default process with 4 status nodes', async () => {
+  it('seeds exactly one default process with the 8 canonical statuses and 12 transitions', async () => {
     const tx = makeTx();
     await new TenantBootstrapService().seed(
       tx as unknown as never,
@@ -49,13 +57,32 @@ describe('TenantBootstrapService — minimal seed (B7.6)', () => {
       isActive: true,
     });
 
-    expect(tx.processStatus.create).toHaveBeenCalledTimes(4);
+    expect(tx.processStatus.create).toHaveBeenCalledTimes(8);
     const codes = tx.processStatus.create.mock.calls.map(
-      (c: [{ data: { code: number } }]) => c[0].data.code,
+      (c: [{ data: { code: number; tenantId: string } }]) => c[0].data.code,
     );
     expect(codes.sort((a: number, b: number) => a - b)).toEqual([
-      0, 100, 200, 900,
+      0, 50, 100, 200, 300, 400, 500, 600,
     ]);
+    for (const call of tx.processStatus.create.mock.calls) {
+      expect(call[0].data.tenantId).toBe('tenant-x');
+    }
+
+    // A process without transitions is unusable : the technician must be
+    // able to go Dispatché → En route → En cours → Complété.
+    expect(tx.processTransition.create).toHaveBeenCalledTimes(12);
+    const pairs = tx.processTransition.create.mock.calls.map(
+      (c: [{ data: { fromStatusId: string; toStatusId: string; tenantId: string; allowedRoles: string[] } }]) =>
+        `${c[0].data.fromStatusId}→${c[0].data.toStatusId}`,
+    );
+    expect(pairs).toEqual(
+      expect.arrayContaining(['st-200→st-300', 'st-300→st-400', 'st-400→st-500', 'st-400→st-600']),
+    );
+    const enRoute = tx.processTransition.create.mock.calls.find(
+      (c: [{ data: { fromStatusId: string } }]) => c[0].data.fromStatusId === 'st-200',
+    );
+    expect(enRoute[0].data.allowedRoles).toContain('TECHNICIAN');
+    expect(enRoute[0].data.tenantId).toBe('tenant-x');
   });
 
   it('seeds exactly one default WO template with a single "Notes" section', async () => {
