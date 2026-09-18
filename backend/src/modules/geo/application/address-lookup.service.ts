@@ -175,7 +175,12 @@ export class AddressLookupService implements IGeocoder {
 
 function toResolved(c: AqCandidate): ResolvedAddress {
   const orientation = c.orientation ? ORIENTATION_LABEL[c.orientation.toUpperCase()] ?? c.orientation : null;
-  const street = [c.odonyme ?? '', orientation ?? ''].filter(Boolean).join(' ').trim() || c.address;
+  const odonyme = (c.odonyme ?? '').trim();
+  // Adresses Québec sometimes already carries the orientation inside the
+  // odonym (« Rue Jacques-Cartier Sud » + Dir « S ») — never append it twice.
+  const alreadySuffixed =
+    orientation !== null && odonyme.toLowerCase().endsWith(' ' + orientation.toLowerCase());
+  const street = [odonyme, alreadySuffixed ? '' : orientation ?? ''].filter(Boolean).join(' ').trim() || c.address;
   const streetNumber =
     c.civicNumber !== null ? `${c.civicNumber}${c.civicSuffix ?? ''}` : null;
   return {

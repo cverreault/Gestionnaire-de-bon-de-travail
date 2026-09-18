@@ -101,6 +101,14 @@ describe('AddressLookupService', () => {
       expect(out?.apartment).toBe('506');
     });
 
+    it('does not duplicate an orientation already present in the odonym', async () => {
+      const { service } = make({
+        candidates: [candidate({ odonyme: 'Rue Jacques-Cartier Sud', orientation: 'S', civicNumber: 500, city: 'Farnham' })],
+      });
+      const out = await service.resolve('500 jacques-cartier sud farnham');
+      expect(out?.street).toBe('Rue Jacques-Cartier Sud');
+    });
+
     it('returns null below the confidence threshold (another town guessed)', async () => {
       const { service } = make({ candidates: [candidate({ score: 76, city: 'Saint-Prime' })] });
       expect(await service.resolve('673 rue principale sainte-marthe')).toBeNull();
