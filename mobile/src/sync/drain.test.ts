@@ -32,6 +32,7 @@ function fakeSender(script: Record<string, Array<unknown>>): Sender & { calls: A
     async transition(op, expected) { calls.push({ id: op.id, expected }); return next(op.id) as { updatedAt: string }; },
     async note(op) { calls.push({ id: op.id, expected: null }); return (next(op.id) ?? {}) as { workOrderUpdatedAt?: string }; },
     async attachment(op) { calls.push({ id: op.id, expected: null }); return (next(op.id) ?? {}) as { workOrderUpdatedAt?: string }; },
+    async signature(op, expected) { calls.push({ id: op.id, expected }); return next(op.id) as { updatedAt: string }; },
   };
 }
 
@@ -105,5 +106,16 @@ describe('drain (ADR-016 §3/§4)', () => {
     const bad = fakeSender({ n1: [{ status: 400, message: 'invalid' }], n2: [{}] });
     expect(await drain(db, bad, async () => {})).toMatchObject({ sent: 1, failed: 1 });
     expect((await listOps(db)).map((o) => [o.id, o.status, o.lastError])).toEqual([['n1', 'FAILED', 'invalid']]);
+  });
+
+  it('signatures are additive : 409 → pull and retry with the fresh updatedAt', async () => {
+    const db = openDb();
+    await seedWo(db, 'a');
+    await enqueue(db, { id: 's1', workOrderId: 'a', kind: 'signature', payload: { signatureClient: 'data:image/png;base64,AAA' } });
+    const sender = fakeSender({ s1: [{ status: 409, code: 'OPTIMISTIC_LOCK_CONFLICT' }, { updatedAt: 'T2' }] });
+    const pull = jest.fn(async () => { await db.update(s.workOrders).set({ updatedAt: 'FRESH' }); });
+    expect(await drain(db, sender, pull)).toMatchObject({ sent: 1, conflicts: 0 });
+    expect(sender.calls.map((c) => c.expected)).toEqual(['2026-09-18T10:00:00Z', 'FRESH']);
+    expect(await listOps(db)).toEqual([]);
   });
 });

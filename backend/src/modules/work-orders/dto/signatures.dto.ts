@@ -37,4 +37,13 @@ export class SignaturesDto {
     message: i18nValidationMessage('validation.IS_DATA_URL_PNG'),
   })
   signatureTechnician?: string | null;
+
+  /**
+   * ADR-016 §4 (B38.6) — optimistic lock from the mobile queue : 409
+   * OPTIMISTIC_LOCK_CONFLICT when the row changed since the app last synced.
+   */
+  @ApiPropertyOptional({ description: 'updatedAt attendu (verrou optimiste, mobile).' })
+  @IsOptional()
+  @IsString()
+  expectedUpdatedAt?: string;
 }

@@ -18,6 +18,7 @@ export interface Sender {
   transition(op: QueuedOp, expectedUpdatedAt: string | null): Promise<{ updatedAt: string }>;
   note(op: QueuedOp): Promise<{ workOrderUpdatedAt?: string }>;
   attachment(op: QueuedOp): Promise<{ workOrderUpdatedAt?: string }>;
+  signature(op: QueuedOp, expectedUpdatedAt: string | null): Promise<{ updatedAt: string }>;
 }
 
 export interface DrainResult {
@@ -69,6 +70,9 @@ export async function drain(db: AppDb, sender: Sender, pull: () => Promise<void>
         } else if (op.kind === 'note') {
           const res = await sender.note(op);
           await bumpLocal(db, op.workOrderId, res.workOrderUpdatedAt);
+        } else if (op.kind === 'signature') {
+          const res = await sender.signature(op, await localUpdatedAt(db, op.workOrderId));
+          await bumpLocal(db, op.workOrderId, res.updatedAt);
         } else {
           const res = await sender.attachment(op);
           await bumpLocal(db, op.workOrderId, res.workOrderUpdatedAt);

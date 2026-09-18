@@ -77,7 +77,17 @@
     "uploading": "Uploading…",
     "uploadFailed": "Upload failed",
     "cameraDenied": "Camera access denied. Allow it in Settings.",
-    "photosDenied": "Photo library access denied. Allow it in Settings."
+    "photosDenied": "Photo library access denied. Allow it in Settings.",
+    "signatures": "Signatures",
+    "signClient": "Customer signature",
+    "signTechnician": "My signature",
+    "signed": "Signed",
+    "notSigned": "Not signed",
+    "signTitle": "Sign here",
+    "clear": "Clear",
+    "save": "Save signature",
+    "signatureQueued": "Signature waiting to be sent",
+    "signatureHint": "Have the customer sign on the screen, then save."
   },
   "status": {
     "REQUESTED": "Requested",
@@ -131,6 +141,7 @@
     "apply": "Apply anyway",
     "retry": "Retry",
     "discard": "Discard",
-    "discardConfirm": "Discard this operation? It will never be sent."
+    "discardConfirm": "Discard this operation? It will never be sent.",
+    "signature": "Signature ({{who}})"
   }
 }

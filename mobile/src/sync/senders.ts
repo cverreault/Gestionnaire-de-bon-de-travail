@@ -1,8 +1,8 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { ApiError } from '../api/client';
-import { addNote, transitionWorkOrder, uploadAttachment } from '../api/endpoints';
+import { addNote, saveSignatures, transitionWorkOrder, uploadAttachment } from '../api/endpoints';
 import type { SendFailure, Sender } from './drain';
-import type { AttachmentPayload, NotePayload, QueuedOp, TransitionPayload } from './queue';
+import type { AttachmentPayload, NotePayload, QueuedOp, SignaturePayload, TransitionPayload } from './queue';
 
 function toFailure(err: unknown): SendFailure {
   if (err instanceof ApiError) {
@@ -36,6 +36,11 @@ export const httpSender: Sender = {
     guard(async () => {
       const res = (await addNote(op.workOrderId, (op.payload as NotePayload).content, op.id)) as { workOrderUpdatedAt?: string };
       return { workOrderUpdatedAt: res.workOrderUpdatedAt };
+    }),
+  signature: (op: QueuedOp, expectedUpdatedAt) =>
+    guard(async () => {
+      const wo = await saveSignatures(op.workOrderId, { ...(op.payload as SignaturePayload), expectedUpdatedAt: expectedUpdatedAt ?? undefined }, op.id);
+      return { updatedAt: wo.updatedAt };
     }),
   attachment: (op: QueuedOp) =>
     guard(async () => {
