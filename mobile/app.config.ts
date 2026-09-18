@@ -37,6 +37,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-secure-store',
     'expo-localization',
     [
+      'expo-camera',
+      { cameraPermission: 'Dispatch2Go utilise l\'appareil photo pour scanner les codes-barres des pièces.' },
+    ],
+    [
       'expo-image-picker',
       {
         cameraPermission: "Dispatch2Go utilise l'appareil photo pour joindre des photos aux bons de travail.",

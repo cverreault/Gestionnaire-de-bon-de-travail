@@ -107,6 +107,18 @@ export function saveSignatures(
   return api<WorkOrderSummary>(`/work-orders/${workOrderId}/signatures`, { method: 'POST', body: dto, idempotencyKey });
 }
 
+export function addWorkOrderPart(
+  workOrderId: string,
+  dto: { partId: string; quantity: number; source: 'WAREHOUSE' | 'TECHNICIAN_STOCK' },
+  idempotencyKey?: string,
+): Promise<{ id: string; workOrderUpdatedAt?: string }> {
+  return api(`/work-orders/${workOrderId}/parts`, { method: 'POST', body: dto, idempotencyKey });
+}
+
+export function removeWorkOrderPart(workOrderId: string, rowId: string, idempotencyKey?: string): Promise<{ removed: boolean; workOrderUpdatedAt?: string }> {
+  return api(`/work-orders/${workOrderId}/parts/${rowId}`, { method: 'DELETE', idempotencyKey });
+}
+
 // ── Devices (B37.3 / B37.8) ──────────────────────────────────────────────────
 
 export interface DeviceView {

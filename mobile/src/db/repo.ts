@@ -1,4 +1,4 @@
-import { asc, eq } from 'drizzle-orm';
+import { asc, eq, like, or, sql } from 'drizzle-orm';
 import type { ProcessSnapshot, SyncWorkOrder } from '@taskmgr/shared';
 import * as s from './schema';
 import type { AppDb } from './types';
@@ -55,4 +55,44 @@ export async function ensureOwner(db: AppDb, userId: string): Promise<boolean> {
   await wipeServerTables(db);
   await setMeta(db, META.ownerUserId, userId);
   return true;
+}
+
+export interface CatalogRow {
+  id: string;
+  sku: string;
+  nameFr: string;
+  nameEn: string;
+  unit: string;
+  isActive: boolean;
+}
+
+/** Active catalog rows matching sku / name (case-insensitive contains), 30 max. */
+export async function searchCatalog(db: AppDb, query: string): Promise<CatalogRow[]> {
+  const q = `%${query.trim().toLowerCase()}%`;
+  const base = db.select({ id: s.partsCatalog.id, sku: s.partsCatalog.sku, nameFr: s.partsCatalog.nameFr, nameEn: s.partsCatalog.nameEn, unit: s.partsCatalog.unit, isActive: s.partsCatalog.isActive }).from(s.partsCatalog);
+  const rows = query.trim()
+    ? await base.where(or(like(sql`lower(${s.partsCatalog.sku})`, q), like(sql`lower(${s.partsCatalog.nameFr})`, q), like(sql`lower(${s.partsCatalog.nameEn})`, q))).orderBy(asc(s.partsCatalog.sku)).limit(30)
+    : await base.orderBy(asc(s.partsCatalog.sku)).limit(30);
+  return rows.filter((r) => r.isActive);
+}
+
+/** Exact SKU match (barcode scan), active only. */
+export async function findCatalogBySku(db: AppDb, sku: string): Promise<CatalogRow | null> {
+  const rows = await db.select().from(s.partsCatalog).where(eq(sql`lower(${s.partsCatalog.sku})`, sku.trim().toLowerCase()));
+  const r = rows[0];
+  return r && r.isActive ? { id: r.id, sku: r.sku, nameFr: r.nameFr, nameEn: r.nameEn, unit: r.unit, isActive: r.isActive } : null;
+}
+
+export interface StockRow extends CatalogRow {
+  quantity: number;
+}
+
+/** The technician's truck stock joined with the catalog. */
+export async function listMyStock(db: AppDb): Promise<StockRow[]> {
+  const rows = await db
+    .select({ id: s.partsCatalog.id, sku: s.partsCatalog.sku, nameFr: s.partsCatalog.nameFr, nameEn: s.partsCatalog.nameEn, unit: s.partsCatalog.unit, isActive: s.partsCatalog.isActive, quantity: s.partsStock.quantity })
+    .from(s.partsStock)
+    .innerJoin(s.partsCatalog, eq(s.partsCatalog.id, s.partsStock.partId))
+    .orderBy(asc(s.partsCatalog.sku));
+  return rows;
 }

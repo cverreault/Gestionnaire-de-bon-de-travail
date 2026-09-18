@@ -33,6 +33,8 @@ function fakeSender(script: Record<string, Array<unknown>>): Sender & { calls: A
     async note(op) { calls.push({ id: op.id, expected: null }); return (next(op.id) ?? {}) as { workOrderUpdatedAt?: string }; },
     async attachment(op) { calls.push({ id: op.id, expected: null }); return (next(op.id) ?? {}) as { workOrderUpdatedAt?: string }; },
     async signature(op, expected) { calls.push({ id: op.id, expected }); return next(op.id) as { updatedAt: string }; },
+    async partAdd(op) { calls.push({ id: op.id, expected: null }); return (next(op.id) ?? {}) as { workOrderUpdatedAt?: string }; },
+    async partRemove(op) { calls.push({ id: op.id, expected: null }); return (next(op.id) ?? {}) as { workOrderUpdatedAt?: string }; },
   };
 }
 
@@ -117,5 +119,18 @@ describe('drain (ADR-016 §3/§4)', () => {
     expect(await drain(db, sender, pull)).toMatchObject({ sent: 1, conflicts: 0 });
     expect(sender.calls.map((c) => c.expected)).toEqual(['2026-09-18T10:00:00Z', 'FRESH']);
     expect(await listOps(db)).toEqual([]);
+  });
+
+  it('part additions retry on 409 like notes ; a failed removal blocks the work order', async () => {
+    const db = openDb();
+    await seedWo(db, 'a');
+    await enqueue(db, { id: 'pa', workOrderId: 'a', kind: 'part_add', payload: { partId: 'p', quantity: 1, source: 'TECHNICIAN_STOCK', sku: 'S', name: 'S', unit: 'un' } });
+    await enqueue(db, { id: 'pr', workOrderId: 'a', kind: 'part_remove', payload: { rowId: 'row', sku: 'S' } });
+    await enqueue(db, { id: 'n', workOrderId: 'a', kind: 'note', payload: { content: 'after' } });
+    const conflict = { status: 409, code: 'OPTIMISTIC_LOCK_CONFLICT' };
+    const sender = fakeSender({ pa: [conflict, { workOrderUpdatedAt: 'T1' }], pr: [{ status: 404, message: 'Ligne de pièce introuvable' }] });
+    const out = await drain(db, sender, async () => {});
+    expect(out).toMatchObject({ sent: 1, failed: 1 });
+    expect((await listOps(db)).map((o) => [o.id, o.status])).toEqual([['pr', 'FAILED'], ['n', 'PENDING']]);
   });
 });

@@ -36,7 +36,8 @@
   "tabs": {
     "workOrders": "Mes BT",
     "profile": "Profil",
-    "sync": "Sync"
+    "sync": "Sync",
+    "stock": "Stock"
   },
   "workOrders": {
     "title": "Mes bons de travail",
@@ -87,7 +88,19 @@
     "clear": "Effacer",
     "save": "Enregistrer la signature",
     "signatureQueued": "Signature en attente d'envoi",
-    "signatureHint": "Faites signer le client sur l'écran, puis enregistrez."
+    "signatureHint": "Faites signer le client sur l'écran, puis enregistrez.",
+    "parts": "Pièces utilisées",
+    "noParts": "Aucune pièce.",
+    "addPart": "Ajouter une pièce",
+    "partSearch": "SKU ou nom…",
+    "partQty": "Quantité",
+    "fromTruck": "Mon camion",
+    "fromWarehouse": "Entrepôt",
+    "scan": "Scanner",
+    "removePart": "Retirer",
+    "removePartConfirm": "Retirer cette pièce du BT ? Le stock sera recrédité.",
+    "noMatch": "Aucune pièce trouvée",
+    "scanHint": "Visez le code-barres de la pièce"
   },
   "status": {
     "REQUESTED": "Demandé",
@@ -142,6 +155,13 @@
     "retry": "Réessayer",
     "discard": "Abandonner",
     "discardConfirm": "Abandonner cette opération ? Elle ne sera jamais envoyée.",
-    "signature": "Signature ({{who}})"
+    "signature": "Signature ({{who}})",
+    "part_add": "Pièce ajoutée : {{qty}} × {{sku}}",
+    "part_remove": "Pièce retirée : {{sku}}"
+  },
+  "stock": {
+    "title": "Mon stock",
+    "empty": "Aucune pièce dans votre camion.",
+    "hint": "Le stock est synchronisé avec le serveur ; les ajouts sur BT en attente ne sont pas encore déduits."
   }
 }
