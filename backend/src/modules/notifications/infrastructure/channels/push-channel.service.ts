@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit, Optional } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import * as webpush from 'web-push';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
@@ -7,6 +7,7 @@ import {
   SYSTEM_CONFIG_RESOLVER,
   SYSTEM_CONFIG_CHANGED_EVENT,
 } from '../../../../common/contracts/system-config-resolver.contract';
+import { MOBILE_PUSH_SENDER, type IMobilePushSender } from '../../../../common/contracts/mobile-push.contract';
 
 /**
  * Web Push channel (B1.3, refactored in SA.2.a).
@@ -51,6 +52,8 @@ export class PushChannelService implements OnModuleInit {
     @Inject(SYSTEM_CONFIG_RESOLVER)
     private readonly configs: ISystemConfigResolver,
     private readonly prisma: PrismaService,
+    /** ADR-015 §3 — native push branch, bound by the (global) mobile module. */
+    @Optional() @Inject(MOBILE_PUSH_SENDER) private readonly mobile?: IMobilePushSender,
   ) {}
 
   async onModuleInit() {
@@ -133,6 +136,18 @@ export class PushChannelService implements OnModuleInit {
 
   /** Returns true if at least one subscription was reached successfully. */
   async send(input: PushSendInput): Promise<boolean> {
+    // ADR-015 §3 — a user with a live mobile device gets the native push
+    // only, so a technician keeping the PWA on the same phone isn't notified twice.
+    if (this.mobile && (await this.mobile.hasActiveDevice(input.userId))) {
+      const workOrderId = input.url?.match(/\/bons-de-travail\/([0-9a-f-]{36})/i)?.[1];
+      return this.mobile.sendToUser({
+        userId: input.userId,
+        title: input.title,
+        body: input.body,
+        data: { url: input.url ?? '/', ...(workOrderId ? { workOrderId } : {}) },
+      });
+    }
+
     if (!this.enabled) {
       this.logger.log(
         `[CONSOLE PUSH] userId=${input.userId} title="${input.title}"` +

@@ -48,3 +48,5 @@ export {
   decodeSyncCursor,
 } from './sync-protocol.contract';
 export type { SyncCursor } from './sync-protocol.contract';
+export { MOBILE_PUSH_SENDER } from './mobile-push.contract';
+export type { IMobilePushSender, MobilePushInput } from './mobile-push.contract';

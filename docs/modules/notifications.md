@@ -28,6 +28,7 @@ L'objectif n'est pas "envoyer un email", c'est "valider l'architecture événeme
 - Channel `in-app` : la row est suffisante, lue via `GET /me/notifications`
 - Channel `email` : `EmailChannelService` via nodemailer, opt-in via `SMTP_HOST` (fallback console)
 - Channel `push` : `PushChannelService` via web-push + service worker browser, opt-in via VAPID keys (fallback console)
+- Branche **push natif** (B37.4, ADR-015 §3) : `PushChannelService.send()` injecte `MOBILE_PUSH_SENDER` en `@Optional()` (contrat `common/contracts/mobile-push.contract.ts`, lié par le module `mobile`). Un utilisateur avec un appareil actif (non révoqué, token présent, vu < 30 j) reçoit **seulement** le push natif Expo, avec `data: { url, workOrderId }` ; sinon web-push comme avant. Opt-out plateforme : `mobile.push.enabled=false`.
 - Préférences utilisateur sparses sur `User.preferences.notifications` — listener filtre les canaux avant dispatch
 - Mark-as-read individuel + bulk
 - Émet `notifications.notification.sent` quand un canal a réussi → consommé par `audit` (timeline de delivery)

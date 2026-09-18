@@ -1,6 +1,6 @@
 # ADR-017 — Mobile background GPS: batched upload and client timestamps
 
-- **Status**: Proposed
+- **Status**: Accepted (2026-09-18 — lot B37 livré : appareils, push Expo, idempotence, sync delta, GPS par lots, proxy de pièces jointes)
 - **Date**: 2026-09-16
 - **Deciders**: cverreault
 - **Supersedes**: —

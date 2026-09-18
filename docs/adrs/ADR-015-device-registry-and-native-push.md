@@ -1,6 +1,6 @@
 # ADR-015 — Device registry, native push via Expo Push Service, device sessions
 
-- **Status**: Proposed
+- **Status**: Accepted (2026-09-18 — lot B37 livré : appareils, push Expo, idempotence, sync delta, GPS par lots, proxy de pièces jointes)
 - **Date**: 2026-09-16
 - **Deciders**: cverreault
 - **Supersedes**: —
