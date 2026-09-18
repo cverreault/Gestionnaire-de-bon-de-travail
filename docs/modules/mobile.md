@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **Type** | Core |
-| **Status** | In progress — B37.3 (appareils), B37.8 (config + porte de version) et B37.5 (idempotence) livrés ; push et sync à venir |
+| **Status** | In progress — B37.3 (appareils), B37.8 (config + porte de version), B37.5 (idempotence) et B37.6 (sync delta) livrés ; push (B37.4) à venir |
 | **Phase** | 4 (B37) |
 | **ADR References** | [ADR-014](../adrs/ADR-014-native-mobile-app-platform.md), [ADR-015](../adrs/ADR-015-device-registry-and-native-push.md), [ADR-016](../adrs/ADR-016-mobile-offline-sync-protocol.md), [ADR-017](../adrs/ADR-017-mobile-background-gps.md) |
 | **Owner** | Carl Verreault |
@@ -42,7 +42,7 @@ C'est un module de surface, au même titre que `portal` (surface client) : il tr
 | `GET` | `/api/me/devices` | TECHNICIAN, DISPATCHER, ADMIN | Mes appareils (self-service) |
 | `POST` | `/api/me/devices/:installationId/heartbeat` | TECHNICIAN | Rafraîchit `lastSeenAt`, `appVersion`, `pushToken` ; renvoie `{ upgradeRequired, minAppVersion, latestAppVersion, serverTime }` ; même contrôle d'en-tête que `PUT` |
 | `DELETE` | `/api/me/devices/:installationId` | TECHNICIAN, DISPATCHER, ADMIN | Révoque l'appareil (204) ; émet `mobile.device.revoked` |
-| `GET` | `/api/me/sync` | TECHNICIAN | `?cursor&limit(≤200)` → `{ cursor, hasMore, fullResync, serverTime, visibleWorkOrderIds, workOrders[], processSnapshots{}, partsStock[], partsCatalog[] }` |
+| `GET` | `/api/me/sync` | TECHNICIAN | `?cursor&limit(≤200, défaut 50)` → `{ cursor, hasMore, fullResync, serverTime, visibleWorkOrderIds, workOrders[], processSnapshots{}, partsStock[], partsCatalog[] }`. Visible = `assignedToId = moi ET (non terminé OU updatedAt > now − 14 j)`. `processSnapshots` contient toujours les définitions référencées par la page (petites : 8 statuts, 12 transitions) ; `partsStock` / `partsCatalog` sont filtrés sur leur propre `updatedAt > curseur` (complets au `fullResync`, catalogue actif seulement). Les signatures sont remplacées par `hasSignatureClient` / `hasSignatureTechnician`. |
 
 RBAC objet : toutes les routes `/me/devices/*` filtrent sur `userId === currentUser.id` et `tenantId` courant ; un `installationId` inconnu ou appartenant à un autre utilisateur renvoie 404 (jamais 403, pour ne pas révéler l'existence).
 

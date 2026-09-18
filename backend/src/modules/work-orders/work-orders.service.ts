@@ -1289,16 +1289,23 @@ export class WorkOrdersService {
       );
     }
 
-    return this.prisma.note.create({
-      data: {
-        content: dto.content,
-        workOrderId,
-        authorId: currentUser.id,
-      },
-      include: {
-        author: { select: { id: true, firstName: true, lastName: true } },
-      },
-    });
+    // ADR-016 §2 — a child mutation bumps the aggregate's updatedAt so the
+    // mobile delta pull sees the change ; the app feeds workOrderUpdatedAt
+    // forward as the next expectedUpdatedAt.
+    const [note, touched] = await this.prisma.$transaction([
+      this.prisma.note.create({
+        data: {
+          content: dto.content,
+          workOrderId,
+          authorId: currentUser.id,
+        },
+        include: {
+          author: { select: { id: true, firstName: true, lastName: true } },
+        },
+      }),
+      this.prisma.workOrder.update({ where: { id: workOrderId }, data: { updatedAt: new Date() }, select: { updatedAt: true } }),
+    ]);
+    return { ...note, workOrderUpdatedAt: touched.updatedAt };
   }
 
   async findNotes(workOrderId: string, currentUser?: CurrentUserRef) {

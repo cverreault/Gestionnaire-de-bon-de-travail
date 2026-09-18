@@ -101,18 +101,22 @@ export class AttachmentsService {
     await this.minio.uploadFile(file.buffer, objectKey, file.mimetype, file.size);
 
     // 7. Persist metadata to DB
-    const attachment = await this.prisma.attachment.create({
-      data: {
-        fileName: file.originalname,
-        fileSize: file.size,
-        mimeType: file.mimetype,
-        storageKey: objectKey,
-        workOrderId,
-      },
-    });
+    // ADR-016 §2 — bump the aggregate so the mobile delta pull sees the new file.
+    const [attachment, touched] = await this.prisma.$transaction([
+      this.prisma.attachment.create({
+        data: {
+          fileName: file.originalname,
+          fileSize: file.size,
+          mimeType: file.mimetype,
+          storageKey: objectKey,
+          workOrderId,
+        },
+      }),
+      this.prisma.workOrder.update({ where: { id: workOrderId }, data: { updatedAt: new Date() }, select: { updatedAt: true } }),
+    ]);
 
     this.logger.log(`Attachment ${attachment.id} uploaded for WorkOrder ${workOrderId}`);
-    return attachment;
+    return { ...attachment, workOrderUpdatedAt: touched.updatedAt };
   }
 
   // ── List ───────────────────────────────────────────────────────────────────
@@ -227,10 +231,13 @@ export class AttachmentsService {
     // 1. Remove from MinIO storage
     await this.minio.deleteFile(attachment.storageKey);
 
-    // 2. Remove from DB
-    await this.prisma.attachment.delete({ where: { id: attachmentId } });
+    // 2. Remove from DB and bump the aggregate (ADR-016 §2)
+    const [, touched] = await this.prisma.$transaction([
+      this.prisma.attachment.delete({ where: { id: attachmentId } }),
+      this.prisma.workOrder.update({ where: { id: attachment.workOrderId }, data: { updatedAt: new Date() }, select: { updatedAt: true } }),
+    ]);
 
     this.logger.log(`Attachment ${attachmentId} deleted`);
-    return { message: 'Pièce jointe supprimée avec succès' };
+    return { message: 'Pièce jointe supprimée avec succès', workOrderUpdatedAt: touched.updatedAt };
   }
 }
