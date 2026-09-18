@@ -8,7 +8,7 @@ import { stripAccentsLower } from '../utils/localizedText';
 interface Props {
   value: PrincipalClientRef | null;
   onChange: (value: PrincipalClientRef | null) => void;
-  /** The client of the work order / the client being edited: never selectable as its own principal. */
+  /** Client sheet only: the client being edited cannot be its own « client de ». Leave unset on work orders. */
   excludeId?: string | null;
   label?: string;
   hint?: string;
@@ -39,8 +39,9 @@ export default function PrincipalClientPicker({ value, onChange, excludeId, labe
 
   const principals = useV3Clients({ clientType: ClientType.PRINCIPAL, limit: 100 });
   const needle = stripAccentsLower(query.trim());
-  // The client of the form is itself a principal: it is excluded (a principal
-  // cannot mandate itself) and we say so instead of showing an empty list.
+  // On the client sheet, the client itself is excluded from « client de »
+  // (it cannot be its own principal) and we say so instead of an empty list.
+  // On work orders nothing is excluded: a job on Lumii's own site is mandated by Lumii.
   const excludedSelf = (principals.data?.data ?? []).find((c) => c.id === excludeId) ?? null;
   const local = useMemo(
     () =>
@@ -148,7 +149,7 @@ export default function PrincipalClientPicker({ value, onChange, excludeId, labe
               {excludedSelf && (
                 <div style={{ padding: '0.45rem 0.75rem', fontSize: theme.font.sizeXs, color: theme.colors.warning, borderBottom: theme.borders.default }}>
                   ⚠️ {t('fields.principalSelfExcluded', {
-                    defaultValue: '{{name}} est déjà le client de ce BT : un donneur d’ordre ne peut pas se mandater lui-même. Choisissez comme client la personne chez qui la job est faite, puis {{name}} ici.',
+                    defaultValue: '{{name}} ne peut pas être son propre donneur d’ordre.',
                     name: principalDisplayName(toRef(excludedSelf)),
                   })}
                 </div>

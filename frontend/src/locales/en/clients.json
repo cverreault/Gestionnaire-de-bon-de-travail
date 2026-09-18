@@ -27,7 +27,7 @@
     "principalCreating": "Creating…",
     "principalCreateConfirm": "Create and select",
     "principalCreateError": "Could not create, check the fields.",
-    "principalSelfExcluded": "{{name}} is already the client of this work order: a principal cannot mandate itself. Pick the person the job is done for as the client, then {{name}} here.",
+    "principalSelfExcluded": "{{name}} cannot be its own principal.",
     "principalNoOther": "No other principal."
   },
   "types": {
