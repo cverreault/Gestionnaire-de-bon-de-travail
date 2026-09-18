@@ -401,6 +401,9 @@ export default function ProfilePage() {
       {/* ── Section : Suivi GPS (TECH only) ── */}
       <GpsTrackingSection />
 
+      {/* ── Section : app mobile (B38.11) ── */}
+      <MobileWorkspaceSection />
+
       {/* ── Section 2 : Change password ── */}
       <div style={{ ...cardStyles.card }}>
         <div style={{ ...cardStyles.cardHeader }}>
@@ -1106,4 +1109,35 @@ function extractErr(err: unknown): string {
   if (Array.isArray(m)) return m.join(' · ');
   if (typeof m === 'string') return m;
   return err instanceof Error ? err.message : 'Erreur inconnue';
+}
+
+/**
+ * B38.11 — QR code of this workspace's URL for the Dispatch2Go mobile app
+ * (ADR-014 §3 : the app asks for the workspace URL first). Encoded on the
+ * client from the address the user is browsing ; no endpoint involved.
+ */
+function MobileWorkspaceSection() {
+  const { t } = useTranslation('auth');
+  const url = typeof window !== 'undefined' ? window.location.origin : '';
+  if (!url) return null;
+  return (
+    <div style={{ ...cardStyles.card, marginTop: '1.5rem' }}>
+      <div style={{ ...cardStyles.cardHeader }}>
+        <h2 style={{ ...cardStyles.cardTitle }}>📱 {t('auth:profilePage.mobileTitle', { defaultValue: 'App mobile Dispatch2Go' })}</h2>
+      </div>
+      <div style={{ ...cardStyles.cardBody, display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ background: '#fff', padding: 8, borderRadius: 8 }}>
+          <QRCodeSVG value={url} size={140} />
+        </div>
+        <div style={{ flex: 1, minWidth: 220 }}>
+          <p style={{ color: theme.colors.textMuted, margin: 0, fontSize: theme.font.sizeSm }}>
+            {t('auth:profilePage.mobileDescription', { defaultValue: "Dans l'app Dispatch2Go (iOS / Android), à l'écran « Votre espace de travail », touchez « Scanner » et visez ce code. L'adresse de votre espace sera remplie automatiquement." })}
+          </p>
+          <p style={{ margin: '8px 0 0', fontSize: theme.font.sizeSm, color: theme.colors.text }}>
+            <strong>{t('auth:profilePage.mobileUrl', { defaultValue: 'Adresse :' })}</strong> <code>{url}</code>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 }

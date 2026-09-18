@@ -1,0 +1,18 @@
+# Maestro flow — open the first work order, add a note offline, see it drain (B38.10).
+# Assumes 01-login.yaml ran (session persisted) and the technician has ≥ 1 active work order.
+appId: com.dispatch2go.app
+---
+- launchApp
+- assertVisible: "Mes bons de travail"
+- tapOn:
+    index: 0
+    text: ".*-\\d{8}-\\d{4}"   # reference number like AS-20260917-0001
+- assertVisible: "Notes"
+- setAirplaneMode: enabled
+- tapOn: "Écrire une note…"
+- inputText: "Note Maestro hors ligne"
+- tapOn: "Ajouter une note"
+- assertVisible: "⏳ Note Maestro hors ligne"
+- setAirplaneMode: disabled
+- tapOn: "Sync"
+- assertVisible: "Rien en attente. Tout est synchronisé."

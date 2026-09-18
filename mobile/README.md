@@ -31,6 +31,8 @@ Le SDK iOS 27 fait planter au lancement (`EXC_BREAKPOINT` dans `___UIApplication
 ```
 mobile/
 ├── app.config.ts     # identité (Dispatch2Go, com.dispatch2go.app, dispatch2go://), plugins
+├── eas.json          # profils de build development / preview / production (docs/mobile/release.md)
+├── .maestro/         # flows de bout en bout (connexion, note hors ligne)
 ├── plugins/          # config plugins maison (cycle de vie UIScene pour iOS 27)
 ├── metro.config.js   # résolution monorepo (packages/shared) + .sql (migrations drizzle)
 ├── drizzle/          # migrations SQLite générées (npm run db:generate après src/db/schema.ts)

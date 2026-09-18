@@ -3,6 +3,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput,
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { fetchBranding } from '../api/endpoints';
+import BarcodeScanner from '../components/BarcodeScanner';
 import { useSession } from '../stores/session.store';
 import { font, radius, spacing, useTheme } from '../theme/tokens';
 
@@ -28,9 +29,10 @@ export default function WorkspaceScreen() {
   const { workspace, setWorkspace } = useSession();
   const [url, setUrl] = useState(workspace?.baseUrl ?? DEFAULT_URL);
   const [state, setState] = useState<'idle' | 'checking' | 'error'>('idle');
+  const [scanning, setScanning] = useState(false);
 
-  async function submit() {
-    const base = normalizeUrl(url);
+  async function submit(candidate?: string) {
+    const base = normalizeUrl(candidate ?? url);
     if (!base) {
       setState('error');
       return;
@@ -67,6 +69,18 @@ export default function WorkspaceScreen() {
           }}
         />
         {state === 'error' && <Text style={{ color: theme.danger, fontSize: font.sm }}>{t('workspace.invalid')}</Text>}
+        <Pressable onPress={() => setScanning(true)} style={{ alignSelf: 'flex-start', paddingVertical: spacing.sm }}>
+          <Text style={{ color: theme.primary, fontWeight: '600', fontSize: font.sm }}>📷 {t('workspace.scan')}</Text>
+        </Pressable>
+        <BarcodeScanner
+          visible={scanning}
+          onCancel={() => setScanning(false)}
+          onScanned={(value) => {
+            setScanning(false);
+            setUrl(value);
+            void submit(value);
+          }}
+        />
         <Pressable
           onPress={() => void submit()}
           disabled={state === 'checking'}

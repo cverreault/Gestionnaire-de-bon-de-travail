@@ -1,0 +1,66 @@
+# Dispatch2Go mobile — builds et publication (B38.10)
+
+Pré-requis : comptes Apple Developer et Google Play activés (voir [roadmap](roadmap.md), pré-requis), `npm i -g eas-cli`, connexion `eas login` avec le compte Expo de l'organisation.
+
+## 1. Initialiser le projet EAS (une fois)
+
+```bash
+cd mobile
+eas init
+```
+
+`eas init` crée le projet et affiche son `projectId`. Il est lu par `app.config.ts` via `EAS_PROJECT_ID` : le mettre dans l'environnement des builds EAS (`eas env:create --scope project --name EAS_PROJECT_ID --value <id> --visibility plaintext`) et dans le shell de dev pour tester le push sur un appareil physique. Sans lui, l'app fonctionne mais le token push est indisponible (statut sur le profil).
+
+## 2. Profils (`mobile/eas.json`)
+
+| Profil | Usage | Bundle id | Distribution |
+|---|---|---|---|
+| `development` | dev client pour simulateur iOS / APK Android, `EAS_BUILD_PROFILE=development` → suffixe `.dev` et nom « Dispatch2Go (dev) » | `com.dispatch2go.app.dev` | interne |
+| `preview` | build de test réaliste (TestFlight interne / APK) | `com.dispatch2go.app` | interne |
+| `production` | store, `autoIncrement` du numéro de build | `com.dispatch2go.app` | store |
+
+```bash
+eas build --profile development --platform ios     # simulateur
+eas build --profile preview --platform android     # APK à installer à la main
+eas build --profile production --platform all
+eas submit --profile production --platform ios     # TestFlight puis App Store
+eas submit --profile production --platform android # Play, piste interne
+```
+
+Renseigner `submit.production.ios.appleTeamId` dans `eas.json` (identifiant d'équipe Apple).
+
+## 3. Credentials
+
+EAS gère les certificats iOS, la clé APNs et le keystore Android (`eas credentials`). Rien n'est commité : `.gitignore` exclut `google-services.json`, `*.keystore`, `*.p8`, `*.mobileprovision`. Le push passe par Expo Push Service (ADR-015) : aucune clé FCM / APNs côté serveur Dispatch2Go.
+
+## 4. Déclarations de store
+
+- **Google Play, localisation en arrière-plan** : formulaire « Autorisation de localisation » + vidéo montrant le consentement dans le profil, l'activation seulement pendant un BT en route / en cours et la désactivation. Texte à reprendre de l'écran de consentement de l'app. Refus possible : l'app retombe sur « pendant l'utilisation » sans autre changement.
+- **App Store, confidentialité** : localisation (liée à l'utilisateur, usage « fonctionnalité de l'app »), photos (pièces jointes), identifiant d'appareil (installationId, non publicitaire).
+
+## 5. Porte de version
+
+Le serveur bloque les builds trop anciens : clés `mobile.min-app-version.ios` / `.android` et `mobile.latest-app-version` (écran SA « Configuration plateforme », fallback env `MOBILE_MIN_APP_VERSION_*`). Monter la version minimale seulement après que le build correspondant est disponible sur les deux stores.
+
+## 6. Versionnage
+
+`version` dans `app.config.ts` (semver, `appVersionSource: local`) ; le numéro de build est auto-incrémenté par EAS en production. À chaque changement natif (nouveau module Expo), reconstruire avec EAS ; les changements JS seuls peuvent passer par EAS Update plus tard (canaux déjà nommés dans `eas.json`, non activé en v1).
+
+## 7. Tests de bout en bout (Maestro)
+
+```bash
+curl -Ls "https://get.maestro.mobile.dev" | bash
+cd mobile
+maestro test .maestro/01-login.yaml -e WORKSPACE=https://www.dispatch2go.com -e EMAIL=... -e PASSWORD=...
+maestro test .maestro/02-work-order-offline.yaml
+```
+
+Les flows utilisent les libellés FR de l'app ; lancer le simulateur en français. Non exécutés en CI (pas de build EAS en CI en v1).
+
+## 8. Checklist de publication
+
+1. `npm run check` vert à la racine ; CI verte.
+2. `eas build --profile preview` sur les deux plateformes ; tester connexion, transitions hors ligne, photo, signature, GPS, push (appareil physique).
+3. Notes de version (`frontend/src/pages/ReleaseNotesPage.tsx`) et `version` dans `app.config.ts`.
+4. `eas build --profile production --platform all`, puis `eas submit`.
+5. Après publication : monter `mobile.latest-app-version`, et `mobile.min-app-version.*` seulement si une rupture d'API l'exige.

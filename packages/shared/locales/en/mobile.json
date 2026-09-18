@@ -20,7 +20,8 @@
     "checking": "Checking…",
     "invalid": "Invalid address or server unreachable",
     "found": "Workspace found: {{name}}",
-    "change": "Change workspace"
+    "change": "Change workspace",
+    "scan": "Scan the QR from the web profile"
   },
   "login": {
     "title": "Sign in",

@@ -20,7 +20,8 @@
     "checking": "Vérification…",
     "invalid": "Adresse invalide ou serveur injoignable",
     "found": "Espace trouvé : {{name}}",
-    "change": "Changer d'espace"
+    "change": "Changer d'espace",
+    "scan": "Scanner le QR du profil web"
   },
   "login": {
     "title": "Connexion",
