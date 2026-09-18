@@ -16,9 +16,17 @@
     "principalClient": "Client de (donneur d’ordre)",
     "principalClientHint": "optionnel — sous-traitance",
     "principalClear": "Retirer",
-    "principalSearch": "Rechercher un donneur d’ordre…",
+    "principalSearch": "Choisir ou rechercher un donneur d’ordre…",
     "principalNoResult": "Aucun client trouvé",
-    "clientOf": "Client de {{name}}"
+    "clientOf": "Client de {{name}}",
+    "principalToggle": "Ouvrir la liste",
+    "principalLoading": "Chargement…",
+    "principalEmpty": "Aucun donneur d’ordre pour l’instant.",
+    "principalCreate": "Créer un donneur d’ordre",
+    "principalCancel": "Annuler",
+    "principalCreating": "Création…",
+    "principalCreateConfirm": "Créer et sélectionner",
+    "principalCreateError": "Création impossible, vérifiez les champs."
   },
   "types": {
     "RESIDENTIAL": "Résidentiel",
@@ -81,6 +89,8 @@
     "no": "Non",
     "pageOf": "Page {{page}} / {{total}}",
     "newClientTitle": "Nouveau client",
-    "editClientTitle": "Modifier — {{name}}"
+    "editClientTitle": "Modifier — {{name}}",
+    "createPrincipal": "➕ Donneur d’ordre",
+    "createPrincipalTitle": "Nouveau donneur d’ordre"
   }
 }

@@ -16,9 +16,17 @@
     "principalClient": "Client of (principal)",
     "principalClientHint": "optional — subcontracting",
     "principalClear": "Remove",
-    "principalSearch": "Search a principal…",
+    "principalSearch": "Pick or search a principal…",
     "principalNoResult": "No client found",
-    "clientOf": "Client of {{name}}"
+    "clientOf": "Client of {{name}}",
+    "principalToggle": "Open the list",
+    "principalLoading": "Loading…",
+    "principalEmpty": "No principal yet.",
+    "principalCreate": "Create a principal",
+    "principalCancel": "Cancel",
+    "principalCreating": "Creating…",
+    "principalCreateConfirm": "Create and select",
+    "principalCreateError": "Could not create, check the fields."
   },
   "types": {
     "RESIDENTIAL": "Residential",
@@ -81,6 +89,8 @@
     "no": "No",
     "pageOf": "Page {{page}} / {{total}}",
     "newClientTitle": "New client",
-    "editClientTitle": "Edit — {{name}}"
+    "editClientTitle": "Edit — {{name}}",
+    "createPrincipal": "➕ Principal",
+    "createPrincipalTitle": "New principal"
   }
 }

@@ -84,3 +84,8 @@ export function localizedDescription<T extends { descriptionFr?: string | null; 
   if (bilingual) return bilingual;
   return row.description ?? '';
 }
+
+/** Lowercase, accents stripped — for accent-insensitive client-side filtering. */
+export function stripAccentsLower(value: string): string {
+  return value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
