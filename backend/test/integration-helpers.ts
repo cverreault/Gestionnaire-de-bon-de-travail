@@ -107,6 +107,8 @@ export async function resetDb(prisma: PrismaClient): Promise<void> {
       audit_logs,
       notifications,
       push_subscriptions,
+      devices,
+      idempotency_keys,
       refresh_tokens,
       notes,
       attachments,

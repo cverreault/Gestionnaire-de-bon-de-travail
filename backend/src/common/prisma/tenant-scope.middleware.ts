@@ -49,6 +49,9 @@ const TENANT_SCOPED_MODELS = new Set<string>([
   'Notification',
   'PushSubscription',
   'PortalInvitation',
+  // B37 — app mobile
+  'Device',
+  'IdempotencyKey',
   // B29 — added for defence-in-depth: these carry tenantId and are already
   // manually scoped in their services, but middleware coverage prevents any
   // future query path from silently leaking cross-tenant.
