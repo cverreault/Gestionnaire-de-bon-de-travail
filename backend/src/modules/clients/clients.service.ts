@@ -41,6 +41,7 @@ const CLIENT_LIST_SELECT = {
   id: true,
   firstName: true,
   lastName: true,
+  companyName: true,
   email: true,
   phone: true,
   clientType: true,

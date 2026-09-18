@@ -39,6 +39,9 @@ export default function PrincipalClientPicker({ value, onChange, excludeId, labe
 
   const principals = useV3Clients({ clientType: ClientType.PRINCIPAL, limit: 100 });
   const needle = stripAccentsLower(query.trim());
+  // The client of the form is itself a principal: it is excluded (a principal
+  // cannot mandate itself) and we say so instead of showing an empty list.
+  const excludedSelf = (principals.data?.data ?? []).find((c) => c.id === excludeId) ?? null;
   const local = useMemo(
     () =>
       (principals.data?.data ?? [])
@@ -142,12 +145,22 @@ export default function PrincipalClientPicker({ value, onChange, excludeId, labe
                   {c.companyName && <span style={{ color: theme.colors.textMuted }}> · {c.firstName} {c.lastName}</span>}
                 </div>
               ))}
+              {excludedSelf && (
+                <div style={{ padding: '0.45rem 0.75rem', fontSize: theme.font.sizeXs, color: theme.colors.warning, borderBottom: theme.borders.default }}>
+                  ⚠️ {t('fields.principalSelfExcluded', {
+                    defaultValue: '{{name}} est déjà le client de ce BT : un donneur d’ordre ne peut pas se mandater lui-même. Choisissez comme client la personne chez qui la job est faite, puis {{name}} ici.',
+                    name: principalDisplayName(toRef(excludedSelf)),
+                  })}
+                </div>
+              )}
               {options.length === 0 && (
                 <div style={{ padding: '0.45rem 0.75rem', fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>
                   {principals.isLoading || wide.isFetching
                     ? t('fields.principalLoading', { defaultValue: 'Chargement…' })
                     : needle
                     ? t('fields.principalNoResult', { defaultValue: 'Aucun client trouvé' })
+                    : excludedSelf
+                    ? t('fields.principalNoOther', { defaultValue: 'Aucun autre donneur d’ordre.' })
                     : t('fields.principalEmpty', { defaultValue: 'Aucun donneur d’ordre pour l’instant.' })}
                 </div>
               )}
