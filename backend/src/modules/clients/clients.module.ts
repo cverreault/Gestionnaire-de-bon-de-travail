@@ -5,6 +5,7 @@ import { ClientsService } from './clients.service';
 import { ExternalClientService } from './external-client.service';
 import { ClientGdprController } from './gdpr/client-gdpr.controller';
 import { ClientGdprService } from './gdpr/client-gdpr.service';
+import { GeoRollListener } from './application/geo-roll.listener';
 
 /**
  * Module Clients — gère deux sources de données :
@@ -16,7 +17,7 @@ import { ClientGdprService } from './gdpr/client-gdpr.service';
  */
 @Module({
   controllers: [ClientsController, ClientsCsvController, ClientGdprController],
-  providers: [ClientsService, ExternalClientService, ClientGdprService],
+  providers: [ClientsService, ExternalClientService, ClientGdprService, GeoRollListener],
   exports: [ClientsService, ExternalClientService],
 })
 export class ClientsModule {}

@@ -79,6 +79,10 @@ const VERSIONS: ReleaseVersion[] = [
         type: 'improvement',
         text: "🗂️ La fiche propriété et la provenance du GPS sont enregistrées directement sur l'adresse au géocodage (visibles sur la fiche client, avec un bouton « Actualiser » pour admin et dispatcher) ; les adresses existantes sont rattrapées automatiquement",
       },
+      {
+        type: 'infra',
+        text: "🗺️ Portail super-admin : page « Référentiel d'adresses » pour vérifier si le MAMH a publié un nouveau rôle d'évaluation et l'importer en un clic, avec journal en direct et historique ; après l'import, toutes les adresses sont ré-appariées automatiquement",
+      },
     ],
   },
   {

@@ -16,3 +16,5 @@ export type {
 export { WORK_ORDER_HOOKS } from './work-order-hook.interface';
 export { GEOCODER, propertyFactsToAddressColumns, ADDRESS_GEO_RESET } from './geocoder.contract';
 export type { IGeocoder, GeocodeInput, GeocodeResult, GeocodeSource, PropertyFacts, PropertyLookupInput } from './geocoder.contract';
+export { GEO_ROLL_IMPORTED_EVENT } from './geo-events.contract';
+export type { GeoRollImportedPayload } from './geo-events.contract';

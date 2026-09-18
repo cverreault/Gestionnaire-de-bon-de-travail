@@ -515,3 +515,55 @@ export async function getBranding(): Promise<TenantBranding> {
   );
   return data.data;
 }
+
+// ─── Référentiel géographique (B40.3) ───────────────────────────────────
+
+export interface RollJob {
+  id: string;
+  rollYear: number;
+  status: 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED';
+  startedAt: string;
+  finishedAt: string | null;
+  rowsImported: number | null;
+  error: string | null;
+  log: string;
+}
+
+export interface RollStatus {
+  loadedRollYear: number | null;
+  rows: number;
+  municipalities: number;
+  lastJob: RollJob | null;
+  running: RollJob | null;
+}
+
+export interface RollYearAvailability {
+  year: number;
+  available: boolean;
+  loaded: boolean;
+}
+
+export async function getRollStatus(): Promise<RollStatus> {
+  const { data } = await api.get<ApiResponse<RollStatus>>('/super-admin/geo/status');
+  return data.data;
+}
+
+export async function checkRollAvailability(): Promise<RollYearAvailability[]> {
+  const { data } = await api.get<ApiResponse<{ years: RollYearAvailability[] }>>('/super-admin/geo/available', { timeout: 60_000 });
+  return data.data.years;
+}
+
+export async function listRollJobs(): Promise<RollJob[]> {
+  const { data } = await api.get<ApiResponse<{ jobs: RollJob[] }>>('/super-admin/geo/jobs');
+  return data.data.jobs;
+}
+
+export async function getRollJob(id: string): Promise<RollJob> {
+  const { data } = await api.get<ApiResponse<RollJob>>(`/super-admin/geo/jobs/${id}`);
+  return data.data;
+}
+
+export async function startRollImport(year: number): Promise<RollJob> {
+  const { data } = await api.post<ApiResponse<RollJob>>('/super-admin/geo/import', { year });
+  return data.data;
+}

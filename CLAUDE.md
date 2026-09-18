@@ -49,7 +49,7 @@ backend/src/modules/{module}/
 - `dashboard` — statistiques admin et technicien
 - `backup` — sauvegarde/restauration
 - `mobile` — registre d'appareils, push natif (Expo), sync delta pour l'app technicien ([spec](docs/modules/mobile.md))
-- `geo` — autocomplétion d'adresse (Adresses Québec), géocodage (contrat `GEOCODER`), fiche propriété depuis le rôle d'évaluation importé ([spec](docs/modules/geo.md))
+- `geo` — autocomplétion d'adresse (Adresses Québec), géocodage (contrat `GEOCODER`), fiche propriété depuis le rôle d'évaluation importé, mise à jour du rôle depuis le portail super-admin ([spec](docs/modules/geo.md))
 
 **Communication inter-module** :
 - ✅ Via **events NestJS** (`@nestjs/event-emitter`) — pattern `domain.events.*`
