@@ -14,3 +14,5 @@ export type {
   HookContext,
 } from './work-order-hook.interface';
 export { WORK_ORDER_HOOKS } from './work-order-hook.interface';
+export { GEOCODER } from './geocoder.contract';
+export type { IGeocoder, GeocodeInput, GeocodeResult, GeocodeSource } from './geocoder.contract';

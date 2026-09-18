@@ -1566,3 +1566,68 @@ model PushSubscription {
   @@index([tenantId], map: "idx_push_subscriptions_tenant_id")
   @@map("push_subscriptions")
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// B40 — Référentiel géographique (module `geo`)
+// Données ouvertes du Québec, plateforme-wide (aucun tenant_id) : rôle
+// d'évaluation foncière géoréférencé (MAMH, CC-BY 4.0), chargé par
+// scripts/geo/import-role.py. Lecture seule côté application.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Municipalité du rôle (code géographique 5 caractères → nom).
+model Municipality {
+  code     String @id
+  name     String
+  rollYear Int    @map("roll_year")
+
+  @@map("municipalities")
+}
+
+/// Code d'utilisation des biens-fonds (CUBF, 4 chiffres) → libellé.
+model LandUseCode {
+  code  String @id
+  label String
+
+  @@map("land_use_codes")
+}
+
+/// Une adresse d'une unité d'évaluation foncière, avec les attributs de
+/// l'unité dénormalisés (fiche propriété). Plusieurs adresses par unité.
+model PropertyUnit {
+  idProvinc      String  @map("id_provinc")
+  addressSeq     Int     @map("address_seq")
+  codeMun        String  @map("code_mun")
+  matricule      String
+  civicNumber    Int?    @map("civic_number")
+  civicSuffix    String? @map("civic_suffix")
+  civicNumberEnd Int?    @map("civic_number_end")
+  /// Générique en clair (« Rue », « Boulevard »…) depuis le domaine de valeurs.
+  streetGeneric  String? @map("street_generic")
+  /// Particule en clair (« de la », « du »…).
+  streetLink     String? @map("street_link")
+  /// Odonyme tel que fourni (majuscules, sans accents).
+  streetName     String  @map("street_name")
+  /// Odonyme normalisé pour la correspondance (minuscules, sans accents ni ponctuation).
+  streetNorm     String  @map("street_norm")
+  orientation    String?
+  unitNumber     String? @map("unit_number")
+  latitude       Float
+  longitude      Float
+  landUseCode    String? @map("land_use_code")
+  yearBuilt      Int?    @map("year_built")
+  storeys        Int?
+  dwellings      Int?
+  landAreaM2     Float?  @map("land_area_m2")
+  floorAreaM2    Float?  @map("floor_area_m2")
+  valueLand      Int?    @map("value_land")
+  valueBuilding  Int?    @map("value_building")
+  valueTotal     Int?    @map("value_total")
+  /// Numéros de lot cadastral (jusqu'à 3, séparés par « , »).
+  lotNumbers     String? @map("lot_numbers")
+  rollYear       Int     @map("roll_year")
+
+  @@id([idProvinc, addressSeq])
+  @@index([latitude, longitude], map: "idx_property_units_lat_lng")
+  @@index([codeMun, streetNorm, civicNumber], map: "idx_property_units_mun_street_num")
+  @@map("property_units")
+}

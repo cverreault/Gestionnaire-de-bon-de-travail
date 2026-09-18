@@ -25,6 +25,7 @@ import type { User, ApiResponse } from '../types';
 import type { UnifiedClient } from '../services/clients.service';
 import api from '../services/api';
 import { useAuthStore } from '../context/auth.store';
+import PropertyCard from '../components/PropertyCard';
 import { theme, cardStyles, buttonStyles, formStyles, modalStyles, layoutStyles } from '../theme';
 
 const TYPE_LABELS: Record<string, string> = {
@@ -561,6 +562,7 @@ export default function WorkOrderDetailPage() {
                     {rel.label}
                   </p>
                 )}
+                {wo.clientAddressId && <PropertyCard addressId={wo.clientAddressId} />}
               </div>
             );
           }
