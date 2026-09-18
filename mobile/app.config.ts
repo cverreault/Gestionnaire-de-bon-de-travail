@@ -32,6 +32,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     predictiveBackGestureEnabled: false,
   },
   plugins: [
+    './plugins/with-ios-scene-lifecycle',
     'expo-router',
     'expo-secure-store',
     'expo-localization',
