@@ -54,7 +54,7 @@ Aucun. Le module est appelé par contrat (`GEOCODER`) ou par HTTP.
 
 Tables **plateforme-wide** (pas de `tenant_id`, absentes de `TENANT_SCOPED_MODELS`), chargées par `scripts/geo/import-role.py` et **jamais écrites par l'application** :
 
-- `property_units` (Prisma `PropertyUnit`) — une ligne par adresse d'unité d'évaluation (~3,8 M) : `id_provinc + address_seq` PK, `code_mun`, `matricule`, `civic_number/_suffix/_end`, `street_generic`, `street_link`, `street_name`, `street_norm`, `orientation`, `unit_number`, `latitude`, `longitude`, `land_use_code`, `year_built`, `storeys`, `dwellings`, `land_area_m2`, `floor_area_m2`, `value_land/building/total`, `lot_numbers`, `roll_year`. Index `(latitude, longitude)` et `(code_mun, street_norm, civic_number)`
+- `property_units` (Prisma `PropertyUnit`) — une ligne par adresse d'unité d'évaluation (~3,8 M) : `id_provinc + address_seq` PK, `code_mun`, `matricule`, `civic_number/_suffix/_end`, `street_generic`, `street_link`, `street_name`, `street_norm`, `orientation`, `unit_number`, `latitude`, `longitude`, `land_use_code`, `year_built`, `storeys`, `dwellings`, `land_area_m2`, `floor_area_m2`, `value_land/building/total` (DOUBLE PRECISION : certains immeubles dépassent 2^31 $), `lot_numbers`, `roll_year`. Index `(latitude, longitude)` et `(code_mun, street_norm, civic_number)`
 - `municipalities` (`Municipality`) — code géographique → nom, ~1 130 lignes
 - `land_use_codes` (`LandUseCode`) — CUBF 4 chiffres → libellé, ~1 750 lignes
 

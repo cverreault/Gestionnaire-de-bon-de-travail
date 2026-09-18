@@ -1619,9 +1619,10 @@ model PropertyUnit {
   dwellings      Int?
   landAreaM2     Float?  @map("land_area_m2")
   floorAreaM2    Float?  @map("floor_area_m2")
-  valueLand      Int?    @map("value_land")
-  valueBuilding  Int?    @map("value_building")
-  valueTotal     Int?    @map("value_total")
+  /// Valeurs au rôle en dollars. DOUBLE PRECISION : certains immeubles dépassent 2^31 $.
+  valueLand      Float?  @map("value_land")
+  valueBuilding  Float?  @map("value_building")
+  valueTotal     Float?  @map("value_total")
   /// Numéros de lot cadastral (jusqu'à 3, séparés par « , »).
   lotNumbers     String? @map("lot_numbers")
   rollYear       Int     @map("roll_year")

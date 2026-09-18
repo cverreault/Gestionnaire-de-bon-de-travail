@@ -252,7 +252,7 @@ def main() -> int:
                 name, norm, (orient or '').strip() or None, (unit or '').strip() or None,
                 lat, lon,
                 (cubf_code or '').strip() or None, to_int(year_built), to_int(storeys), to_int(dwellings),
-                to_float(land_area), to_float(floor_area), to_int(v_land), to_int(v_bldg), to_int(v_total),
+                to_float(land_area), to_float(floor_area), to_float(v_land), to_float(v_bldg), to_float(v_total),
                 lots or None, y,
             ])
             n += 1
