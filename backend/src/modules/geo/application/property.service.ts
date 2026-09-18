@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/prisma/prisma.service';
+import type { PropertyFacts, PropertyLookupInput } from '../../../common/contracts/geocoder.contract';
 import {
   distanceMeters,
   normalizeStreet,
@@ -7,38 +8,9 @@ import {
   stripAccents,
 } from './address-normalize';
 
-/** Input for a property lookup — either coordinates, or address parts, or both. */
-export interface PropertyLookupInput {
-  latitude?: number | null;
-  longitude?: number | null;
-  streetNumber?: string | null;
-  street?: string | null;
-  city?: string | null;
-}
-
-/** Fiche propriété exposée au frontend (B40). */
-export interface PropertySheet {
-  matricule: string;
-  municipality: string;
-  address: string;
-  landUseCode: string | null;
-  landUseLabel: string | null;
-  dwellings: number | null;
-  storeys: number | null;
-  yearBuilt: number | null;
-  landAreaM2: number | null;
-  floorAreaM2: number | null;
-  lotNumbers: string[];
-  valueLand: number | null;
-  valueBuilding: number | null;
-  valueTotal: number | null;
-  rollYear: number;
-  latitude: number;
-  longitude: number;
-  /** How the row was matched, for the UI hint. */
-  matchedBy: 'number+street' | 'nearest';
-  distanceMeters: number | null;
-}
+/** Re-exported for the controller and specs; the shape lives in the contract. */
+export type PropertySheet = PropertyFacts;
+export type { PropertyLookupInput };
 
 type Row = {
   idProvinc: string;

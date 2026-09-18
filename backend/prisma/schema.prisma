@@ -888,6 +888,29 @@ model ClientAddress {
   isDefault    Boolean  @default(false) @map("is_default")
   latitude     Float?
   longitude    Float?
+  // B40 — provenance du géocodage (adresses-quebec | nominatim) et horodatage.
+  geocodedAt    DateTime? @map("geocoded_at")
+  geocodeSource String?   @map("geocode_source")
+  // B40.2 — fiche propriété copiée depuis le rôle d'évaluation au moment du géocodage.
+  // `propertyMatchedAt` est posé même sans correspondance (matchedBy null) pour ne pas
+  // réessayer à chaque balayage ; « Actualiser » force une nouvelle recherche.
+  propertyMatchedAt    DateTime? @map("property_matched_at")
+  propertyMatchedBy    String?   @map("property_matched_by")
+  propertyMatricule    String?   @map("property_matricule")
+  propertyMunicipality String?   @map("property_municipality")
+  propertyAddress      String?   @map("property_address")
+  propertyLandUseCode  String?   @map("property_land_use_code")
+  propertyLandUseLabel String?   @map("property_land_use_label")
+  propertyDwellings    Int?      @map("property_dwellings")
+  propertyStoreys      Int?      @map("property_storeys")
+  propertyYearBuilt    Int?      @map("property_year_built")
+  propertyLandAreaM2   Float?    @map("property_land_area_m2")
+  propertyFloorAreaM2  Float?    @map("property_floor_area_m2")
+  propertyLotNumbers   String?   @map("property_lot_numbers")
+  propertyValueLand    Float?    @map("property_value_land")
+  propertyValueBuilding Float?   @map("property_value_building")
+  propertyValueTotal   Float?    @map("property_value_total")
+  propertyRollYear     Int?      @map("property_roll_year")
   // Free-form values for the custom fields defined on the matching AddressTypeConfig
   // (keyed by AddressTypeField.id). Mirrors WorkOrder.templateData on the templates side.
   typeData     Json?    @map("type_data")

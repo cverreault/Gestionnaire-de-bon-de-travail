@@ -355,6 +355,11 @@ function ClientModal({
                           {addressTypeLabel(t, addr.addressType)}
                           {addr.label && ` · ${addr.label}`}
                         </p>
+                        {addr.propertyMatchedBy && (
+                          <p style={{ margin: '0.15rem 0 0', fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>
+                            🏠 {[addr.propertyLandUseLabel, addr.propertyYearBuilt, addr.propertyDwellings != null ? `${addr.propertyDwellings} log.` : null, addr.propertyStoreys != null ? `${addr.propertyStoreys} ét.` : null].filter(Boolean).join(' · ')}
+                          </p>
+                        )}
                       </div>
                       <div style={{ display: 'flex', gap: '0.25rem' }}>
                         <button

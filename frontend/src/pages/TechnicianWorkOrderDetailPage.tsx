@@ -327,8 +327,8 @@ export default function TechnicianWorkOrderDetailPage() {
                   )}
                 </p>
               )}
-              {isOnline && wo.clientAddressId && (
-                <PropertyCard addressId={wo.clientAddressId} compact />
+              {wo.clientAddress_rel && (
+                <PropertyCard address={wo.clientAddress_rel} compact />
               )}
               {clientPhone && (
                 <a

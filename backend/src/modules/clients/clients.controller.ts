@@ -89,6 +89,19 @@ export class ClientsController {
   }
 
   /**
+   * POST /api/clients/addresses/:addressId/geo-refresh
+   * B40.2 — re-géocode l'adresse et rafraîchit sa fiche propriété (synchrone).
+   */
+  @Post('addresses/:addressId/geo-refresh')
+  @Roles(Role.ADMIN, Role.DISPATCHER)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Re-géocoder une adresse et actualiser sa fiche propriété' })
+  @ApiParam({ name: 'addressId', type: 'string', description: 'UUID de l\'adresse' })
+  refreshAddressGeo(@Param('addressId') addressId: string) {
+    return this.clientsService.refreshGeo(addressId);
+  }
+
+  /**
    * DELETE /api/clients/addresses/:addressId
    * Supprime une adresse par son id (orpheline ou rattachée).
    */

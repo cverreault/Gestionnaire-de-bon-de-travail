@@ -75,6 +75,10 @@ const VERSIONS: ReleaseVersion[] = [
         type: 'improvement',
         text: "📍 Géocodage automatique : une adresse créée ou modifiée obtient ses coordonnées sans passer par le bouton de la carte, avec un balayage toutes les 10 minutes pour les oubliées ; le géocodeur officiel du Québec remplace OpenStreetMap en premier choix",
       },
+      {
+        type: 'improvement',
+        text: "🗂️ La fiche propriété et la provenance du GPS sont enregistrées directement sur l'adresse au géocodage (visibles sur la fiche client, avec un bouton « Actualiser » pour admin et dispatcher) ; les adresses existantes sont rattrapées automatiquement",
+      },
     ],
   },
   {
