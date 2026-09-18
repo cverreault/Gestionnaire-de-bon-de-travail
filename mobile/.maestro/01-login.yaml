@@ -1,0 +1,17 @@
+# Maestro flow — workspace + login (B38.10).
+# Run : maestro test .maestro/01-login.yaml -e EMAIL=kevin@example.com -e PASSWORD=secret -e WORKSPACE=https://www.dispatch2go.com
+appId: com.dispatch2go.app
+---
+- launchApp:
+    clearState: true
+- tapOn: "Adresse de l'espace"
+- eraseText
+- inputText: ${WORKSPACE}
+- tapOn: "Continuer"
+- assertVisible: "Connexion"
+- tapOn: "Courriel"
+- inputText: ${EMAIL}
+- tapOn: "Mot de passe"
+- inputText: ${PASSWORD}
+- tapOn: "Se connecter"
+- assertVisible: "Mes bons de travail"
