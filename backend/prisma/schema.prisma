@@ -62,6 +62,26 @@ enum PartSource {
   TECHNICIAN_STOCK
 }
 
+/// B37 — app mobile : plateforme de l'appareil.
+enum DevicePlatform {
+  IOS
+  ANDROID
+}
+
+/// B37 — fournisseur de push natif (v1 : EXPO seulement, colonne ouverte).
+enum PushProvider {
+  EXPO
+  FCM
+  APNS
+}
+
+/// B37 — origine d'une position GPS (ADR-017).
+enum LocationSource {
+  WEB
+  MOBILE_FOREGROUND
+  MOBILE_BACKGROUND
+}
+
 enum ClientType {
   RESIDENTIAL
   COMMERCIAL
@@ -164,6 +184,8 @@ model Tenant {
   webhookDeliveries   WebhookDelivery[]
   alertRules          AlertRule[]
   recurringWorkOrders RecurringWorkOrder[]
+  devices             Device[]
+  idempotencyKeys     IdempotencyKey[]
   reminders           WorkOrderReminder[]
   portalInvitations   PortalInvitation[]
   parts               Part[]
@@ -619,6 +641,7 @@ model User {
   notes                Note[]
   appointments         Appointment[]        @relation("TechnicianAppointments")
   locations            TechnicianLocation[]
+  devices              Device[]
   emailVerifications   EmailVerification[]
   portalInvitations    PortalInvitation[]
   technicianPartStocks TechnicianPartStock[] @relation("TechnicianPartStocks")
@@ -813,7 +836,11 @@ model TechnicianLocation {
   /// didn't provide it (rare — desktop browsers sometimes omit).
   accuracy     Float?
   recordedAt   DateTime @default(now()) @map("recorded_at")
+  /// B37 — ADR-017 : WEB (onglet navigateur), MOBILE_FOREGROUND, MOBILE_BACKGROUND.
+  source       LocationSource @default(WEB)
 
+  /// Dédoublonnage d'un lot mobile rejoué (Idempotency-Key + même horodatage client).
+  @@unique([technicianId, recordedAt], map: "uq_technician_locations_tech_recorded")
   @@index([technicianId, recordedAt(sort: Desc)], map: "idx_technician_locations_tech_recorded")
   @@index([recordedAt], map: "idx_technician_locations_recorded_at")
   @@index([tenantId], map: "idx_technician_locations_tenant_id")
@@ -1251,6 +1278,8 @@ model WorkOrder {
   @@index([currentStepId], map: "idx_work_orders_current_step_id")
   @@index([tenantId], map: "idx_work_orders_tenant_id")
   @@index([principalClientId], map: "idx_work_orders_principal_client")
+  /// B37 — pull de sync mobile (ADR-016) : curseur (updatedAt, id) par technicien.
+  @@index([tenantId, assignedToId, updatedAt], map: "idx_work_orders_sync_pull")
   @@map("work_orders")
 }
 
@@ -1490,6 +1519,10 @@ model RefreshToken {
   /// Si un token révoqué est rejoué, on révoque toute la famille.
   family String
 
+  /// B37 — installation mobile (header X-Device-Id) qui a ouvert cette session ;
+  /// null pour le web. Permet de révoquer un appareil d'un coup (ADR-015 §4).
+  deviceId String? @map("device_id")
+
   createdAt DateTime @default(now()) @map("created_at")
   expiresAt DateTime @map("expires_at")
 
@@ -1501,6 +1534,7 @@ model RefreshToken {
   @@index([family], map: "idx_refresh_tokens_family")
   @@index([expiresAt], map: "idx_refresh_tokens_expires")
   @@index([tenantId], map: "idx_refresh_tokens_tenant_id")
+  @@index([deviceId], map: "idx_refresh_tokens_device")
   @@map("refresh_tokens")
 }
 
@@ -1685,4 +1719,61 @@ model GeoImportJob {
 
   @@index([startedAt], map: "idx_geo_import_jobs_started_at")
   @@map("geo_import_jobs")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// B37 — App mobile (module `mobile`, ADR-015 / ADR-016)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Une installation de l'app mobile : une ligne par (tenant, installationId),
+/// re-liée à l'utilisateur qui se connecte sur ce téléphone.
+model Device {
+  id                     String         @id @default(uuid())
+  tenantId               String         @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant                 Tenant         @relation(fields: [tenantId], references: [id])
+  /// UUID généré par l'app à la première ouverture (header X-Device-Id).
+  installationId         String         @map("installation_id")
+  userId                 String         @map("user_id")
+  user                   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform               DevicePlatform
+  provider               PushProvider   @default(EXPO)
+  pushToken              String?        @unique @map("push_token")
+  pushTokenInvalidatedAt DateTime?      @map("push_token_invalidated_at")
+  appVersion             String         @map("app_version")
+  osVersion              String?        @map("os_version")
+  model                  String?
+  locale                 String?
+  lastSeenAt             DateTime       @default(now()) @map("last_seen_at")
+  revokedAt              DateTime?      @map("revoked_at")
+  createdAt              DateTime       @default(now()) @map("created_at")
+  updatedAt              DateTime       @updatedAt @map("updated_at")
+
+  @@unique([tenantId, installationId], map: "uq_devices_tenant_installation")
+  @@index([userId], map: "idx_devices_user")
+  @@index([tenantId], map: "idx_devices_tenant_id")
+  @@map("devices")
+}
+
+/// Rejeu sûr des mutations hors ligne (header Idempotency-Key, ADR-016 §3).
+/// Purgé après 48 h par le module `mobile`.
+model IdempotencyKey {
+  id           String   @id @default(uuid())
+  tenantId     String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  userId       String   @map("user_id")
+  /// UUID client, unique par (tenant, user).
+  key          String
+  method       String
+  path         String
+  /// sha256(method + path + corps normalisé) — même clé, autre corps → 422.
+  requestHash  String   @map("request_hash")
+  /// IN_PROGRESS | DONE
+  status       String   @default("IN_PROGRESS")
+  statusCode   Int?     @map("status_code")
+  responseBody Json?    @map("response_body")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@unique([tenantId, userId, key], map: "uq_idempotency_tenant_user_key")
+  @@index([createdAt], map: "idx_idempotency_created_at")
+  @@map("idempotency_keys")
 }
