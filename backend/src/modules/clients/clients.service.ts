@@ -33,6 +33,11 @@ const COMPLETED_STATUSES: WorkOrderStatus[] = [
 
 /** Projection partagée pour la liste paginée des clients */
 const CLIENT_LIST_SELECT = {
+  principalClientId: true,
+  // B42 — donneur d'ordre (sous-traitance)
+  principalClient: {
+    select: { id: true, firstName: true, lastName: true, companyName: true, clientType: true },
+  },
   id: true,
   firstName: true,
   lastName: true,
@@ -61,6 +66,10 @@ const CLIENT_LIST_SELECT = {
 
 /** Projection pour le détail d'un client (avec toutes ses adresses) */
 const CLIENT_DETAIL_INCLUDE = {
+  // B42 — donneur d'ordre (sous-traitance)
+  principalClient: {
+    select: { id: true, firstName: true, lastName: true, companyName: true, clientType: true },
+  },
   addresses: {
     orderBy: [
       { isDefault: 'desc' as const },
@@ -265,8 +274,19 @@ export class ClientsService {
    * Si aucune adresse n'a isDefault=true, la première devient l'adresse par défaut.
    * Si plusieurs ont isDefault=true, une seule sera retenue (la première trouvée).
    */
+  /** B42 — the principal must exist in the tenant and differ from the client itself. */
+  private async assertPrincipal(principalClientId: string | null | undefined, selfId?: string): Promise<void> {
+    if (!principalClientId) return;
+    if (selfId && principalClientId === selfId) {
+      throw new BadRequestException('Un client ne peut pas être son propre donneur d’ordre');
+    }
+    const principal = await this.prisma.client.findUnique({ where: { id: principalClientId }, select: { id: true } });
+    if (!principal) throw new NotFoundException(`Donneur d’ordre #${principalClientId} introuvable`);
+  }
+
   async create(dto: CreateClientDto) {
     const pendingGeocode: string[] = [];
+    await this.assertPrincipal(dto.principalClientId);
     const created = await this.prisma.$transaction(async (tx) => {
       // Créer le client
       const client = await tx.client.create({
@@ -278,6 +298,7 @@ export class ClientsService {
           phone:       dto.phone,
           clientType:  dto.clientType,
           notes:       dto.notes,
+          principalClientId: dto.principalClientId ?? null,
         },
       });
 
@@ -340,6 +361,7 @@ export class ClientsService {
    */
   async update(id: string, dto: UpdateClientDto) {
     await this.findOne(id);
+    await this.assertPrincipal(dto.principalClientId, id);
 
     const updated = await this.prisma.client.update({
       where: { id },

@@ -1,3 +1,4 @@
+import { principalDisplayName } from './PrincipalClientPicker';
 import type { WorkOrder, TemplateSection, TemplateField, WorkOrderTemplate } from '../types';
 import { WorkOrderStatus, WorkOrderType } from '../types';
 import { useTranslation } from 'react-i18next';
@@ -152,6 +153,7 @@ export default function PrintWorkOrder({ wo }: Props) {
   let clientName = '—';
   let clientPhone = '—';
   let clientAddress = '—';
+  const principalName = wo.principalClient ? principalDisplayName(wo.principalClient) : null;
 
   if (wo.client) {
     const c = wo.client;
@@ -337,6 +339,9 @@ export default function PrintWorkOrder({ wo }: Props) {
                 <div style={field}>
                   <span style={labelPrint}>{t('workOrders:print.name', { defaultValue: 'Nom' })}</span>
                   <span style={valuePrint}>{clientName}</span>
+                  {principalName && (
+                    <div><strong>{t('print.mandatedBy', { defaultValue: 'Mandaté par' })} :</strong> {principalName}</div>
+                  )}
                 </div>
                 <div style={field}>
                   <span style={labelPrint}>{t('workOrders:print.phone', { defaultValue: 'Téléphone' })}</span>

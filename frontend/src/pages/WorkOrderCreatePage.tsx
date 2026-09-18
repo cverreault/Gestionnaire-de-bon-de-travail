@@ -7,10 +7,11 @@ import { useTemplate } from '../hooks/useTemplates';
 import TemplateFormRenderer from '../components/TemplateFormRenderer';
 import { useTaskTypes } from '../hooks/useSettings';
 import { useTechnicians } from '../hooks/useUsers';
-import { ClientType, AddressType, Role } from '../types';
+import { ClientType, AddressType, Role , type PrincipalClientRef } from '../types';
 import type { Client, ClientAddress } from '../types';
 import { clientTypeLabel, addressTypeLabel, priorityLabel } from '../utils/entityLabels';
 import { useAuthStore } from '../context/auth.store';
+import PrincipalClientPicker from '../components/PrincipalClientPicker';
 import { theme, cardStyles, buttonStyles, formStyles, layoutStyles } from '../theme';
 import type { CreateWorkOrderDto } from '../services/work-orders.service';
 import api from '../services/api';
@@ -126,9 +127,13 @@ const sectionTitleStyle: React.CSSProperties = {
 function Step1Client({
   selectedClient,
   onSelectClient,
+  principalClient,
+  onPrincipalChange,
 }: {
   selectedClient: Client | null;
   onSelectClient: (c: Client) => void;
+  principalClient: PrincipalClientRef | null;
+  onPrincipalChange: (p: PrincipalClientRef | null) => void;
 }) {
   const { t } = useTranslation('workOrders');
   const [search, setSearch] = useState('');
@@ -176,6 +181,7 @@ function Step1Client({
     [ClientType.COMMERCIAL]: { bg: '#ede9fe', color: '#6d28d9' },
     [ClientType.INDUSTRIAL]: { bg: '#ffedd5', color: '#c2410c' },
     [ClientType.INSTITUTIONAL]: { bg: '#dcfce7', color: '#15803d' },
+    [ClientType.PRINCIPAL]: { bg: '#e0f2fe', color: '#0369a1' },
   };
 
   return (
@@ -216,6 +222,15 @@ function Step1Client({
             >
               {t('workOrders:createPage.change', { defaultValue: 'Changer' })}
             </button>
+          </div>
+          <div style={{ marginBottom: '1rem' }}>
+            <PrincipalClientPicker
+              value={principalClient}
+              onChange={onPrincipalChange}
+              excludeId={selectedClient.id}
+              label={t('workOrders:fields.principalClient', { defaultValue: 'Mandaté par' })}
+              hint={t('workOrders:fields.principalClientHint', { defaultValue: 'sous-traitance : le donneur d’ordre pour qui ce BT est exécuté' })}
+            />
           </div>
         </div>
       ) : (
@@ -721,6 +736,7 @@ export default function WorkOrderCreatePage() {
 
   // Step 1 state
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [principalClient, setPrincipalClient] = useState<PrincipalClientRef | null>(null);
 
   // Step 2 state
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
@@ -756,6 +772,7 @@ export default function WorkOrderCreatePage() {
 
   function handleSelectClient(c: Client | null) {
     setSelectedClient(c);
+    setPrincipalClient(c?.principalClient ?? null);
     setSelectedAddressId(null);
     setSelectedAddress(null);
   }
@@ -787,6 +804,7 @@ export default function WorkOrderCreatePage() {
       priority: woDetails.priority,
       description: woDetails.description || undefined,
       clientId: selectedClient.id,
+      principalClientId: principalClient?.id ?? null,
       clientAddressId: selectedAddressId || undefined,
       taskTypeId: woDetails.taskTypeId || undefined,
       assignedToId: assignedToId || undefined,
@@ -839,7 +857,9 @@ export default function WorkOrderCreatePage() {
 
       {/* Step content */}
       {step === 0 && (
-        <Step1Client selectedClient={selectedClient} onSelectClient={handleSelectClient} />
+        <Step1Client selectedClient={selectedClient} onSelectClient={handleSelectClient}
+            principalClient={principalClient}
+            onPrincipalChange={setPrincipalClient} />
       )}
       {step === 1 && selectedClient && (
         <Step2Address

@@ -22,6 +22,7 @@ import { theme, cardStyles, buttonStyles, formStyles } from '../theme';
 import { offlineStore } from '../services/offline-store';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import PropertyCard from '../components/PropertyCard';
+import { principalDisplayName } from '../components/PrincipalClientPicker';
 
 // ─── Labels ───────────────────────────────────────────────────────────────────
 
@@ -30,6 +31,7 @@ const CLIENT_TYPE_COLORS: Record<ClientType, { bg: string; color: string }> = {
   [ClientType.COMMERCIAL]: { bg: '#ede9fe', color: '#6d28d9' },
   [ClientType.INDUSTRIAL]: { bg: '#ffedd5', color: '#c2410c' },
   [ClientType.INSTITUTIONAL]: { bg: '#dcfce7', color: '#15803d' },
+  [ClientType.PRINCIPAL]: { bg: '#e0f2fe', color: '#0369a1' },
 };
 
 // ─── Toast component ──────────────────────────────────────────────────────────
@@ -307,6 +309,11 @@ export default function TechnicianWorkOrderDetailPage() {
                 }}>
                   {clientTypeLabel(t, clientType)}
                 </span>
+              )}
+              {wo.principalClient && (
+                <p style={{ margin: '0 0 0.5rem', fontSize: theme.font.sizeSm, color: theme.colors.text }}>
+                  🤝 {t('workOrders:detailPage.mandatedBy', { defaultValue: 'Mandaté par {{name}}', name: principalDisplayName(wo.principalClient) })}
+                </p>
               )}
               {predominant && (
                 <p style={{ margin: '0.5rem 0 0.125rem', fontSize: '1.25rem', fontWeight: theme.font.weightBold, color: theme.colors.text }}>

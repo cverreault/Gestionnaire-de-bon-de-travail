@@ -28,6 +28,7 @@ const CLIENT_TYPE_COLORS: Record<ClientType, { bg: string; color: string }> = {
   [ClientType.COMMERCIAL]: { bg: '#ede9fe', color: '#6d28d9' },
   [ClientType.INDUSTRIAL]: { bg: '#ffedd5', color: '#c2410c' },
   [ClientType.INSTITUTIONAL]: { bg: '#dcfce7', color: '#15803d' },
+  [ClientType.PRINCIPAL]: { bg: '#e0f2fe', color: '#0369a1' },
 };
 
 export default function AddressesPage() {

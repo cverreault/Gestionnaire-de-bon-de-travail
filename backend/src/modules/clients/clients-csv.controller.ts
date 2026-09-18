@@ -102,6 +102,7 @@ const CLIENT_TYPE_LABEL_FR: Record<ClientType, string> = {
   [ClientType.COMMERCIAL]: 'Commercial',
   [ClientType.INDUSTRIAL]: 'Industriel',
   [ClientType.INSTITUTIONAL]: 'Institutionnel',
+  PRINCIPAL: "Donneur d'ordre",
 };
 
 /**

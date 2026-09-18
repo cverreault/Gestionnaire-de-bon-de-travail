@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { principalDisplayName } from '../components/PrincipalClientPicker';
 import { useMyWorkOrders } from '../hooks/useWorkOrders';
 import { useAddressTypes } from '../hooks/useSettings';
 import WorkOrderStatusBadge from '../components/WorkOrderStatusBadge';
@@ -38,6 +39,7 @@ const CLIENT_TYPE_COLORS: Record<ClientType, { bg: string; color: string }> = {
   [ClientType.COMMERCIAL]: { bg: '#ede9fe', color: '#6d28d9' },
   [ClientType.INDUSTRIAL]: { bg: '#ffedd5', color: '#c2410c' },
   [ClientType.INSTITUTIONAL]: { bg: '#dcfce7', color: '#15803d' },
+  [ClientType.PRINCIPAL]: { bg: '#e0f2fe', color: '#0369a1' },
 };
 
 function getStatusAccentColor(status: WorkOrderStatus): string {
@@ -201,6 +203,11 @@ export default function TechnicianWorkOrdersPage() {
                           ? `${wo.temporaryClient.firstName} ${wo.temporaryClient.lastName}`
                           : wo.externalClientName}
                       </span>
+                      {wo.principalClient && (
+                        <span style={{ fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>
+                          🤝 {principalDisplayName(wo.principalClient)}
+                        </span>
+                      )}
                       {clientType && clientTypeColors && (
                         <span
                           style={{

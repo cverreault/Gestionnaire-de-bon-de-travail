@@ -12,7 +12,7 @@ import {
   useDeleteClientAddress,
 } from '../hooks/useClients';
 import type { Client, ClientAddress } from '../types';
-import { ClientType, AddressType } from '../types';
+import { ClientType, AddressType , type PrincipalClientRef } from '../types';
 import { clientTypeLabel, addressTypeLabel } from '../utils/entityLabels';
 import type { CreateV3ClientDto, CreateClientAddressDto } from '../services/clients.service';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -39,6 +39,7 @@ const CLIENT_TYPE_COLORS: Record<ClientType, { bg: string; color: string }> = {
   [ClientType.COMMERCIAL]: { bg: '#ede9fe', color: '#6d28d9' },
   [ClientType.INDUSTRIAL]: { bg: '#ffedd5', color: '#c2410c' },
   [ClientType.INSTITUTIONAL]: { bg: '#dcfce7', color: '#15803d' },
+  [ClientType.PRINCIPAL]: { bg: '#e0f2fe', color: '#0369a1' },
 };
 
 // ─── Form types ───────────────────────────────────────────────────────────────
@@ -51,9 +52,11 @@ interface ClientFormValues {
   phone: string;
   clientType: ClientType;
   notes: string;
+  principalClient: PrincipalClientRef | null;
 }
 
 import AddressFormFields, { ADDRESS_FORM_DEFAULTS } from '../components/AddressFormFields';
+import PrincipalClientPicker, { principalDisplayName } from '../components/PrincipalClientPicker';
 import type { AddressFormValues } from '../components/AddressFormFields';
 import AddressTypeCustomFields from '../components/AddressTypeCustomFields';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -124,7 +127,7 @@ function ClientModal({
   const { data: clientDetail } = useV3Client(clientId ?? '');
   const existingAddresses: ClientAddress[] | undefined = clientDetail?.addresses;
 
-  const { register, handleSubmit, formState: { errors } } = useForm<ClientFormValues>({
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<ClientFormValues>({
     defaultValues: {
       firstName: defaultValues?.firstName ?? '',
       lastName: defaultValues?.lastName ?? '',
@@ -133,6 +136,7 @@ function ClientModal({
       phone: defaultValues?.phone ?? '',
       clientType: defaultValues?.clientType ?? ClientType.RESIDENTIAL,
       notes: defaultValues?.notes ?? '',
+      principalClient: defaultValues?.principalClient ?? null,
     },
   });
 
@@ -281,6 +285,13 @@ function ClientModal({
               <div>
                 <label style={{ ...formStyles.label }}>{t('fields.phone')}</label>
                 <input style={{ ...formStyles.input }} placeholder="514-000-0000" {...register('phone')} />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <PrincipalClientPicker
+                  value={watch('principalClient')}
+                  onChange={(v) => setValue('principalClient', v, { shouldDirty: true })}
+                  excludeId={clientId ?? null}
+                />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={{ ...formStyles.label }}>{t('fields.notes')}</label>
@@ -698,6 +709,7 @@ export default function ClientsPage() {
     const dto: CreateV3ClientDto & { addresses?: CreateClientAddressDto[] } = {
       firstName: values.firstName,
       lastName: values.lastName,
+      principalClientId: values.principalClient?.id ?? null,
       companyName: values.companyName || undefined,
       email: values.email || undefined,
       phone: values.phone || undefined,
@@ -976,6 +988,7 @@ export default function ClientsPage() {
             phone: editingClient.phone ?? '',
             clientType: editingClient.clientType,
             notes: editingClient.notes ?? '',
+            principalClient: editingClient.principalClient ?? null,
           }}
           clientId={editingClient.id}
           onSubmit={handleUpdate}

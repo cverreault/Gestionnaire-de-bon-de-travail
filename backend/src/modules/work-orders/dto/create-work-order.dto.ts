@@ -99,6 +99,11 @@ export class CreateWorkOrderDto {
   @IsUUID()
   clientAddressId?: string;
 
+  @ApiPropertyOptional({ description: 'B42 — UUID du donneur d\'ordre (client pour qui nous sous-traitons). null pour retirer.' })
+  @IsOptional()
+  @IsUUID()
+  principalClientId?: string | null;
+
   @ApiPropertyOptional({ description: 'UUID du type de tâche (TaskType)' })
   @IsOptional()
   @IsUUID()

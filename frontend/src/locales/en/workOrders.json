@@ -27,7 +27,9 @@
     "completionNotes": "Completion notes",
     "attachments": "Attachments",
     "createdBy": "Created by",
-    "createdAt": "Created on"
+    "createdAt": "Created on",
+    "principalClient": "Mandated by",
+    "principalClientHint": "subcontracting: the principal this work order is done for"
   },
   "types": {
     "INSTALLATION": "Installation",
@@ -122,7 +124,8 @@
     "dateTo": "Scheduled to",
     "priorityMin": "Min priority",
     "noMatch": "No work order matches the selected filters",
-    "hiddenCompletedSuffix": "completed hidden"
+    "hiddenCompletedSuffix": "completed hidden",
+    "principalFilter": "Mandated by"
   },
   "priorityLevels": {
     "0": "0 — None",
@@ -329,7 +332,8 @@
     "signatures": "Signatures",
     "technician": "Technician",
     "date": "Date",
-    "footer": "TaskMgr — Ref. {{ref}} — {{date}}"
+    "footer": "TaskMgr — Ref. {{ref}} — {{date}}",
+    "mandatedBy": "Mandated by"
   },
   "detailPage": {
     "back": "Back",
@@ -381,6 +385,8 @@
     "addressHint": "Used for printing and display. Auto-filled when you select a saved address.",
     "assignmentScheduling": "Assignment and scheduling",
     "unassignedOption": "— Unassigned —",
-    "saveError": "An error occurred while saving. Please try again."
+    "saveError": "An error occurred while saving. Please try again.",
+    "mandatedBy": "Mandated by {{name}}",
+    "subcontracting": "Subcontracting"
   }
 }

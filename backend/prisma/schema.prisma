@@ -67,6 +67,8 @@ enum ClientType {
   COMMERCIAL
   INDUSTRIAL
   INSTITUTIONAL
+  /// B42 — donneur d'ordre : client pour qui nous sous-traitons.
+  PRINCIPAL
 }
 
 enum AddressType {
@@ -852,17 +854,24 @@ model Client {
   clientType  ClientType @default(RESIDENTIAL) @map("client_type")
   notes       String?
   isActive    Boolean    @default(true) @map("is_active")
+  // B42 — sous-traitance : ce client est « client de » un donneur d'ordre.
+  // Proposé par défaut comme « Mandaté par » sur ses nouveaux BT.
+  principalClientId String?  @map("principal_client_id")
+  principalClient   Client?  @relation("ClientPrincipal", fields: [principalClientId], references: [id], onDelete: SetNull)
+  mandatedClients   Client[] @relation("ClientPrincipal")
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime   @updatedAt @map("updated_at")
 
   addresses   ClientAddress[]
   workOrders  WorkOrder[]
+  principalWorkOrders WorkOrder[] @relation("WorkOrderPrincipal")
   portalUsers User[]             @relation("ClientPortalUsers")
   portalInvitations PortalInvitation[]
 
   @@index([clientType], map: "idx_clients_type")
   @@index([isActive], map: "idx_clients_is_active")
   @@index([tenantId], map: "idx_clients_tenant_id")
+  @@index([principalClientId], map: "idx_clients_principal_client")
   @@map("clients")
 }
 
@@ -1173,6 +1182,9 @@ model WorkOrder {
   client            Client?        @relation(fields: [clientId], references: [id])
   clientAddressId   String?        @map("client_address_id")
   clientAddress_rel ClientAddress? @relation(fields: [clientAddressId], references: [id])
+  // B42 — sous-traitance : le BT est exécuté chez `client`, mandaté par `principalClient`.
+  principalClientId String?  @map("principal_client_id")
+  principalClient   Client?  @relation("WorkOrderPrincipal", fields: [principalClientId], references: [id], onDelete: SetNull)
 
   // ── Process Engine (double-colonne pendant transition) ──
   processDefinitionId String?            @map("process_definition_id")
@@ -1238,6 +1250,7 @@ model WorkOrder {
   @@index([slaTargetAt, slaBreachedAt], map: "idx_work_orders_sla_pending")
   @@index([currentStepId], map: "idx_work_orders_current_step_id")
   @@index([tenantId], map: "idx_work_orders_tenant_id")
+  @@index([principalClientId], map: "idx_work_orders_principal_client")
   @@map("work_orders")
 }
 

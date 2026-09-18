@@ -15,6 +15,8 @@ export enum ClientType {
   COMMERCIAL = 'COMMERCIAL',
   INDUSTRIAL = 'INDUSTRIAL',
   INSTITUTIONAL = 'INSTITUTIONAL',
+  /** B42 — donneur d'ordre : client pour qui nous sous-traitons. */
+  PRINCIPAL = 'PRINCIPAL',
 }
 
 export enum AddressType {
@@ -78,6 +80,15 @@ export interface AuthUser extends User {
 }
 
 // ─── Client V3 ────────────────────────────────────────────────────────────────
+
+/** B42 — référence légère au donneur d'ordre (sous-traitance). */
+export interface PrincipalClientRef {
+  id: string;
+  firstName: string;
+  lastName: string;
+  companyName?: string | null;
+  clientType?: ClientType;
+}
 
 export interface ClientAddress {
   id: string;
@@ -143,6 +154,9 @@ export interface Client {
   email?: string | null;
   phone?: string | null;
   clientType: ClientType;
+  /** B42 — ce client est « client de » ce donneur d'ordre. */
+  principalClientId?: string | null;
+  principalClient?: PrincipalClientRef | null;
   notes?: string | null;
   isActive: boolean;
   addresses: ClientAddress[];
@@ -399,6 +413,9 @@ export interface WorkOrder {
   client?: Client | null;
   clientAddressId?: string | null;
   clientAddress_rel?: ClientAddress | null;
+  /** B42 — sous-traitance : BT exécuté chez `client`, mandaté par `principalClient`. */
+  principalClientId?: string | null;
+  principalClient?: PrincipalClientRef | null;
   taskTypeId?: string | null;
   taskType?: TaskType | null;
 
@@ -573,6 +590,7 @@ export interface PaginatedResponse<T> {
 }
 
 export interface WorkOrderFilters {
+  principalClientId?: string;
   status?: WorkOrderStatus;
   type?: WorkOrderType;
   assignedToId?: string;

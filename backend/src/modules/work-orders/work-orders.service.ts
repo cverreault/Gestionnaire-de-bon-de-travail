@@ -260,6 +260,7 @@ export class WorkOrdersService {
     }
     if (filters.type) where.type = filters.type;
     if (filters.clientId) where.clientId = filters.clientId;
+    if (filters.principalClientId) where.principalClientId = filters.principalClientId;
     if (filters.taskTypeId) where.taskTypeId = filters.taskTypeId;
 
     if (filters.scheduledDateFrom || filters.scheduledDateTo) {
@@ -478,6 +479,8 @@ export class WorkOrdersService {
         // V3 relations
         clientId: dto.clientId ?? null,
         clientAddressId: dto.clientAddressId ?? null,
+        // B42 — explicit principal, else the client's own « client de »
+        principalClientId: await this.resolvePrincipalClientId(dto.principalClientId, dto.clientId),
         taskTypeId: dto.taskTypeId ?? null,
         assignedToId: dto.assignedToId ?? null,
         createdById: currentUser.id,
@@ -605,6 +608,29 @@ export class WorkOrdersService {
       `WorkOrder duplicated: source=${source.id} → new=${clone.id} (${clone.referenceNumber}) by user ${currentUser.id}`,
     );
     return clone;
+  }
+
+  /**
+   * B42 — « Mandaté par » : explicit value wins; otherwise inherit the
+   * client's own principal (« client de »). A client cannot mandate itself.
+   */
+  private async resolvePrincipalClientId(
+    explicit: string | null | undefined,
+    clientId: string | null | undefined,
+  ): Promise<string | null> {
+    if (explicit === null) return null;
+    if (explicit) {
+      if (explicit === clientId) {
+        throw new BadRequestException('Le donneur d’ordre ne peut pas être le client du BT');
+      }
+      return explicit;
+    }
+    if (!clientId) return null;
+    const client = await this.prisma.client.findUnique({
+      where: { id: clientId },
+      select: { principalClientId: true },
+    });
+    return client?.principalClientId ?? null;
   }
 
   async update(id: string, dto: UpdateWorkOrderDto, currentUser: CurrentUserRef) {
@@ -743,6 +769,14 @@ export class WorkOrdersService {
     if (dto.clientAddressId !== undefined) {
       data.clientAddress_rel = dto.clientAddressId
         ? { connect: { id: dto.clientAddressId } }
+        : { disconnect: true };
+    }
+    if (dto.principalClientId !== undefined) {
+      if (dto.principalClientId && dto.principalClientId === (dto.clientId ?? existingWo.clientId)) {
+        throw new BadRequestException('Le donneur d’ordre ne peut pas être le client du BT');
+      }
+      data.principalClient = dto.principalClientId
+        ? { connect: { id: dto.principalClientId } }
         : { disconnect: true };
     }
     if (dto.taskTypeId !== undefined) {

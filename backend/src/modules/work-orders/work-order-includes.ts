@@ -24,6 +24,10 @@ export const WORK_ORDER_DETAIL_INCLUDE = {
   temporaryClient: true,
   client: true,
   clientAddress_rel: true,
+  // B42 — donneur d'ordre (sous-traitance)
+  principalClient: {
+    select: { id: true, firstName: true, lastName: true, companyName: true, clientType: true, phone: true, email: true },
+  },
   taskType: {
     include: {
       template: {

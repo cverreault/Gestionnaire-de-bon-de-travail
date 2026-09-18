@@ -59,6 +59,21 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.10.0',
+    name: 'Sous-traitance : « Mandaté par » (B42)',
+    date: 'Septembre 2026',
+    entries: [
+      {
+        type: 'new',
+        text: "🤝 Un BT peut être exécuté chez un client pour le compte d'un donneur d'ordre : champ « Mandaté par » à la création et à la modification, visible sur le détail (admin et technicien), la liste technicien et le PDF, avec un filtre « Mandaté par » sur la liste des BT",
+      },
+      {
+        type: 'new',
+        text: "🏷️ Fiche client : champ « Client de (donneur d'ordre) », proposé automatiquement comme « Mandaté par » sur les nouveaux BT de ce client ; nouveau type de client « Donneur d'ordre »",
+      },
+    ],
+  },
+  {
     version: '2.9.0',
     name: 'Adresses officielles : autocomplétion, géocodage automatique et fiche propriété (B40)',
     date: 'Septembre 2026',
