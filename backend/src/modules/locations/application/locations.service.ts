@@ -3,10 +3,23 @@ import {
   Injectable,
   Logger,
 } from '@nestjs/common';
-import { Role } from '@prisma/client';
+import { Role, type LocationSource } from '@prisma/client';
 import { PrismaService } from '../../../common/prisma/prisma.service';
 import { RequestContextService } from '../../../common/context/request-context.service';
 import { isGpsEnabled } from '../../../common/contracts/gps-preferences.contract';
+import type { LocationFixDto } from '../api/dto/location-batch.dto';
+
+/** Client fixes ahead of the server clock by more than this are rejected. */
+const FUTURE_TOLERANCE_MS = 2 * 60 * 1000;
+/** Same window as LocationRetentionService — older fixes would be purged tonight anyway. */
+const RETENTION_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+export interface LocationBatchResult {
+  accepted: number;
+  /** Already stored (replayed batch or overlapping buffers) — harmless. */
+  duplicates: number;
+  rejected: Array<{ index: number; reason: 'INVALID_TIMESTAMP' | 'IN_FUTURE' | 'TOO_OLD' | 'DUPLICATE_IN_BATCH' }>;
+}
 
 export interface RecordLocationInput {
   userId: string;
@@ -44,24 +57,7 @@ export class LocationsService {
    * rows after opt-out.
    */
   async recordLocation(input: RecordLocationInput): Promise<void> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: input.userId },
-      select: { id: true, role: true, isActive: true, preferences: true },
-    });
-
-    if (!user || !user.isActive) {
-      throw new ForbiddenException('Utilisateur inactif ou introuvable');
-    }
-    if (user.role !== Role.TECHNICIAN) {
-      throw new ForbiddenException(
-        'Seuls les techniciens peuvent envoyer leur position',
-      );
-    }
-    if (!isGpsEnabled(user.preferences)) {
-      throw new ForbiddenException(
-        'Suivi GPS non activé pour ce compte (preferences.gps.enabled)',
-      );
-    }
+    const user = await this.assertOptedInTechnician(input.userId);
 
     await this.prisma.technicianLocation.create({
       data: {
@@ -71,6 +67,63 @@ export class LocationsService {
         accuracy: input.accuracy,
       },
     });
+  }
+
+  /**
+   * B37.7 / ADR-017 §1 — buffered fixes from the mobile app (foreground or
+   * background task), at most 100 per call. Same consent check as the
+   * single-fix endpoint. Fixes more than 2 minutes in the future or older
+   * than the 7-day retention window are rejected per index ; replays of the
+   * same batch are harmless thanks to the unique (technician, recordedAt).
+   */
+  async recordBatch(userId: string, fixes: LocationFixDto[]): Promise<LocationBatchResult> {
+    const user = await this.assertOptedInTechnician(userId);
+    const now = Date.now();
+    const rejected: LocationBatchResult['rejected'] = [];
+    const rows: Array<{ technicianId: string; latitude: number; longitude: number; accuracy: number | null; recordedAt: Date; source: LocationSource }> = [];
+    const seen = new Set<number>();
+
+    fixes.forEach((fix, index) => {
+      const t = new Date(fix.recordedAt).getTime();
+      if (Number.isNaN(t)) return void rejected.push({ index, reason: 'INVALID_TIMESTAMP' });
+      if (t > now + FUTURE_TOLERANCE_MS) return void rejected.push({ index, reason: 'IN_FUTURE' });
+      if (t < now - RETENTION_WINDOW_MS) return void rejected.push({ index, reason: 'TOO_OLD' });
+      if (seen.has(t)) return void rejected.push({ index, reason: 'DUPLICATE_IN_BATCH' });
+      seen.add(t);
+      rows.push({
+        technicianId: user.id,
+        latitude: fix.latitude,
+        longitude: fix.longitude,
+        accuracy: fix.accuracy ?? null,
+        recordedAt: new Date(t),
+        source: fix.source as LocationSource,
+      });
+    });
+
+    let accepted = 0;
+    if (rows.length > 0) {
+      const r = await this.prisma.technicianLocation.createMany({ data: rows, skipDuplicates: true });
+      accepted = r.count;
+    }
+    return { accepted, duplicates: rows.length - accepted, rejected };
+  }
+
+  /** Shared gate of the two upload endpoints (ADR-008 : consent re-checked server-side on every call). */
+  private async assertOptedInTechnician(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, role: true, isActive: true, preferences: true },
+    });
+    if (!user || !user.isActive) {
+      throw new ForbiddenException('Utilisateur inactif ou introuvable');
+    }
+    if (user.role !== Role.TECHNICIAN) {
+      throw new ForbiddenException('Seuls les techniciens peuvent envoyer leur position');
+    }
+    if (!isGpsEnabled(user.preferences)) {
+      throw new ForbiddenException('Suivi GPS non activé pour ce compte (preferences.gps.enabled)');
+    }
+    return user;
   }
 
   /**

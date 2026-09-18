@@ -43,7 +43,7 @@ Conventions : une PR par item, commit conventionnel avec le scope du module touc
 | B37.4 | `feat(notifications)` | Contrat `mobile-push` ; `ExpoPushAdapter` ; `MobilePushService` ; cron receipts ; branche `@Optional()` dans `PushChannelService.send()` ; `notifications.md` | B37.3 |
 | B37.5 ✅ | `feat(common)` | Contrat `idempotency` ; décorateur `@Idempotent()` ; interceptor global (replay, 422, 409, 5xx non stocké) ; cron de nettoyage 48 h dans `mobile` ; décorateur posé sur transition, notes, signatures, upload, pièces sur BT | B37.2 |
 | B37.6 | `feat(mobile)` | Touch de l'agrégat dans `WorkOrdersService.createNote/saveSignatures`, `AttachmentsService.upload/remove`, `PartsService` (BT) + `workOrderUpdatedAt` dans les réponses ; `mobile.repository.ts` ; `SyncService` ; curseur ; `SyncController` ; `work-orders.md` | B37.2 |
-| B37.7 | `feat(locations)` | DTO batch ; consentement, clamp, dédup ; `POST /api/me/locations/batch` ; `@Idempotent()` ; `locations.md` | B37.2, B37.5 |
+| B37.7 ✅ | `feat(locations)` | DTO batch ; consentement, clamp, dédup ; `POST /api/me/locations/batch` ; `@Idempotent()` ; `locations.md` | B37.2, B37.5 |
 | B37.8 ✅ | `feat(mobile)` | `MobileConfigService` / `MobileConfigController` (`GET /api/mobile/config`) ; heartbeat `upgradeRequired` ; clés `mobile.*` | B37.3 |
 | B37.9 ✅ | `feat(attachments)` | `GET /api/attachments/:id/content` (proxy streaming, même RBAC objet que `download`) — livré en PR | — |
 | B37.10 | `feat(auth)` | Réinitialisation de mot de passe en libre-service : `POST /api/auth/password-reset/request` (email, réponse neutre) + `POST /api/auth/password-reset/confirm` (token 30 min à usage unique) ; un technicien bloqué sur son téléphone n'a aucun recours aujourd'hui | — |

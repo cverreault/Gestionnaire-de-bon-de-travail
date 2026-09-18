@@ -13,6 +13,8 @@ import { Roles } from '../../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { LocationsService } from '../application/locations.service';
 import { RecordLocationDto } from './dto/record-location.dto';
+import { LocationBatchDto } from './dto/location-batch.dto';
+import { Idempotent } from '../../../common/decorators/idempotent.decorator';
 
 interface JwtUser {
   id: string;
@@ -52,6 +54,26 @@ export class LocationsController {
       longitude: dto.longitude,
       accuracy: dto.accuracy ?? null,
     });
+  }
+
+  @Post('me/locations/batch')
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.TECHNICIAN)
+  @Idempotent() // B37.5 — a replayed batch answers the stored result
+  // ADR-017 §1 : 12 batches per minute per user (≤ 100 fixes each).
+  @Throttle(
+    process.env.THROTTLER_DISABLE === '1'
+      ? { short: { ttl: 1000, limit: 1_000_000 } }
+      : { short: { ttl: 60000, limit: 12 } },
+  )
+  @ApiOperation({
+    summary: 'Upload buffered GPS fixes from the mobile app (B37.7)',
+    description:
+      'Up to 100 fixes with client timestamps. Consent (preferences.gps.enabled) is re-checked ; ' +
+      'fixes > 2 min in the future or older than 7 days are rejected per index ; duplicates are skipped.',
+  })
+  recordBatch(@CurrentUser() user: JwtUser, @Body() dto: LocationBatchDto) {
+    return this.locations.recordBatch(user.id, dto.fixes);
   }
 
   @Get('dispatcher/technicians/positions')

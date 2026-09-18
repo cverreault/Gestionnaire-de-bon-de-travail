@@ -145,3 +145,57 @@ describe('LocationsService.latestPositions', () => {
     ]);
   });
 });
+
+describe('LocationsService.recordBatch (B37.7)', () => {
+  const tech = { id: 'tech-1', role: Role.TECHNICIAN, isActive: true, preferences: { gps: { enabled: true } } };
+  const iso = (offsetMs: number) => new Date(Date.now() + offsetMs).toISOString();
+
+  function makeBatchPrisma(count = 0) {
+    const prisma = { ...makePrisma(), technicianLocation: { create: jest.fn(), createMany: jest.fn().mockResolvedValue({ count }) } };
+    prisma.user.findUnique.mockResolvedValue(tech);
+    return prisma;
+  }
+
+  it('rejects an opted-out technician before touching the table', async () => {
+    const prisma = makeBatchPrisma();
+    prisma.user.findUnique.mockResolvedValue({ ...tech, preferences: {} });
+    await expect(makeService(prisma as never).recordBatch('tech-1', [{ latitude: 1, longitude: 2, recordedAt: iso(0), source: 'MOBILE_FOREGROUND' } as never])).rejects.toThrow(ForbiddenException);
+    expect(prisma.technicianLocation.createMany).not.toHaveBeenCalled();
+  });
+
+  it('stores valid fixes with their source, rejects future / too old / in-batch duplicates per index, counts skipped duplicates', async () => {
+    const prisma = makeBatchPrisma(2);
+    const sameTs = iso(-60_000);
+    const fixes = [
+      { latitude: 45.5, longitude: -73.5, accuracy: 5, recordedAt: iso(-30_000), source: 'MOBILE_BACKGROUND' },
+      { latitude: 45.6, longitude: -73.6, recordedAt: iso(5 * 60_000), source: 'MOBILE_FOREGROUND' },
+      { latitude: 45.7, longitude: -73.7, recordedAt: iso(-8 * 24 * 3600_000), source: 'MOBILE_FOREGROUND' },
+      { latitude: 45.8, longitude: -73.8, recordedAt: sameTs, source: 'MOBILE_FOREGROUND' },
+      { latitude: 45.9, longitude: -73.9, recordedAt: sameTs, source: 'MOBILE_FOREGROUND' },
+      { latitude: 46.0, longitude: -74.0, recordedAt: iso(-10_000), source: 'MOBILE_FOREGROUND' },
+    ];
+    const out = await makeService(prisma as never).recordBatch('tech-1', fixes as never);
+    expect(prisma.technicianLocation.createMany).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({ technicianId: 'tech-1', latitude: 45.5, accuracy: 5, source: 'MOBILE_BACKGROUND', recordedAt: expect.any(Date) }),
+        expect.objectContaining({ latitude: 45.8, accuracy: null }),
+        expect.objectContaining({ latitude: 46.0 }),
+      ],
+      skipDuplicates: true,
+    });
+    expect(out.rejected).toEqual([
+      { index: 1, reason: 'IN_FUTURE' },
+      { index: 2, reason: 'TOO_OLD' },
+      { index: 4, reason: 'DUPLICATE_IN_BATCH' },
+    ]);
+    // 3 rows sent, 2 inserted → 1 was already stored (replayed batch).
+    expect(out).toMatchObject({ accepted: 2, duplicates: 1 });
+  });
+
+  it('skips the insert when every fix is rejected', async () => {
+    const prisma = makeBatchPrisma();
+    const out = await makeService(prisma as never).recordBatch('tech-1', [{ latitude: 1, longitude: 2, recordedAt: 'garbage', source: 'MOBILE_FOREGROUND' } as never]);
+    expect(prisma.technicianLocation.createMany).not.toHaveBeenCalled();
+    expect(out).toEqual({ accepted: 0, duplicates: 0, rejected: [{ index: 0, reason: 'INVALID_TIMESTAMP' }] });
+  });
+});
