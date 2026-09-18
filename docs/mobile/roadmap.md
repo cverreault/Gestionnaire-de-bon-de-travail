@@ -38,7 +38,7 @@ Conventions : une PR par item, commit conventionnel avec le scope du module touc
 | Item | Scope | Contenu | Dépend de |
 |---|---|---|---|
 | B37.1 | `docs(adrs)` | ADR-014 à 017, index des ADRs rattrapé, `docs/modules/mobile.md`, cette feuille de route, `CLAUDE.md` | — |
-| B37.2 | `feat(mobile)` | Enums `DevicePlatform`, `PushProvider`, `LocationSource` ; modèles `Device`, `IdempotencyKey` ; `RefreshToken.deviceId?` ; `TechnicianLocation.source` + unique `(technicianId, recordedAt)` ; index `work_orders(tenant_id, assigned_to_id, updated_at)` ; migration ; `TENANT_SCOPED_MODELS` ; TRUNCATE des tests d'intégration | — |
+| B37.2 ✅ | `feat(mobile)` | Enums `DevicePlatform`, `PushProvider`, `LocationSource` ; modèles `Device`, `IdempotencyKey` ; `RefreshToken.deviceId?` ; `TechnicianLocation.source` + unique `(technicianId, recordedAt)` ; index `work_orders(tenant_id, assigned_to_id, updated_at)` ; migration ; `TENANT_SCOPED_MODELS` ; TRUNCATE des tests d'intégration | — |
 | B37.3 | `feat(mobile)` | Contrats `device-context` et `mobile-events` ; `RequestContext.deviceId` rempli par `TenantResolverMiddleware` ; squelette du module + `MobileModuleRegistration` ; `DevicesService` / `DevicesController` ; `AuthService` stocke `deviceId` ; listener `@OnEvent('mobile.device.revoked')` dans `auth` ; lignes `roles-matrix.spec.ts` | B37.2 |
 | B37.4 | `feat(notifications)` | Contrat `mobile-push` ; `ExpoPushAdapter` ; `MobilePushService` ; cron receipts ; branche `@Optional()` dans `PushChannelService.send()` ; `notifications.md` | B37.3 |
 | B37.5 | `feat(common)` | Contrat `idempotency` ; décorateur `@Idempotent()` ; interceptor global (replay, 422, 409, 5xx non stocké) ; cron de nettoyage 48 h dans `mobile` ; décorateur posé sur transition, notes, signatures, upload, pièces sur BT | B37.2 |
@@ -67,7 +67,7 @@ Moteur hors ligne (`mobile/src/sync/`) : les lignes serveur ne sont jamais muté
 | B38.0 | `spike(mobile)` | Spike jetable : build dev client Expo sur un iPhone et un Android réels avec localisation en arrière-plan et un push de test. Valide comptes, credentials EAS, permissions OS et chaîne d'outils avant d'investir. Aucun code conservé | comptes développeur activés |
 | B38.1 ✅ | `chore(mobile)` | Racine workspaces, `.easignore`, squelette `packages/shared`, `create-expo-app mobile` (dev client, router, TS), `metro.config.js`, `jest.config.js`, job CI `mobile`, `.gitignore`, `CLAUDE.md` | — |
 | B38.2 | `feat(shared)` | Types, contrats, utilitaires, `resolveAvailableTransitions`, `projectWorkOrder`, locales + test de parité | — |
-| B38.3 | `feat(mobile)` | Shell : router, thème, i18n, écran workspace + branding, device id, config publique + gate de version, secure store, client HTTP + refresh, login / 2FA / logout, enregistrement + heartbeat | B37.3, B37.8 |
+| B38.3 🔶 | `feat(mobile)` | Shell : router, thème, i18n, écran workspace + branding, device id, secure store, client HTTP + refresh single-flight, login / 2FA / logout, **liste et détail de BT en ligne avec transitions, appel et navigation** (livré en PR) ; reste : enregistrement de l'appareil + heartbeat, gate de version | B37.3, B37.8 |
 | B38.4 | `feat(mobile)` | Schéma drizzle + migrations, pull, `fullResync`, snapshots, liste et détail de BT en lecture seule | B37.6 |
 | B38.5 | `feat(mobile)` | File + drain : transitions chaînées hors ligne, notes, 409, écran sync et conflits, appel et navigation | B37.5, B37.6 |
 | B38.6 | `feat(mobile)` | Caméra + compression + upload avec retry, signature, visualisation via le proxy | B37.9 |
