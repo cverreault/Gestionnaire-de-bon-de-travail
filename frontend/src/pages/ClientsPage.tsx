@@ -668,6 +668,8 @@ export default function ClientsPage() {
   const [filterType, setFilterType] = useState<ClientType | ''>('');
   const [page, setPage] = useState(1);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  /** B42 — the « ➕ Donneur d'ordre » button opens the same modal with the type preset. */
+  const [createPreset, setCreatePreset] = useState<ClientType | undefined>(undefined);
   const [viewingClient, setViewingClient] = useState<Client | null>(null);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -777,12 +779,21 @@ export default function ClientsPage() {
             </p>
           )}
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          style={{ ...buttonStyles.primary }}
-        >
-          {t('create')}
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => { setCreatePreset(ClientType.PRINCIPAL); setShowCreateModal(true); }}
+            style={{ ...buttonStyles.secondary }}
+            title={t('clients:page.createPrincipalTitle', { defaultValue: 'Nouveau donneur d’ordre' })}
+          >
+            🤝 {t('clients:page.createPrincipal', { defaultValue: '➕ Donneur d’ordre' })}
+          </button>
+          <button
+            onClick={() => { setCreatePreset(undefined); setShowCreateModal(true); }}
+            style={{ ...buttonStyles.primary }}
+          >
+            {t('create')}
+          </button>
+        </div>
       </div>
 
       {/* CSV import / export — ADMIN only, hidden for other roles */}
@@ -968,9 +979,12 @@ export default function ClientsPage() {
       {/* Create Modal */}
       {showCreateModal && (
         <ClientModal
-          title={t('clients:page.newClientTitle', { defaultValue: 'Nouveau client' })}
+          title={createPreset === ClientType.PRINCIPAL
+            ? t('clients:page.createPrincipalTitle', { defaultValue: 'Nouveau donneur d’ordre' })
+            : t('clients:page.newClientTitle', { defaultValue: 'Nouveau client' })}
+          defaultValues={createPreset ? { clientType: createPreset } : undefined}
           onSubmit={handleCreate}
-          onCancel={() => { setShowCreateModal(false); createClient.reset(); }}
+          onCancel={() => { setShowCreateModal(false); setCreatePreset(undefined); createClient.reset(); }}
           isLoading={createClient.isPending}
           isError={createClient.isError}
         />
