@@ -26,6 +26,8 @@ import type { UnifiedClient } from '../services/clients.service';
 import api from '../services/api';
 import { useAuthStore } from '../context/auth.store';
 import PropertyCard from '../components/PropertyCard';
+import PrincipalClientPicker, { principalDisplayName } from '../components/PrincipalClientPicker';
+import type { PrincipalClientRef } from '../types';
 import { theme, cardStyles, buttonStyles, formStyles, modalStyles, layoutStyles } from '../theme';
 
 const TYPE_LABELS: Record<string, string> = {
@@ -83,6 +85,7 @@ export default function WorkOrderDetailPage() {
   const [editClientSearch, setEditClientSearch] = useState('');
   const [editDebouncedSearch, setEditDebouncedSearch] = useState('');
   const [editSelectedClient, setEditSelectedClient] = useState<UnifiedClient | null>(null);
+  const [editPrincipalClient, setEditPrincipalClient] = useState<PrincipalClientRef | null>(null);
   const [editShowDropdown, setEditShowDropdown] = useState(false);
   const [editShowNewClientForm, setEditShowNewClientForm] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
@@ -159,6 +162,7 @@ export default function WorkOrderDetailPage() {
     setEditScheduledStartTime(wo.scheduledStartTime ? wo.scheduledStartTime.split('T')[1]?.substring(0, 5) || wo.scheduledStartTime : '');
     setEditScheduledEndTime(wo.scheduledEndTime ? wo.scheduledEndTime.split('T')[1]?.substring(0, 5) || wo.scheduledEndTime : '');
     setEditCompletionNotes(wo.completionNotes || '');
+    setEditPrincipalClient(wo.principalClient ?? null);
     // Set current client info
     if (wo.client) {
       setEditSelectedClient({
@@ -257,6 +261,7 @@ export default function WorkOrderDetailPage() {
         priority: Number(editPriority),
         clientAddress: editClientAddress.trim() || undefined,
         clientAddressId: editClientAddressId || null,
+        principalClientId: editPrincipalClient?.id ?? null,
         templateData: editTemplateData,
         assignedToId: editAssignedToId || undefined,
         scheduledDate: scheduledDateISO,
@@ -478,6 +483,12 @@ export default function WorkOrderDetailPage() {
               <span style={{ display: 'inline-block', marginTop: '0.375rem', fontSize: '0.65rem', fontWeight: theme.font.weightSemibold, padding: '0.1rem 0.4rem', borderRadius: theme.radius.full, background: theme.colors.primaryLight, color: theme.colors.primary }}>
                 {t('workOrders:detailPage.registeredClient', { defaultValue: 'Client enregistré' })}
               </span>
+              {wo.principalClient && (
+                <p style={{ margin: '0.5rem 0 0', fontSize: '0.9rem', color: theme.colors.text }}>
+                  🤝 {t('workOrders:detailPage.mandatedBy', { defaultValue: 'Mandaté par {{name}}', name: principalDisplayName(wo.principalClient) })}
+                  <span style={{ marginLeft: '0.4rem', fontSize: '0.65rem', color: theme.colors.textMuted }}>({t('workOrders:detailPage.subcontracting', { defaultValue: 'Sous-traitance' })})</span>
+                </p>
+              )}
             </div>
           ) : wo.temporaryClient ? (
             <div>
@@ -1006,6 +1017,17 @@ export default function WorkOrderDetailPage() {
                     )}
                   </div>
                 )}
+              </div>
+
+              {/* B42 — Mandaté par (sous-traitance) */}
+              <div style={{ border: theme.borders.default, borderRadius: theme.radius.md, padding: '0.875rem 1rem', marginBottom: '1rem', background: theme.colors.surface }}>
+                <PrincipalClientPicker
+                  value={editPrincipalClient}
+                  onChange={setEditPrincipalClient}
+                  excludeId={editSelectedClient?.id ?? null}
+                  label={t('workOrders:fields.principalClient', { defaultValue: 'Mandaté par' })}
+                  hint={t('workOrders:fields.principalClientHint', { defaultValue: 'sous-traitance : le donneur d’ordre pour qui ce BT est exécuté' })}
+                />
               </div>
 
               {/* ════════════════════════════════════════════════════════════

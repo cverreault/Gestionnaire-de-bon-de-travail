@@ -12,14 +12,21 @@
     "phone": "Téléphone",
     "clientType": "Type de client",
     "notes": "Notes",
-    "addresses": "Adresses"
+    "addresses": "Adresses",
+    "principalClient": "Client de (donneur d’ordre)",
+    "principalClientHint": "optionnel — sous-traitance",
+    "principalClear": "Retirer",
+    "principalSearch": "Rechercher un donneur d’ordre…",
+    "principalNoResult": "Aucun client trouvé",
+    "clientOf": "Client de {{name}}"
   },
   "types": {
     "RESIDENTIAL": "Résidentiel",
     "COMMERCIAL": "Commercial",
     "INDUSTRIAL": "Industriel",
     "INSTITUTIONAL": "Institutionnel",
-    "Standard": "Standard"
+    "Standard": "Standard",
+    "PRINCIPAL": "Donneur d'ordre"
   },
   "messages": {
     "empty": "Aucun client",

@@ -1,4 +1,5 @@
 import {
+  IsUUID,
   IsString,
   IsNotEmpty,
   IsOptional,
@@ -140,6 +141,11 @@ export class CreateClientDto {
   @IsString()
   @MaxLength(2000)
   notes?: string;
+
+  @ApiPropertyOptional({ description: 'B42 — UUID du donneur d\'ordre dont ce client est le client (null pour retirer)' })
+  @IsOptional()
+  @IsUUID()
+  principalClientId?: string | null;
 
   @ApiPropertyOptional({
     type: [CreateClientAddressDto],

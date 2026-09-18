@@ -12,14 +12,21 @@
     "phone": "Phone",
     "clientType": "Client type",
     "notes": "Notes",
-    "addresses": "Addresses"
+    "addresses": "Addresses",
+    "principalClient": "Client of (principal)",
+    "principalClientHint": "optional — subcontracting",
+    "principalClear": "Remove",
+    "principalSearch": "Search a principal…",
+    "principalNoResult": "No client found",
+    "clientOf": "Client of {{name}}"
   },
   "types": {
     "RESIDENTIAL": "Residential",
     "COMMERCIAL": "Commercial",
     "INDUSTRIAL": "Industrial",
     "INSTITUTIONAL": "Institutional",
-    "Standard": "Standard"
+    "Standard": "Standard",
+    "PRINCIPAL": "Principal"
   },
   "messages": {
     "empty": "No clients",

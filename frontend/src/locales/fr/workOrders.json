@@ -27,7 +27,9 @@
     "completionNotes": "Notes de complétion",
     "attachments": "Pièces jointes",
     "createdBy": "Créé par",
-    "createdAt": "Créé le"
+    "createdAt": "Créé le",
+    "principalClient": "Mandaté par",
+    "principalClientHint": "sous-traitance : le donneur d’ordre pour qui ce BT est exécuté"
   },
   "types": {
     "INSTALLATION": "Installation",
@@ -122,7 +124,8 @@
     "dateTo": "Date planifiée à",
     "priorityMin": "Priorité minimum",
     "noMatch": "Aucun bon de travail ne correspond aux filtres sélectionnés",
-    "hiddenCompletedSuffix": "complétés masqués"
+    "hiddenCompletedSuffix": "complétés masqués",
+    "principalFilter": "Mandaté par"
   },
   "priorityLevels": {
     "0": "0 — Aucune",
@@ -329,7 +332,8 @@
     "signatures": "Signatures",
     "technician": "Technicien",
     "date": "Date",
-    "footer": "TaskMgr — Réf. {{ref}} — {{date}}"
+    "footer": "TaskMgr — Réf. {{ref}} — {{date}}",
+    "mandatedBy": "Mandaté par"
   },
   "detailPage": {
     "back": "Retour",
@@ -381,6 +385,8 @@
     "addressHint": "Utilisé pour l'impression et l'affichage. Pré-rempli automatiquement quand vous sélectionnez une adresse enregistrée.",
     "assignmentScheduling": "Assignation et planification",
     "unassignedOption": "— Non assigné —",
-    "saveError": "Erreur lors de la sauvegarde. Veuillez réessayer."
+    "saveError": "Erreur lors de la sauvegarde. Veuillez réessayer.",
+    "mandatedBy": "Mandaté par {{name}}",
+    "subcontracting": "Sous-traitance"
   }
 }

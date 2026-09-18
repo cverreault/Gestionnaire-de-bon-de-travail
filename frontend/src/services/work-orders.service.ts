@@ -11,6 +11,8 @@ import type {
 } from '../types';
 
 export interface CreateWorkOrderDto {
+  /** B42 — donneur d'ordre (null pour retirer). */
+  principalClientId?: string | null;
   title: string;
   description?: string;
   type: string;

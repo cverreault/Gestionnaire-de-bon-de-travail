@@ -2,9 +2,11 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { useV3Clients } from '../hooks/useClients';
+import { principalDisplayName } from '../components/PrincipalClientPicker';
 import { useWorkOrders } from '../hooks/useWorkOrders';
 import workOrdersService from '../services/work-orders.service';
-import { WorkOrderStatus, WorkOrderType } from '../types';
+import { WorkOrderStatus, WorkOrderType , ClientType } from '../types';
 import type { WorkOrderFilters, WorkOrder } from '../types';
 import WorkOrderStatusBadge from '../components/WorkOrderStatusBadge';
 import SlaBadge from '../components/SlaBadge';
@@ -248,6 +250,7 @@ export default function WorkOrdersPage() {
   const [status, setStatus] = useState<WorkOrderStatus | undefined>();
   const [type, setType] = useState<WorkOrderType | undefined>();
   const [assignedToId, setAssignedToId] = useState<string | undefined>();
+  const [principalClientId, setPrincipalClientId] = useState<string | undefined>();
   const [scheduledDateFrom, setScheduledDateFrom] = useState('');
   const [scheduledDateTo, setScheduledDateTo] = useState('');
   const [priorityMin, setPriorityMin] = useState<number | undefined>();
@@ -274,6 +277,10 @@ export default function WorkOrdersPage() {
   // Saved filter presets (per-browser via localStorage)
   const [presets, setPresets] = useState<Record<string, FilterPreset>>(() => loadPresets());
   const [activePreset, setActivePreset] = useState<string>('');
+
+  // B42 — donneurs d'ordre pour le filtre « Mandaté par »
+  const { data: principalsData } = useV3Clients({ clientType: ClientType.PRINCIPAL, limit: 100 });
+  const principals = principalsData?.data ?? [];
 
   // Load technicians for the dropdown
   const { data: technicians = [] } = useQuery({
@@ -319,6 +326,7 @@ export default function WorkOrdersPage() {
     ...(status ? { status } : {}),
     ...(type ? { type } : {}),
     ...(assignedToId ? { assignedToId } : {}),
+    ...(principalClientId ? { principalClientId } : {}),
     ...(scheduledDateFrom ? { scheduledDateFrom } : {}),
     ...(scheduledDateTo ? { scheduledDateTo } : {}),
     ...(priorityMin !== undefined && priorityMin > 0 ? { priorityMin } : {}),
@@ -792,6 +800,25 @@ export default function WorkOrdersPage() {
                 ))}
               </select>
             </div>
+
+            {/* B42 — Mandaté par */}
+            {principals.length > 0 && (
+              <div style={{ flex: '0 1 180px', minWidth: '140px' }}>
+                <label style={{ display: 'block', fontSize: theme.font.sizeXs, color: theme.colors.textMuted, marginBottom: '0.25rem', fontWeight: theme.font.weightMedium }}>
+                  🤝 {t('list.principalFilter', { defaultValue: 'Mandaté par' })}
+                </label>
+                <select
+                  value={principalClientId ?? ''}
+                  onChange={(e) => { setPrincipalClientId(e.target.value || undefined); setPage(1); }}
+                  style={{ ...formStyles.select }}
+                >
+                  <option value="">{tCommon('labels.all')}</option>
+                  {principals.map((c) => (
+                    <option key={c.id} value={c.id}>{principalDisplayName(c)}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Scheduled date from */}
             <div style={{ flex: '0 1 160px', minWidth: '130px' }}>

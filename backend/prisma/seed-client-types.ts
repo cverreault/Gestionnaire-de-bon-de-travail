@@ -38,6 +38,14 @@ export async function seedClientTypes(prisma: PrismaClient): Promise<void> {
       icon: '🏛️',
       sortOrder: 3,
     },
+    {
+      name: "Donneur d'ordre",
+      code: 'PRINCIPAL',
+      description: 'Client pour qui nous sous-traitons (B42)',
+      color: '#0ea5e9',
+      icon: '🤝',
+      sortOrder: 4,
+    },
   ];
 
   for (const clientType of clientTypes) {

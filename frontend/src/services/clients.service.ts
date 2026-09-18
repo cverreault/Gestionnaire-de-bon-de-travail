@@ -52,6 +52,8 @@ export interface CreateV3ClientDto {
   phone?: string;
   clientType: ClientType;
   notes?: string;
+  /** B42 — donneur d'ordre (null pour retirer). */
+  principalClientId?: string | null;
   /** Optionally include addresses to be created atomically with the client. */
   addresses?: CreateClientAddressDto[];
 }

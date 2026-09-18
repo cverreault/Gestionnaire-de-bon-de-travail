@@ -65,6 +65,11 @@ export class WorkOrderFilterDto {
   @IsUUID()
   clientId?: string;
 
+  @ApiPropertyOptional({ description: 'B42 — filtrer par donneur d\'ordre (UUID client)' })
+  @IsOptional()
+  @IsUUID()
+  principalClientId?: string;
+
   @ApiPropertyOptional({ description: 'Filtrer par UUID type de tâche (TaskType)' })
   @IsOptional()
   @IsUUID()
