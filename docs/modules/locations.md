@@ -33,7 +33,8 @@ Live GPS positions for opted-in technicians so the dispatcher can see at a glanc
 
 | Méthode | Route | Auth | Description |
 |---|---|---|---|
-| `POST` | `/api/me/location` | TECHNICIAN | Record a single position. `{ latitude, longitude, accuracy? }`. 403 if opted out / inactive / wrong role. 60/min rate limit. |
+| `POST` | `/api/me/location` | TECHNICIAN | Record a single position. `{ latitude, longitude, accuracy? }`. 403 if opted out / inactive / wrong role. 60/min rate limit. Source `WEB`. |
+| `POST` | `/api/me/locations/batch` | TECHNICIAN | B37.7 (ADR-017 §1) — `{ fixes: [{ latitude, longitude, accuracy?, recordedAt, source: MOBILE_FOREGROUND \| MOBILE_BACKGROUND }] }`, 1 à 100 fixes, 12 appels/min, `@Idempotent()`. Même porte de consentement. Réponse `{ accepted, duplicates, rejected: [{ index, reason: IN_FUTURE \| TOO_OLD \| DUPLICATE_IN_BATCH \| INVALID_TIMESTAMP }] }` ; > 2 min dans le futur ou > 7 j rejetés ; doublons `(technicien, recordedAt)` ignorés (`skipDuplicates`). |
 | `GET` | `/api/dispatcher/technicians/positions` | ADMIN, DISPATCHER | Latest position per opted-in active tech. `{ rows: [...] }` |
 
 ## Domain events publiés

@@ -221,6 +221,7 @@ const BACKUP_MATRIX: MatrixRow[] = [
 
 const LOCATIONS_MATRIX: MatrixRow[] = [
   { controller: LocationsController, method: 'record',          expectedRoles: [Role.TECHNICIAN],            note: 'POST /me/location — opt-in via gps.enabled' },
+  { controller: LocationsController, method: 'recordBatch',     expectedRoles: [Role.TECHNICIAN],            note: 'POST /me/locations/batch — B37.7, same consent gate' },
   { controller: LocationsController, method: 'latestPositions', expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'GET /dispatcher/technicians/positions' },
 ];
 
