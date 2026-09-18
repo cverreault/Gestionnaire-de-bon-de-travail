@@ -8,7 +8,8 @@ import type { ApiResponse } from '../types';
 
 export interface AddressSuggestion {
   text: string;
-  magicKey: string;
+  /** Absent for fuzzy (best-match) suggestions: the backend resolves by text. */
+  magicKey?: string;
 }
 
 export interface ResolvedAddress {

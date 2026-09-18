@@ -25,8 +25,8 @@ Le module possède les tables de référence plateforme-wide (`property_units`, 
 
 ## Capabilities
 
-- Suggestions d'adresses pendant la frappe (≥ 3 caractères), résolution d'une suggestion en champs structurés + GPS (score ≥ 90 exigé, sinon `null`)
-- Géocodage d'une adresse structurée : Adresses Québec d'abord (numéro civique exigé égal, score ≥ 90), sinon Nominatim en dégradant la requête (numéro + rue → rue → ville). Ne lève jamais d'exception
+- Suggestions d'adresses pendant la frappe (≥ 3 caractères) en **meilleure correspondance** : `suggest` d'Adresses Québec (exige le générique « rue ») fusionné avec `findAddressCandidates` (tolérant : « 669 principale sainte-marthe » trouve « 669 Rue Principale, Sainte-Marthe ») ; candidats gardés à partir d'un score de 78, dédoublonnés, exacts en premier. Résolution d'une suggestion en champs structurés + GPS (score ≥ 90, sinon `null`)
+- Géocodage d'une adresse structurée : Adresses Québec d'abord (score ≥ 90 avec numéro civique égal, **ou** score ≥ 78 si numéro civique et municipalité correspondent tous deux — un « rue » manquant ou une faute légère ne bloque plus), sinon Nominatim en dégradant la requête (numéro + rue → rue → ville). Ne lève jamais d'exception
 - Correspondance adresse → unité d'évaluation : avec coordonnées, boîte de ~150 m puis score numéro civique + rue normalisée + distance ; sans coordonnées, municipalité par nom + rue normalisée + numéro ; repli « unité la plus proche » sous 40 m
 - Normalisation des odonymes partagée entre le service TypeScript et le script d'import Python (minuscules, sans accents, sans générique ni particule ni orientation finale)
 

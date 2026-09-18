@@ -37,13 +37,36 @@ function make(opts: { candidates?: AqCandidate[]; nominatim?: { latitude: number
 
 describe('AddressLookupService', () => {
   describe('suggest', () => {
-    it('requires at least 3 characters and forwards to Adresses Québec', async () => {
+    it('requires at least 3 characters', async () => {
       const { service, aq } = make();
       expect(await service.suggest('45')).toEqual([]);
       expect(aq.suggest).not.toHaveBeenCalled();
-      const out = await service.suggest('451 prin');
-      expect(out).toHaveLength(1);
-      expect(aq.suggest).toHaveBeenCalledWith('451 prin', 6);
+    });
+
+    it('merges exact suggestions with fuzzy candidates, de-duplicated and capped', async () => {
+      const { service, aq } = make({
+        candidates: [
+          candidate({ address: '451 Rue Principale, Sainte-Marthe J0P1W0', score: 82.8 }), // duplicate of the exact one
+          candidate({ address: '451 A Rue Principale, Sainte-Marthe J0P1W0', score: 82.5 }),
+          candidate({ address: 'Rue Principale, Saint-Prime', score: 74 }), // below the floor
+        ],
+      });
+      const out = await service.suggest('451 principale sainte-marthe');
+      expect(aq.suggest).toHaveBeenCalledWith('451 principale sainte-marthe', 6);
+      expect(aq.findCandidates).toHaveBeenCalledWith(expect.objectContaining({ singleLine: '451 principale sainte-marthe' }));
+      expect(out.map((s) => s.text)).toEqual([
+        '451 Rue Principale, Sainte-Marthe J0P1W0',
+        '451 A Rue Principale, Sainte-Marthe J0P1W0',
+      ]);
+      expect(out[0].magicKey).toBe('k1');
+      expect(out[1].magicKey).toBeUndefined();
+    });
+
+    it('still answers from fuzzy candidates when the generic is missing and suggest is empty', async () => {
+      const { service } = make({ candidates: [candidate({ address: '669 Rue Principale, Sainte-Marthe J0P1W0', score: 82.85, civicNumber: 669 })] });
+      (service as unknown as { aq: { suggest: jest.Mock } }).aq.suggest.mockResolvedValueOnce([]);
+      const out = await service.suggest('669 principale sainte-marthe');
+      expect(out).toEqual([{ text: '669 Rue Principale, Sainte-Marthe J0P1W0', score: 82.85 }]);
     });
   });
 
@@ -93,6 +116,24 @@ describe('AddressLookupService', () => {
       expect(out).toMatchObject({ latitude: 45.40495, longitude: -74.29262, source: 'adresses-quebec', postalCode: 'J0P 1W0' });
       expect(aq.findCandidates.mock.calls[0][0].singleLine).toBe('451 rue Principale, Sainte-Marthe J0P1W0');
       expect(nominatim.search).not.toHaveBeenCalled();
+    });
+
+    it('accepts a fuzzy score when civic number and municipality both match (missing « rue »)', async () => {
+      const { service, nominatim } = make({
+        candidates: [candidate({ address: '669 Rue Principale, Sainte-Marthe J0P1W0', score: 82.85, civicNumber: 669, city: 'Sainte-Marthe' })],
+      });
+      const out = await service.geocode({ streetNumber: '669', street: 'Principale', city: 'Ste-Marthe', province: 'QC' });
+      expect(out?.source).toBe('adresses-quebec');
+      expect(nominatim.search).not.toHaveBeenCalled();
+    });
+
+    it('rejects a fuzzy score when the municipality differs (wrong-town guess)', async () => {
+      const { service, nominatim } = make({
+        candidates: [candidate({ address: '669 Rue Principale, Saint-Prime G8J1T6', score: 82, civicNumber: 669, city: 'Saint-Prime' })],
+      });
+      const out = await service.geocode({ streetNumber: '669', street: 'Principale', city: 'Sainte-Marthe', province: 'QC' });
+      expect(out).toBeNull();
+      expect(nominatim.search).toHaveBeenCalled();
     });
 
     it('rejects a high-score candidate whose civic number differs, then falls back to Nominatim', async () => {
