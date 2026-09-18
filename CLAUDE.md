@@ -111,6 +111,7 @@ docker compose up -d
 # Rebuild backend ou frontend
 docker compose up --build -d backend
 docker compose up --build -d frontend
+# (nginx résout backend/frontend à chaque requête via le DNS Docker : pas besoin de le redémarrer après un rebuild)
 
 # Logs
 docker logs taskmgr_backend --since 1m -f
