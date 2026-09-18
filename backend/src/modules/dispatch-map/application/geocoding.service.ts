@@ -1,7 +1,11 @@
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../../common/prisma/prisma.service';
-import { GEOCODER, type IGeocoder } from '../../../common/contracts/geocoder.contract';
+import {
+  GEOCODER,
+  propertyFactsToAddressColumns,
+  type IGeocoder,
+} from '../../../common/contracts/geocoder.contract';
 
 /**
  * B19 / B40 — Sweep of client addresses missing coordinates.
@@ -78,12 +82,19 @@ export class GeocodingService {
     for (const addr of rows) {
       const hit = await geocoder.geocode(addr);
       if (hit) {
+        const facts = await geocoder.findProperty({
+          latitude: hit.latitude, longitude: hit.longitude,
+          streetNumber: addr.streetNumber, street: addr.street, city: addr.city,
+        });
         await this.prisma.clientAddress.update({
           where: { id: addr.id },
           data: {
             latitude: hit.latitude,
             longitude: hit.longitude,
+            geocodedAt: new Date(),
+            geocodeSource: hit.source,
             ...(hit.postalCode && !addr.postalCode ? { postalCode: hit.postalCode } : {}),
+            ...propertyFactsToAddressColumns(facts),
           },
         });
         resolved++;
@@ -93,9 +104,24 @@ export class GeocodingService {
       await sleep(GeocodingService.PAUSE_MS);
     }
 
-    if (rows.length > 0) {
+    // B40.2 — addresses already geocoded but never matched to the roll
+    // (rows from before the import, or a refreshed roll). Local queries only.
+    const unmatched = await this.prisma.clientAddress.findMany({
+      where: { latitude: { not: null }, propertyMatchedAt: null },
+      take: 200,
+      select: { id: true, latitude: true, longitude: true, streetNumber: true, street: true, city: true },
+    });
+    for (const addr of unmatched) {
+      const facts = await geocoder.findProperty(addr);
+      await this.prisma.clientAddress.update({
+        where: { id: addr.id },
+        data: propertyFactsToAddressColumns(facts),
+      });
+    }
+
+    if (rows.length > 0 || unmatched.length > 0) {
       this.logger.log(
-        `Geocoding sweep: ${resolved} resolved, ${failed} failed of ${rows.length}`,
+        `Geocoding sweep: ${resolved} resolved, ${failed} failed of ${rows.length}; ${unmatched.length} property sheets matched`,
       );
     }
     return { attempted: rows.length, resolved, failed };

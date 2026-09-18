@@ -95,6 +95,27 @@ export interface ClientAddress {
   isDefault: boolean;
   latitude?: number | null;
   longitude?: number | null;
+  /** B40 — provenance du géocodage. */
+  geocodedAt?: string | null;
+  geocodeSource?: 'adresses-quebec' | 'nominatim' | null;
+  /** B40.2 — fiche propriété copiée du rôle d'évaluation au géocodage. */
+  propertyMatchedAt?: string | null;
+  propertyMatchedBy?: 'number+street' | 'nearest' | null;
+  propertyMatricule?: string | null;
+  propertyMunicipality?: string | null;
+  propertyAddress?: string | null;
+  propertyLandUseCode?: string | null;
+  propertyLandUseLabel?: string | null;
+  propertyDwellings?: number | null;
+  propertyStoreys?: number | null;
+  propertyYearBuilt?: number | null;
+  propertyLandAreaM2?: number | null;
+  propertyFloorAreaM2?: number | null;
+  propertyLotNumbers?: string | null;
+  propertyValueLand?: number | null;
+  propertyValueBuilding?: number | null;
+  propertyValueTotal?: number | null;
+  propertyRollYear?: number | null;
   /** Free-form values for the AddressTypeConfig.fields keyed by fieldId. */
   typeData?: Record<string, unknown> | null;
   createdAt: string;

@@ -90,6 +90,7 @@ const CLIENTS_MATRIX: MatrixRow[] = [
   { controller: ClientsController, method: 'findAllAddresses',       expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'GET /clients/addresses/all' },
   { controller: ClientsController, method: 'createStandaloneAddress',expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'POST /clients/addresses' },
   { controller: ClientsController, method: 'updateAddressById',      expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'PATCH /clients/addresses/:id' },
+      { controller: ClientsController, method: 'refreshAddressGeo', expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'POST /clients/addresses/:addressId/geo-refresh' },
   { controller: ClientsController, method: 'deleteAddressById',      expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'DELETE /clients/addresses/:id' },
 ];
 

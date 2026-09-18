@@ -36,11 +36,20 @@ Le module possède les tables de référence plateforme-wide (`property_units`, 
 |---|---|---|---|
 | `GET` | `/api/geo/suggest?q=` | ADMIN, DISPATCHER | `{ suggestions: [{ text, magicKey }] }` — max 6 |
 | `GET` | `/api/geo/resolve?text=&magicKey=` | ADMIN, DISPATCHER | `{ address: { streetNumber, street, apartment, city, postalCode, province: 'QC', country: 'Canada', latitude, longitude, score } \| null }` |
-| `GET` | `/api/geo/property?addressId=` ou `?latitude&longitude[&streetNumber&street]` ou `?street&city[&streetNumber]` | ADMIN, DISPATCHER, TECHNICIAN | `{ property: PropertySheet \| null }` |
+| `GET` | `/api/geo/property?addressId=` (recherche à la demande, la fiche persistée sur l'adresse est la voie normale) ou `?latitude&longitude[&streetNumber&street]` ou `?street&city[&streetNumber]` | ADMIN, DISPATCHER, TECHNICIAN | `{ property: PropertySheet \| null }` |
 
 `PropertySheet` : `matricule, municipality, address, landUseCode, landUseLabel, dwellings, storeys, yearBuilt, landAreaM2, floorAreaM2, lotNumbers[], valueLand, valueBuilding, valueTotal, rollYear, latitude, longitude, matchedBy ('number+street' | 'nearest'), distanceMeters`.
 
 `addressId` passe par `client_addresses` sous le middleware tenant-scope : une adresse d'un autre tenant renvoie `null`.
+
+## Fiche propriété sur l'adresse (B40.2)
+
+Les attributs de la propriété sont **copiés sur `client_addresses`** au moment du géocodage (colonnes `property_*`, plus `geocoded_at` / `geocode_source`) : l'adresse est autoporteuse, aucun appel supplémentaire pour afficher la fiche sur un BT ou une fiche client, et les colonnes sont exportables/filtrables.
+
+- `clients` : après création ou modification d'une adresse (`ClientsService.enrichGeo`, fire-and-forget) — géocode si les coordonnées manquent, puis `findProperty` du contrat et écriture via `propertyFactsToAddressColumns()`. Une modification des parties postales remet tout à zéro (`ADDRESS_GEO_RESET`) et relance.
+- `POST /api/clients/addresses/:id/geo-refresh` (ADMIN, DISPATCHER) : re-géocode et rafraîchit la fiche de façon synchrone (bouton « Actualiser » de la fiche).
+- `dispatch-map` : le balayage (bouton + cron 10 min) géocode les adresses sans coordonnées **et** apparie celles géocodées mais jamais rapprochées du rôle (`property_matched_at IS NULL`, 200 par passe, requêtes locales seulement) — c'est ainsi que les adresses antérieures à l'import et celles d'un rôle rafraîchi sont rattrapées.
+- `property_matched_at` est posé même sans correspondance (`property_matched_by` null) pour ne pas réessayer à chaque passe.
 
 ## Domain events publiés
 

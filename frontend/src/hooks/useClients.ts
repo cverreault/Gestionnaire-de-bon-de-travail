@@ -7,6 +7,7 @@ import {
   UpdateV3ClientDto,
   CreateClientAddressDto,
   UpdateClientAddressDto,
+  refreshAddressGeo,
   getClients,
   getClient,
   createClient,
@@ -264,6 +265,23 @@ export function useAllAddresses(search?: string) {
     queryFn: async () => {
       const res = await getAllAddresses(search);
       return (res.data?.data ?? res.data) as ClientAddressWithClient[];
+    },
+  });
+}
+
+/** B40.2 — « Actualiser » la fiche propriété d'une adresse. */
+export function useRefreshAddressGeo() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (addressId: string) => {
+      const res = await refreshAddressGeo(addressId);
+      return (res.data?.data ?? res.data) as ClientAddress;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['clients'] });
+      qc.invalidateQueries({ queryKey: ['work-orders'] });
+      qc.invalidateQueries({ queryKey: ['workOrders'] });
+      qc.invalidateQueries({ queryKey: ['addresses'] });
     },
   });
 }

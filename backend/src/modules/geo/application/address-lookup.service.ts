@@ -3,7 +3,10 @@ import type {
   GeocodeInput,
   GeocodeResult,
   IGeocoder,
+  PropertyFacts,
+  PropertyLookupInput,
 } from '../../../common/contracts/geocoder.contract';
+import { PropertyService } from './property.service';
 import { AdressesQuebecClient, type AqCandidate } from '../infrastructure/adresses-quebec.client';
 import { NominatimClient, sleep } from '../infrastructure/nominatim.client';
 import { formatPostalCode, isQuebec, parseCivicNumber } from './address-normalize';
@@ -47,7 +50,17 @@ export class AddressLookupService implements IGeocoder {
   constructor(
     private readonly aq: AdressesQuebecClient,
     private readonly nominatim: NominatimClient,
+    private readonly properties: PropertyService,
   ) {}
+
+  async findProperty(input: PropertyLookupInput): Promise<PropertyFacts | null> {
+    try {
+      return await this.properties.find(input);
+    } catch (err) {
+      this.logger.warn(`Property lookup failed: ${err instanceof Error ? err.message : String(err)}`);
+      return null;
+    }
+  }
 
   async suggest(q: string, max = 6): Promise<AddressSuggestion[]> {
     const text = q.trim();

@@ -11,7 +11,12 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma, WorkOrderStatus } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { RequestContextService } from '../../common/context/request-context.service';
-import { GEOCODER, type IGeocoder } from '../../common/contracts/geocoder.contract';
+import {
+  ADDRESS_GEO_RESET,
+  GEOCODER,
+  propertyFactsToAddressColumns,
+  type IGeocoder,
+} from '../../common/contracts/geocoder.contract';
 import { ExternalClientService } from './external-client.service';
 import { CreateClientDto, CreateClientAddressDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
@@ -89,43 +94,69 @@ export class ClientsService {
     @Optional() @Inject(GEOCODER) private readonly geocoder?: IGeocoder,
   ) {}
 
-  // ── Géocodage automatique (B40) ──────────────────────────────────────────
+  // ── Géocodage automatique + fiche propriété (B40 / B40.2) ────────────────
 
   /**
    * Fire-and-forget: resolves coordinates for an address saved without
-   * them. Runs after the transaction committed, inherits the request's
-   * tenant context (AsyncLocalStorage), never throws — the dispatch-map
-   * sweep retries anything left at null.
+   * them, then copies the matching assessment-roll unit onto the row.
+   * Runs after the transaction committed, inherits the request's tenant
+   * context (AsyncLocalStorage), never throws — the dispatch-map sweep
+   * retries anything left incomplete.
    */
   private scheduleGeocode(addressId: string): void {
     if (!this.geocoder) return;
-    const geocoder = this.geocoder;
-    void (async () => {
-      try {
-        const addr = await this.prisma.clientAddress.findUnique({
-          where: { id: addressId },
-          select: {
-            latitude: true, streetNumber: true, street: true, city: true,
-            postalCode: true, province: true, country: true,
-          },
+    void this.enrichGeo(addressId).catch((err) => {
+      this.logger.warn(
+        `Auto-geocode failed for address ${addressId}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    });
+  }
+
+  /**
+   * Geocodes (when coordinates are missing) and matches the property sheet.
+   * `force` re-runs both even when already filled (« Actualiser » button).
+   */
+  private async enrichGeo(addressId: string, force = false) {
+    if (!this.geocoder) return null;
+    const addr = await this.prisma.clientAddress.findUnique({
+      where: { id: addressId },
+      select: {
+        latitude: true, longitude: true, streetNumber: true, street: true, city: true,
+        postalCode: true, province: true, country: true, propertyMatchedAt: true,
+      },
+    });
+    if (!addr) return null;
+
+    let latitude = addr.latitude;
+    let longitude = addr.longitude;
+    const data: Record<string, unknown> = {};
+    if (force || latitude === null || longitude === null) {
+      const hit = await this.geocoder.geocode(addr);
+      if (hit) {
+        latitude = hit.latitude;
+        longitude = hit.longitude;
+        Object.assign(data, {
+          latitude, longitude, geocodedAt: new Date(), geocodeSource: hit.source,
+          ...(hit.postalCode && !addr.postalCode ? { postalCode: hit.postalCode } : {}),
         });
-        if (!addr || addr.latitude !== null) return;
-        const hit = await geocoder.geocode(addr);
-        if (!hit) return;
-        await this.prisma.clientAddress.update({
-          where: { id: addressId },
-          data: {
-            latitude: hit.latitude,
-            longitude: hit.longitude,
-            ...(hit.postalCode && !addr.postalCode ? { postalCode: hit.postalCode } : {}),
-          },
-        });
-      } catch (err) {
-        this.logger.warn(
-          `Auto-geocode failed for address ${addressId}: ${err instanceof Error ? err.message : String(err)}`,
-        );
       }
-    })();
+    }
+    if (force || addr.propertyMatchedAt === null) {
+      const facts = await this.geocoder.findProperty({
+        latitude, longitude, streetNumber: addr.streetNumber, street: addr.street, city: addr.city,
+      });
+      Object.assign(data, propertyFactsToAddressColumns(facts));
+    }
+    if (Object.keys(data).length === 0) return null;
+    return this.prisma.clientAddress.update({ where: { id: addressId }, data });
+  }
+
+  /** Synchronous re-geocode + property refresh for the UI (« Actualiser »). */
+  async refreshGeo(addressId: string) {
+    const existing = await this.prisma.clientAddress.findUnique({ where: { id: addressId }, select: { id: true } });
+    if (!existing) throw new NotFoundException(`Adresse #${addressId} introuvable`);
+    const updated = await this.enrichGeo(addressId, true);
+    return updated ?? this.prisma.clientAddress.findUnique({ where: { id: addressId } });
   }
 
   /**
@@ -508,7 +539,7 @@ export class ClientsService {
         where: { id: addressId },
         data: {
           ...dto,
-          ...(resetCoords ? { latitude: null, longitude: null } : {}),
+          ...(resetCoords ? ADDRESS_GEO_RESET : {}),
           ...(dto.typeData !== undefined && {
             typeData: (dto.typeData ?? Prisma.JsonNull) as Prisma.InputJsonValue | typeof Prisma.JsonNull,
           }),
@@ -599,7 +630,14 @@ export class ClientsService {
     const effectiveIsDefault =
       newClientId === null ? false : dto.isDefault;
 
-    return this.prisma.$transaction(async (tx) => {
+    // B40 — parties postales modifiées sans coordonnées explicites → on
+    // efface GPS + fiche propriété et on relance le géocodage après commit.
+    const postalPartsChanged = (['streetNumber', 'street', 'city', 'postalCode'] as const).some(
+      (k) => dto[k] !== undefined && (dto[k] ?? null) !== (existing[k] ?? null),
+    );
+    const resetCoords = postalPartsChanged && dto.latitude === undefined && dto.longitude === undefined;
+
+    const updated = await this.prisma.$transaction(async (tx) => {
       // Si on passe cette adresse en default, retirer le flag des autres
       // adresses du client courant.
       if (effectiveIsDefault === true && newClientId) {
@@ -617,6 +655,7 @@ export class ClientsService {
       return tx.clientAddress.update({
         where: { id: addressId },
         data: {
+          ...(resetCoords ? ADDRESS_GEO_RESET : {}),
           ...rest,
           ...(typeData !== undefined && {
             typeData: (typeData ?? Prisma.JsonNull) as
@@ -648,6 +687,8 @@ export class ClientsService {
         },
       });
     });
+    if (resetCoords || (updated.latitude === null && dto.latitude == null)) this.scheduleGeocode(addressId);
+    return updated;
   }
 
   /**

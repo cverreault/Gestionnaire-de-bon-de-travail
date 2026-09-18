@@ -30,8 +30,9 @@ function make(opts: { candidates?: AqCandidate[]; nominatim?: { latitude: number
     findCandidates: jest.fn().mockResolvedValue(opts.candidates ?? [candidate()]),
   };
   const nominatim = { search: jest.fn().mockResolvedValue(opts.nominatim ?? null) };
-  const service = new AddressLookupService(aq as never, nominatim as never);
-  return { service, aq, nominatim };
+  const properties = { find: jest.fn().mockResolvedValue(null) };
+  const service = new AddressLookupService(aq as never, nominatim as never, properties as never);
+  return { service, aq, nominatim, properties };
 }
 
 describe('AddressLookupService', () => {

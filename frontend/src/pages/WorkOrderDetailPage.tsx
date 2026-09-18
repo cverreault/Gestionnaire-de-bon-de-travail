@@ -562,7 +562,7 @@ export default function WorkOrderDetailPage() {
                     {rel.label}
                   </p>
                 )}
-                {wo.clientAddressId && <PropertyCard addressId={wo.clientAddressId} />}
+                {wo.clientAddress_rel && <PropertyCard address={wo.clientAddress_rel} />}
               </div>
             );
           }

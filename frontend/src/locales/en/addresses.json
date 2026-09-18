@@ -71,6 +71,11 @@
     "valueDetail": "land {{land}}, building {{building}}",
     "matchedExact": "number + street match",
     "matchedNearest": "nearest unit ({{m}} m)",
-    "source": "Source: {{year}} property assessment roll (MAMH, open data CC-BY 4.0)"
+    "source": "Source: {{year}} property assessment roll (MAMH, open data CC-BY 4.0)",
+    "refresh": "↻ Refresh",
+    "refreshing": "Refreshing…",
+    "pending": "Property sheet pending geocoding.",
+    "matchedNearestShort": "nearest unit",
+    "geocodeSource": "GPS: {{source}}"
   }
 }

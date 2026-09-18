@@ -71,6 +71,11 @@
     "valueDetail": "terrain {{land}}, bâtiment {{building}}",
     "matchedExact": "correspondance numéro + rue",
     "matchedNearest": "unité la plus proche ({{m}} m)",
-    "source": "Source : rôle d’évaluation foncière {{year}} (MAMH, données ouvertes CC-BY 4.0)"
+    "source": "Source : rôle d’évaluation foncière {{year}} (MAMH, données ouvertes CC-BY 4.0)",
+    "refresh": "↻ Actualiser",
+    "refreshing": "Actualisation…",
+    "pending": "Fiche propriété en attente de géocodage.",
+    "matchedNearestShort": "unité la plus proche",
+    "geocodeSource": "GPS : {{source}}"
   }
 }

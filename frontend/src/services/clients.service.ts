@@ -198,3 +198,8 @@ const clientsService = {
 };
 
 export default clientsService;
+
+/** B40.2 — re-géocode l'adresse et rafraîchit sa fiche propriété (synchrone). */
+export async function refreshAddressGeo(addressId: string) {
+  return api.post<ApiResponse<ClientAddress>>(`/clients/addresses/${addressId}/geo-refresh`);
+}
