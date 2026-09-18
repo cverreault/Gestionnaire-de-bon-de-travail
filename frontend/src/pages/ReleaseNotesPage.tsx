@@ -59,6 +59,25 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.9.0',
+    name: 'Adresses officielles : autocomplétion, géocodage automatique et fiche propriété (B40)',
+    date: 'Septembre 2026',
+    entries: [
+      {
+        type: 'new',
+        text: "🔍 Autocomplétion d'adresse dans tous les formulaires (clients, adresses, création de BT) : tapez quelques lettres, choisissez la suggestion d'Adresses Québec et le numéro, la rue, l'unité, la ville, le code postal et la position GPS se remplissent tout seuls",
+      },
+      {
+        type: 'new',
+        text: "🏠 Fiche propriété sur le détail d'un BT (admin et technicien) : usage de l'immeuble, nombre de logements et d'étages, année de construction, superficies, lot cadastral, matricule et valeur au rôle, depuis le rôle d'évaluation foncière du Québec (3,8 M d'adresses importées)",
+      },
+      {
+        type: 'improvement',
+        text: "📍 Géocodage automatique : une adresse créée ou modifiée obtient ses coordonnées sans passer par le bouton de la carte, avec un balayage toutes les 10 minutes pour les oubliées ; le géocodeur officiel du Québec remplace OpenStreetMap en premier choix",
+      },
+    ],
+  },
+  {
     version: '2.8.0',
     name: 'Gestion des SUPER_ADMINs (B39)',
     date: 'Septembre 2026',

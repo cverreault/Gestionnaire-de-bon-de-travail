@@ -45,5 +45,32 @@
     "clientTypeCommercial": "Commercial",
     "clientTypeIndustrial": "Industriel",
     "clientTypeInstitutional": "Institutionnel"
+  },
+  "autocomplete": {
+    "label": "Rechercher une adresse (Adresses Québec)",
+    "placeholder": "Ex. : 451 principale sainte-marthe",
+    "hint": "Choisissez une suggestion pour remplir les champs et la position GPS.",
+    "searching": "Recherche…",
+    "unavailable": "Service d’adresses indisponible",
+    "notResolved": "Adresse non reconnue, complétez les champs manuellement",
+    "geocoded": "Position GPS renseignée depuis Adresses Québec."
+  },
+  "property": {
+    "title": "Fiche propriété",
+    "loading": "Recherche de la fiche propriété…",
+    "notFound": "Aucune fiche propriété trouvée au rôle d’évaluation.",
+    "usage": "Usage",
+    "dwellings": "Logements",
+    "storeys": "Étages",
+    "yearBuilt": "Construction",
+    "landArea": "Terrain",
+    "floorArea": "Aire de plancher",
+    "lot": "Lot(s)",
+    "matricule": "Matricule",
+    "value": "Valeur au rôle",
+    "valueDetail": "terrain {{land}}, bâtiment {{building}}",
+    "matchedExact": "correspondance numéro + rue",
+    "matchedNearest": "unité la plus proche ({{m}} m)",
+    "source": "Source : rôle d’évaluation foncière {{year}} (MAMH, données ouvertes CC-BY 4.0)"
   }
 }

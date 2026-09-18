@@ -21,6 +21,7 @@ import { clientTypeLabel, addressTypeLabel } from '../utils/entityLabels';
 import { theme, cardStyles, buttonStyles, formStyles } from '../theme';
 import { offlineStore } from '../services/offline-store';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import PropertyCard from '../components/PropertyCard';
 
 // ─── Labels ───────────────────────────────────────────────────────────────────
 
@@ -325,6 +326,9 @@ export default function TechnicianWorkOrderDetailPage() {
                     </span>
                   )}
                 </p>
+              )}
+              {isOnline && wo.clientAddressId && (
+                <PropertyCard addressId={wo.clientAddressId} compact />
               )}
               {clientPhone && (
                 <a

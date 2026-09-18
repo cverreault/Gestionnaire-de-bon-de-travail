@@ -74,6 +74,9 @@ export interface CreateClientAddressDto {
   isDefault?: boolean;
   /** Values for the AddressTypeConfig.fields keyed by AddressTypeField.id */
   typeData?: Record<string, unknown>;
+  /** From the address autocomplete (B40); omitted → the backend geocodes. */
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface UpdateClientAddressDto extends Partial<CreateClientAddressDto> {}

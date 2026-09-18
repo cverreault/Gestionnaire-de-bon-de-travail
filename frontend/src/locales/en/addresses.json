@@ -45,5 +45,32 @@
     "clientTypeCommercial": "Commercial",
     "clientTypeIndustrial": "Industrial",
     "clientTypeInstitutional": "Institutional"
+  },
+  "autocomplete": {
+    "label": "Search an address (Adresses Québec)",
+    "placeholder": "e.g. 451 principale sainte-marthe",
+    "hint": "Pick a suggestion to fill the fields and the GPS position.",
+    "searching": "Searching…",
+    "unavailable": "Address service unavailable",
+    "notResolved": "Address not recognised, fill the fields manually",
+    "geocoded": "GPS position set from Adresses Québec."
+  },
+  "property": {
+    "title": "Property sheet",
+    "loading": "Looking up the property sheet…",
+    "notFound": "No property sheet found in the assessment roll.",
+    "usage": "Use",
+    "dwellings": "Dwellings",
+    "storeys": "Storeys",
+    "yearBuilt": "Built",
+    "landArea": "Land",
+    "floorArea": "Floor area",
+    "lot": "Lot(s)",
+    "matricule": "Roll number",
+    "value": "Assessed value",
+    "valueDetail": "land {{land}}, building {{building}}",
+    "matchedExact": "number + street match",
+    "matchedNearest": "nearest unit ({{m}} m)",
+    "source": "Source: {{year}} property assessment roll (MAMH, open data CC-BY 4.0)"
   }
 }

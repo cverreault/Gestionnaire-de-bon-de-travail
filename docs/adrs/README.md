@@ -25,6 +25,7 @@ Ce dossier contient les décisions architecturales structurantes du projet TaskM
 | [015](ADR-015-device-registry-and-native-push.md) | Proposed | Registre d'appareils, push natif via Expo Push Service, sessions par appareil |
 | [016](ADR-016-mobile-offline-sync-protocol.md) | Proposed | Protocole de sync hors ligne : pull delta, rejeux idempotents, verrou optimiste |
 | [017](ADR-017-mobile-background-gps.md) | Proposed | GPS mobile en arrière-plan : envoi groupé et horodatage client |
+| [018](ADR-018-address-reference-and-geocoding.md) | Accepted | Référentiel d'adresses : géocodeur Adresses Québec + rôle d'évaluation importé (fiche propriété) |
 
 ## Comment écrire une nouvelle ADR
 

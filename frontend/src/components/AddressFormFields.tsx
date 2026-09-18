@@ -1,7 +1,10 @@
+import { useEffect, useRef } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useAddressTypes } from '../hooks/useSettings';
 import { theme, formStyles } from '../theme';
+import AddressAutocomplete from './AddressAutocomplete';
+import type { ResolvedAddress } from '../services/geo.service';
 
 export interface AddressFormValues {
   streetNumber: string;
@@ -15,7 +18,13 @@ export interface AddressFormValues {
   addressType: string;
   label: string;
   isDefault: boolean;
+  /** Set by the autocomplete (B40); cleared when the postal parts are edited by hand. */
+  latitude?: number | null;
+  longitude?: number | null;
 }
+
+/** Fields whose manual edit invalidates coordinates chosen through the autocomplete. */
+const POSTAL_PARTS = ['streetNumber', 'street', 'city', 'postalCode'] as const;
 
 /**
  * Reusable address form fields. Render the inputs only — no submit, no wrapper card.
@@ -29,10 +38,48 @@ export default function AddressFormFields({
   /** Optional header text rendered above the inputs. Skip to embed in a parent layout. */
   title?: string;
 }) {
-  const { register, formState: { errors } } = form;
+  const { register, setValue, watch, formState: { errors } } = form;
   const { data: addressTypes = [] } = useAddressTypes(true);
   const { t } = useTranslation('addresses');
   const { t: tCommon } = useTranslation('common');
+
+  // Snapshot of the postal parts at selection time: if the user then edits
+  // one of them by hand, the coordinates no longer describe the address and
+  // are cleared so the backend re-geocodes on save.
+  const selectedRef = useRef<Record<(typeof POSTAL_PARTS)[number], string> | null>(null);
+  const watched = watch(POSTAL_PARTS as unknown as Array<(typeof POSTAL_PARTS)[number]>);
+  useEffect(() => {
+    const snap = selectedRef.current;
+    if (!snap) return;
+    const changed = POSTAL_PARTS.some((k, i) => (watched[i] ?? '') !== snap[k]);
+    if (changed) {
+      selectedRef.current = null;
+      setValue('latitude', null);
+      setValue('longitude', null);
+    }
+  }, [watched, setValue]);
+
+  function applyResolved(a: ResolvedAddress) {
+    const opts = { shouldDirty: true, shouldValidate: true };
+    setValue('streetNumber', a.streetNumber ?? '', opts);
+    setValue('street', a.street, opts);
+    if (a.apartment) setValue('apartment', a.apartment, opts);
+    setValue('city', a.city, opts);
+    setValue('postalCode', a.postalCode ?? '', opts);
+    setValue('province', a.province, opts);
+    setValue('country', a.country, opts);
+    setValue('latitude', a.latitude);
+    setValue('longitude', a.longitude);
+    selectedRef.current = {
+      streetNumber: a.streetNumber ?? '',
+      street: a.street,
+      city: a.city,
+      postalCode: a.postalCode ?? '',
+    };
+  }
+
+  const hasCoords = typeof watch('latitude') === 'number';
+
   return (
     <div
       style={{
@@ -45,6 +92,12 @@ export default function AddressFormFields({
       {title && (
         <p style={{ margin: '0 0 0.75rem', fontWeight: theme.font.weightSemibold, fontSize: theme.font.sizeSm, color: theme.colors.text }}>
           {title}
+        </p>
+      )}
+      <AddressAutocomplete onSelect={applyResolved} />
+      {hasCoords && (
+        <p style={{ margin: '-0.25rem 0 0.6rem', fontSize: theme.font.sizeXs, color: theme.colors.success }}>
+          📍 {t('autocomplete.geocoded', { defaultValue: 'Position GPS renseignée depuis Adresses Québec.' })}
         </p>
       )}
       <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: '0.6rem', marginBottom: '0.6rem' }}>
@@ -116,4 +169,6 @@ export const ADDRESS_FORM_DEFAULTS: AddressFormValues = {
   addressType: 'WORKSITE',
   label: '',
   isDefault: false,
+  latitude: null,
+  longitude: null,
 };

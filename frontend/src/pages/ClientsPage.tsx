@@ -191,6 +191,8 @@ function ClientModal({
         label: v.label || undefined,
         isDefault: v.isDefault,
         typeData: Object.keys(typeData).length > 0 ? typeData : undefined,
+        latitude: v.latitude ?? undefined,
+        longitude: v.longitude ?? undefined,
       };
       if (editingAddressId) {
         await updateAddress.mutateAsync({ clientId, addressId: editingAddressId, data: payload });
@@ -218,6 +220,8 @@ function ClientModal({
       country: addr.country ?? '',
       addressType: addr.addressType,
       label: addr.label ?? '',
+      latitude: addr.latitude ?? null,
+      longitude: addr.longitude ?? null,
       isDefault: addr.isDefault,
     });
     // Seed custom-field values for the address's current type. Update the
@@ -710,6 +714,8 @@ export default function ClientsPage() {
         label: a.label || undefined,
         isDefault: a.isDefault,
         typeData: i === 0 ? addressTypeData : undefined,
+        latitude: a.latitude ?? undefined,
+        longitude: a.longitude ?? undefined,
       }));
     }
     const created = await createClient.mutateAsync(dto);

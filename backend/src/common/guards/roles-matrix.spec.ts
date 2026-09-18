@@ -53,6 +53,7 @@ import { SuperAdminPlansController } from '../../modules/tenants/api/super-admin
 import { TenantSubscriptionController } from '../../modules/tenants/api/tenant-subscription.controller';
 import { TenantApiKeysController } from '../../modules/tenants/api/tenant-api-keys.controller';
 import { LocationsController } from '../../modules/locations/api/locations.controller';
+import { GeoController } from '../../modules/geo/api/geo.controller';
 
 // ─── Matrix rows ─────────────────────────────────────────────────────────────
 
@@ -268,6 +269,14 @@ const ALL_ROWS: { name: string; rows: MatrixRow[] }[] = [
       { controller: SuperAdminPlatformUsersController, method: 'reactivate',    expectedRoles: [Role.SUPER_ADMIN], note: 'PATCH /super-admin/platform-users/:id/reactivate' },
       { controller: SuperAdminPlatformUsersController, method: 'resetTotp',     expectedRoles: [Role.SUPER_ADMIN], note: 'PATCH /super-admin/platform-users/:id/totp/reset' },
       { controller: SuperAdminPlatformUsersController, method: 'remove',        expectedRoles: [Role.SUPER_ADMIN], note: 'DELETE /super-admin/platform-users/:id' },
+    ],
+  },
+  {
+    name: 'GeoController',
+    rows: [
+      { controller: GeoController, method: 'suggest',  expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'GET /geo/suggest' },
+      { controller: GeoController, method: 'resolve',  expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'GET /geo/resolve' },
+      { controller: GeoController, method: 'property', expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'GET /geo/property' },
     ],
   },
   {
