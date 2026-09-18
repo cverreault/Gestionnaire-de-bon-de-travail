@@ -2,9 +2,12 @@ import { Global, Module } from '@nestjs/common';
 import { IDEMPOTENCY_STORE } from '../../common/contracts/idempotency.contract';
 import { DevicesController } from './api/devices.controller';
 import { MobileConfigController } from './api/mobile-config.controller';
+import { SyncController } from './api/sync.controller';
 import { MobileConfigService } from './application/config/mobile-config.service';
 import { DevicesService } from './application/devices/devices.service';
 import { IdempotencyStore } from './application/idempotency/idempotency.store';
+import { SyncService } from './application/sync/sync.service';
+import { MobileRepository } from './infrastructure/mobile.repository';
 import { MobileModuleRegistration } from './mobile.registration';
 
 /**
@@ -13,15 +16,18 @@ import { MobileModuleRegistration } from './mobile.registration';
  * version ; B37.5 : stockage des clés d'idempotence, lié au contrat
  * `IDEMPOTENCY_STORE` consommé par l'interceptor de `common/` depuis
  * n'importe quel contrôleur `@Idempotent()` — d'où `@Global()`.
- * Push (B37.4) et sync (B37.6) suivent.
+ * B37.6 : tirage delta `GET /api/me/sync` (lectures directes documentées).
+ * Push (B37.4) suit.
  */
 @Global()
 @Module({
-  controllers: [DevicesController, MobileConfigController],
+  controllers: [DevicesController, MobileConfigController, SyncController],
   providers: [
     DevicesService,
     MobileConfigService,
     IdempotencyStore,
+    MobileRepository,
+    SyncService,
     { provide: IDEMPOTENCY_STORE, useExisting: IdempotencyStore },
     { provide: 'MOBILE_MODULE_REGISTRATION', useValue: MobileModuleRegistration },
   ],

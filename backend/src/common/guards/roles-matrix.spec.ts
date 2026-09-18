@@ -37,6 +37,7 @@ import { SearchController } from '../../modules/search/api/search.controller';
 import { NotificationsController } from '../../modules/notifications/api/notifications.controller';
 import { DevicesController } from '../../modules/mobile/api/devices.controller';
 import { MobileConfigController } from '../../modules/mobile/api/mobile-config.controller';
+import { SyncController } from '../../modules/mobile/api/sync.controller';
 import { SmsAdminController } from '../../modules/notifications/api/sms-admin.controller';
 import { BillingController } from '../../modules/billing/api/billing.controller';
 import { PartsController } from '../../modules/parts/api/parts.controller';
@@ -120,6 +121,8 @@ const MOBILE_MATRIX: MatrixRow[] = [
   { controller: DevicesController, method: 'revoke',    expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'DELETE /me/devices/:installationId — own devices only' },
   // B37.8 — public bootstrap config (@Public, tenant from Host, nothing sensitive)
   { controller: MobileConfigController, method: 'getConfig', expectedRoles: 'ANY', note: 'GET /mobile/config — @Public' },
+  // B37.6 — delta pull, visible set filtered on assignedToId in the repository
+  { controller: SyncController, method: 'pull', expectedRoles: [Role.TECHNICIAN], note: 'GET /me/sync' },
 ];
 
 const CALENDAR_MATRIX: MatrixRow[] = [

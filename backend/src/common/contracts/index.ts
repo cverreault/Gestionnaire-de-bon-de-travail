@@ -39,3 +39,12 @@ export {
   IDEMPOTENCY_IN_PROGRESS,
 } from './idempotency.contract';
 export type { IIdempotencyStore, IdempotencyScope, IdempotencyRequest, IdempotencyBegin } from './idempotency.contract';
+export {
+  SYNC_PAGE_DEFAULT,
+  SYNC_PAGE_MAX,
+  SYNC_COMPLETED_VISIBLE_DAYS,
+  SYNC_CURSOR_MAX_AGE_DAYS,
+  encodeSyncCursor,
+  decodeSyncCursor,
+} from './sync-protocol.contract';
+export type { SyncCursor } from './sync-protocol.contract';

@@ -47,6 +47,8 @@ function makeHarness(opts?: { warehouseQty?: number; minStock?: number }) {
   };
 
   const tx = {
+    // ADR-016 §2 — work-order part mutations bump the aggregate's updatedAt.
+    workOrder: { update: jest.fn(async () => ({ updatedAt: new Date() })) },
     part: {
       findUniqueOrThrow: jest.fn(async (args: { select?: unknown }) =>
         args?.select ? { quantityOnHand: part.quantityOnHand, minStock: part.minStock } : { ...part },

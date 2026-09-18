@@ -230,7 +230,9 @@ export class StockService {
           createdById: actor.id,
         },
       });
-      return created;
+      // ADR-016 §2 — child mutation bumps the aggregate for the mobile delta pull.
+      const touched = await tx.workOrder.update({ where: { id: workOrderId }, data: { updatedAt: new Date() }, select: { updatedAt: true } });
+      return { ...created, workOrderUpdatedAt: touched.updatedAt };
     });
     return row;
   }
@@ -248,7 +250,7 @@ export class StockService {
     }
 
     const part = await this.requirePart(row.partId);
-    await this.prisma.$transaction(async (tx) => {
+    const workOrderUpdatedAt = await this.prisma.$transaction(async (tx) => {
       if (row.source === PartSource.WAREHOUSE) {
         await this.changeWarehouseQuantity(tx, part, row.quantity);
       } else if (row.technicianId) {
@@ -266,8 +268,10 @@ export class StockService {
           createdById: actor.id,
         },
       });
+      const touched = await tx.workOrder.update({ where: { id: workOrderId }, data: { updatedAt: new Date() }, select: { updatedAt: true } });
+      return touched.updatedAt;
     });
-    return { removed: true };
+    return { removed: true, workOrderUpdatedAt };
   }
 
   // ── Technician self-service ────────────────────────────────────────────────
