@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 
 export const EXPO_PUSH_SEND_URL = 'https://exp.host/--/api/v2/push/send';
 export const EXPO_PUSH_RECEIPTS_URL = 'https://exp.host/--/api/v2/push/getReceipts';
@@ -30,6 +30,9 @@ export interface ExpoPushReceipt {
 
 export type FetchLike = (url: string, init: { method: string; headers: Record<string, string>; body: string }) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>;
 
+/** Optional DI token to swap the HTTP layer (tests) ; global `fetch` otherwise. */
+export const EXPO_FETCH = Symbol('EXPO_FETCH');
+
 /**
  * Thin HTTP client of the Expo Push Service (ADR-015 §2). No SDK : two
  * endpoints, batches of 100, optional access token. Network failures never
@@ -39,7 +42,13 @@ export type FetchLike = (url: string, init: { method: string; headers: Record<st
 export class ExpoPushAdapter {
   private readonly logger = new Logger(ExpoPushAdapter.name);
 
-  constructor(private readonly fetchImpl: FetchLike = (url, init) => fetch(url, init)) {}
+  private readonly fetchImpl: FetchLike;
+
+  constructor(@Optional() @Inject(EXPO_FETCH) fetchImpl?: FetchLike) {
+    // A default parameter value is invisible to Nest's DI (it would try to
+    // resolve `Function`) — hence the explicit optional token.
+    this.fetchImpl = fetchImpl ?? ((url, init) => fetch(url, init));
+  }
 
   static isExpoToken(token: string | null | undefined): token is string {
     return !!token && /^Expo(nent)?PushToken\[[^\]]+\]$/.test(token);
