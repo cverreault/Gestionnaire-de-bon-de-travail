@@ -29,6 +29,7 @@ import { Role } from '@prisma/client';
 
 import { AttachmentsService } from './attachments.service';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { Idempotent } from '../../common/decorators/idempotent.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
@@ -61,6 +62,8 @@ export class AttachmentsController {
   @Post('work-orders/:workOrderId/attachments')
   @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN) // B21 — explicit: CLIENT portal users must not reach staff routes
   @HttpCode(HttpStatus.CREATED)
+  // B37.5 — must stay ABOVE FileInterceptor so the multipart body is parsed before it is hashed.
+  @Idempotent()
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),

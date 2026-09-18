@@ -62,12 +62,12 @@ export function fetchAvailableTransitions(id: string): Promise<AvailableTransiti
   return api<AvailableTransitionsResponse>(`/work-orders/${id}/available-transitions`);
 }
 
-export function transitionWorkOrder(id: string, dto: TransitionDto): Promise<WorkOrderSummary> {
-  return api<WorkOrderSummary>(`/work-orders/${id}/transition`, { method: 'POST', body: dto });
+export function transitionWorkOrder(id: string, dto: TransitionDto, idempotencyKey?: string): Promise<WorkOrderSummary> {
+  return api<WorkOrderSummary>(`/work-orders/${id}/transition`, { method: 'POST', body: dto, idempotencyKey });
 }
 
-export function addNote(workOrderId: string, content: string): Promise<NoteRef> {
-  return api<NoteRef>(`/work-orders/${workOrderId}/notes`, { method: 'POST', body: { content } });
+export function addNote(workOrderId: string, content: string, idempotencyKey?: string): Promise<NoteRef> {
+  return api<NoteRef>(`/work-orders/${workOrderId}/notes`, { method: 'POST', body: { content }, idempotencyKey });
 }
 
 export function fetchAttachments(workOrderId: string): Promise<AttachmentRef[]> {
@@ -81,11 +81,11 @@ export interface LocalFile {
 }
 
 /** Multipart upload (field `file`), same endpoint as the web app. */
-export function uploadAttachment(workOrderId: string, file: LocalFile): Promise<AttachmentRef> {
+export function uploadAttachment(workOrderId: string, file: LocalFile, idempotencyKey?: string): Promise<AttachmentRef> {
   const form = new FormData();
   // React Native's FormData accepts { uri, name, type } for files.
   form.append('file', file as unknown as Blob);
-  return api<AttachmentRef>(`/work-orders/${workOrderId}/attachments`, { method: 'POST', body: form, timeoutMs: 60_000 });
+  return api<AttachmentRef>(`/work-orders/${workOrderId}/attachments`, { method: 'POST', body: form, timeoutMs: 60_000, idempotencyKey });
 }
 
 /** Image source for the streaming proxy (B37.9): bearer token in headers. */

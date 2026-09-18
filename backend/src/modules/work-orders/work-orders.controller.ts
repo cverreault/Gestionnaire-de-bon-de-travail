@@ -31,6 +31,7 @@ import { CreateNoteDto } from './dto/create-note.dto';
 import { SignaturesDto } from './dto/signatures.dto';
 import { AssignAndDispatchDto } from './dto/assign-and-dispatch.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { Idempotent } from '../../common/decorators/idempotent.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 /** Shape of the JWT payload attached to request.user by JwtStrategy */
@@ -218,6 +219,7 @@ export class WorkOrdersController {
   // ── Transition ──────────────────────────────────────────────────────────────
 
   @Post(':id/transition')
+  @Idempotent() // B37.5 — replay-safe from the mobile queue (ADR-016 §3)
   @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN) // B21 — explicit: CLIENT portal users must not reach staff routes
   @HttpCode(HttpStatus.OK)
   // Tight rate limit (C7bis) — a legitimate tech transitions at most once
@@ -263,6 +265,7 @@ export class WorkOrdersController {
   }
 
   @Post(':id/notes')
+  @Idempotent() // B37.5 — replay-safe from the mobile queue (ADR-016 §3)
   @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN) // B21 — explicit: CLIENT portal users must not reach staff routes
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
@@ -282,6 +285,7 @@ export class WorkOrdersController {
   }
 
   @Post(':id/signatures')
+  @Idempotent() // B37.5 — replay-safe from the mobile queue (ADR-016 §3)
   @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN) // B21 — explicit: CLIENT portal users must not reach staff routes
   @HttpCode(HttpStatus.OK)
   @ApiOperation({

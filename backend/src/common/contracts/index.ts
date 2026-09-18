@@ -30,3 +30,12 @@ export type { DefaultProcessStatusDef, DefaultProcessTransitionDef } from './def
 export { DEVICE_ID_HEADER, extractDeviceId } from './device-context.contract';
 export { MOBILE_DEVICE_REGISTERED_EVENT, MOBILE_DEVICE_REVOKED_EVENT } from './mobile-events.contract';
 export type { MobileDeviceRegisteredPayload, MobileDeviceRevokedPayload } from './mobile-events.contract';
+export {
+  IDEMPOTENCY_KEY_HEADER,
+  IDEMPOTENCY_REPLAYED_HEADER,
+  IDEMPOTENCY_STORE,
+  IDEMPOTENT_METADATA_KEY,
+  IDEMPOTENCY_KEY_REUSED,
+  IDEMPOTENCY_IN_PROGRESS,
+} from './idempotency.contract';
+export type { IIdempotencyStore, IdempotencyScope, IdempotencyRequest, IdempotencyBegin } from './idempotency.contract';
