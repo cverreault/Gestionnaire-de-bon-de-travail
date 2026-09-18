@@ -57,3 +57,7 @@ Les BT du technicien vivent dans SQLite (`dispatch2go.db`, expo-sqlite + drizzle
 ## File hors ligne (B38.5)
 
 Chaque geste du technicien (transition, note, photo) est écrit dans `sync_queue` puis envoyé par le drain séquentiel (`src/sync/drain.ts`) avec `Idempotency-Key = id de l'opération` et `expectedUpdatedAt` propagé. Sur 409 de verrou optimiste, l'app tire d'abord, rejoue les opérations additives (3 essais) et met les transitions en conflit ; l'onglet Sync permet d'appliquer quand même ou d'abandonner (ADR-016 §4). Les photos sont copiées dans `documentDirectory/queue/` en attendant l'envoi. Les pièces (`part_add`, `part_remove`) passent aussi par la file : recherche dans le catalogue local ou scan (`BarcodeScanner`, expo-camera). Les signatures (client, technicien) sont capturées par `SignaturePad` (react-native-signature-canvas sur WebView) en PNG data-URL et passent par la même file.
+
+## GPS en arrière-plan (B38.8)
+
+`src/gps/` : la tâche `dispatch2go-background-location` (expo-task-manager) ne fait qu'écrire les positions dans `location_fixes` ; le contrôleur au premier plan décide du mode avec `decideTracking` (consentement serveur `preferences.gps.enabled`, permission OS, au moins un BT en route ou en cours — ADR-017 §3) et envoie les lots à `POST /api/me/locations/batch`. Un 403 (consentement retiré depuis le web) arrête la collecte et l'affiche dans le profil. Sur le simulateur iOS, simuler un trajet via Features › Location.

@@ -163,5 +163,18 @@
     "title": "My stock",
     "empty": "No part in your truck.",
     "hint": "Stock is synced with the server; queued additions are not deducted yet."
+  },
+  "gps": {
+    "title": "Location sharing",
+    "toggle": "Share my location during my work orders",
+    "explain": "Sent to dispatch only while a work order is en route or in progress, kept 7 days. « Always » allows sending while the app is in the background.",
+    "modeoff": "Off",
+    "modeforeground": "On (app open only)",
+    "modebackground": "On (background)",
+    "permissionMissing": "Location permission denied. Open Settings to allow it.",
+    "openSettings": "Open Settings",
+    "revoked": "Sharing was turned off from the web. Turn it back on here if you wish.",
+    "buffered": "{{count}} fix(es) waiting to be sent",
+    "lastFlush": "Last sent {{time}}"
   }
 }

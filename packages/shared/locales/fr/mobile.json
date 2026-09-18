@@ -163,5 +163,18 @@
     "title": "Mon stock",
     "empty": "Aucune pièce dans votre camion.",
     "hint": "Le stock est synchronisé avec le serveur ; les ajouts sur BT en attente ne sont pas encore déduits."
+  },
+  "gps": {
+    "title": "Partage de position",
+    "toggle": "Partager ma position pendant mes BT",
+    "explain": "Envoyée à la répartition seulement quand un bon de travail est en route ou en cours, conservée 7 jours. Le mode « Toujours » permet l'envoi quand l'app est en arrière-plan.",
+    "modeoff": "Inactif",
+    "modeforeground": "Actif (app ouverte seulement)",
+    "modebackground": "Actif (arrière-plan)",
+    "permissionMissing": "Autorisation de localisation refusée. Ouvrez les réglages pour l'autoriser.",
+    "openSettings": "Ouvrir les réglages",
+    "revoked": "Le partage a été désactivé depuis le web. Réactivez-le ici si vous le souhaitez.",
+    "buffered": "{{count}} position(s) en attente d'envoi",
+    "lastFlush": "Dernier envoi {{time}}"
   }
 }

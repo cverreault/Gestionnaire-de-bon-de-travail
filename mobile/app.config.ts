@@ -20,6 +20,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     bundleIdentifier: IS_DEV ? 'com.dispatch2go.app.dev' : 'com.dispatch2go.app',
     supportsTablet: false,
     icon: './assets/expo.icon',
+    // ADR-017 : background location only while a work order is active (see src/gps).
+    infoPlist: { UIBackgroundModes: ['location'] },
   },
   android: {
     package: IS_DEV ? 'com.dispatch2go.app.dev' : 'com.dispatch2go.app',
@@ -36,6 +38,16 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-router',
     'expo-secure-store',
     'expo-localization',
+    [
+      'expo-location',
+      {
+        locationAlwaysAndWhenInUsePermission: "Dispatch2Go partage votre position avec la répartition pendant qu'un bon de travail est en route ou en cours, si vous l'avez activé dans votre profil.",
+        locationWhenInUsePermission: "Dispatch2Go partage votre position avec la répartition pendant qu'un bon de travail est actif, si vous l'avez activé dans votre profil.",
+        isIOSBackgroundLocationEnabled: true,
+        isAndroidBackgroundLocationEnabled: true,
+        isAndroidForegroundServiceEnabled: true,
+      },
+    ],
     [
       'expo-camera',
       { cameraPermission: 'Dispatch2Go utilise l\'appareil photo pour scanner les codes-barres des pièces.' },
