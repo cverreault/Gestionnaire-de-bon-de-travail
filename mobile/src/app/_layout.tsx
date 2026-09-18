@@ -4,6 +4,9 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import '../i18n';
+// Registers the headless background-location task before any render (expo-task-manager).
+import '../gps/location-task';
+import { useGpsController } from '../gps/useGpsController';
 import i18n from '../i18n';
 import { useSession } from '../stores/session.store';
 import { useUpgradeGate } from '../stores/upgrade.store';
@@ -34,6 +37,7 @@ export default function RootLayout() {
   useDeviceRegistration();
   const { ready: dbReady, error: dbError } = useDbReady();
   useSyncScheduler(dbReady);
+  useGpsController(dbReady);
 
   useEffect(() => {
     void hydrate();

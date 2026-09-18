@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 /**
  * Local source of truth of the technician app (ADR-016, B38.4).
@@ -66,4 +66,16 @@ export const syncQueue = sqliteTable('sync_queue', {
   attempts: integer('attempts').notNull().default(0),
   lastError: text('last_error'),
   createdAt: text('created_at').notNull(),
+});
+
+/** Buffered GPS fixes awaiting POST /api/me/locations/batch (ADR-017, B38.8). */
+export const locationFixes = sqliteTable('location_fixes', {
+  id: text('id').primaryKey(),
+  latitude: real('latitude').notNull(),
+  longitude: real('longitude').notNull(),
+  accuracy: real('accuracy'),
+  /** ISO 8601 capture time (client clock). */
+  recordedAt: text('recorded_at').notNull(),
+  /** MOBILE_FOREGROUND | MOBILE_BACKGROUND */
+  source: text('source').notNull(),
 });

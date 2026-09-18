@@ -1,9 +1,12 @@
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import * as Application from 'expo-application';
-import { fetchMyDevices, logout, revokeDevice } from '../../api/endpoints';
+import { fetchMyDevices, logout, revokeDevice, updateMyPreferences } from '../../api/endpoints';
+import { useGpsStore } from '../../gps/gps.store';
+import { refreshPermissions } from '../../gps/useGpsController';
 import { useSession } from '../../stores/session.store';
 import { font, radius, spacing, useTheme } from '../../theme/tokens';
 
@@ -19,6 +22,23 @@ export default function ProfileScreen() {
     mutationFn: (id: string) => revokeDevice(id),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['my-devices'] }),
   });
+
+  const gps = useGpsStore();
+  const setSession = useSession((s) => s.setSession);
+  const { accessToken, refreshToken } = useSession();
+
+  async function toggleGps(enabled: boolean) {
+    if (!user || !accessToken || !refreshToken) return;
+    if (enabled) {
+      const fg = await Location.requestForegroundPermissionsAsync();
+      if (fg.granted) await Location.requestBackgroundPermissionsAsync();
+      await refreshPermissions();
+    }
+    await updateMyPreferences({ gps: { enabled } });
+    const preferences = { ...(user.preferences ?? {}), gps: { enabled } };
+    await setSession({ accessToken, refreshToken, user: { ...user, preferences } });
+    gps.set({ serverConsent: enabled, consentRevoked: false, error: null });
+  }
 
   function confirmRevoke(id: string) {
     Alert.alert(t('profile.revoke'), t('profile.revokeConfirm'), [
@@ -63,6 +83,25 @@ export default function ProfileScreen() {
         {row('profile.device', deviceId)}
         {row('profile.version', `${Application.nativeApplicationVersion ?? '0.0.0'} (${Application.nativeBuildVersion ?? '-'})`)}
       </View>
+      {user?.role === 'TECHNICIAN' && (
+        <View style={{ backgroundColor: theme.surface, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.sm, borderWidth: 1, borderColor: theme.border }}>
+          <Text style={{ color: theme.textMuted, fontSize: font.xs, textTransform: 'uppercase', fontWeight: '700' }}>{t('gps.title')}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+            <Text style={{ flex: 1, color: theme.text, fontSize: font.sm }}>{t('gps.toggle')}</Text>
+            <Switch value={gps.serverConsent} onValueChange={(v) => void toggleGps(v)} trackColor={{ true: theme.primary }} />
+          </View>
+          <Text style={{ color: theme.textMuted, fontSize: font.xs }}>{t('gps.explain')}</Text>
+          <Text style={{ color: gps.mode === 'off' ? theme.textMuted : theme.success ?? theme.primary, fontSize: font.sm, fontWeight: '600' }}>{t(`gps.mode${gps.mode}`)}</Text>
+          {gps.serverConsent && !gps.foregroundGranted && (
+            <Pressable onPress={() => void Linking.openSettings()}>
+              <Text style={{ color: theme.danger, fontSize: font.sm }}>{t('gps.permissionMissing')} <Text style={{ color: theme.primary, fontWeight: '600' }}>{t('gps.openSettings')}</Text></Text>
+            </Pressable>
+          )}
+          {gps.consentRevoked && <Text style={{ color: theme.danger, fontSize: font.sm }}>{t('gps.revoked')}</Text>}
+          {gps.buffered > 0 && <Text style={{ color: theme.textMuted, fontSize: font.xs }}>{t('gps.buffered', { count: gps.buffered })}</Text>}
+          {gps.lastFlushAt && <Text style={{ color: theme.textMuted, fontSize: font.xs }}>{t('gps.lastFlush', { time: new Date(gps.lastFlushAt).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' }) })}</Text>}
+        </View>
+      )}
       {devices.data && devices.data.length > 0 && (
         <View style={{ backgroundColor: theme.surface, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.md, borderWidth: 1, borderColor: theme.border }}>
           <Text style={{ color: theme.textMuted, fontSize: font.xs, textTransform: 'uppercase', fontWeight: '700' }}>{t('profile.devices')}</Text>

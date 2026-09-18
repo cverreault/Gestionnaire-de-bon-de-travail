@@ -15,6 +15,13 @@
       "when": 1789771948128,
       "tag": "0001_smart_valeria_richards",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1789774698849,
+      "tag": "0002_green_harrier",
+      "breakpoints": true
     }
   ]
 }

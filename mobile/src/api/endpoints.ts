@@ -119,6 +119,29 @@ export function removeWorkOrderPart(workOrderId: string, rowId: string, idempote
   return api(`/work-orders/${workOrderId}/parts/${rowId}`, { method: 'DELETE', idempotencyKey });
 }
 
+// ── GPS (B37.7 / B38.8) ──────────────────────────────────────────────────────
+
+export interface LocationFixDto {
+  latitude: number;
+  longitude: number;
+  accuracy?: number | null;
+  recordedAt: string;
+  source: 'MOBILE_FOREGROUND' | 'MOBILE_BACKGROUND';
+}
+
+export function postLocationBatch(fixes: LocationFixDto[], idempotencyKey: string): Promise<{ accepted: number; duplicates: number; rejected: unknown[] }> {
+  return api('/me/locations/batch', {
+    method: 'POST',
+    body: { fixes: fixes.map((f) => ({ ...f, accuracy: f.accuracy ?? undefined })) },
+    idempotencyKey,
+    allowRefresh: true,
+  });
+}
+
+export function updateMyPreferences(patch: Record<string, unknown>): Promise<unknown> {
+  return api('/users/me/preferences', { method: 'PATCH', body: patch });
+}
+
 // ── Devices (B37.3 / B37.8) ──────────────────────────────────────────────────
 
 export interface DeviceView {
