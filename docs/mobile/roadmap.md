@@ -45,7 +45,7 @@ Conventions : une PR par item, commit conventionnel avec le scope du module touc
 | B37.6 | `feat(mobile)` | Touch de l'agrégat dans `WorkOrdersService.createNote/saveSignatures`, `AttachmentsService.upload/remove`, `PartsService` (BT) + `workOrderUpdatedAt` dans les réponses ; `mobile.repository.ts` ; `SyncService` ; curseur ; `SyncController` ; `work-orders.md` | B37.2 |
 | B37.7 | `feat(locations)` | DTO batch ; consentement, clamp, dédup ; `POST /api/me/locations/batch` ; `@Idempotent()` ; `locations.md` | B37.2, B37.5 |
 | B37.8 | `feat(mobile)` | `MobileConfigService` / `MobileConfigController` (`GET /api/mobile/config`) ; heartbeat `upgradeRequired` ; clés `mobile.*` | B37.3 |
-| B37.9 | `feat(attachments)` | `GET /api/attachments/:id/content` (proxy streaming, même RBAC objet que `download`) | — |
+| B37.9 ✅ | `feat(attachments)` | `GET /api/attachments/:id/content` (proxy streaming, même RBAC objet que `download`) — livré en PR | — |
 | B37.10 | `feat(auth)` | Réinitialisation de mot de passe en libre-service : `POST /api/auth/password-reset/request` (email, réponse neutre) + `POST /api/auth/password-reset/confirm` (token 30 min à usage unique) ; un technicien bloqué sur son téléphone n'a aucun recours aujourd'hui | — |
 
 Parallélisable après B37.2 : {B37.3 → B37.4 → B37.8}, B37.5 → B37.7, B37.6, B37.9. Les statuts des ADRs passent à `Accepted` dans la dernière PR du lot.
@@ -69,8 +69,8 @@ Moteur hors ligne (`mobile/src/sync/`) : les lignes serveur ne sont jamais muté
 | B38.2 | `feat(shared)` | Types, contrats, utilitaires, `resolveAvailableTransitions`, `projectWorkOrder`, locales + test de parité | — |
 | B38.3 🔶 | `feat(mobile)` | Shell : router, thème, i18n, écran workspace + branding, device id, secure store, client HTTP + refresh single-flight, login / 2FA / logout, **liste et détail de BT en ligne avec transitions, appel et navigation** (livré en PR) ; reste : enregistrement de l'appareil + heartbeat, gate de version | B37.3, B37.8 |
 | B38.4 | `feat(mobile)` | Schéma drizzle + migrations, pull, `fullResync`, snapshots, liste et détail de BT en lecture seule | B37.6 |
-| B38.5 | `feat(mobile)` | File + drain : transitions chaînées hors ligne, notes, 409, écran sync et conflits, appel et navigation | B37.5, B37.6 |
-| B38.6 | `feat(mobile)` | Caméra + compression + upload avec retry, signature, visualisation via le proxy | B37.9 |
+| B38.5 🔶 | `feat(mobile)` | File + drain : transitions chaînées hors ligne, notes, 409, écran sync et conflits, appel et navigation — **notes en ligne livrées** (composer sur le détail) ; reste : file hors ligne | B37.5, B37.6 |
+| B38.6 🔶 | `feat(mobile)` | Caméra + compression + upload avec retry, signature, visualisation via le proxy — **caméra / galerie, redimension 1600 px JPEG 0.8, upload multipart, vignettes via le proxy livrés en ligne** ; reste : retry hors ligne, signature | B37.9 |
 | B38.7 | `feat(mobile)` | Catalogue et stock dans le pull, ajout / retrait de pièces sur BT, scan, écran Mon stock | B37.6 |
 | B38.8 | `feat(mobile)` | Consentement + permissions, tâche d'arrière-plan, table `location_fixes`, envoi groupé, démarrage / arrêt automatique | B37.7 |
 | B38.9 | `feat(mobile)` | expo-notifications, enregistrement du token, deep link `dispatch2go://work-orders/:id`, pull à la réception | B37.4 |

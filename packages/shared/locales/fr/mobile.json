@@ -1,5 +1,7 @@
 {
-  "app": { "name": "Dispatch2Go" },
+  "app": {
+    "name": "Dispatch2Go"
+  },
   "common": {
     "loading": "Chargement…",
     "retry": "Réessayer",
@@ -63,7 +65,18 @@
     "reasonRequired": "Un motif est requis",
     "reasonLabel": "Motif",
     "completionNotesLabel": "Notes de fin",
-    "confirm": "Confirmer"
+    "confirm": "Confirmer",
+    "addNote": "Ajouter une note",
+    "notePlaceholder": "Écrire une note…",
+    "noteFailed": "Impossible d'enregistrer la note",
+    "photos": "Photos et pièces jointes",
+    "noPhotos": "Aucune photo.",
+    "takePhoto": "Prendre une photo",
+    "choosePhoto": "Choisir",
+    "uploading": "Envoi…",
+    "uploadFailed": "Envoi impossible",
+    "cameraDenied": "Accès à l'appareil photo refusé. Autorisez-le dans les réglages.",
+    "photosDenied": "Accès aux photos refusé. Autorisez-le dans les réglages."
   },
   "status": {
     "REQUESTED": "Demandé",

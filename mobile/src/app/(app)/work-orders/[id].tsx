@@ -11,11 +11,12 @@ import {
   type AvailableTransition,
 } from '@taskmgr/shared';
 import { ApiError } from '../../../api/client';
-import { fetchAvailableTransitions, fetchWorkOrder, transitionWorkOrder } from '../../../api/endpoints';
+import { addNote, fetchAvailableTransitions, fetchWorkOrder, transitionWorkOrder } from '../../../api/endpoints';
+import AttachmentsCard from '../../../components/AttachmentsCard';
 import StatusBadge from '../../../components/StatusBadge';
 import { font, radius, spacing, useTheme } from '../../../theme/tokens';
 
-/** Work-order detail (B38.3): client, address with call/navigate, notes, process transitions. */
+/** Work-order detail (B38.3): client, address with call/navigate, process transitions, notes, photos. */
 export default function WorkOrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, i18n } = useTranslation();
@@ -24,6 +25,8 @@ export default function WorkOrderDetailScreen() {
   const [pending, setPending] = useState<AvailableTransition | null>(null);
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [note, setNote] = useState('');
+  const [noteError, setNoteError] = useState<string | null>(null);
 
   const wo = useQuery({ queryKey: ['work-order', id], queryFn: () => fetchWorkOrder(id), enabled: !!id });
   const transitions = useQuery({ queryKey: ['work-order', id, 'transitions'], queryFn: () => fetchAvailableTransitions(id), enabled: !!id });
@@ -52,6 +55,16 @@ export default function WorkOrderDetailScreen() {
         setError(err instanceof ApiError ? err.message : t('workOrder.transitionFailed'));
       }
     },
+  });
+
+  const saveNote = useMutation({
+    mutationFn: () => addNote(id, note.trim()),
+    onSuccess: () => {
+      setNote('');
+      setNoteError(null);
+      void qc.invalidateQueries({ queryKey: ['work-order', id] });
+    },
+    onError: (err) => setNoteError(err instanceof ApiError ? err.message : t('workOrder.noteFailed')),
   });
 
   function start(tr: AvailableTransition) {
@@ -199,7 +212,25 @@ export default function WorkOrderDetailScreen() {
                   </Text>
                 </View>
               ))}
+              <TextInput
+                value={note}
+                onChangeText={setNote}
+                placeholder={t('workOrder.notePlaceholder')}
+                placeholderTextColor={theme.textMuted}
+                multiline
+                style={{ borderWidth: 1, borderColor: theme.border, borderRadius: radius.md, padding: spacing.md, minHeight: 64, color: theme.text, backgroundColor: theme.surfaceAlt, marginTop: spacing.xs }}
+              />
+              <Pressable
+                disabled={!note.trim() || saveNote.isPending}
+                onPress={() => saveNote.mutate()}
+                style={{ padding: spacing.md, borderRadius: radius.md, alignItems: 'center', backgroundColor: theme.primary, opacity: !note.trim() || saveNote.isPending ? 0.6 : 1 }}
+              >
+                <Text style={{ color: theme.onPrimary, fontWeight: '700' }}>{saveNote.isPending ? t('common.loading') : t('workOrder.addNote')}</Text>
+              </Pressable>
+              {noteError && <Text style={{ color: theme.danger, fontSize: font.sm }}>{noteError}</Text>}
             </View>
+
+            <AttachmentsCard workOrderId={id} canUpload />
           </>
         )}
       </ScrollView>

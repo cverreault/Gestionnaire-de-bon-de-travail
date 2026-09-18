@@ -37,6 +37,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-secure-store',
     'expo-localization',
     [
+      'expo-image-picker',
+      {
+        cameraPermission: "Dispatch2Go utilise l'appareil photo pour joindre des photos aux bons de travail.",
+        photosPermission: 'Dispatch2Go accède à vos photos pour les joindre aux bons de travail.',
+      },
+    ],
+    [
       'expo-splash-screen',
       {
         backgroundColor: '#208AEF',
