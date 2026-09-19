@@ -158,7 +158,9 @@
     "discardConfirm": "Discard this operation? It will never be sent.",
     "signature": "Signature ({{who}})",
     "part_add": "Part added: {{qty}} × {{sku}}",
-    "part_remove": "Part removed: {{sku}}"
+    "part_remove": "Part removed: {{sku}}",
+    "retryLater": "Will retry at the next sync",
+    "stopped": "Sending stopped on a network or server error; it resumes at the next sync."
   },
   "stock": {
     "title": "My stock",

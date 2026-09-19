@@ -25,13 +25,13 @@ export class ApiError extends Error {
 
 let refreshPromise: Promise<boolean> | null = null;
 
-function apiBase(): string {
+export function apiBase(): string {
   const ws = useSession.getState().workspace;
   if (!ws) throw new ApiError(0, 'Aucun espace de travail configuré');
   return `${ws.baseUrl.replace(/\/+$/, '')}/api`;
 }
 
-async function refreshTokens(): Promise<boolean> {
+export async function refreshTokens(): Promise<boolean> {
   if (refreshPromise) return refreshPromise;
   refreshPromise = (async () => {
     const { refreshToken, setTokens, clearSession } = useSession.getState();
@@ -123,6 +123,24 @@ export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T
     return (envelope as { data: T }).data;
   }
   return envelope as T;
+}
+
+/** Headers every authenticated call carries (also used by the native file upload). */
+export function authHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  const { accessToken, deviceId } = useSession.getState();
+  return {
+    Accept: 'application/json',
+    'Accept-Language': i18n.language?.startsWith('en') ? 'en' : 'fr',
+    [DEVICE_ID_HEADER]: deviceId,
+    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    ...extra,
+  };
+}
+
+/** Turns a raw response body into an ApiError-friendly message. */
+export function errorMessageFrom(body: string, status: number): { message: string; json: unknown } {
+  const json = body ? safeJson(body) : null;
+  return { message: extractMessage(json) ?? `HTTP ${status}`, json };
 }
 
 function safeJson(text: string): unknown {

@@ -1,6 +1,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
-import { ApiError } from '../api/client';
-import { addNote, addWorkOrderPart, removeWorkOrderPart, saveSignatures, transitionWorkOrder, uploadAttachment } from '../api/endpoints';
+import { ApiError, apiBase, authHeaders, errorMessageFrom, refreshTokens } from '../api/client';
+import { IDEMPOTENCY_KEY_HEADER } from '@taskmgr/shared';
+import { addNote, addWorkOrderPart, removeWorkOrderPart, saveSignatures, transitionWorkOrder } from '../api/endpoints';
 import type { SendFailure, Sender } from './drain';
 import type { AttachmentPayload, NotePayload, PartAddPayload, PartRemovePayload, QueuedOp, SignaturePayload, TransitionPayload } from './queue';
 
@@ -56,7 +57,7 @@ export const httpSender: Sender = {
   attachment: (op: QueuedOp) =>
     guard(async () => {
       const p = op.payload as AttachmentPayload;
-      const res = (await uploadAttachment(op.workOrderId, { uri: p.uri, name: p.name, type: p.type }, op.id)) as { workOrderUpdatedAt?: string };
+      const res = await uploadFile(op.workOrderId, p, op.id);
       // Best effort : the local copy is no longer needed.
       void FileSystem.deleteAsync(p.uri, { idempotent: true }).catch(() => undefined);
       return { workOrderUpdatedAt: res.workOrderUpdatedAt };
@@ -70,4 +71,30 @@ export async function persistForQueue(opId: string, uri: string, ext: string): P
   const target = `${dir}${opId}.${ext}`;
   await FileSystem.copyAsync({ from: uri, to: target });
   return target;
+}
+
+/**
+ * Native multipart upload (expo-file-system) instead of RN fetch + FormData,
+ * which fails silently on some Android builds. One refresh on 401, then the
+ * same error shape as the JSON client.
+ */
+async function uploadFile(workOrderId: string, file: AttachmentPayload, idempotencyKey: string): Promise<{ id: string; workOrderUpdatedAt?: string }> {
+  const url = `${apiBase()}/work-orders/${workOrderId}/attachments`;
+  const send = () =>
+    FileSystem.uploadAsync(url, file.uri, {
+      httpMethod: 'POST',
+      uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+      fieldName: 'file',
+      mimeType: file.type,
+      parameters: {},
+      headers: authHeaders({ [IDEMPOTENCY_KEY_HEADER]: idempotencyKey }),
+    });
+  const info = await FileSystem.getInfoAsync(file.uri);
+  if (!info.exists) throw new ApiError(400, `Fichier local introuvable : ${file.name}`);
+  let res = await send();
+  if (res.status === 401 && (await refreshTokens())) res = await send();
+  const { message, json } = errorMessageFrom(res.body, res.status);
+  if (res.status < 200 || res.status >= 300) throw new ApiError(res.status, message, json);
+  const envelope = json as { data?: { id: string; workOrderUpdatedAt?: string } } | null;
+  return envelope?.data ?? (json as { id: string; workOrderUpdatedAt?: string });
 }

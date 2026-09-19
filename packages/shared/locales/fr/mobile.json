@@ -158,7 +158,9 @@
     "discardConfirm": "Abandonner cette opération ? Elle ne sera jamais envoyée.",
     "signature": "Signature ({{who}})",
     "part_add": "Pièce ajoutée : {{qty}} × {{sku}}",
-    "part_remove": "Pièce retirée : {{sku}}"
+    "part_remove": "Pièce retirée : {{sku}}",
+    "retryLater": "Nouvel essai à la prochaine synchronisation",
+    "stopped": "L'envoi s'est arrêté sur une erreur réseau ou serveur ; il reprendra à la prochaine synchronisation."
   },
   "stock": {
     "title": "Mon stock",
