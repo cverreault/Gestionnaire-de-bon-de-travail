@@ -72,3 +72,6 @@ mobile/.maestro/tests-output/
 *.p8
 *.p12
 *.mobileprovision
+
+# APK de test servis par nginx (downloads/) — binaires jamais versionnés
+downloads/*.apk

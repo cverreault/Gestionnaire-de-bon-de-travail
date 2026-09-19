@@ -132,6 +132,8 @@ services:
       - "8088:80"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      # Fichiers à télécharger (APK de test de l'app mobile) : https://<domaine>/downloads/
+      - ./downloads:/var/www/downloads:ro
     depends_on:
       backend:
         condition: service_healthy
