@@ -12,17 +12,18 @@ export default function StockScreen() {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const user = useSession((s) => s.user);
-  const { version, syncing, pullNow } = useSyncStore();
+  const { version, dbReady, syncing, pullNow } = useSyncStore();
   const [rows, setRows] = useState<StockRow[]>([]);
   const lang: 'fr' | 'en' = i18n.language.startsWith('en') ? 'en' : 'fr';
 
   useEffect(() => {
+    if (!dbReady) return;
     let alive = true;
     void listMyStock(db).then((r) => alive && setRows(r));
     return () => {
       alive = false;
     };
-  }, [version]);
+  }, [dbReady, version]);
 
   return (
     <ScrollView

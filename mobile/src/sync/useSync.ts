@@ -22,6 +22,10 @@ export function useSyncScheduler(dbReady: boolean): void {
   const lastPull = useRef(0);
 
   useEffect(() => {
+    useSyncStore.setState({ dbReady });
+  }, [dbReady]);
+
+  useEffect(() => {
     if (!dbReady || !accessToken || user?.role !== 'TECHNICIAN') return;
     const userId = user.id;
     const pull = (force = false) => {
@@ -48,9 +52,12 @@ export function useSyncScheduler(dbReady: boolean): void {
 /** Local list with pending ops projected (status chips reflect queued transitions). */
 export function useLocalWorkOrders(): { rows: ProjectedWorkOrder[]; loaded: boolean } {
   const version = useSyncStore((s) => s.version);
+  const dbReady = useSyncStore((s) => s.dbReady);
   const user = useSession((s) => s.user);
   const [state, setState] = useState<{ rows: ProjectedWorkOrder[]; loaded: boolean }>({ rows: [], loaded: false });
   useEffect(() => {
+    // Tables exist only after the migrations (root layout) : never query before.
+    if (!dbReady) return;
     let alive = true;
     void (async () => {
       const [rows, ops] = await Promise.all([listWorkOrders(db), listOps(db)]);
@@ -69,21 +76,23 @@ export function useLocalWorkOrders(): { rows: ProjectedWorkOrder[]; loaded: bool
     return () => {
       alive = false;
     };
-  }, [version, user?.id, user?.firstName, user?.lastName]);
+  }, [dbReady, version, user?.id, user?.firstName, user?.lastName]);
   return state;
 }
 
 /** Every queued op, for the sync screen. */
 export function useQueueOps(): QueuedOp[] {
   const version = useSyncStore((s) => s.version);
+  const dbReady = useSyncStore((s) => s.dbReady);
   const [ops, setOps] = useState<QueuedOp[]>([]);
   useEffect(() => {
+    if (!dbReady) return;
     let alive = true;
     void listOps(db).then((rows) => alive && setOps(rows));
     return () => {
       alive = false;
     };
-  }, [version]);
+  }, [dbReady, version]);
   return ops;
 }
 
@@ -99,10 +108,11 @@ export interface LocalWorkOrderView {
 
 export function useLocalWorkOrder(id: string | undefined): LocalWorkOrderView {
   const version = useSyncStore((s) => s.version);
+  const dbReady = useSyncStore((s) => s.dbReady);
   const user = useSession((s) => s.user);
   const [state, setState] = useState<LocalWorkOrderView>({ wo: null, server: null, snapshot: null, ops: [], loaded: false });
   useEffect(() => {
-    if (!id) return;
+    if (!id || !dbReady) return;
     let alive = true;
     void (async () => {
       const server = await getWorkOrder(db, id);
@@ -114,6 +124,6 @@ export function useLocalWorkOrder(id: string | undefined): LocalWorkOrderView {
     return () => {
       alive = false;
     };
-  }, [id, version, user?.id, user?.firstName, user?.lastName]);
+  }, [id, dbReady, version, user?.id, user?.firstName, user?.lastName]);
   return state;
 }
