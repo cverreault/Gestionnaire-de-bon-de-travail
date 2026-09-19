@@ -64,3 +64,17 @@ Les flows utilisent les libellés FR de l'app ; lancer le simulateur en françai
 3. Notes de version (`frontend/src/pages/ReleaseNotesPage.tsx`) et `version` dans `app.config.ts`.
 4. `eas build --profile production --platform all`, puis `eas submit`.
 5. Après publication : monter `mobile.latest-app-version`, et `mobile.min-app-version.*` seulement si une rupture d'API l'exige.
+
+## 9. Builds de test hors store (APK) et mise à jour depuis l'app
+
+Un APK local ou `preview` peut être distribué sans Google Play depuis `https://<domaine>/downloads/` (dossier `downloads/` du dépôt, servi par le proxy nginx, binaires non versionnés).
+
+```bash
+# Sur le Mac, après ./gradlew assembleRelease (ou téléchargement du build EAS preview)
+scp mobile/android/app/build/outputs/apk/release/app-release.apk cverreault@imp:/home/cverreault/projet/taskmgr/downloads/dispatch2go.apk
+ssh cverreault@imp '/home/cverreault/projet/taskmgr/scripts/mobile/publish-apk.sh "" "Notes courtes de la version"'
+```
+
+`publish-apk.sh` écrit `downloads/version.json` (version lue dans `mobile/app.config.ts`, taille, sha256, date, notes). Les apps Android installées hors store le consultent au démarrage, au retour au premier plan (≤ toutes les 6 h) et au retour du réseau ; si la version est plus récente, une bannière « Mise à jour disponible » télécharge l'APK et ouvre l'installateur Android — l'utilisateur confirme d'un tap, Android n'autorise pas l'installation silencieuse. Les builds `production` (`extra.distribution = store`) ignorent ce mécanisme : Google Play met à jour lui-même. iOS : uniquement TestFlight / App Store.
+
+Ne pas oublier de **monter `version` dans `app.config.ts`** avant chaque build de test, sinon les appareils ne verront pas de mise à jour.

@@ -11,7 +11,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: IS_DEV ? 'Dispatch2Go (dev)' : 'Dispatch2Go',
   slug: 'dispatch2go',
-  version: '0.1.0',
+  version: '0.2.0',
   orientation: 'portrait',
   scheme: 'dispatch2go',
   icon: './assets/images/icon.png',
@@ -25,6 +25,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   android: {
     package: IS_DEV ? 'com.dispatch2go.app.dev' : 'com.dispatch2go.app',
+    // Mise à jour d'un APK hors store depuis l'app (src/update) ; sans effet sur un build Play.
+    permissions: ['android.permission.REQUEST_INSTALL_PACKAGES'],
     adaptiveIcon: {
       backgroundColor: '#E6F4FE',
       foregroundImage: './assets/images/android-icon-foreground.png',
@@ -76,5 +78,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   extra: {
     // Renseigné par `eas init` ; pas un secret.
     eas: { projectId: process.env.EAS_PROJECT_ID },
+    // 'store' désactive l'auto-mise à jour APK (Google Play s'en charge) ; sinon l'app
+    // surveille <workspace>/downloads/version.json (builds locaux et preview).
+    distribution: process.env.EAS_BUILD_PROFILE === 'production' ? 'store' : 'sideload',
   },
 });

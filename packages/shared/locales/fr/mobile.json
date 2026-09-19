@@ -184,5 +184,11 @@
     "denied": "Refusées — autorisez-les dans les réglages",
     "noProject": "Indisponibles sur ce build de développement (projet EAS non initialisé)",
     "error": "Indisponibles : {{reason}}"
+  },
+  "update": {
+    "available": "Mise à jour {{version}} disponible",
+    "install": "Télécharger et installer",
+    "downloading": "Téléchargement… {{pct}} %",
+    "failed": "Mise à jour impossible"
   }
 }
