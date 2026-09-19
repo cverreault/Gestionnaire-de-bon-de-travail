@@ -78,6 +78,9 @@ export default function SyncScreen() {
         {user && btn(t('sync.now'), () => void pullNow(user.id))}
       </View>
       {error && error !== 'offline' && <Text style={{ color: theme.danger, fontSize: font.sm }}>{t('sync.failed')} · {error}</Text>}
+      {error === 'offline' && ops.some((o) => o.status === 'PENDING' && o.attempts > 0) && (
+        <Text style={{ color: theme.textSecondary, fontSize: font.sm }}>{t('queue.stopped')}</Text>
+      )}
       {ops.length === 0 && <Text style={{ color: theme.textMuted, padding: spacing.lg, textAlign: 'center' }}>{t('queue.empty')}</Text>}
       {ops.map((op) => {
         const info = refs[op.id];
@@ -92,7 +95,11 @@ export default function SyncScreen() {
             {op.status === 'CONFLICT' && (
               <Text style={{ color: theme.textSecondary, fontSize: font.sm }}>{info && !info.stillValid ? t('queue.unavailableHint') : t('queue.conflictHint')}</Text>
             )}
-            {op.status === 'FAILED' && op.lastError && <Text style={{ color: theme.danger, fontSize: font.sm }}>{op.lastError}</Text>}
+            {(op.status === 'FAILED' || (op.status === 'PENDING' && op.attempts > 0)) && op.lastError && (
+              <Text style={{ color: op.status === 'FAILED' ? theme.danger : theme.textSecondary, fontSize: font.sm }}>
+                {op.status === 'PENDING' ? `${t('queue.retryLater')} · ` : ''}{op.lastError}
+              </Text>
+            )}
             {(op.status === 'CONFLICT' || op.status === 'FAILED') && user && (
               <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs }}>
                 {(op.status === 'FAILED' || info?.stillValid !== false) && btn(op.status === 'CONFLICT' ? t('queue.apply') : t('queue.retry'), () => void retryOp(user.id, op.id))}
