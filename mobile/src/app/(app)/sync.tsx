@@ -16,12 +16,13 @@ export default function SyncScreen() {
   const theme = useTheme();
   const user = useSession((s) => s.user);
   const ops = useQueueOps();
-  const { syncing, lastSyncAt, online, error, pullNow, retryOp, discardOp, version } = useSyncStore();
+  const { syncing, lastSyncAt, online, error, pullNow, retryOp, discardOp, version, dbReady } = useSyncStore();
   const lang = i18n.language.startsWith('en') ? 'en-CA' : 'fr-CA';
   const [refs, setRefs] = useState<Record<string, { ref: string; stillValid: boolean }>>({});
 
   // Reference numbers + « is this transition still possible » per op (re-validated against the fresh step).
   useEffect(() => {
+    if (!dbReady) return;
     let alive = true;
     void (async () => {
       const out: Record<string, { ref: string; stillValid: boolean }> = {};
@@ -40,7 +41,7 @@ export default function SyncScreen() {
     return () => {
       alive = false;
     };
-  }, [ops, version, user?.role]);
+  }, [ops, version, dbReady, user?.role]);
 
   function describe(op: QueuedOp): string {
     if (op.kind === 'transition') return t('queue.transition', { label: (op.payload as TransitionPayload).label });

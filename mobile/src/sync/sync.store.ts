@@ -9,6 +9,8 @@ import { httpSender } from './senders';
 import * as Crypto from 'expo-crypto';
 
 interface SyncState {
+  /** True once the SQLite migrations ran ; local hooks stay idle before that. */
+  dbReady: boolean;
   /** Bumped after every applied pull / queue change so local hooks re-read. */
   version: number;
   syncing: boolean;
@@ -37,6 +39,7 @@ async function pullOnly(userId: string, set: (p: Partial<SyncState>) => void, ge
 }
 
 export const useSyncStore = create<SyncState>((set, get) => ({
+  dbReady: false,
   version: 0,
   syncing: false,
   lastSyncAt: null,
