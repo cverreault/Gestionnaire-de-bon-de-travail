@@ -184,5 +184,11 @@
     "denied": "Denied — allow them in Settings",
     "noProject": "Unavailable on this development build (EAS project not initialised)",
     "error": "Unavailable: {{reason}}"
+  },
+  "update": {
+    "available": "Update {{version}} available",
+    "install": "Download and install",
+    "downloading": "Downloading… {{pct}}%",
+    "failed": "Update failed"
   }
 }

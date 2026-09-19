@@ -2,6 +2,7 @@ import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { formatAddressLine } from '@taskmgr/shared';
+import ApkUpdateBanner from '../../components/ApkUpdateBanner';
 import StatusBadge from '../../components/StatusBadge';
 import { useSession } from '../../stores/session.store';
 import { useSyncStore } from '../../sync/sync.store';
@@ -51,9 +52,12 @@ export default function WorkOrdersScreen() {
       contentContainerStyle={{ padding: spacing.lg, gap: spacing.sm, paddingBottom: 40 }}
       refreshControl={<RefreshControl refreshing={syncing} onRefresh={() => user && void pullNow(user.id)} tintColor={theme.primary} />}
       ListHeaderComponent={
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs }}>
-          <Text style={{ color: theme.textMuted, fontSize: font.sm }}>{loaded ? t('workOrders.count', { count: items.length }) : t('common.loading')}</Text>
-          <Text style={{ color: !online || error ? theme.danger : theme.textMuted, fontSize: font.xs }}>{syncLine}</Text>
+        <View>
+          <ApkUpdateBanner />
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs }}>
+            <Text style={{ color: theme.textMuted, fontSize: font.sm }}>{loaded ? t('workOrders.count', { count: items.length }) : t('common.loading')}</Text>
+            <Text style={{ color: !online || error ? theme.danger : theme.textMuted, fontSize: font.xs }}>{syncLine}</Text>
+          </View>
         </View>
       }
       ListEmptyComponent={

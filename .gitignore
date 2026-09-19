@@ -75,3 +75,4 @@ mobile/.maestro/tests-output/
 
 # APK de test servis par nginx (downloads/) — binaires jamais versionnés
 downloads/*.apk
+downloads/version.json

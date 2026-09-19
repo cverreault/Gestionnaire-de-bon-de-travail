@@ -8,6 +8,7 @@ import '../i18n';
 import '../gps/location-task';
 import { useGpsController } from '../gps/useGpsController';
 import { usePushNotifications } from '../push/usePushNotifications';
+import { useApkUpdateChecker } from '../update/useApkUpdate';
 import i18n from '../i18n';
 import { useSession } from '../stores/session.store';
 import { useUpgradeGate } from '../stores/upgrade.store';
@@ -40,6 +41,7 @@ export default function RootLayout() {
   useSyncScheduler(dbReady);
   useGpsController(dbReady);
   usePushNotifications();
+  useApkUpdateChecker();
 
   useEffect(() => {
     void hydrate();
