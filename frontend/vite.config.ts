@@ -3,6 +3,14 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
+// Docker stack by default ; the e2e CI job points it at a bare backend.
+const apiProxy = {
+  '/api': {
+    target: process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:3800',
+    changeOrigin: true,
+  },
+};
+
 export default defineConfig({
   plugins: [
     react(),
@@ -65,11 +73,12 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3800',
-        changeOrigin: true,
-      },
-    },
+    proxy: apiProxy,
+  },
+  // `vite preview` serves the production build with the same /api proxy :
+  // that is what the e2e job runs Playwright against.
+  preview: {
+    port: 5173,
+    proxy: apiProxy,
   },
 });

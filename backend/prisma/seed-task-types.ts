@@ -1,5 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 
+// Config rows are unique per (tenant, key) since B6 ; the seed targets the default tenant.
+const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+
 /**
  * Seed the task_types table with the 5 default task types.
  * Uses upsert (keyed on `name`) to remain idempotent across re-runs.
@@ -45,7 +48,7 @@ export async function seedTaskTypes(prisma: PrismaClient): Promise<void> {
 
   for (const taskType of taskTypes) {
     await prisma.taskType.upsert({
-      where: { name: taskType.name },
+      where: { tenantId_name: { tenantId: DEFAULT_TENANT_ID, name: taskType.name } },
       update: {
         description: taskType.description,
         color: taskType.color,

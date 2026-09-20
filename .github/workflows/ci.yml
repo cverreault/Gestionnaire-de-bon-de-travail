@@ -119,3 +119,81 @@ jobs:
         run: npm run shared:typecheck && npm run shared:test
       - name: Mobile (typecheck + lint + tests)
         run: npm run mobile:typecheck && npm run mobile:lint && npm run mobile:test
+
+  e2e:
+    name: "E2E (Playwright — parcours admin sur une pile réelle)"
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: taskmgr
+          POSTGRES_PASSWORD: taskmgr_secret
+          POSTGRES_DB: taskmgr
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd "pg_isready -U taskmgr"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://taskmgr:taskmgr_secret@localhost:5434/taskmgr
+      JWT_EXPIRATION: 15m
+      JWT_REFRESH_EXPIRATION: 7d
+      MINIO_ENDPOINT: localhost
+      MINIO_PORT: 9000
+      MINIO_ACCESS_KEY: e2eminio
+      MINIO_SECRET_KEY: e2eminio-secret-key
+      MINIO_BUCKET: e2e
+      THROTTLER_DISABLE: "1"
+      # No object store in this job : the journey never uploads a file.
+      BOOT_SMOKE_DISABLE: "1"
+      LOG_LEVEL: warn
+      PORT: "3800"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Random JWT secrets (the backend refuses short or placeholder values)
+        run: |
+          echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          echo "JWT_REFRESH_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+      - name: Backend — install, migrate, seed, build, start
+        working-directory: backend
+        run: |
+          npm ci
+          npx prisma generate
+          npx prisma migrate deploy
+          npx ts-node prisma/seed.ts
+          npm run build
+          nohup node dist/main > ../backend-e2e.log 2>&1 &
+      - name: Frontend — install, build, preview (proxies /api to the backend)
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+          VITE_API_PROXY_TARGET=http://localhost:3800 nohup npx vite preview --port 5173 --strictPort > ../frontend-e2e.log 2>&1 &
+      - name: Wait for the stack
+        run: |
+          for i in $(seq 1 60); do curl -sf http://localhost:3800/api/health >/dev/null && break; sleep 2; done
+          curl -sf http://localhost:3800/api/health
+          for i in $(seq 1 30); do curl -sf http://localhost:5173/login >/dev/null && break; sleep 2; done
+          curl -sf http://localhost:5173/login >/dev/null
+      - name: Playwright
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          BASE_URL=http://localhost:5173 npx playwright test
+      - name: Logs on failure
+        if: failure()
+        run: tail -n 200 backend-e2e.log frontend-e2e.log || true
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: e2e/playwright-report
+          retention-days: 7

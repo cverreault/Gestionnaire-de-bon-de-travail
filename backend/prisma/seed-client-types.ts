@@ -1,5 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 
+// Config rows are unique per (tenant, key) since B6 ; the seed targets the default tenant.
+const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+
 /**
  * Seed the client_type_configs table with 4 default client types.
  * Uses upsert (keyed on `code`) to remain idempotent across re-runs.
@@ -50,7 +53,7 @@ export async function seedClientTypes(prisma: PrismaClient): Promise<void> {
 
   for (const clientType of clientTypes) {
     await prisma.clientTypeConfig.upsert({
-      where: { code: clientType.code },
+      where: { tenantId_code: { tenantId: DEFAULT_TENANT_ID, code: clientType.code } },
       update: {
         name: clientType.name,
         description: clientType.description,
