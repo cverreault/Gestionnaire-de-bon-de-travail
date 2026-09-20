@@ -39,10 +39,19 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 
-export default function WorkOrderDetailPage() {
+interface DetailProps {
+  /** When rendered inside WorkOrderModal : the id comes from props, not the route. */
+  idOverride?: string;
+  /** Replaces « back » navigation when embedded. */
+  onClose?: () => void;
+  embedded?: boolean;
+}
+
+export default function WorkOrderDetailPage({ idOverride, onClose, embedded = false }: DetailProps = {}) {
   const { t } = useTranslation('workOrders');
   const { t: tCommon } = useTranslation('common');
-  const { id } = useParams<{ id: string }>();
+  const { id: routeId } = useParams<{ id: string }>();
+  const id = idOverride ?? routeId;
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: wo, isLoading, error } = useWorkOrder(id!);
@@ -353,10 +362,10 @@ export default function WorkOrderDetailPage() {
   const valueStyle: React.CSSProperties = { color: theme.colors.text };
 
   return (
-    <div style={{ maxWidth: '900px', ...layoutStyles.page }}>
+    <div style={{ maxWidth: '900px', ...layoutStyles.page, ...(embedded ? { margin: 0, padding: '1.25rem 1.5rem' } : {}) }}>
       {/* Back */}
       <button
-        onClick={() => navigate(-1)}
+        onClick={() => (onClose ? onClose() : navigate(-1))}
         style={{
           background: 'none',
           border: 'none',

@@ -125,7 +125,9 @@
     "priorityMin": "Priorité minimum",
     "noMatch": "Aucun bon de travail ne correspond aux filtres sélectionnés",
     "hiddenCompletedSuffix": "complétés masqués",
-    "principalFilter": "Mandaté par"
+    "principalFilter": "Mandaté par",
+    "openInModal": "Ouvrir le bon de travail",
+    "dragHint": "Glissez une ligne sur un technicien du panneau de gauche pour dispatcher. Cliquez la référence pour ouvrir le BT."
   },
   "priorityLevels": {
     "0": "0 — Aucune",
@@ -388,5 +390,37 @@
     "saveError": "Erreur lors de la sauvegarde. Veuillez réessayer.",
     "mandatedBy": "Mandaté par {{name}}",
     "subcontracting": "Sous-traitance"
+  },
+  "modes": {
+    "list": "Liste",
+    "dispatch": "Dispatch"
+  },
+  "period": {
+    "all": "Toutes dates",
+    "day": "Jour",
+    "week": "Semaine",
+    "month": "Mois",
+    "today": "Aujourd'hui",
+    "prev": "Précédent",
+    "next": "Suivant"
+  },
+  "panel": {
+    "technicians": "Techniciens",
+    "all": "Tous les BT",
+    "unassignedShort": "{{count}} non assigné(s)",
+    "collapse": "Replier",
+    "expand": "Techniciens",
+    "dropHint": "Glissez un BT sur un technicien pour l'assigner. Cliquez un nom pour filtrer."
+  },
+  "dispatch": {
+    "unassigned": "Non assigné",
+    "empty": "Déposez un BT ici",
+    "unscheduled": "Non planifié",
+    "sortTime": "Tri : heure",
+    "sortPriority": "Tri : priorité",
+    "sortType": "Tri : type",
+    "sortReference": "Tri : référence",
+    "unassignConfirm": "Retirer {{ref}} à son technicien ?",
+    "cannotUnassign": "Ce BT ne peut pas être désassigné depuis son statut actuel."
   }
 }

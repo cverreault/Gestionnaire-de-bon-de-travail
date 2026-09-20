@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useV3Clients } from '../hooks/useClients';
 import { principalDisplayName } from '../components/PrincipalClientPicker';
@@ -17,6 +17,11 @@ import usersService from '../services/users.service';
 import { theme, tableStyles, buttonStyles, formStyles, layoutStyles, getRowStyle } from '../theme';
 import { formatStreet } from '../utils/addressFormat';
 import { priorityLabel } from '../utils/entityLabels';
+import { periodRange, periodLabel, shiftPeriod, type PeriodScope } from '../utils/periodRange';
+import TechnicianPanel from '../components/TechnicianPanel';
+import DispatchBoard, { type DispatchSort } from '../components/DispatchBoard';
+import WorkOrderModal from '../components/WorkOrderModal';
+import DispatchConfirmModal, { type DispatchPayload } from '../components/DispatchConfirmModal';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -119,13 +124,22 @@ function formatWoAddress(wo: WorkOrder): string {
 
 type TFunc = (key: string, opts?: Record<string, unknown>) => string;
 
-function buildWorkOrderColumnCatalog(t: TFunc, tCommon: TFunc): ColumnDef<WorkOrder>[] {
+function buildWorkOrderColumnCatalog(t: TFunc, tCommon: TFunc, onOpen: (id: string) => void): ColumnDef<WorkOrder>[] {
   return [
     {
       id: 'referenceNumber',
       label: t('referenceNumber'),
       tdStyle: { ...tableStyles.cell, fontFamily: 'monospace' },
-      render: (wo) => wo.referenceNumber,
+      // Opens the work order in the overlay (B43 UI) — no page change.
+      render: (wo) => (
+        <button
+          onClick={() => onOpen(wo.id)}
+          title={t('list.openInModal', { defaultValue: 'Ouvrir le bon de travail' })}
+          style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontFamily: 'monospace', color: theme.colors.primary, fontWeight: theme.font.weightSemibold, textDecoration: 'underline', textUnderlineOffset: 3 }}
+        >
+          {wo.referenceNumber}
+        </button>
+      ),
     },
     {
       id: 'title',
@@ -278,6 +292,19 @@ export default function WorkOrdersPage() {
   const [presets, setPresets] = useState<Record<string, FilterPreset>>(() => loadPresets());
   const [activePreset, setActivePreset] = useState<string>('');
 
+  // ── B43 UI — mode (liste / dispatch), période (jour / semaine / mois), popup ──
+  const [mode, setModeState] = useState<'list' | 'dispatch'>(() => (localStorage.getItem('wo.mode') === 'dispatch' ? 'dispatch' : 'list'));
+  const [scope, setScopeState] = useState<PeriodScope>(() => (localStorage.getItem('wo.scope') as PeriodScope) || 'all');
+  const [anchor, setAnchor] = useState<Date>(() => new Date());
+  const [dispatchSort, setDispatchSort] = useState<DispatchSort>(() => (localStorage.getItem('wo.dispatchSort') as DispatchSort) || 'time');
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [pendingDispatch, setPendingDispatch] = useState<DispatchPayload | null>(null);
+  const qc = useQueryClient();
+  const setMode = (m: 'list' | 'dispatch') => { localStorage.setItem('wo.mode', m); setModeState(m); setPage(1); };
+  const setScope = (sc: PeriodScope) => { localStorage.setItem('wo.scope', sc); setScopeState(sc); setPage(1); };
+  const period = periodRange(scope, anchor);
+  const handleOpen = useCallback((id: string) => setOpenId(id), []);
+
   // B42 — donneurs d'ordre pour le filtre « Mandaté par »
   const { data: principalsData } = useV3Clients({ clientType: ClientType.PRINCIPAL, limit: 100 });
   const principals = principalsData?.data ?? [];
@@ -297,7 +324,7 @@ export default function WorkOrdersPage() {
     ? userVisible
     : DEFAULT_WO_COLUMN_ORDER;
 
-  const columnCatalog = useMemo(() => buildWorkOrderColumnCatalog(t, tCommon), [t, tCommon]);
+  const columnCatalog = useMemo(() => buildWorkOrderColumnCatalog(t, tCommon, handleOpen), [t, tCommon, handleOpen]);
   const catalogById = useMemo(() => {
     const m = new Map<string, ColumnDef<WorkOrder>>();
     for (const c of columnCatalog) m.set(c.id, c);
@@ -327,17 +354,42 @@ export default function WorkOrdersPage() {
     ...(type ? { type } : {}),
     ...(assignedToId ? { assignedToId } : {}),
     ...(principalClientId ? { principalClientId } : {}),
-    ...(scheduledDateFrom ? { scheduledDateFrom } : {}),
-    ...(scheduledDateTo ? { scheduledDateTo } : {}),
+    // The period bar (jour / semaine / mois) wins over the manual date fields.
+    ...((period.from ?? scheduledDateFrom) ? { scheduledDateFrom: period.from ?? scheduledDateFrom } : {}),
+    ...((period.to ?? scheduledDateTo) ? { scheduledDateTo: period.to ?? scheduledDateTo } : {}),
     ...(priorityMin !== undefined && priorityMin > 0 ? { priorityMin } : {}),
     ...(slaBreachedOnly ? { slaBreached: true } : {}),
-    page,
-    limit: 20,
+    // Dispatch mode shows the whole (active) set on one board.
+    ...(mode === 'dispatch' ? { excludeCompleted: true, page: 1, limit: 100 } : { page, limit: 20 }),
   };
 
   const activeCount = countActiveFilters(filters);
 
   const { data, isLoading, error } = useWorkOrders(filters);
+  // Whole active set for the technician panel counts (independent of the filters).
+  const { data: activeSet } = useWorkOrders({ excludeCompleted: true, limit: 100 });
+  const panelCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    let unassigned = 0;
+    for (const wo of activeSet?.data ?? []) {
+      if (wo.assignedToId) counts[wo.assignedToId] = (counts[wo.assignedToId] ?? 0) + 1;
+      else unassigned += 1;
+    }
+    return { counts, unassigned };
+  }, [activeSet]);
+
+  async function handleUnassign(wo: WorkOrder) {
+    // « Non assigné » column : go back to the initial step through the process (the engine clears the technician).
+    const avail = await workOrdersService.getAvailableTransitions(wo.id);
+    const back = avail.transitions.find((tr) => tr.toStatusCode === 0);
+    if (!back) {
+      window.alert(t('dispatch.cannotUnassign', { defaultValue: 'Ce BT ne peut pas être désassigné depuis son statut actuel.' }));
+      return;
+    }
+    if (!window.confirm(t('dispatch.unassignConfirm', { defaultValue: `Retirer ${wo.referenceNumber} à son technicien ?`, ref: wo.referenceNumber }))) return;
+    await workOrdersService.transitionDynamic(wo.id, { targetStepId: back.toStatusId });
+    void qc.invalidateQueries({ queryKey: ['work-orders'] });
+  }
   const rawItems = data?.data ?? [];
   const totalPages = data?.meta?.totalPages ?? 1;
 
@@ -589,6 +641,61 @@ export default function WorkOrdersPage() {
           </Link>
         </div>
       </div>
+
+      {/* ── Mode + période (B43 UI) ── */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'inline-flex', border: theme.borders.default, borderRadius: theme.radius.md, overflow: 'hidden' }}>
+          {(['list', 'dispatch'] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => setMode(m)}
+              style={{ padding: '0.45rem 1rem', border: 'none', cursor: 'pointer', fontSize: theme.font.sizeSm, fontWeight: theme.font.weightMedium, background: mode === m ? theme.colors.primary : theme.colors.surface, color: mode === m ? '#fff' : theme.colors.textSecondary }}
+            >
+              {m === 'list' ? `☰ ${t('modes.list', { defaultValue: 'Liste' })}` : `🗂 ${t('modes.dispatch', { defaultValue: 'Dispatch' })}`}
+            </button>
+          ))}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'inline-flex', border: theme.borders.default, borderRadius: theme.radius.md, overflow: 'hidden' }}>
+            {(['all', 'day', 'week', 'month'] as const).map((sc) => (
+              <button
+                key={sc}
+                onClick={() => setScope(sc)}
+                style={{ padding: '0.4rem 0.8rem', border: 'none', cursor: 'pointer', fontSize: theme.font.sizeSm, background: scope === sc ? theme.colors.primaryLight : theme.colors.surface, color: scope === sc ? theme.colors.primary : theme.colors.textSecondary, fontWeight: scope === sc ? theme.font.weightSemibold : theme.font.weightNormal }}
+              >
+                {t(`period.${sc}`, { defaultValue: sc })}
+              </button>
+            ))}
+          </div>
+          {scope !== 'all' && (
+            <>
+              <button onClick={() => { setAnchor((a) => shiftPeriod(scope, a, -1)); setPage(1); }} style={{ ...buttonStyles.secondary, padding: '0.35rem 0.6rem' }} title={t('period.prev', { defaultValue: 'Précédent' })}>‹</button>
+              <button onClick={() => { setAnchor(new Date()); setPage(1); }} style={{ ...buttonStyles.secondary, padding: '0.35rem 0.75rem' }}>{t('period.today', { defaultValue: "Aujourd'hui" })}</button>
+              <button onClick={() => { setAnchor((a) => shiftPeriod(scope, a, 1)); setPage(1); }} style={{ ...buttonStyles.secondary, padding: '0.35rem 0.6rem' }} title={t('period.next', { defaultValue: 'Suivant' })}>›</button>
+              <span style={{ fontSize: theme.font.sizeSm, color: theme.colors.text, fontWeight: theme.font.weightMedium, textTransform: 'capitalize' }}>{periodLabel(scope, anchor, tCommon('locale', { defaultValue: 'fr-CA' }))}</span>
+            </>
+          )}
+          {mode === 'dispatch' && (
+            <select value={dispatchSort} onChange={(e) => { const v = e.target.value as DispatchSort; localStorage.setItem('wo.dispatchSort', v); setDispatchSort(v); }} style={{ ...formStyles.select, width: 'auto' }}>
+              <option value="time">{t('dispatch.sortTime', { defaultValue: 'Tri : heure' })}</option>
+              <option value="priority">{t('dispatch.sortPriority', { defaultValue: 'Tri : priorité' })}</option>
+              <option value="type">{t('dispatch.sortType', { defaultValue: 'Tri : type' })}</option>
+              <option value="reference">{t('dispatch.sortReference', { defaultValue: 'Tri : référence' })}</option>
+            </select>
+          )}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+        <TechnicianPanel
+          technicians={technicians}
+          counts={panelCounts.counts}
+          unassignedCount={panelCounts.unassigned}
+          selectedId={assignedToId}
+          onSelect={(id) => { setAssignedToId(id); setPage(1); }}
+          onDropWorkOrder={setPendingDispatch}
+        />
+        <div style={{ flex: 1, minWidth: 0 }}>
 
       {/* ── Filter Panel ── */}
       <div
@@ -921,10 +1028,12 @@ export default function WorkOrdersPage() {
             )}
           </div>
 
+          {mode === 'list' ? (
+            <>
           {/* Drag hint + Column picker */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', gap: '0.5rem', flexWrap: 'wrap' }}>
             <span style={{ fontSize: theme.font.sizeXs, color: theme.colors.textLight }}>
-              💡 Glissez une ligne sur un technicien dans la barre latérale pour dispatcher rapidement.
+              💡 {t('list.dragHint', { defaultValue: 'Glissez une ligne sur un technicien du panneau de gauche pour dispatcher. Cliquez la référence pour ouvrir le BT.' })}
             </span>
             <ColumnPicker
               catalog={columnCatalog as ColumnDef<unknown>[]}
@@ -939,7 +1048,7 @@ export default function WorkOrdersPage() {
               <thead style={{ ...tableStyles.header }}>
                 <tr>
                   {orderedColumns.map((col) => (
-                    <th key={col.id} style={{ ...tableStyles.headerCell, textAlign: 'left' }}>
+                    <th key={col.id} style={{ ...tableStyles.headerCell, textAlign: 'left', padding: '0.45rem 0.6rem', whiteSpace: 'nowrap' }}>
                       {col.label}
                     </th>
                   ))}
@@ -971,7 +1080,7 @@ export default function WorkOrdersPage() {
                       onMouseLeave={() => setHoveredRow(null)}
                     >
                       {orderedColumns.map((col) => (
-                        <td key={col.id} style={{ ...(col.tdStyle ?? tableStyles.cell) }}>
+                        <td key={col.id} style={{ ...(col.tdStyle ?? tableStyles.cell), padding: '0.35rem 0.6rem', fontSize: theme.font.sizeXs, maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={typeof col.render(wo, index) === 'string' ? String(col.render(wo, index)) : undefined}>
                           {col.render(wo, index)}
                         </td>
                       ))}
@@ -1026,8 +1135,24 @@ export default function WorkOrdersPage() {
               </button>
             </div>
           )}
+            </>
+          ) : (
+            <DispatchBoard
+              workOrders={items}
+              technicians={technicians}
+              sort={dispatchSort}
+              onOpen={handleOpen}
+              onAssign={setPendingDispatch}
+              onUnassign={(wo) => void handleUnassign(wo)}
+            />
+          )}
         </>
       )}
+        </div>
+      </div>
+
+      {openId && <WorkOrderModal workOrderId={openId} onClose={() => setOpenId(null)} />}
+      {pendingDispatch && <DispatchConfirmModal payload={pendingDispatch} onClose={() => setPendingDispatch(null)} />}
     </div>
   );
 }
