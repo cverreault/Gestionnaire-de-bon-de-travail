@@ -48,7 +48,10 @@
     "unscheduled": "Non planifié",
     "refresh": "Actualiser",
     "count_one": "{{count}} BT actif",
-    "count_other": "{{count}} BT actifs"
+    "count_other": "{{count}} BT actifs",
+    "completed": "Terminés ({{count}})",
+    "showCompleted": "Afficher",
+    "hideCompleted": "Masquer"
   },
   "workOrder": {
     "client": "Client",

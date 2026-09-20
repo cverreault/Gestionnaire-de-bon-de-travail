@@ -48,7 +48,10 @@
     "unscheduled": "Unscheduled",
     "refresh": "Refresh",
     "count_one": "{{count}} active WO",
-    "count_other": "{{count}} active WOs"
+    "count_other": "{{count}} active WOs",
+    "completed": "Completed ({{count}})",
+    "showCompleted": "Show",
+    "hideCompleted": "Hide"
   },
   "workOrder": {
     "client": "Client",
