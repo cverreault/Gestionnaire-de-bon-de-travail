@@ -258,5 +258,15 @@
     "selectDayHint": "Sélectionnez un jour pour voir les événements",
     "statusLabel": "Statut :",
     "viewWorkOrderFull": "Voir le bon de travail"
+  },
+  "tags": {
+    "pick": "Tags",
+    "search": "Rechercher un tag…",
+    "none": "Aucun tag défini. Un admin peut en créer dans Paramètres.",
+    "noMatch": "Aucun tag ne correspond",
+    "inactive": "inactif",
+    "clear": "Tout décocher",
+    "label": "Tags",
+    "edit": "Modifier les tags"
   }
 }

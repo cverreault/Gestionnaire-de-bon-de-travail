@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { FlatList, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { formatAddressLine } from '@taskmgr/shared';
 import ApkUpdateBanner from '../../components/ApkUpdateBanner';
 import StatusBadge from '../../components/StatusBadge';
+import TagChips, { TagChip } from '../../components/TagChips';
 import { useSession } from '../../stores/session.store';
 import { useSyncStore } from '../../sync/sync.store';
 import { useLocalWorkOrders } from '../../sync/useSync';
@@ -28,9 +29,18 @@ export default function WorkOrdersScreen() {
   const { rows, loaded } = useLocalWorkOrders();
   const { syncing, lastSyncAt, error, online, pullNow } = useSyncStore();
   const lang = i18n.language.startsWith('en') ? 'en-CA' : 'fr-CA';
-  const items = rows.filter((w) => ACTIVE.has(w.status));
+  // B44 — tag filter (any-of) over the tags present in the local rows.
+  const [tagFilter, setTagFilter] = useState<string[]>([]);
+  const knownTags = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; color: string }>();
+    for (const w of rows) for (const tg of w.tags ?? []) map.set(tg.id, tg);
+    return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [rows]);
+  const activeFilter = tagFilter.filter((id) => knownTags.some((tg) => tg.id === id));
+  const matchesTags = (w: (typeof rows)[number]) => activeFilter.length === 0 || (w.tags ?? []).some((tg) => activeFilter.includes(tg.id));
+  const items = rows.filter((w) => ACTIVE.has(w.status) && matchesTags(w));
   // Completed work orders stay locally for 14 days (server visibility window) : shown on demand.
-  const completed = rows.filter((w) => !ACTIVE.has(w.status)).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const completed = rows.filter((w) => !ACTIVE.has(w.status) && matchesTags(w)).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   const [showCompleted, setShowCompleted] = useState(false);
 
   type SectionKey = 'today' | 'upcoming' | 'unscheduled' | 'completed';
@@ -65,6 +75,23 @@ export default function WorkOrdersScreen() {
             <Text style={{ color: theme.textMuted, fontSize: font.sm }}>{loaded ? t('workOrders.count', { count: items.length }) : t('common.loading')}</Text>
             <Text style={{ color: !online || error ? theme.danger : theme.textMuted, fontSize: font.xs }}>{syncLine}</Text>
           </View>
+          {knownTags.length > 0 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingVertical: spacing.xs }}>
+              <TagChip
+                tag={{ id: '*', name: t('workOrders.allTags'), color: theme.textMuted }}
+                selected={activeFilter.length === 0}
+                onPress={() => setTagFilter([])}
+              />
+              {knownTags.map((tg) => (
+                <TagChip
+                  key={tg.id}
+                  tag={tg}
+                  selected={activeFilter.includes(tg.id)}
+                  onPress={() => setTagFilter((cur) => (cur.includes(tg.id) ? cur.filter((x) => x !== tg.id) : [...cur, tg.id]))}
+                />
+              ))}
+            </ScrollView>
+          )}
         </View>
       }
       ListEmptyComponent={
@@ -116,6 +143,7 @@ export default function WorkOrdersScreen() {
               <StatusBadge status={wo.status} step={wo.currentStep} />
             </View>
             <Text style={{ color: theme.text, fontSize: font.md, fontWeight: '600' }} numberOfLines={2}>{wo.title}</Text>
+            <TagChips tags={wo.tags} />
             {clientName && <Text style={{ color: theme.textSecondary, fontSize: font.sm }}>👤 {clientName}</Text>}
             {address && <Text style={{ color: theme.textSecondary, fontSize: font.sm }} numberOfLines={2}>📍 {address}</Text>}
             {time && <Text style={{ color: theme.textMuted, fontSize: font.xs }}>🕒 {time}</Text>}

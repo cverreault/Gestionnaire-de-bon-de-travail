@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import TagPicker from '../components/TagPicker';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCreateWorkOrder } from '../hooks/useWorkOrders';
@@ -487,6 +488,8 @@ interface WODetails {
   scheduledDate: string;
   scheduledStartTime: string;
   scheduledEndTime: string;
+  /** B44 */
+  tagIds: string[];
 }
 
 function Step3Details({
@@ -524,6 +527,12 @@ function Step3Details({
           value={values.title}
           onChange={(e) => set('title', e.target.value)}
         />
+      </div>
+
+      {/* B44 — Tags */}
+      <div style={{ ...fieldStyle, marginBottom: '1rem' }}>
+        <label style={labelStyle}>{t('workOrders:fields.tags', { defaultValue: 'Tags' })}</label>
+        <TagPicker variant="form" value={values.tagIds} onChange={(next) => set('tagIds', next)} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
@@ -750,7 +759,22 @@ export default function WorkOrderCreatePage() {
     scheduledDate: prefillDate,
     scheduledStartTime: prefillStart,
     scheduledEndTime: prefillEnd,
+    tagIds: [],
   });
+  // B44 — once the user edits the tags themselves, stop pre-filling from the client / address.
+  const tagsTouched = useRef(false);
+  function handleDetailsChange(next: WODetails) {
+    if (next.tagIds !== woDetails.tagIds) tagsTouched.current = true;
+    setWoDetails(next);
+  }
+  useEffect(() => {
+    if (tagsTouched.current) return;
+    const inherited = Array.from(new Set([
+      ...(selectedClient?.tags ?? []).map((tg) => tg.id),
+      ...(selectedAddress?.tags ?? []).map((tg) => tg.id),
+    ]));
+    setWoDetails((prev) => (prev.tagIds.length === 0 && inherited.length > 0 ? { ...prev, tagIds: inherited } : prev));
+  }, [selectedClient, selectedAddress]);
 
   // Step 3 template data
   const [templateData, setTemplateData] = useState<Record<string, unknown>>({});
@@ -811,6 +835,7 @@ export default function WorkOrderCreatePage() {
       scheduledStartTime: toIso(woDetails.scheduledStartTime),
       scheduledEndTime: toIso(woDetails.scheduledEndTime),
       templateData: Object.keys(templateData).length > 0 ? templateData : undefined,
+      tagIds: woDetails.tagIds,
     };
 
     try {
@@ -868,7 +893,7 @@ export default function WorkOrderCreatePage() {
         />
       )}
       {step === 2 && (
-        <Step3Details values={woDetails} onChange={setWoDetails} templateData={templateData} onTemplateDataChange={setTemplateData} userRole={userRole} />
+        <Step3Details values={woDetails} onChange={handleDetailsChange} templateData={templateData} onTemplateDataChange={setTemplateData} userRole={userRole} />
       )}
       {step === 3 && selectedClient && (
         <Step4Assignment

@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { TAG_LINK_SELECT } from '../../common/prisma/tag-links';
 
 /**
  * Shared Prisma include block for full WorkOrder detail responses.
@@ -53,4 +54,6 @@ export const WORK_ORDER_DETAIL_INCLUDE = {
   attachments: {
     orderBy: { uploadedAt: 'desc' as const },
   },
+  // B44 — flattened to `tags: [{ id, name, color }]` by the tag-flatten middleware.
+  tags: TAG_LINK_SELECT,
 } satisfies Prisma.WorkOrderInclude;

@@ -23,6 +23,19 @@ export const updateTaskType = (id: string, data: Partial<{
 export const deleteTaskType = (id: string) =>
   api.delete(`/settings/task-types/${id}`);
 
+// ── Tags (B44) ────────────────────────────────────────────────────────────────
+
+export const getTags = (isActive?: boolean) =>
+  api.get('/settings/tags', { params: isActive !== undefined ? { isActive } : undefined });
+
+export const createTag = (data: { name: string; color?: string; isActive?: boolean }) =>
+  api.post('/settings/tags', data);
+
+export const updateTag = (id: string, data: Partial<{ name: string; color: string; isActive: boolean }>) =>
+  api.patch(`/settings/tags/${id}`, data);
+
+export const deleteTag = (id: string) => api.delete(`/settings/tags/${id}`);
+
 // ── ClientTypeConfig ──────────────────────────────────────────────────────────
 
 export const getClientTypes = (isActive?: boolean) =>

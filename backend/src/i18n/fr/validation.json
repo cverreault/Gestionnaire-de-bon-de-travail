@@ -13,5 +13,6 @@
   "ALPHANUM_ONLY": "Lettres et chiffres uniquement (pas de tirets ni espaces)",
   "PREFIX_REQUIRED": "Le préfixe est obligatoire",
   "NAME_REQUIRED": "Le nom est obligatoire",
-  "IS_DATA_URL_PNG": "Doit être un data-URL image/png en base64"
+  "IS_DATA_URL_PNG": "Doit être un data-URL image/png en base64",
+  "INVALID_COLOR": "Couleur invalide (format #RRGGBB)"
 }

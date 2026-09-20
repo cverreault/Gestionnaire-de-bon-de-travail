@@ -16,7 +16,8 @@
     "isDefault": "Default address",
     "noClientOption": "No client (standalone address)",
     "noClientHint": "This address will not be attached to any client. It can be linked to a client later.",
-    "customFieldsTitle": "Type-specific fields"
+    "customFieldsTitle": "Type-specific fields",
+    "tags": "Tags"
   },
   "types": {
     "OFFICE": "Office",

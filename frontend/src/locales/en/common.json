@@ -258,5 +258,15 @@
     "selectDayHint": "Select a day to view events",
     "statusLabel": "Status:",
     "viewWorkOrderFull": "View work order"
+  },
+  "tags": {
+    "pick": "Tags",
+    "search": "Search a tag…",
+    "none": "No tag defined yet. An admin can create some in Settings.",
+    "noMatch": "No matching tag",
+    "inactive": "inactive",
+    "clear": "Clear all",
+    "label": "Tags",
+    "edit": "Edit tags"
   }
 }

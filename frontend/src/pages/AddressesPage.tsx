@@ -8,6 +8,8 @@ import { clientTypeLabel, addressTypeLabel } from '../utils/entityLabels';
 import LoadingSpinner from '../components/LoadingSpinner';
 import AddressCreateModal from '../components/AddressCreateModal';
 import CsvImportExportPanel from '../components/CsvImportExportPanel';
+import TagPicker from '../components/TagPicker';
+import { TagChips } from '../components/TagChip';
 import {
   downloadAddressTemplate,
   exportAddressesCsv,
@@ -36,6 +38,8 @@ export default function AddressesPage() {
   const { t: tClients } = useTranslation('clients');
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  /** B44 — any-of tag filter. */
+  const [filterTagIds, setFilterTagIds] = useState<string[]>([]);
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingAddress, setEditingAddress] = useState<
@@ -47,7 +51,11 @@ export default function AddressesPage() {
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  const { data: addresses = [], isLoading, isError } = useAllAddresses(debouncedSearch || undefined);
+  const hasFilter = !!debouncedSearch || filterTagIds.length > 0;
+  const { data: addresses = [], isLoading, isError } = useAllAddresses({
+    search: debouncedSearch || undefined,
+    tagIds: filterTagIds,
+  });
   const { data: addressTypeConfigs = [] } = useAddressTypes(true);
   // Server-side search returns the filtered list directly; we keep the variable
   // name `filtered` for minimal diff with the existing render block.
@@ -74,7 +82,7 @@ export default function AddressesPage() {
           {addresses.length > 0 && (
             <p style={{ ...layoutStyles.pageSubtitle }}>
               {addresses.length} {addresses.length > 1 ? t('title').toLowerCase() : t('titleSingular').toLowerCase()}
-              {debouncedSearch && ` (${t('filtered', { defaultValue: 'filtré' })})`}
+              {hasFilter && ` (${t('filtered', { defaultValue: 'filtré' })})`}
             </p>
           )}
         </div>
@@ -101,6 +109,12 @@ export default function AddressesPage() {
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
         />
+        <TagPicker
+          variant="filter"
+          placeholder={t('fields.tags', { defaultValue: 'Tags' })}
+          value={filterTagIds}
+          onChange={setFilterTagIds}
+        />
       </div>
 
       {showCreateModal && (
@@ -124,7 +138,7 @@ export default function AddressesPage() {
         <div style={{ ...layoutStyles.emptyState, background: theme.colors.surface, border: theme.borders.default, borderRadius: theme.radius.lg }}>
           <span style={{ fontSize: '2.5rem' }}>📍</span>
           <p style={{ margin: 0 }}>
-            {addresses.length === 0 ? t('messages.empty') : t('messages.noMatch')}
+            {hasFilter ? t('messages.noMatch') : t('messages.empty')}
           </p>
         </div>
       ) : (
@@ -188,6 +202,11 @@ export default function AddressesPage() {
                           </>
                         );
                       })()}
+                      {a.tags && a.tags.length > 0 && (
+                        <div style={{ marginTop: '0.25rem' }}>
+                          <TagChips tags={a.tags} max={3} />
+                        </div>
+                      )}
                     </td>
                     <td style={{ ...tableStyles.cellMuted }}>
                       {addressTypeLabel(t, a.addressType)}

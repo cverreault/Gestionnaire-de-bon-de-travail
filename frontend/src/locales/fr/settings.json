@@ -344,5 +344,23 @@
     "latitudePlaceholder": "Latitude",
     "longitudePlaceholder": "Longitude",
     "gpsHint": "Décimal — ex: 45.50170, -73.56730 (copier-coller depuis Google Maps)."
+  },
+  "tags": {
+    "title": "Tags",
+    "subtitle": "Libellés colorés posés sur les clients, les adresses et les bons de travail, pour filtrer partout.",
+    "new": "Nouveau tag",
+    "edit": "Modifier le tag",
+    "name": "Nom",
+    "color": "Couleur",
+    "active": "Actif",
+    "usage": "Utilisation",
+    "usageDetail": "{{workOrders}} BT · {{clients}} clients · {{addresses}} adresses",
+    "empty": "Aucun tag. Créez-en un pour commencer.",
+    "deleteConfirm": "Supprimer le tag « {{name}} » ? Il sera retiré de tous les clients, adresses et BT.",
+    "nameRequired": "Le nom est requis",
+    "duplicate": "Un tag porte déjà ce nom",
+    "colorInvalid": "Couleur invalide (format #RRGGBB)",
+    "namePlaceholder": "Ex. : Lumii, Urgent, Sous-traitance",
+    "previewName": "Aperçu"
   }
 }

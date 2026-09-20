@@ -104,6 +104,7 @@ export async function resetDb(prisma: PrismaClient): Promise<void> {
   // CASCADE clause + the order below covers every business table.
   await prisma.$executeRawUnsafe(`
     TRUNCATE TABLE
+      tags,
       audit_logs,
       notifications,
       push_subscriptions,

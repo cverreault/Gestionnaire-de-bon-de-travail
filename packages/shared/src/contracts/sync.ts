@@ -86,6 +86,8 @@ export interface SyncWorkOrder {
   notes: NoteRef[];
   attachments: AttachmentRef[];
   parts: SyncWorkOrderPart[];
+  /** B44 — tags posés sur le BT (nom + couleur), triés par nom. Absent des lignes locales synchronisées avant B44. */
+  tags?: SyncTag[];
 }
 
 export type TemplateFieldType =
@@ -116,6 +118,13 @@ export interface SyncTemplateSection {
   viewRoles: string[];
   editRoles: string[];
   fields: SyncTemplateField[];
+}
+
+/** B44 — a tag as carried by the sync payload. */
+export interface SyncTag {
+  id: string;
+  name: string;
+  color: string;
 }
 
 /** Form template of a task type (sections + fields) ; values live in `SyncWorkOrder.templateData`. */

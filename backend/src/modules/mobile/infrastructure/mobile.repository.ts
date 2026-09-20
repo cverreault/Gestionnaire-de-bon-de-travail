@@ -60,6 +60,8 @@ export const SYNC_WORK_ORDER_SELECT = {
       part: { select: { sku: true, name: true, nameFr: true, nameEn: true, unit: true } },
     },
   },
+  // B44 — the tag-flatten middleware turns this into `tags: [{ id, name, color }]`.
+  tags: { select: { tag: { select: { id: true, name: true, color: true } } }, orderBy: { tag: { name: 'asc' as const } } },
 } satisfies Prisma.WorkOrderSelect;
 
 export type SyncWorkOrderRow = Prisma.WorkOrderGetPayload<{ select: typeof SYNC_WORK_ORDER_SELECT }>;

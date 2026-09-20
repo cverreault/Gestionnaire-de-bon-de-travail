@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAddressTypes } from '../hooks/useSettings';
 import { theme, formStyles } from '../theme';
 import AddressAutocomplete from './AddressAutocomplete';
+import TagPicker from './TagPicker';
 import type { ResolvedAddress } from '../services/geo.service';
 
 export interface AddressFormValues {
@@ -21,6 +22,8 @@ export interface AddressFormValues {
   /** Set by the autocomplete (B40); cleared when the postal parts are edited by hand. */
   latitude?: number | null;
   longitude?: number | null;
+  /** B44 — selected tag ids. */
+  tagIds: string[];
 }
 
 /** Fields whose manual edit invalidates coordinates chosen through the autocomplete. */
@@ -153,6 +156,16 @@ export default function AddressFormFields({
             {t('fields.isDefault')}
           </label>
         </div>
+        <div style={{ gridColumn: '1 / -1' }}>
+          <label htmlFor={`tags-${title ?? 'addr'}`} style={{ ...formStyles.label }}>{t('fields.tags', { defaultValue: 'Tags' })}</label>
+          <TagPicker
+            id={`tags-${title ?? 'addr'}`}
+            variant="form"
+            includeInactive
+            value={watch('tagIds') ?? []}
+            onChange={(next) => setValue('tagIds', next, { shouldDirty: true })}
+          />
+        </div>
       </div>
     </div>
   );
@@ -171,4 +184,5 @@ export const ADDRESS_FORM_DEFAULTS: AddressFormValues = {
   isDefault: false,
   latitude: null,
   longitude: null,
+  tagIds: [],
 };

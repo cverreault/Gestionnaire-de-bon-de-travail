@@ -29,7 +29,8 @@
     "createdBy": "Created by",
     "createdAt": "Created on",
     "principalClient": "Mandated by",
-    "principalClientHint": "subcontracting: the principal this work order is done for"
+    "principalClientHint": "subcontracting: the principal this work order is done for",
+    "tags": "Tags"
   },
   "types": {
     "INSTALLATION": "Installation",
@@ -132,7 +133,9 @@
     "hiddenCompletedSuffix": "completed hidden",
     "principalFilter": "Mandated by",
     "openInModal": "Open the work order",
-    "dragHint": "Drag a row onto a technician in the left panel to dispatch. Click the reference to open the work order."
+    "dragHint": "Drag a row onto a technician in the left panel to dispatch. Click the reference to open the work order.",
+    "filterTags": "Tags",
+    "tagsHint": "Any of the selected tags"
   },
   "priorityLevels": {
     "0": "0 — None",

@@ -344,5 +344,23 @@
     "latitudePlaceholder": "Latitude",
     "longitudePlaceholder": "Longitude",
     "gpsHint": "Decimal — e.g. 45.50170, -73.56730 (copy-paste from Google Maps)."
+  },
+  "tags": {
+    "title": "Tags",
+    "subtitle": "Coloured labels attached to clients, addresses and work orders, to filter everywhere.",
+    "new": "New tag",
+    "edit": "Edit tag",
+    "name": "Name",
+    "color": "Colour",
+    "active": "Active",
+    "usage": "Usage",
+    "usageDetail": "{{workOrders}} WO · {{clients}} clients · {{addresses}} addresses",
+    "empty": "No tag yet. Create one to get started.",
+    "deleteConfirm": "Delete tag “{{name}}”? It will be removed from every client, address and work order.",
+    "nameRequired": "Name is required",
+    "duplicate": "A tag with this name already exists",
+    "colorInvalid": "Invalid colour (#RRGGBB expected)",
+    "namePlaceholder": "e.g. Lumii, Urgent, Subcontract",
+    "previewName": "Preview"
   }
 }

@@ -53,12 +53,16 @@ interface ClientFormValues {
   clientType: ClientType;
   notes: string;
   principalClient: PrincipalClientRef | null;
+  /** B44 — selected tag ids. */
+  tagIds: string[];
 }
 
 import AddressFormFields, { ADDRESS_FORM_DEFAULTS } from '../components/AddressFormFields';
 import PrincipalClientPicker, { principalDisplayName } from '../components/PrincipalClientPicker';
 import type { AddressFormValues } from '../components/AddressFormFields';
 import AddressTypeCustomFields from '../components/AddressTypeCustomFields';
+import TagPicker from '../components/TagPicker';
+import { TagChips } from '../components/TagChip';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { invitePortalClient } from '../services/portal.service';
 import api from '../services/api';
@@ -137,6 +141,7 @@ function ClientModal({
       clientType: defaultValues?.clientType ?? ClientType.RESIDENTIAL,
       notes: defaultValues?.notes ?? '',
       principalClient: defaultValues?.principalClient ?? null,
+      tagIds: defaultValues?.tagIds ?? [],
     },
   });
 
@@ -146,6 +151,7 @@ function ClientModal({
       country: 'Canada',
       province: 'QC',
       isDefault: false,
+      tagIds: [],
     },
   });
 
@@ -197,6 +203,7 @@ function ClientModal({
         typeData: Object.keys(typeData).length > 0 ? typeData : undefined,
         latitude: v.latitude ?? undefined,
         longitude: v.longitude ?? undefined,
+        tagIds: v.tagIds ?? [],
       };
       if (editingAddressId) {
         await updateAddress.mutateAsync({ clientId, addressId: editingAddressId, data: payload });
@@ -227,6 +234,7 @@ function ClientModal({
       latitude: addr.latitude ?? null,
       longitude: addr.longitude ?? null,
       isDefault: addr.isDefault,
+      tagIds: addr.tags?.map((tg) => tg.id) ?? [],
     });
     // Seed custom-field values for the address's current type. Update the
     // ref so the type-change effect doesn't immediately wipe them.
@@ -294,6 +302,16 @@ function ClientModal({
                 />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
+                <label htmlFor="client-tags" style={{ ...formStyles.label }}>{t('fields.tags', { defaultValue: 'Tags' })}</label>
+                <TagPicker
+                  id="client-tags"
+                  variant="form"
+                  includeInactive
+                  value={watch('tagIds')}
+                  onChange={(next) => setValue('tagIds', next, { shouldDirty: true })}
+                />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
                 <label style={{ ...formStyles.label }}>{t('fields.notes')}</label>
                 <textarea style={{ ...formStyles.textarea }} placeholder={t('fields.notesPlaceholder', { defaultValue: 'Notes ou informations supplémentaires...' })} {...register('notes')} />
               </div>
@@ -325,6 +343,7 @@ function ClientModal({
                         country: 'Canada',
                         province: 'QC',
                         isDefault: false,
+                        tagIds: [],
                       });
                       setTypeData({});
                       prevAddressType.current = AddressType.WORKSITE;
@@ -666,6 +685,8 @@ export default function ClientsPage() {
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [filterType, setFilterType] = useState<ClientType | ''>('');
+  /** B44 — any-of tag filter. */
+  const [filterTagIds, setFilterTagIds] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [showCreateModal, setShowCreateModal] = useState(false);
   /** B42 — the « ➕ Donneur d'ordre » button opens the same modal with the type preset. */
@@ -691,6 +712,7 @@ export default function ClientsPage() {
   const { data, isLoading, isError } = useV3Clients({
     search: debouncedSearch || undefined,
     clientType: filterType || undefined,
+    tagIds: filterTagIds.length > 0 ? filterTagIds : undefined,
     page,
     limit: LIMIT,
   });
@@ -717,6 +739,7 @@ export default function ClientsPage() {
       phone: values.phone || undefined,
       clientType: values.clientType,
       notes: values.notes || undefined,
+      tagIds: values.tagIds,
     };
     if (addresses && addresses.length > 0) {
       // Only one inline address is ever submitted from the form (see the modal),
@@ -735,6 +758,7 @@ export default function ClientsPage() {
         typeData: i === 0 ? addressTypeData : undefined,
         latitude: a.latitude ?? undefined,
         longitude: a.longitude ?? undefined,
+        tagIds: a.tagIds ?? [],
       }));
     }
     const created = await createClient.mutateAsync(dto);
@@ -754,6 +778,7 @@ export default function ClientsPage() {
         phone: values.phone || undefined,
         clientType: values.clientType,
         notes: values.notes || undefined,
+        tagIds: values.tagIds,
       },
     });
     setEditingClient(null);
@@ -824,9 +849,15 @@ export default function ClientsPage() {
             <option key={code} value={code}>{clientTypeLabel(t, code)}</option>
           ))}
         </select>
-        {(searchInput || filterType) && (
+        <TagPicker
+          variant="filter"
+          placeholder={t('clients:page.filterTags', { defaultValue: 'Tags' })}
+          value={filterTagIds}
+          onChange={(next) => { setFilterTagIds(next); setPage(1); }}
+        />
+        {(searchInput || filterType || filterTagIds.length > 0) && (
           <button
-            onClick={() => { setSearchInput(''); setFilterType(''); setPage(1); }}
+            onClick={() => { setSearchInput(''); setFilterType(''); setFilterTagIds([]); setPage(1); }}
             style={{ ...buttonStyles.ghost, ...buttonStyles.sm }}
           >
             ✕ {t('clients:page.reset', { defaultValue: 'Réinitialiser' })}
@@ -843,7 +874,7 @@ export default function ClientsPage() {
         <div style={{ ...layoutStyles.emptyState, ...{ background: theme.colors.surface, border: theme.borders.default, borderRadius: theme.radius.lg } }}>
           <span style={{ fontSize: '2.5rem' }}>👥</span>
           <p style={{ margin: 0 }}>
-            {debouncedSearch || filterType
+            {debouncedSearch || filterType || filterTagIds.length > 0
               ? t('clients:page.noMatch', { defaultValue: 'Aucun client ne correspond à vos filtres.' })
               : t('clients:page.noClients', { defaultValue: 'Aucun client enregistré. Commencez par en créer un.' })}
           </p>
@@ -893,6 +924,11 @@ export default function ClientsPage() {
                         <span style={{ marginLeft: '0.5rem', fontSize: '0.65rem', background: theme.colors.dangerLight, color: theme.colors.danger, padding: '0.1rem 0.4rem', borderRadius: theme.radius.full, fontWeight: theme.font.weightSemibold }}>
                           {t('clients:page.inactive', { defaultValue: 'Inactif' })}
                         </span>
+                      )}
+                      {client.tags && client.tags.length > 0 && (
+                        <div style={{ marginTop: '0.25rem' }}>
+                          <TagChips tags={client.tags} max={3} />
+                        </div>
                       )}
                     </td>
                     <td style={{ ...tableStyles.cell }}>
@@ -1003,6 +1039,7 @@ export default function ClientsPage() {
             clientType: editingClient.clientType,
             notes: editingClient.notes ?? '',
             principalClient: editingClient.principalClient ?? null,
+            tagIds: editingClient.tags?.map((tg) => tg.id) ?? [],
           }}
           clientId={editingClient.id}
           onSubmit={handleUpdate}

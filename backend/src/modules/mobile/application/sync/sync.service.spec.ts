@@ -6,7 +6,7 @@ const NOW = new Date('2026-09-18T12:00:00Z');
 function row(id: string, updatedAt: string, extra: Record<string, unknown> = {}) {
   return {
     id, referenceNumber: `R-${id}`, status: 'ASSIGNED', title: id, processDefinitionId: 'proc-1', updatedAt: new Date(updatedAt), taskType: { id: 'tt', templateId: 'tpl-1' },
-    signatureClient: null, signatureTechnician: null, partsUsed: [], notes: [], attachments: [], ...extra,
+    signatureClient: null, signatureTechnician: null, partsUsed: [], notes: [], attachments: [], tags: [], ...extra,
   };
 }
 
@@ -82,5 +82,11 @@ describe('projectWorkOrder', () => {
     expect(out).not.toHaveProperty('signatureClient');
     expect(out).toMatchObject({ hasSignatureClient: true, hasSignatureTechnician: false });
     expect(out.parts).toEqual([{ id: 'wp', partId: 'p', quantity: 2, source: 'TECHNICIAN_STOCK', sku: 'SKU', name: 'N', nameFr: 'N', nameEn: 'N', unit: 'un' }]);
+  });
+
+  it('B44 — exposes tags flat, whether the middleware already flattened them or not', () => {
+    const tag = { id: 't', name: 'Lumii', color: '#2563eb' };
+    expect(projectWorkOrder(row('a', '2026-09-18T10:00:00Z', { tags: [{ tag }] }) as never).tags).toEqual([tag]);
+    expect(projectWorkOrder(row('b', '2026-09-18T10:00:00Z', { tags: [tag] }) as never).tags).toEqual([tag]);
   });
 });

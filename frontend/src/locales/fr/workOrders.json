@@ -29,7 +29,8 @@
     "createdBy": "Créé par",
     "createdAt": "Créé le",
     "principalClient": "Mandaté par",
-    "principalClientHint": "sous-traitance : le donneur d’ordre pour qui ce BT est exécuté"
+    "principalClientHint": "sous-traitance : le donneur d’ordre pour qui ce BT est exécuté",
+    "tags": "Tags"
   },
   "types": {
     "INSTALLATION": "Installation",
@@ -132,7 +133,9 @@
     "hiddenCompletedSuffix": "complétés masqués",
     "principalFilter": "Mandaté par",
     "openInModal": "Ouvrir le bon de travail",
-    "dragHint": "Glissez une ligne sur un technicien du panneau de gauche pour dispatcher. Cliquez la référence pour ouvrir le BT."
+    "dragHint": "Glissez une ligne sur un technicien du panneau de gauche pour dispatcher. Cliquez la référence pour ouvrir le BT.",
+    "filterTags": "Tags",
+    "tagsHint": "Au moins un des tags choisis"
   },
   "priorityLevels": {
     "0": "0 — Aucune",

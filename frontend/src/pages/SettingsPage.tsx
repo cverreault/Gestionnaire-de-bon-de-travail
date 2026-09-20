@@ -15,8 +15,13 @@ import {
   useCreateAddressType,
   useUpdateAddressType,
   useDeleteAddressType,
+  useTags,
+  useCreateTag,
+  useUpdateTag,
+  useDeleteTag,
 } from '../hooks/useSettings';
-import type { TaskType, ClientTypeConfig, AddressTypeConfig } from '../types';
+import type { TaskType, ClientTypeConfig, AddressTypeConfig, Tag } from '../types';
+import { TagChip } from '../components/TagChip';
 import AddressTypeFieldsModal from '../components/AddressTypeFieldsModal';
 import { useTemplates } from '../hooks/useTemplates';
 import { useProcesses } from '../hooks/useProcess';
@@ -60,6 +65,15 @@ interface ConfigTypeFormValues {
   sortOrder: string;
 }
 
+interface TagFormValues {
+  name: string;
+  color: string;
+  isActive: boolean;
+}
+
+/** Default colour of a freshly created tag (B44). */
+const DEFAULT_TAG_COLOR = '#2563eb';
+
 /**
  * Pull the user-facing message from an axios error response. NestJS validation
  * pipes return `{ message: string | string[], error: string, statusCode: number }`.
@@ -72,6 +86,12 @@ function extractApiErrorMessage(err: unknown): string | null {
   if (Array.isArray(msg)) return msg.join(' · ');
   if (typeof msg === 'string') return msg;
   return null;
+}
+
+/** True when the axios error carries a 409 (duplicate name on tags). */
+function isConflictError(err: unknown): boolean {
+  const axiosErr = err as { response?: { status?: number } } | null | undefined;
+  return axiosErr?.response?.status === 409;
 }
 
 // ─── TaskType Modal ───────────────────────────────────────────────────────────
@@ -798,6 +818,359 @@ function ConfigTypeTable<T extends ClientTypeConfig | AddressTypeConfig>({
   );
 }
 
+// ─── Tag Modal (B44) ──────────────────────────────────────────────────────────
+
+function TagModal({
+  title,
+  defaultValues,
+  onSubmit,
+  onCancel,
+  isLoading,
+  isError,
+  error,
+}: {
+  title: string;
+  defaultValues?: Partial<TagFormValues>;
+  onSubmit: (values: TagFormValues) => void;
+  onCancel: () => void;
+  isLoading: boolean;
+  isError: boolean;
+  error: unknown;
+}) {
+  const { t } = useTranslation('settings');
+  const { t: tCommon } = useTranslation('common');
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<TagFormValues>({
+    defaultValues: {
+      name: defaultValues?.name ?? '',
+      color: defaultValues?.color ?? DEFAULT_TAG_COLOR,
+      isActive: defaultValues?.isActive ?? true,
+    },
+  });
+
+  const watchedColor = watch('color', defaultValues?.color ?? DEFAULT_TAG_COLOR);
+  const watchedName = watch('name', defaultValues?.name ?? '');
+  const previewColor = /^#[0-9a-fA-F]{6}$/.test(watchedColor) ? watchedColor : DEFAULT_TAG_COLOR;
+
+  const apiErrorMessage = isError
+    ? isConflictError(error)
+      ? t('settings:tags.duplicate', { defaultValue: 'Un tag porte déjà ce nom' })
+      : extractApiErrorMessage(error) ?? t('settings:page.genericError', { defaultValue: 'Une erreur est survenue. Veuillez réessayer.' })
+    : null;
+
+  return (
+    <div style={{ ...modalStyles.overlay }} onClick={(e) => e.target === e.currentTarget && onCancel()}>
+      <div style={{ ...modalStyles.content, maxWidth: '460px' }}>
+        <div style={{ ...modalStyles.header }}>
+          <h2 style={{ ...modalStyles.headerTitle }}>{title}</h2>
+          <button onClick={onCancel} style={{ ...buttonStyles.ghost, padding: '0.25rem 0.5rem' }}>✕</button>
+        </div>
+
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}
+        >
+          <div style={{ ...modalStyles.body }}>
+            {/* Name */}
+            <div style={{ ...formStyles.fieldGroup }}>
+              <label style={{ ...formStyles.label }}>
+                {t('settings:tags.name', { defaultValue: 'Nom' })} <span style={{ color: theme.colors.danger }}>*</span>
+              </label>
+              <input
+                style={{ ...formStyles.input }}
+                autoFocus
+                maxLength={50}
+                placeholder={t('settings:tags.namePlaceholder', { defaultValue: 'Ex: Urgent, VIP, Sous-traité' })}
+                {...register('name', {
+                  required: t('settings:tags.nameRequired', { defaultValue: 'Le nom est requis' }),
+                  validate: (v) => v.trim().length > 0 || t('settings:tags.nameRequired', { defaultValue: 'Le nom est requis' }),
+                })}
+              />
+              {errors.name && <span style={{ ...formStyles.fieldError }}>{errors.name.message}</span>}
+            </div>
+
+            {/* Colour + preview */}
+            <div style={{ ...formStyles.fieldGroup }}>
+              <label style={{ ...formStyles.label }}>{t('settings:tags.color', { defaultValue: 'Couleur' })}</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <input
+                  type="color"
+                  style={{ width: '3rem', height: '2.25rem', border: theme.borders.default, borderRadius: theme.radius.md, cursor: 'pointer', padding: '0.125rem' }}
+                  value={previewColor}
+                  onChange={(e) => setValue('color', e.target.value, { shouldValidate: true })}
+                />
+                <input
+                  style={{ ...formStyles.input, fontFamily: 'monospace', maxWidth: '120px' }}
+                  placeholder={DEFAULT_TAG_COLOR}
+                  {...register('color', {
+                    pattern: {
+                      value: /^#[0-9a-fA-F]{6}$/,
+                      message: t('settings:tags.colorInvalid', { defaultValue: 'Couleur invalide (format #rrggbb)' }),
+                    },
+                  })}
+                />
+                <span
+                  style={{
+                    display: 'inline-block',
+                    width: '2rem',
+                    height: '2rem',
+                    borderRadius: theme.radius.full,
+                    background: previewColor,
+                    border: theme.borders.default,
+                    flexShrink: 0,
+                  }}
+                />
+                <TagChip
+                  tag={{ id: 'preview', name: watchedName.trim() || t('settings:tags.previewName', { defaultValue: 'Aperçu' }), color: previewColor }}
+                  size="md"
+                />
+              </div>
+              {errors.color && <span style={{ ...formStyles.fieldError }}>{errors.color.message}</span>}
+            </div>
+
+            {/* Active */}
+            <div style={{ ...formStyles.fieldGroup }}>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: theme.font.sizeSm, color: theme.colors.text }}>
+                <input type="checkbox" {...register('isActive')} />
+                {t('settings:tags.active', { defaultValue: 'Actif' })}
+              </label>
+            </div>
+
+            {apiErrorMessage && (
+              <p style={{ ...formStyles.fieldError }}>{apiErrorMessage}</p>
+            )}
+          </div>
+
+          <div style={{ ...modalStyles.footer }}>
+            <button type="button" onClick={onCancel} style={{ ...buttonStyles.secondary }}>
+              {tCommon('actions.cancel')}
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              style={{ ...buttonStyles.primary, opacity: isLoading ? 0.7 : 1, cursor: isLoading ? 'not-allowed' : 'pointer' }}
+            >
+              {isLoading ? tCommon('actions.saving') : tCommon('actions.save')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── TagsTable — section CRUD des tags (B44) ─────────────────────────────────
+
+function TagsTable({
+  items,
+  isLoading,
+  isError,
+  onCreate,
+  onEdit,
+  onToggleActive,
+  onDelete,
+  isUpdating,
+  isDeleting,
+}: {
+  items: Tag[] | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  onCreate: () => void;
+  onEdit: (tag: Tag) => void;
+  onToggleActive: (tag: Tag) => void;
+  onDelete: (tag: Tag) => void;
+  isUpdating: boolean;
+  isDeleting: boolean;
+}) {
+  const { t } = useTranslation();
+  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
+  const sectionIcon = '🏷️';
+
+  const headers = [
+    t('settings:tags.color', { defaultValue: 'Couleur' }),
+    t('settings:tags.name', { defaultValue: 'Nom' }),
+    t('settings:tags.usage', { defaultValue: 'Utilisation' }),
+    t('settings:page.colHeaderStatus', { defaultValue: 'Statut' }),
+    '',
+  ];
+
+  function handleDeleteClick(tag: Tag) {
+    if (window.confirm(t('settings:tags.deleteConfirm', { defaultValue: 'Supprimer le tag « {{name}} » ?', name: tag.name }))) {
+      onDelete(tag);
+    }
+  }
+
+  return (
+    <div
+      style={{
+        background: theme.colors.surface,
+        border: theme.borders.default,
+        borderRadius: theme.radius.lg,
+        boxShadow: theme.shadows.sm,
+        overflow: 'hidden',
+        marginBottom: '2rem',
+      }}
+    >
+      {/* Section header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '1rem 1.25rem',
+          borderBottom: theme.borders.default,
+          background: theme.colors.surfaceAlt,
+        }}
+      >
+        <div>
+          <h2 style={{ margin: 0, fontSize: theme.font.sizeLg, fontWeight: theme.font.weightSemibold, color: theme.colors.text }}>
+            {sectionIcon} {t('settings:tags.title', { defaultValue: 'Tags' })}
+          </h2>
+          <p style={{ margin: 0, fontSize: theme.font.sizeXs, color: theme.colors.textMuted, marginTop: '0.125rem' }}>
+            {t('settings:tags.subtitle', { defaultValue: 'Libellés colorés posés sur les clients, les adresses et les bons de travail, pour filtrer partout.' })}
+          </p>
+        </div>
+        <button onClick={onCreate} style={{ ...buttonStyles.primary }}>
+          + {t('settings:tags.new', { defaultValue: 'Nouveau tag' })}
+        </button>
+      </div>
+
+      {/* Content */}
+      {isLoading ? (
+        <div style={{ padding: '2rem' }}><LoadingSpinner /></div>
+      ) : isError ? (
+        <div style={{ padding: '1rem', color: theme.colors.danger }}>
+          {t('settings:page.loadError', { defaultValue: 'Erreur lors du chargement des données.' })}
+        </div>
+      ) : !items || items.length === 0 ? (
+        <div style={{ ...layoutStyles.emptyState }}>
+          <span style={{ fontSize: '2.5rem' }}>{sectionIcon}</span>
+          <p style={{ margin: 0 }}>{t('settings:tags.empty', { defaultValue: 'Aucun tag. Créez-en un pour commencer.' })}</p>
+        </div>
+      ) : (
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead style={{ ...tableStyles.header }}>
+            <tr>
+              {headers.map((h, i) => (
+                <th key={`${i}-${h}`} style={{ ...tableStyles.headerCell, textAlign: 'left' }}>
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((tag, index) => {
+              const counts = tag._count ?? { workOrders: 0, clients: 0, addresses: 0 };
+              return (
+                <tr
+                  key={tag.id}
+                  style={getRowStyle(index, hoveredRow === index)}
+                  onMouseEnter={() => setHoveredRow(index)}
+                  onMouseLeave={() => setHoveredRow(null)}
+                >
+                  {/* Colour swatch + chip preview */}
+                  <td style={{ ...tableStyles.cell, width: '220px' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          width: '1.25rem',
+                          height: '1.25rem',
+                          borderRadius: theme.radius.full,
+                          background: tag.color,
+                          border: theme.borders.light,
+                          flexShrink: 0,
+                        }}
+                        title={tag.color}
+                      />
+                      <TagChip tag={tag} size="md" />
+                    </span>
+                  </td>
+
+                  {/* Name */}
+                  <td style={{ ...tableStyles.cell, fontWeight: theme.font.weightMedium }}>
+                    {tag.name}
+                  </td>
+
+                  {/* Usage */}
+                  <td style={{ ...tableStyles.cellMuted, whiteSpace: 'nowrap' }}>
+                    {t('settings:tags.usageDetail', {
+                      defaultValue: '{{workOrders}} BT · {{clients}} clients · {{addresses}} adresses',
+                      workOrders: counts.workOrders,
+                      clients: counts.clients,
+                      addresses: counts.addresses,
+                    })}
+                  </td>
+
+                  {/* Active toggle */}
+                  <td style={{ ...tableStyles.cell }}>
+                    <button
+                      onClick={() => onToggleActive(tag)}
+                      disabled={isUpdating}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.3rem',
+                        padding: '0.2rem 0.6rem',
+                        borderRadius: theme.radius.full,
+                        border: 'none',
+                        fontSize: theme.font.sizeXs,
+                        fontWeight: theme.font.weightSemibold,
+                        cursor: 'pointer',
+                        background: tag.isActive !== false ? theme.colors.successLight : theme.colors.dangerLight,
+                        color: tag.isActive !== false ? 'var(--c-successBadgeText)' : 'var(--c-dangerBadgeText)',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      {tag.isActive !== false
+                        ? t('settings:page.statusActive', { defaultValue: '✓ Actif' })
+                        : t('settings:page.statusInactive', { defaultValue: '✗ Inactif' })}
+                    </button>
+                  </td>
+
+                  {/* Actions */}
+                  <td style={{ ...tableStyles.cell, whiteSpace: 'nowrap' }}>
+                    <span style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button
+                        onClick={() => onEdit(tag)}
+                        style={{ ...buttonStyles.secondary, ...buttonStyles.sm }}
+                      >
+                        {t('settings:page.editButton', { defaultValue: '✏️ Modifier' })}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClick(tag)}
+                        disabled={isDeleting}
+                        title={t('common:actions.delete', { defaultValue: 'Supprimer' })}
+                        style={{
+                          ...buttonStyles.sm,
+                          background: 'none',
+                          border: `1px solid ${theme.colors.danger}40`,
+                          color: theme.colors.danger,
+                          padding: '0.25rem 0.625rem',
+                          borderRadius: theme.radius.sm,
+                          cursor: isDeleting ? 'not-allowed' : 'pointer',
+                          fontSize: theme.font.sizeXs,
+                        }}
+                      >
+                        🗑
+                      </button>
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Settings Page ───────────────────────────────────────────────────────
 
 export default function SettingsPage() {
@@ -831,6 +1204,57 @@ export default function SettingsPage() {
   const createAddressType = useCreateAddressType();
   const updateAddressType = useUpdateAddressType();
   const deleteAddressType = useDeleteAddressType();
+
+  // ── Tags state (B44) ────────────────────────────────────────────────────────
+  const [showCreateTagModal, setShowCreateTagModal] = useState(false);
+  const [editingTag, setEditingTag] = useState<Tag | null>(null);
+
+  const { data: tags, isLoading: tagsLoading, isError: tagsError } = useTags();
+  const createTag = useCreateTag();
+  const updateTag = useUpdateTag();
+  const deleteTag = useDeleteTag();
+
+  // ── Tag handlers (B44) ──────────────────────────────────────────────────────
+  // Errors (409 duplicate, 400 invalid colour) are surfaced by the modal through
+  // the mutation state, so the rejected promise is swallowed here.
+
+  async function handleCreateTag(values: TagFormValues) {
+    try {
+      await createTag.mutateAsync({
+        name: values.name.trim(),
+        color: values.color || DEFAULT_TAG_COLOR,
+        isActive: values.isActive,
+      });
+      setShowCreateTagModal(false);
+    } catch {
+      /* surfaced by TagModal via createTag.error */
+    }
+  }
+
+  async function handleUpdateTag(values: TagFormValues) {
+    if (!editingTag) return;
+    try {
+      await updateTag.mutateAsync({
+        id: editingTag.id,
+        data: {
+          name: values.name.trim(),
+          color: values.color || DEFAULT_TAG_COLOR,
+          isActive: values.isActive,
+        },
+      });
+      setEditingTag(null);
+    } catch {
+      /* surfaced by TagModal via updateTag.error */
+    }
+  }
+
+  async function handleToggleTagActive(tag: Tag) {
+    await updateTag.mutateAsync({ id: tag.id, data: { isActive: !(tag.isActive !== false) } });
+  }
+
+  async function handleDeleteTag(tag: Tag) {
+    await deleteTag.mutateAsync(tag.id);
+  }
 
   // ── TaskType handlers ───────────────────────────────────────────────────────
 
@@ -1289,6 +1713,19 @@ export default function SettingsPage() {
         isDeleting={deleteAddressType.isPending}
       />
 
+      {/* ── Section: Tags (B44) ─────────────────────────────────────────────── */}
+      <TagsTable
+        items={tags}
+        isLoading={tagsLoading}
+        isError={tagsError}
+        onCreate={() => { createTag.reset(); setShowCreateTagModal(true); }}
+        onEdit={(tag) => { updateTag.reset(); setEditingTag(tag); }}
+        onToggleActive={handleToggleTagActive}
+        onDelete={handleDeleteTag}
+        isUpdating={updateTag.isPending}
+        isDeleting={deleteTag.isPending}
+      />
+
       {managingFieldsForType && (
         <AddressTypeFieldsModal
           config={managingFieldsForType}
@@ -1391,6 +1828,34 @@ export default function SettingsPage() {
           onCancel={() => setEditingAddressType(null)}
           isLoading={updateAddressType.isPending}
           isError={updateAddressType.isError}
+        />
+      )}
+
+      {/* ── Tag Modals (B44) ────────────────────────────────────────────────── */}
+      {showCreateTagModal && (
+        <TagModal
+          title={t('settings:tags.new', { defaultValue: 'Nouveau tag' })}
+          onSubmit={handleCreateTag}
+          onCancel={() => { setShowCreateTagModal(false); createTag.reset(); }}
+          isLoading={createTag.isPending}
+          isError={createTag.isError}
+          error={createTag.error}
+        />
+      )}
+
+      {editingTag && (
+        <TagModal
+          title={t('settings:tags.edit', { defaultValue: 'Modifier le tag' })}
+          defaultValues={{
+            name: editingTag.name,
+            color: editingTag.color || DEFAULT_TAG_COLOR,
+            isActive: editingTag.isActive !== false,
+          }}
+          onSubmit={handleUpdateTag}
+          onCancel={() => { setEditingTag(null); updateTag.reset(); }}
+          isLoading={updateTag.isPending}
+          isError={updateTag.isError}
+          error={updateTag.error}
         />
       )}
     </div>

@@ -7,6 +7,8 @@ import {
   UpdateV3ClientDto,
   CreateClientAddressDto,
   UpdateClientAddressDto,
+  ClientListParams,
+  AddressListParams,
   refreshAddressGeo,
   getClients,
   getClient,
@@ -21,7 +23,7 @@ import {
   updateAddressById,
   deleteAddressById,
 } from '../services/clients.service';
-import type { Client, ClientAddress, ClientAddressWithClient, ClientType } from '../types';
+import type { Client, ClientAddress, ClientAddressWithClient } from '../types';
 
 export const CLIENTS_KEY = 'clients';
 export const ADDRESSES_KEY = 'addresses';
@@ -102,13 +104,7 @@ interface V3ClientsResponse {
   meta: V3ClientsMeta;
 }
 
-export function useV3Clients(params?: {
-  search?: string;
-  clientType?: ClientType;
-  isActive?: boolean;
-  page?: number;
-  limit?: number;
-}) {
+export function useV3Clients(params?: ClientListParams) {
   return useQuery({
     queryKey: [CLIENTS_KEY, 'v3', params],
     queryFn: async (): Promise<V3ClientsResponse> => {
@@ -259,11 +255,13 @@ export function useDeleteAddressById() {
   });
 }
 
-export function useAllAddresses(search?: string) {
+export function useAllAddresses(params?: AddressListParams) {
+  const search = params?.search ?? '';
+  const tagIds = params?.tagIds ?? [];
   return useQuery({
-    queryKey: [ADDRESSES_KEY, 'all', search ?? ''],
+    queryKey: [ADDRESSES_KEY, 'all', search, tagIds],
     queryFn: async () => {
-      const res = await getAllAddresses(search);
+      const res = await getAllAddresses({ search: search || undefined, tagIds });
       return (res.data?.data ?? res.data) as ClientAddressWithClient[];
     },
   });

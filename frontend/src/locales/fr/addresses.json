@@ -16,7 +16,8 @@
     "isDefault": "Adresse par défaut",
     "noClientOption": "Aucun client (adresse autonome)",
     "noClientHint": "Cette adresse ne sera rattachée à aucun client. Elle pourra être liée à un client plus tard.",
-    "customFieldsTitle": "Champs spécifiques au type"
+    "customFieldsTitle": "Champs spécifiques au type",
+    "tags": "Tags"
   },
   "types": {
     "OFFICE": "Bureau",

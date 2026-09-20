@@ -7,6 +7,7 @@ import {
   IsString,
   IsInt,
   IsBoolean,
+  IsArray,
   Min,
   Max,
 } from 'class-validator';
@@ -74,6 +75,18 @@ export class WorkOrderFilterDto {
   @IsOptional()
   @IsUUID()
   taskTypeId?: string;
+
+  @ApiPropertyOptional({
+    description: 'B44 — filtrer les BT portant au moins un de ces tags (UUIDs, séparés par des virgules)',
+    type: String,
+  })
+  @IsOptional()
+  @Transform(({ value }) =>
+    Array.isArray(value) ? value : typeof value === 'string' && value.length ? value.split(',').filter(Boolean) : undefined,
+  )
+  @IsArray()
+  @IsUUID('4', { each: true })
+  tagIds?: string[];
 
   @ApiPropertyOptional({
     description: 'Exclure les BT terminés (COMPLETED_POSITIVE et COMPLETED_NEGATIVE) — ignoré si un filtre status est déjà défini',
