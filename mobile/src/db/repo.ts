@@ -1,5 +1,5 @@
 import { asc, eq, like, or, sql } from 'drizzle-orm';
-import type { ProcessSnapshot, SyncWorkOrder } from '@taskmgr/shared';
+import type { ProcessSnapshot, SyncTemplate, SyncWorkOrder } from '@taskmgr/shared';
 import * as s from './schema';
 import type { AppDb } from './types';
 
@@ -38,10 +38,17 @@ export async function getSnapshot(db: AppDb, id: string | null | undefined): Pro
   return rows[0] ? (JSON.parse(rows[0].json) as ProcessSnapshot) : null;
 }
 
+export async function getTemplate(db: AppDb, id: string | null | undefined): Promise<SyncTemplate | null> {
+  if (!id) return null;
+  const rows = await db.select({ json: s.templates.json }).from(s.templates).where(eq(s.templates.id, id));
+  return rows[0] ? (JSON.parse(rows[0].json) as SyncTemplate) : null;
+}
+
 /** Wipes every server-owned table (fullResync or user change). Keeps `meta` except the sync keys. */
 export async function wipeServerTables(db: AppDb): Promise<void> {
   await db.delete(s.workOrders);
   await db.delete(s.processSnapshots);
+  await db.delete(s.templates);
   await db.delete(s.partsCatalog);
   await db.delete(s.partsStock);
   await setMeta(db, META.cursor, null);

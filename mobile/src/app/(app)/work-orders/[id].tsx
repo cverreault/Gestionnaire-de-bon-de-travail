@@ -13,6 +13,7 @@ import {
 import AttachmentsCard from '../../../components/AttachmentsCard';
 import SignaturePad from '../../../components/SignaturePad';
 import PartsCard from '../../../components/PartsCard';
+import TemplateFieldsCard from '../../../components/TemplateFieldsCard';
 import StatusBadge from '../../../components/StatusBadge';
 import { useSession } from '../../../stores/session.store';
 import { useSyncStore } from '../../../sync/sync.store';
@@ -248,6 +249,8 @@ export default function WorkOrderDetailScreen() {
               })}
               {w.signedAt && <Text style={{ color: theme.textMuted, fontSize: font.xs }}>{new Date(w.signedAt).toLocaleString(lang, { dateStyle: 'short', timeStyle: 'short' })}</Text>}
             </View>
+
+            <TemplateFieldsCard workOrderId={id} templateId={w.taskType?.templateId} values={w.templateData} editable={!w.status.startsWith('COMPLETED')} />
 
             <PartsCard workOrderId={id} parts={w.parts} ops={ops} editable={!w.status.startsWith('COMPLETED')} />
 

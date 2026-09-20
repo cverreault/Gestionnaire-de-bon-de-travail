@@ -50,6 +50,7 @@ export default function SyncScreen() {
       const p = op.payload as SignaturePayload;
       return t('queue.signature', { who: p.signatureClient !== undefined ? t('workOrder.signClient') : t('workOrder.signTechnician') });
     }
+    if (op.kind === 'template') return t('queue.template', { count: Object.keys((op.payload as { templateData: Record<string, unknown> }).templateData).length });
     if (op.kind === 'part_add') return t('queue.part_add', { qty: (op.payload as PartAddPayload).quantity, sku: (op.payload as PartAddPayload).sku });
     if (op.kind === 'part_remove') return t('queue.part_remove', { sku: (op.payload as PartRemovePayload).sku });
     return t('queue.attachment', { name: (op.payload as AttachmentPayload).name });

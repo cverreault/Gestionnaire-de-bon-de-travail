@@ -22,6 +22,7 @@ export interface Sender {
   signature(op: QueuedOp, expectedUpdatedAt: string | null): Promise<{ updatedAt: string }>;
   partAdd(op: QueuedOp): Promise<{ workOrderUpdatedAt?: string }>;
   partRemove(op: QueuedOp): Promise<{ workOrderUpdatedAt?: string }>;
+  template(op: QueuedOp, expectedUpdatedAt: string | null): Promise<{ updatedAt: string }>;
 }
 
 /** Ops that must not be replayed blindly after a conflict (ADR-016 §4). */
@@ -78,6 +79,9 @@ export async function drain(db: AppDb, sender: Sender, pull: () => Promise<void>
           await bumpLocal(db, op.workOrderId, res.workOrderUpdatedAt);
         } else if (op.kind === 'signature') {
           const res = await sender.signature(op, await localUpdatedAt(db, op.workOrderId));
+          await bumpLocal(db, op.workOrderId, res.updatedAt);
+        } else if (op.kind === 'template') {
+          const res = await sender.template(op, await localUpdatedAt(db, op.workOrderId));
           await bumpLocal(db, op.workOrderId, res.updatedAt);
         } else if (op.kind === 'part_add') {
           const res = await sender.partAdd(op);

@@ -171,6 +171,7 @@ export class WorkOrdersController {
   // ── Update ──────────────────────────────────────────────────────────────────
 
   @Patch(':id')
+  @Idempotent() // B37.5 — template fields / completion notes replayed from the mobile queue
   @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN) // B21 — explicit: CLIENT portal users must not reach staff routes
   @ApiOperation({
     summary: 'Modifier un bon de travail',

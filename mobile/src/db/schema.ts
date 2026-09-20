@@ -33,6 +33,13 @@ export const processSnapshots = sqliteTable('process_snapshots', {
   json: text('json').notNull(),
 });
 
+/** Form templates (sections + fields) referenced by the local work orders. */
+export const templates = sqliteTable('templates', {
+  id: text('id').primaryKey(),
+  updatedAt: text('updated_at').notNull(),
+  json: text('json').notNull(),
+});
+
 export const partsCatalog = sqliteTable('parts_catalog', {
   id: text('id').primaryKey(),
   sku: text('sku').notNull(),

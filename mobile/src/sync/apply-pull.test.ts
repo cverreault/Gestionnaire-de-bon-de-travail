@@ -9,7 +9,7 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import type { SyncPullResponse, SyncWorkOrder } from '@taskmgr/shared';
 import * as schema from '../db/schema';
-import { META, ensureOwner, getMeta, getSnapshot, getWorkOrder, listWorkOrders } from '../db/repo';
+import { META, ensureOwner, getMeta, getSnapshot, getTemplate, getWorkOrder, listWorkOrders } from '../db/repo';
 import { applyPull, pullAll } from './apply-pull';
 import type { AppDb } from '../db/types';
 
@@ -45,12 +45,14 @@ describe('applyPull (ADR-016 §1, B38.4)', () => {
     const out = await applyPull(db, page({
       fullResync: true, visibleWorkOrderIds: ['a', 'b'], workOrders: [wo('a', '2026-09-18T10:00:00Z'), wo('b', '2026-09-18T11:00:00Z')],
       processSnapshots: { proc: snap },
+      templates: { tpl: { id: 'tpl', name: 'Standard', nameFr: 'Standard', nameEn: 'Standard', updatedAt: '2026-09-01T00:00:00Z', sections: [] } },
       partsCatalog: [{ id: 'p1', sku: 'SKU1', name: 'Vis', nameFr: 'Vis', nameEn: 'Screw', unit: 'un', isActive: true, updatedAt: '2026-09-01T00:00:00Z' }],
       partsStock: [{ id: 'st1', partId: 'p1', quantity: 4, updatedAt: '2026-09-01T00:00:00Z' }],
     }));
     expect(out).toEqual({ upserted: 2, deleted: 0 });
     expect((await listWorkOrders(db)).map((w) => w.id)).toEqual(['a', 'b']);
     expect(await getSnapshot(db, 'proc')).toEqual(snap);
+    expect((await getTemplate(db, 'tpl'))?.name).toBe('Standard');
     expect(await getMeta(db, META.cursor)).toBe('c1');
     expect(await getMeta(db, META.lastSyncAt)).toBe('2026-09-18T12:00:00Z');
 

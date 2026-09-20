@@ -38,9 +38,11 @@ export class SyncService {
     const last = page[page.length - 1];
 
     const definitionIds = [...new Set(page.map((r) => r.processDefinitionId).filter((x): x is string => !!x))];
+    const templateIds = [...new Set(page.map((r) => r.taskType?.templateId).filter((x): x is string => !!x))];
     const since = cursor?.t ?? null;
-    const [snapshots, partsStock, partsCatalog] = await Promise.all([
+    const [snapshots, templates, partsStock, partsCatalog] = await Promise.all([
       this.repo.processSnapshots(definitionIds),
+      this.repo.templates(templateIds),
       this.repo.partsStock(technicianId, since),
       this.repo.partsCatalog(since),
     ]);
@@ -53,6 +55,7 @@ export class SyncService {
       visibleWorkOrderIds,
       workOrders: page.map(projectWorkOrder),
       processSnapshots: Object.fromEntries(snapshots.map((s) => [s.id, s])),
+      templates: Object.fromEntries(templates.map((tpl) => [tpl.id, tpl])),
       partsStock,
       partsCatalog,
     };

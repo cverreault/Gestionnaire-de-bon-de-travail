@@ -35,6 +35,7 @@ function fakeSender(script: Record<string, Array<unknown>>): Sender & { calls: A
     async signature(op, expected) { calls.push({ id: op.id, expected }); return next(op.id) as { updatedAt: string }; },
     async partAdd(op) { calls.push({ id: op.id, expected: null }); return (next(op.id) ?? {}) as { workOrderUpdatedAt?: string }; },
     async partRemove(op) { calls.push({ id: op.id, expected: null }); return (next(op.id) ?? {}) as { workOrderUpdatedAt?: string }; },
+    async template(op, expected) { calls.push({ id: op.id, expected }); return next(op.id) as { updatedAt: string }; },
   };
 }
 

@@ -45,7 +45,7 @@ export const SYNC_WORK_ORDER_SELECT = {
       propertyLandUseLabel: true, propertyYearBuilt: true, propertyDwellings: true, propertyStoreys: true,
     },
   },
-  taskType: { select: { id: true, name: true, nameFr: true, nameEn: true, icon: true, color: true } },
+  taskType: { select: { id: true, name: true, nameFr: true, nameEn: true, icon: true, color: true, templateId: true } },
   currentStep: {
     select: { id: true, code: true, name: true, nameFr: true, nameEn: true, color: true, isTerminalPositive: true, isTerminalNegative: true },
   },
@@ -116,6 +116,27 @@ export class MobileRepository {
         },
         transitions: {
           select: { id: true, fromStatusId: true, toStatusId: true, label: true, labelFr: true, labelEn: true, allowedRoles: true, requiredFields: true, sortOrder: true },
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
+    });
+  }
+
+  /** Form templates referenced by the page (sections + fields, with their role lists). */
+  async templates(templateIds: string[]) {
+    if (templateIds.length === 0) return [];
+    return this.prisma.workOrderTemplate.findMany({
+      where: { id: { in: templateIds } },
+      select: {
+        id: true, name: true, nameFr: true, nameEn: true, updatedAt: true,
+        sections: {
+          select: {
+            id: true, name: true, nameFr: true, nameEn: true, sortOrder: true, viewRoles: true, editRoles: true,
+            fields: {
+              select: { id: true, label: true, labelFr: true, labelEn: true, fieldType: true, placeholder: true, helpText: true, options: true, sortOrder: true, viewRoles: true, editRoles: true, requiredRoles: true },
+              orderBy: { sortOrder: 'asc' },
+            },
+          },
           orderBy: { sortOrder: 'asc' },
         },
       },

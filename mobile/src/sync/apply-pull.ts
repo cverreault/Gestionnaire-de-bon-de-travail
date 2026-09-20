@@ -67,6 +67,12 @@ export async function applyPull(db: AppDb, page: SyncPullResponse): Promise<{ up
       .values({ id: snap.id, version: snap.version, updatedAt: snap.updatedAt, json: JSON.stringify(snap) })
       .onConflictDoUpdate({ target: s.processSnapshots.id, set: { version: sql`excluded.version`, updatedAt: sql`excluded.updated_at`, json: sql`excluded.json` } });
   }
+  for (const tpl of Object.values(page.templates ?? {})) {
+    await db
+      .insert(s.templates)
+      .values({ id: tpl.id, updatedAt: tpl.updatedAt, json: JSON.stringify(tpl) })
+      .onConflictDoUpdate({ target: s.templates.id, set: { updatedAt: sql`excluded.updated_at`, json: sql`excluded.json` } });
+  }
   for (const p of page.partsCatalog) {
     await db
       .insert(s.partsCatalog)

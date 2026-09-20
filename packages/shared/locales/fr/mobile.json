@@ -160,7 +160,8 @@
     "part_add": "Pièce ajoutée : {{qty}} × {{sku}}",
     "part_remove": "Pièce retirée : {{sku}}",
     "retryLater": "Nouvel essai à la prochaine synchronisation",
-    "stopped": "L'envoi s'est arrêté sur une erreur réseau ou serveur ; il reprendra à la prochaine synchronisation."
+    "stopped": "L'envoi s'est arrêté sur une erreur réseau ou serveur ; il reprendra à la prochaine synchronisation.",
+    "template": "Formulaire : {{count}} champ(s)"
   },
   "stock": {
     "title": "Mon stock",
@@ -201,5 +202,21 @@
     "sending": "Envoi…",
     "sent": "Rapport envoyé, merci.",
     "failed": "Envoi impossible, réessayez avec le réseau."
+  },
+  "form": {
+    "title": "Formulaire",
+    "save": "Enregistrer les champs",
+    "saved": "Champs en attente d'envoi",
+    "noTemplate": "Aucun formulaire pour ce type de tâche.",
+    "required": "requis",
+    "useMyPosition": "Utiliser ma position",
+    "positionDenied": "Position refusée",
+    "yes": "Oui",
+    "no": "Non",
+    "dateHint": "AAAA-MM-JJ",
+    "timeHint": "HH:MM",
+    "datetimeHint": "AAAA-MM-JJ HH:MM",
+    "choose": "Choisir…",
+    "readOnly": "Lecture seule"
   }
 }

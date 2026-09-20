@@ -107,6 +107,14 @@ export function saveSignatures(
   return api<WorkOrderSummary>(`/work-orders/${workOrderId}/signatures`, { method: 'POST', body: dto, idempotencyKey });
 }
 
+export function updateWorkOrder(
+  workOrderId: string,
+  dto: { templateData?: Record<string, unknown>; completionNotes?: string; negativeReason?: string; expectedUpdatedAt?: string },
+  idempotencyKey?: string,
+): Promise<WorkOrderSummary> {
+  return api<WorkOrderSummary>(`/work-orders/${workOrderId}`, { method: 'PATCH', body: dto, idempotencyKey });
+}
+
 export function addWorkOrderPart(
   workOrderId: string,
   dto: { partId: string; quantity: number; source: 'WAREHOUSE' | 'TECHNICIAN_STOCK' },
