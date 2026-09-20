@@ -92,6 +92,21 @@ export class DevicesService {
     return toView(device);
   }
 
+  /** Every live device of a user, for the admin view (same projection as the self-service list). */
+  listFor(owner: DeviceOwner): Promise<DeviceView[]> {
+    return this.listMine(owner);
+  }
+
+  /** Revokes every live device of a user (admin action or deactivation) ; returns the count. */
+  async revokeAllFor(owner: DeviceOwner, reason: MobileDeviceRevokedPayload['reason']): Promise<number> {
+    const rows = await this.prisma.device.findMany({
+      where: { tenantId: owner.tenantId, userId: owner.id, revokedAt: null },
+      select: { installationId: true },
+    });
+    for (const row of rows) await this.revoke(owner, row.installationId, reason);
+    return rows.length;
+  }
+
   async listMine(owner: DeviceOwner): Promise<DeviceView[]> {
     const rows = await this.prisma.device.findMany({
       where: { tenantId: owner.tenantId, userId: owner.id, revokedAt: null },

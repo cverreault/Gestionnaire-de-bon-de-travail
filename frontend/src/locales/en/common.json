@@ -145,7 +145,23 @@
     "editAction": "Edit",
     "resetShort": "PWD",
     "deactivate": "Deactivate",
-    "reactivate": "Reactivate"
+    "reactivate": "Reactivate",
+    "sessions": {
+      "button": "Sessions and devices",
+      "short": "Sessions",
+      "title": "Sessions of {{name}}",
+      "hint": "Log out everywhere revokes every web and mobile session; the user will have to sign in again. Access already granted expires by itself within minutes.",
+      "devices": "Mobile devices",
+      "noDevice": "No mobile device registered.",
+      "lastSeen": "Seen {{date}}",
+      "pushOn": "push on",
+      "pushOff": "no push",
+      "revokeDevice": "Log out",
+      "deviceRevoked": "Device logged out.",
+      "revokeAll": "Log out everywhere",
+      "confirmAll": "Log {{name}} out of every device and browser?",
+      "allRevoked": "{{sessions}} session(s) and {{devices}} device(s) logged out."
+    }
   },
   "backupPage": {
     "invalidFormat": "Invalid format: only .tar.gz files are accepted.",

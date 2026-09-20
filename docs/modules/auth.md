@@ -113,9 +113,12 @@ Aucun pour l'instant. (Évolution future possible : `auth.login.success`, `auth.
 - **Unit** : `auth.service.spec.ts` (12 tests : login + refresh + logout) ; `refresh-token-cleanup.service.spec.ts` (4 tests : purge selon âge + résistance aux erreurs DB).
 - **Guards** : `roles.guard.spec.ts` (5 tests : allow / deny + log + emit event / anonyme / no-emitter) ; `roles-matrix.spec.ts` (44 assertions de matrice).
 
+## Révocation admin des sessions
+
+`POST /users/:id/revoke-sessions` (ADMIN, module `users`) émet `users.user.sessionsRevoked` avec `emitAsync` ; `auth` (`UserSessionsRevokedListener`) révoque tous les refresh tokens vivants de l'utilisateur, `mobile` révoque ses appareils (chacun réémet `mobile.device.revoked`, déjà consommé ici). La réponse porte les compteurs `{ refreshTokens, devices }`. Le même événement est émis quand un admin désactive un compte (`PATCH /users/:id` avec `isActive=false`, `DELETE /users/:id`). Les access tokens déjà émis restent valides jusqu'à leur expiration (15 min) : pas de liste noire côté JWT.
+
 ## Open questions
 
-- Faut-il un endpoint admin pour révoquer toutes les sessions d'un utilisateur (`POST /users/:id/revoke-sessions`) ?
 - Politique de purge des `refresh_tokens.revokedAt` > 30 jours (cleanup nocturne) ?
 - Migrer vers un `JWKS` rotatif au lieu d'un secret statique pour préparer un éventuel multi-tenancy (ADR future).
 - Le code C13 émet un log Pino sur refus RBAC. À terme, brancher un domain event pour persistance audit + détection d'attaque côté observabilité.

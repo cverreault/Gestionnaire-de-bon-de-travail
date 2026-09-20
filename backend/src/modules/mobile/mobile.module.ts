@@ -2,6 +2,8 @@ import { Global, Module } from '@nestjs/common';
 import { IDEMPOTENCY_STORE } from '../../common/contracts/idempotency.contract';
 import { MOBILE_PUSH_SENDER } from '../../common/contracts/mobile-push.contract';
 import { DevicesController } from './api/devices.controller';
+import { AdminDevicesController } from './api/admin-devices.controller';
+import { UserSessionsRevokedDevicesListener } from './application/devices/user-sessions-revoked.listener';
 import { MobileConfigController } from './api/mobile-config.controller';
 import { SyncController } from './api/sync.controller';
 import { MobileConfigService } from './application/config/mobile-config.service';
@@ -25,9 +27,10 @@ import { MobileModuleRegistration } from './mobile.registration';
  */
 @Global()
 @Module({
-  controllers: [DevicesController, MobileConfigController, SyncController],
+  controllers: [DevicesController, AdminDevicesController, MobileConfigController, SyncController],
   providers: [
     DevicesService,
+    UserSessionsRevokedDevicesListener,
     MobileConfigService,
     IdempotencyStore,
     MobileRepository,

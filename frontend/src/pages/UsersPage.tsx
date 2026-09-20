@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 import { adminResetPassword } from '../services/users.service';
 import LoadingSpinner from '../components/LoadingSpinner';
+import UserSessionsModal from '../components/UserSessionsModal';
 import { Role } from '../types';
 import type { User, ApiResponse } from '../types';
 import { theme, tableStyles, cardStyles, buttonStyles, formStyles, modalStyles, layoutStyles, getRowStyle } from '../theme';
@@ -584,6 +585,7 @@ export default function UsersPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
   const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
+  const [sessionsUser, setSessionsUser] = useState<User | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
 
@@ -750,6 +752,24 @@ export default function UsersPage() {
                         🔑 {t('common:usersPage.resetShort', { defaultValue: 'MDP' })}
                       </button>
 
+                      {/* Sessions / devices */}
+                      <button
+                        onClick={() => setSessionsUser(user)}
+                        style={{
+                          background: theme.colors.surfaceAlt,
+                          border: `1px solid ${theme.colors.border}`,
+                          borderRadius: theme.radius.sm,
+                          padding: '0.3rem 0.6rem',
+                          cursor: 'pointer',
+                          fontSize: theme.font.sizeXs,
+                          color: theme.colors.text,
+                          fontWeight: theme.font.weightMedium,
+                        }}
+                        title={t('common:usersPage.sessions.button', { defaultValue: 'Sessions et appareils' })}
+                      >
+                        📱 {t('common:usersPage.sessions.short', { defaultValue: 'Sessions' })}
+                      </button>
+
                       {/* Toggle active button */}
                       <button
                         onClick={() =>
@@ -803,6 +823,14 @@ export default function UsersPage() {
 
       {editUser && (
         <EditUserModal user={editUser} onClose={() => setEditUser(null)} />
+      )}
+
+      {sessionsUser && (
+        <UserSessionsModal
+          userId={sessionsUser.id}
+          userName={`${sessionsUser.firstName} ${sessionsUser.lastName}`}
+          onClose={() => setSessionsUser(null)}
+        />
       )}
 
       {resetPasswordUser && (

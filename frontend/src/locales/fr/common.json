@@ -145,7 +145,23 @@
     "editAction": "Modifier",
     "resetShort": "MDP",
     "deactivate": "Désactiver",
-    "reactivate": "Réactiver"
+    "reactivate": "Réactiver",
+    "sessions": {
+      "button": "Sessions et appareils",
+      "short": "Sessions",
+      "title": "Sessions de {{name}}",
+      "hint": "Déconnecter partout révoque toutes les sessions web et mobiles ; l'utilisateur devra se reconnecter. Les accès en cours expirent d'eux-mêmes en quelques minutes.",
+      "devices": "Appareils mobiles",
+      "noDevice": "Aucun appareil mobile enregistré.",
+      "lastSeen": "Vu le {{date}}",
+      "pushOn": "push actif",
+      "pushOff": "sans push",
+      "revokeDevice": "Déconnecter",
+      "deviceRevoked": "Appareil déconnecté.",
+      "revokeAll": "Déconnecter partout",
+      "confirmAll": "Déconnecter {{name}} de tous ses appareils et navigateurs ?",
+      "allRevoked": "{{sessions}} session(s) et {{devices}} appareil(s) déconnectés."
+    }
   },
   "backupPage": {
     "invalidFormat": "Format invalide : seuls les fichiers .tar.gz sont acceptés.",

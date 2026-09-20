@@ -75,4 +75,20 @@ export const adminResetPassword = (
 ): Promise<import('axios').AxiosResponse<ApiResponse<void>>> =>
   api.patch<ApiResponse<void>>(`/users/${userId}/reset-password`, { newPassword });
 
+/** POST /users/:id/revoke-sessions — admin: cut every refresh token and mobile device of a user. */
+export const revokeUserSessions = (
+  userId: string,
+): Promise<import('axios').AxiosResponse<ApiResponse<{ refreshTokens: number; devices: number }>>> =>
+  api.post<ApiResponse<{ refreshTokens: number; devices: number }>>(`/users/${userId}/revoke-sessions`);
+
+/** GET /mobile/users/:id/devices — admin: live mobile devices of a user. */
+export const getUserDevices = (
+  userId: string,
+): Promise<import('axios').AxiosResponse<ApiResponse<import('../types').MobileDevice[]>>> =>
+  api.get<ApiResponse<import('../types').MobileDevice[]>>(`/mobile/users/${userId}/devices`);
+
+/** DELETE /mobile/users/:id/devices/:installationId — admin: revoke one device. */
+export const revokeUserDevice = (userId: string, installationId: string): Promise<import('axios').AxiosResponse<void>> =>
+  api.delete<void>(`/mobile/users/${userId}/devices/${installationId}`);
+
 export default usersService;

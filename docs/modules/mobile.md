@@ -128,9 +128,12 @@ Contrats ajoutés dans `backend/src/common/contracts/` : `mobile-push.contract.t
 - **Integration** (Postgres dédié) : `backend/test/mobile-devices.integration-spec.ts` (login avec `X-Device-Id` → `refresh_tokens.device_id` ; révocation → refresh 401 ; second utilisateur sur le même appareil re-lie), `backend/test/mobile-sync.integration-spec.ts` (réassignation sort de `visibleWorkOrderIds` ; note dispatcher bump `updatedAt` ; pagination `limit=1` ; BT terminé > 14 j disparaît ; isolation tenant), `backend/test/idempotency.integration-spec.ts` (replay identique + header ; corps différent → 422 ; isolation par utilisateur et tenant)
 - **Arch** : `npm run arch:check` sans nouvelle exception dans `.dependency-cruiser.cjs`
 
+## Administration des appareils
+
+`GET /mobile/users/:userId/devices` et `DELETE /mobile/users/:userId/devices/:installationId` (ADMIN, `AdminDevicesController`) : même projection que `/me/devices` (jamais le push token), révocation avec `reason: 'admin'`. `UserSessionsRevokedDevicesListener` consomme `users.user.sessionsRevoked` (déconnexion partout, désactivation du compte) et révoque tous les appareils vivants de l'utilisateur.
+
 ## Open questions
 
-- Faut-il exposer `GET /api/users/:id/devices` à l'ADMIN pour révoquer l'appareil d'un technicien parti ? Hors v1 (ADR-015), à décider à la première demande.
 - Fenêtre de grâce sur la rotation du refresh token (une app tuée entre la réponse et l'écriture en SecureStore perd sa session). À traiter dans `auth`, pas ici.
 - `GET /api/auth/me` doit renvoyer `preferences` pour que l'app connaisse thème, locale et consentement GPS dès la connexion (pré-requis B38.3).
 

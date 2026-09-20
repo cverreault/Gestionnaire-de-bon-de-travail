@@ -59,6 +59,16 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.13.1',
+    name: 'Sessions et appareils gérés par l\'admin',
+    date: 'Septembre 2026',
+    entries: [
+      { type: 'new', text: "📱 Page Utilisateurs : bouton Sessions qui liste les appareils mobiles d'un utilisateur (modèle, version, dernier signe de vie, push) et permet d'en déconnecter un" },
+      { type: 'new', text: "🔒 « Déconnecter partout » révoque toutes les sessions web et mobiles d'un utilisateur ; désactiver un compte le déconnecte aussi partout" },
+      { type: 'improvement', text: "🧹 Analyse statique (ESLint) rétablie sur le serveur et le site, et exécutée par l'intégration continue" },
+    ],
+  },
+  {
     version: '2.13.0',
     name: 'Tags sur les clients, les adresses et les BT',
     date: 'Septembre 2026',

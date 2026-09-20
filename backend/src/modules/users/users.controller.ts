@@ -171,6 +171,24 @@ export class UsersController {
     return this.usersService.update(id, dto);
   }
 
+  // ── POST /api/users/:id/revoke-sessions ────────────────────────────────────
+
+  @Post(':id/revoke-sessions')
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '[Admin] Déconnecter un utilisateur partout',
+    description:
+      'Révoque tous ses refresh tokens (web et mobile) et ses appareils mobiles enregistrés. ' +
+      'Les access tokens déjà émis expirent d\'eux-mêmes (15 min).',
+  })
+  @ApiParam({ name: 'id', type: 'string', description: 'UUID de l\'utilisateur' })
+  @ApiResponse({ status: 200, description: 'Compteurs des sessions et appareils révoqués' })
+  @ApiResponse({ status: 404, description: 'Utilisateur introuvable' })
+  revokeSessions(@Param('id') id: string, @CurrentUser('id') actorId: string) {
+    return this.usersService.revokeSessions(id, actorId, 'admin');
+  }
+
   // ── DELETE /api/users/:id ──────────────────────────────────────────────────
 
   @Delete(':id')
