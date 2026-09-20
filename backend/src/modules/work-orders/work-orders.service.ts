@@ -27,9 +27,6 @@ import {
   workOrderCreated,
   workOrderRequested,
   workOrderAssigned,
-  workOrderDispatched,
-  workOrderStatusChanged,
-  workOrderCompleted,
 } from './domain/events/work-order-events';
 import { toCsv } from '../../common/utils/csv.util';
 

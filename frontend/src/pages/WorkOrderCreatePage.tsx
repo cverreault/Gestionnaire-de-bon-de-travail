@@ -8,7 +8,7 @@ import { useTemplate } from '../hooks/useTemplates';
 import TemplateFormRenderer from '../components/TemplateFormRenderer';
 import { useTaskTypes } from '../hooks/useSettings';
 import { useTechnicians } from '../hooks/useUsers';
-import { ClientType, AddressType, Role , type PrincipalClientRef } from '../types';
+import { ClientType, Role, type PrincipalClientRef } from '../types';
 import type { Client, ClientAddress } from '../types';
 import { clientTypeLabel, addressTypeLabel, priorityLabel } from '../utils/entityLabels';
 import { useAuthStore } from '../context/auth.store';
@@ -382,12 +382,6 @@ function Step2Address({
   onSelectAddress: (id: string, addr: ClientAddress) => void;
 }) {
   const { t } = useTranslation('workOrders');
-  const [showNewForm, setShowNewForm] = useState(false);
-  const [naStreet, setNaStreet] = useState('');
-  const [naCity, setNaCity] = useState('');
-  const [naPostal, setNaPostal] = useState('');
-  const [naProvince, setNaProvince] = useState('QC');
-  const [naType, setNaType] = useState<AddressType>(AddressType.WORKSITE);
 
   // Fetch the full client detail to get ALL addresses (the search/list endpoint
   // only returns the default address — we need the complete list for the picker).
@@ -623,8 +617,6 @@ function Step4Assignment({
   dispatchNow,
   onAssignedToId,
   onDispatchNow,
-  onSubmit,
-  isSubmitting,
   submitError,
 }: {
   client: Client;
@@ -634,8 +626,6 @@ function Step4Assignment({
   dispatchNow: boolean;
   onAssignedToId: (id: string) => void;
   onDispatchNow: (v: boolean) => void;
-  onSubmit: () => void;
-  isSubmitting: boolean;
   submitError: boolean;
 }) {
   const { t } = useTranslation('workOrders');
@@ -728,7 +718,6 @@ function Step4Assignment({
 
 export default function WorkOrderCreatePage() {
   const { t } = useTranslation('workOrders');
-  const { t: tCommon } = useTranslation('common');
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const userRole = useAuthStore((s) => s.user?.role);
@@ -904,8 +893,6 @@ export default function WorkOrderCreatePage() {
           dispatchNow={dispatchNow}
           onAssignedToId={setAssignedToId}
           onDispatchNow={setDispatchNow}
-          onSubmit={handleSubmit}
-          isSubmitting={createWorkOrder.isPending}
           submitError={createWorkOrder.isError}
         />
       )}

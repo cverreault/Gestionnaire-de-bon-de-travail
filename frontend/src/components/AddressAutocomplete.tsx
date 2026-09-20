@@ -49,7 +49,7 @@ export default function AddressAutocomplete({ onSelect, disabled }: Props) {
           setOpen(true);
           setActive(res.length > 0 ? 0 : -1);
         }
-      } catch (err) {
+      } catch {
         if (!controller.signal.aborted) {
           setItems([]);
           setError(t('autocomplete.unavailable', { defaultValue: 'Service d’adresses indisponible' }));

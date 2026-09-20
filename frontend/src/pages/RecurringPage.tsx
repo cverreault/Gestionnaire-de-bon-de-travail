@@ -254,7 +254,7 @@ function EditModal({
   const [workOrderDescription, setWorkOrderDescription] = useState(
     existing?.workOrderDescription ?? '',
   );
-  const [priority, setPriority] = useState(existing?.priority ?? 0);
+  const [priority] = useState(existing?.priority ?? 0);
   const [frequency, setFrequency] = useState<Frequency>(existing?.frequency ?? 'MONTHLY');
   const [interval_, setInterval_] = useState(existing?.interval ?? 1);
   const [byDayOfWeek, setByDayOfWeek] = useState<number[]>(existing?.byDayOfWeek ?? []);

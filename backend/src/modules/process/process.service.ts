@@ -25,8 +25,6 @@ const SINGLETON_FLAGS = [
   'isTerminalNegative',
 ] as const;
 
-type SingletonFlag = (typeof SINGLETON_FLAGS)[number];
-
 @Injectable()
 export class ProcessService {
   private readonly logger = new Logger(ProcessService.name);

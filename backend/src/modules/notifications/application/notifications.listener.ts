@@ -10,7 +10,6 @@ import { NotificationsService } from './notifications.service';
 import { EmailChannelService } from '../infrastructure/channels/email-channel.service';
 import { PushChannelService } from '../infrastructure/channels/push-channel.service';
 import { SmsChannelService } from '../infrastructure/channels/sms-channel.service';
-import type { NotifiableEvent } from './notification-preferences';
 
 /**
  * First cross-module reactor that is NOT audit. Listens for the events

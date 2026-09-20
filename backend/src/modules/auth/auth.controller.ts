@@ -15,7 +15,6 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { IsString, IsNotEmpty } from 'class-validator';
 import { AuthService } from './auth.service';
 import { EmailVerificationService } from './application/email-verification.service';
 import { TotpService } from './totp/totp.service';
@@ -28,12 +27,6 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
 import type { TenantContext } from '../../common/contracts/tenant-context.contract';
 import { UserResponseDto } from '../users/dto/user-response.dto';
-
-class RefreshBodyDto {
-  @IsString()
-  @IsNotEmpty()
-  refreshToken: string;
-}
 
 @ApiTags('Auth')
 @Controller('auth')

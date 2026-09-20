@@ -275,8 +275,7 @@ function StockOpModal({
 // ─── History modal ────────────────────────────────────────────────────────────
 
 function HistoryModal({ part, onClose }: { part: Part; onClose: () => void }) {
-  const { t, i18n } = useTranslation('inventory');
-  const locale = i18n.language ?? 'fr';
+  const { t } = useTranslation('inventory');
   const movements = usePartMovements(part.id);
 
   return (

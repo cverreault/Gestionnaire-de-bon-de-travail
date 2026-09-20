@@ -147,10 +147,8 @@ describe('getPasswordStrength — Moyen (medium)', () => {
   });
 
   it('Moyen label is "Moyen"', () => {
-    const result = getPasswordStrength('Password1'); // 9 chars, 3 types? uppercase+lower+digit = 3 types
-    // Actually: uppercase P, lowercase assword, digit 1 = 3 types → Fort
-    // Use exactly 2 types:
-    const r2 = getPasswordStrength('password1!'); // lowercase + digit + special = 3 types → Fort
+    // 'Password1' = uppercase + lowercase + digit = 3 types → Fort;
+    // 'password1!' = lowercase + digit + special = 3 types → Fort.
     // Use strictly 2:
     const r3 = getPasswordStrength('PASSWORD1'); // uppercase + digit = 2 types
     expect(r3?.level).toBe('moyen');
@@ -314,7 +312,7 @@ describe('PasswordInput — show/hide toggle behavior', () => {
    */
 
   it('initial state is hidden (password type)', () => {
-    let visible = false;
+    const visible = false;
     const inputType = visible ? 'text' : 'password';
     expect(inputType).toBe('password');
   });
