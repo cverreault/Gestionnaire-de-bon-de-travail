@@ -87,7 +87,8 @@
     "selectClient": "Choisir un client",
     "selectTemplate": "Choisir un modèle",
     "assignTechnician": "Assigner un technicien",
-    "searchClient": "Rechercher un client par nom, prénom ou email…"
+    "searchClient": "Rechercher un client par nom, prénom ou email…",
+    "uploadPhoto": "Ajouter une photo"
   },
   "messages": {
     "noActive": "Aucun BT en attente",
@@ -389,7 +390,15 @@
     "unassignedOption": "— Non assigné —",
     "saveError": "Erreur lors de la sauvegarde. Veuillez réessayer.",
     "mandatedBy": "Mandaté par {{name}}",
-    "subcontracting": "Sous-traitance"
+    "subcontracting": "Sous-traitance",
+    "tabs": {
+      "details": "Détails",
+      "history": "Historique",
+      "parts": "Inventaire",
+      "signatures": "Signatures",
+      "attachments": "Pièces jointes",
+      "photos": "Photos"
+    }
   },
   "modes": {
     "list": "Liste",
