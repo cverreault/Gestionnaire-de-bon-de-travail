@@ -3,6 +3,7 @@ import {
   NestInterceptor,
   ExecutionContext,
   CallHandler,
+  StreamableFile,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -16,6 +17,10 @@ export interface ApiResponse<T> {
 /**
  * Wraps all successful responses in a standard envelope:
  * { success: true, data: ..., timestamp: "..." }
+ *
+ * Binary responses (`StreamableFile`, e.g. the attachment content proxy) are
+ * passed through untouched : wrapping them would make Express JSON-serialise a
+ * socket (circular structure → 500).
  */
 @Injectable()
 export class TransformInterceptor<T>
@@ -26,11 +31,15 @@ export class TransformInterceptor<T>
     next: CallHandler,
   ): Observable<ApiResponse<T>> {
     return next.handle().pipe(
-      map((data) => ({
-        success: true,
-        data,
-        timestamp: new Date().toISOString(),
-      })),
+      map((data) =>
+        data instanceof StreamableFile
+          ? (data as unknown as ApiResponse<T>)
+          : {
+              success: true,
+              data,
+              timestamp: new Date().toISOString(),
+            },
+      ),
     );
   }
 }
