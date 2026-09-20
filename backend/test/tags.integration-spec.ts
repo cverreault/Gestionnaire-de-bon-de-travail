@@ -130,7 +130,8 @@ describe('Tags (integration)', () => {
     const created = await api().post('/api/clients').set('Authorization', `Bearer ${adminToken}`)
       .send({
         firstName: 'Jean', lastName: 'Test', clientType: 'COMMERCIAL', tagIds: [lumii.id],
-        addresses: [{ street: 'rue A', city: 'Québec', postalCode: 'G1A 1A1', tagIds: [site.id] }],
+        // Coordinates given so no background geocoding outlives the suite.
+        addresses: [{ street: 'rue A', city: 'Québec', postalCode: 'G1A 1A1', latitude: 46.81, longitude: -71.21, tagIds: [site.id] }],
       });
     expect(created.status).toBe(201);
     expect(created.body.tags).toEqual([{ id: lumii.id, name: 'Lumii', color: '#2563eb' }]);
