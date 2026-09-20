@@ -62,7 +62,7 @@ export default function TechnicianPanel({ technicians, counts, unassignedCount, 
   });
 
   return (
-    <aside style={{ width: 230, flexShrink: 0, background: theme.colors.surface, border: theme.borders.default, borderRadius: theme.radius.lg, padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', alignSelf: 'flex-start', position: 'sticky', top: '1rem' }}>
+    <aside style={{ width: 200, flexShrink: 0, background: theme.colors.surface, border: theme.borders.default, borderRadius: theme.radius.lg, padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', alignSelf: 'flex-start', position: 'sticky', top: '1rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
         <span style={{ fontSize: theme.font.sizeXs, color: theme.colors.textMuted, fontWeight: theme.font.weightSemibold, textTransform: 'uppercase', letterSpacing: '0.04em' }}>👷 {t('panel.technicians')}</span>
         <button onClick={toggle} title={t('panel.collapse')} style={{ border: 'none', background: 'none', cursor: 'pointer', color: theme.colors.textMuted }}>‹</button>
