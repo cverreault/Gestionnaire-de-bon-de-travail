@@ -140,8 +140,6 @@ jobs:
           --health-retries 5
     env:
       DATABASE_URL: postgresql://taskmgr:taskmgr_secret@localhost:5434/taskmgr
-      JWT_SECRET: e2e-jwt-secret
-      JWT_REFRESH_SECRET: e2e-refresh-secret
       JWT_EXPIRATION: 15m
       JWT_REFRESH_EXPIRATION: 7d
       MINIO_ENDPOINT: localhost
@@ -159,6 +157,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Random JWT secrets (the backend refuses short or placeholder values)
+        run: |
+          echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          echo "JWT_REFRESH_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
       - name: Backend — install, migrate, seed, build, start
         working-directory: backend
         run: |
