@@ -49,11 +49,11 @@ interface FilterPreset {
 /** Share of the table width per column (fixed layout) ; unlisted columns split the remainder. */
 const COLUMN_WEIGHTS: Record<string, number> = {
   referenceNumber: 14,
-  title: 16,
-  address: 16,
+  title: 15,
+  address: 15,
   type: 7,
   priority: 8,
-  status: 12,
+  status: 14,
   technician: 9,
   scheduledDate: 8,
   actions: 10,
@@ -148,7 +148,7 @@ function buildWorkOrderColumnCatalog(t: TFunc, tCommon: TFunc, onOpen: (id: stri
         <button
           onClick={() => onOpen(wo.id)}
           title={t('list.openInModal', { defaultValue: 'Ouvrir le bon de travail' })}
-          style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontFamily: 'monospace', color: theme.colors.primary, fontWeight: theme.font.weightSemibold, textDecoration: 'underline', textUnderlineOffset: 3 }}
+          style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', color: theme.colors.primary, fontWeight: theme.font.weightSemibold, textDecoration: 'underline', textUnderlineOffset: 3, fontSize: theme.font.sizeXs, letterSpacing: '-0.01em' }}
         >
           {wo.referenceNumber}
         </button>
