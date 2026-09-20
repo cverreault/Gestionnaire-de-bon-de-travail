@@ -49,14 +49,14 @@ interface FilterPreset {
 /** Share of the table width per column (fixed layout) ; unlisted columns split the remainder. */
 const COLUMN_WEIGHTS: Record<string, number> = {
   referenceNumber: 13,
-  title: 19,
-  address: 19,
+  title: 17,
+  address: 17,
   type: 8,
   priority: 8,
-  status: 12,
+  status: 10,
   technician: 10,
-  scheduledDate: 9,
-  actions: 10,
+  scheduledDate: 8,
+  actions: 9,
 };
 
 function loadPresets(): Record<string, FilterPreset> {
@@ -1058,7 +1058,7 @@ export default function WorkOrdersPage() {
           {/* Table */}
           <div style={{ ...tableStyles.container, overflowX: 'auto' }}>
             {/* Fixed layout : columns share the available width (weights below) and long text wraps, so nothing is cut off. */}
-            <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+            <table style={{ width: '100%', minWidth: 0, borderCollapse: 'collapse', tableLayout: 'fixed' }}>
               <colgroup>
                 {orderedColumns.map((col) => (
                   <col key={col.id} style={{ width: COLUMN_WEIGHTS[col.id] ? `${COLUMN_WEIGHTS[col.id]}%` : undefined }} />
