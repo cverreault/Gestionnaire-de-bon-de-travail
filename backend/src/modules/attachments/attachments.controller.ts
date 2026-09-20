@@ -180,17 +180,17 @@ export class AttachmentsController {
   // ── Delete ─────────────────────────────────────────────────────────────────
 
   @Delete('attachments/:id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Supprimer une pièce jointe',
-    description: 'Supprime le fichier de MinIO et les métadonnées. Réservé aux administrateurs.',
+    description: 'Supprime le fichier de MinIO et les métadonnées. Un technicien ne peut supprimer que sur ses propres bons de travail.',
   })
   @ApiParam({ name: 'id', description: 'UUID de la pièce jointe' })
   @ApiResponse({ status: 200, description: 'Pièce jointe supprimée' })
-  @ApiResponse({ status: 403, description: 'Accès réservé aux administrateurs' })
+  @ApiResponse({ status: 403, description: 'Technicien non assigné au bon de travail' })
   @ApiResponse({ status: 404, description: 'Pièce jointe introuvable' })
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.attachmentsService.remove(id);
+  remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() currentUser: JwtUser) {
+    return this.attachmentsService.remove(id, currentUser);
   }
 }

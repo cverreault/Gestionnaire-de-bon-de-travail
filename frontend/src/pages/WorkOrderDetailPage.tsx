@@ -11,6 +11,8 @@ import { formatStreet } from '../utils/addressFormat';
 import TemplateFormRenderer from '../components/TemplateFormRenderer';
 import TemplateValuesView from '../components/TemplateValuesView';
 import AuthImage from '../components/AuthImage';
+import { downloadAttachment, viewAttachment } from '../utils/attachmentActions';
+import { useQueryClient } from '@tanstack/react-query';
 import WorkOrderStatusBadge from '../components/WorkOrderStatusBadge';
 import TransitionActionBar from '../components/transitions/TransitionActionBar';
 import ApproveScheduleModal from '../components/ApproveScheduleModal';
@@ -65,6 +67,26 @@ export default function WorkOrderDetailPage({ idOverride, onClose, embedded = fa
   const [showApproveModal, setShowApproveModal] = useState(false);
   // Tabs of the read view (hooks must stay above the loading / error returns).
   const [tab, setTab] = useState<DetailTab>('details');
+  const queryClientForAttachments = useQueryClient();
+  const [busyAttachment, setBusyAttachment] = useState<string | null>(null);
+  async function removeAttachment(att: { id: string; fileName: string }) {
+    if (!window.confirm(t('messages.deleteAttachmentConfirm', { defaultValue: `Supprimer « ${att.fileName} » ? Cette action est définitive.`, name: att.fileName }))) return;
+    setBusyAttachment(att.id);
+    try {
+      await workOrdersService.deleteAttachment(att.id);
+      await queryClientForAttachments.invalidateQueries({ queryKey: ['work-orders', id] });
+    } finally {
+      setBusyAttachment(null);
+    }
+  }
+  const attachmentActionStyle: React.CSSProperties = { border: theme.borders.default, background: theme.colors.surface, borderRadius: theme.radius.sm, padding: '0.2rem 0.45rem', cursor: 'pointer', fontSize: theme.font.sizeSm, lineHeight: 1 };
+  const attachmentActions = (att: { id: string; fileName: string }) => (
+    <span style={{ display: 'inline-flex', gap: '0.3rem' }}>
+      <button title={t('actions.viewAttachment', { defaultValue: 'Voir' })} style={attachmentActionStyle} onClick={() => void viewAttachment(att.id)}>👁</button>
+      <button title={t('actions.downloadAttachment', { defaultValue: 'Télécharger' })} style={attachmentActionStyle} onClick={() => void downloadAttachment(att.id, att.fileName)}>⬇</button>
+      <button title={t('actions.deleteAttachment', { defaultValue: 'Supprimer' })} style={{ ...attachmentActionStyle, color: theme.colors.danger }} disabled={busyAttachment === att.id} onClick={() => void removeAttachment(att)}>🗑</button>
+    </span>
+  );
   const [photoPreview, setPhotoPreview] = useState<{ id: string; name: string } | null>(null);
   const addNote = useAddNote(id!);
   const uploadAttachment = useUploadAttachment(id!);
@@ -781,6 +803,7 @@ export default function WorkOrderDetailPage({ idOverride, onClose, embedded = fa
                   style={{ width: '100%', height: 140, objectFit: 'cover', borderRadius: theme.radius.md, border: theme.borders.light, cursor: 'zoom-in' }}
                 />
                 <span style={{ fontSize: theme.font.sizeXs, color: theme.colors.textLight, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={att.fileName}>{att.fileName}</span>
+                {attachmentActions(att)}
               </div>
             ))}
           </div>
@@ -825,6 +848,7 @@ export default function WorkOrderDetailPage({ idOverride, onClose, embedded = fa
                 <span>📎</span>
                 <span style={{ flex: 1, fontSize: theme.font.sizeSm, color: theme.colors.text }}>{att.fileName}</span>
                 <span style={{ fontSize: theme.font.sizeXs, color: theme.colors.textLight }}>{(att.fileSize / 1024).toFixed(1)} KB</span>
+                {attachmentActions(att)}
               </div>
             ))}
           </div>

@@ -88,7 +88,10 @@
     "selectTemplate": "Choisir un modèle",
     "assignTechnician": "Assigner un technicien",
     "searchClient": "Rechercher un client par nom, prénom ou email…",
-    "uploadPhoto": "Ajouter une photo"
+    "uploadPhoto": "Ajouter une photo",
+    "viewAttachment": "Voir",
+    "downloadAttachment": "Télécharger",
+    "deleteAttachment": "Supprimer"
   },
   "messages": {
     "noActive": "Aucun BT en attente",
@@ -104,7 +107,8 @@
     "offlineMode": "Mode hors-ligne",
     "hello": "Bonjour {{name}} 👋",
     "activeCount_one": "{{count}} bon de travail actif",
-    "activeCount_other": "{{count}} bons de travail actifs"
+    "activeCount_other": "{{count}} bons de travail actifs",
+    "deleteAttachmentConfirm": "Supprimer « {{name}} » ? Cette action est définitive."
   },
   "hello": "Bonjour {{name}} 👋",
   "activeCount_one": "{{count}} bon de travail actif",

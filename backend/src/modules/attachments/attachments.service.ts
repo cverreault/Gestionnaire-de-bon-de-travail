@@ -219,13 +219,24 @@ export class AttachmentsService {
 
   // ── Delete ─────────────────────────────────────────────────────────────────
 
-  async remove(attachmentId: string) {
+  async remove(attachmentId: string, currentUser?: CurrentUserRef) {
     const attachment = await this.prisma.attachment.findUnique({
       where: { id: attachmentId },
+      include: { workOrder: { select: { assignedToId: true } } },
     });
 
     if (!attachment) {
       throw new NotFoundException(`Pièce jointe #${attachmentId} introuvable`);
+    }
+
+    // Technicians only delete on their own work orders (same IDOR rule as reads).
+    if (
+      currentUser?.role === Role.TECHNICIAN &&
+      attachment.workOrder.assignedToId !== currentUser.id
+    ) {
+      throw new ForbiddenException(
+        'Vous ne pouvez supprimer que les pièces jointes de vos propres bons de travail',
+      );
     }
 
     // 1. Remove from MinIO storage
