@@ -9,7 +9,9 @@ interface Props {
 
 /**
  * Work-order detail as an overlay on top of the list / dispatch board, so the
- * dispatcher never loses the page state. Escape or the backdrop closes it.
+ * dispatcher never loses the page state. Closes only on an explicit action
+ * (✕, « Retour » or Escape) — never on a click outside, so a stray click while
+ * working in the form can't dismiss it.
  */
 export default function WorkOrderModal({ workOrderId, onClose }: Props) {
   useEffect(() => {
@@ -27,9 +29,6 @@ export default function WorkOrderModal({ workOrderId, onClose }: Props) {
 
   return (
     <div
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
       style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.55)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'flex-start', padding: '2rem 1rem', overflowY: 'auto' }}
     >
       <div
