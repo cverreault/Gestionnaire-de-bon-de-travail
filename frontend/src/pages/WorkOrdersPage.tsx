@@ -1080,7 +1080,14 @@ export default function WorkOrdersPage() {
                       onMouseLeave={() => setHoveredRow(null)}
                     >
                       {orderedColumns.map((col) => (
-                        <td key={col.id} style={{ ...(col.tdStyle ?? tableStyles.cell), padding: '0.35rem 0.6rem', fontSize: theme.font.sizeXs, maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={typeof col.render(wo, index) === 'string' ? String(col.render(wo, index)) : undefined}>
+                        <td
+                          key={col.id}
+                          style={{
+                            ...(col.tdStyle ?? tableStyles.cell), padding: '0.35rem 0.6rem', fontSize: theme.font.sizeXs, lineHeight: 1.25,
+                            // Long text columns wrap on two lines so every column stays visible without a horizontal scroll.
+                            ...(col.id === 'title' || col.id === 'address' ? { maxWidth: 220, whiteSpace: 'normal', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const } : { whiteSpace: 'nowrap' }),
+                          }}
+                        >
                           {col.render(wo, index)}
                         </td>
                       ))}
