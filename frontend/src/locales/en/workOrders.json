@@ -125,7 +125,9 @@
     "priorityMin": "Min priority",
     "noMatch": "No work order matches the selected filters",
     "hiddenCompletedSuffix": "completed hidden",
-    "principalFilter": "Mandated by"
+    "principalFilter": "Mandated by",
+    "openInModal": "Open the work order",
+    "dragHint": "Drag a row onto a technician in the left panel to dispatch. Click the reference to open the work order."
   },
   "priorityLevels": {
     "0": "0 — None",
@@ -388,5 +390,37 @@
     "saveError": "An error occurred while saving. Please try again.",
     "mandatedBy": "Mandated by {{name}}",
     "subcontracting": "Subcontracting"
+  },
+  "modes": {
+    "list": "List",
+    "dispatch": "Dispatch"
+  },
+  "period": {
+    "all": "All dates",
+    "day": "Day",
+    "week": "Week",
+    "month": "Month",
+    "today": "Today",
+    "prev": "Previous",
+    "next": "Next"
+  },
+  "panel": {
+    "technicians": "Technicians",
+    "all": "All work orders",
+    "unassignedShort": "{{count}} unassigned",
+    "collapse": "Collapse",
+    "expand": "Technicians",
+    "dropHint": "Drag a work order onto a technician to assign it. Click a name to filter."
+  },
+  "dispatch": {
+    "unassigned": "Unassigned",
+    "empty": "Drop a work order here",
+    "unscheduled": "Unscheduled",
+    "sortTime": "Sort: time",
+    "sortPriority": "Sort: priority",
+    "sortType": "Sort: type",
+    "sortReference": "Sort: reference",
+    "unassignConfirm": "Remove {{ref}} from its technician?",
+    "cannotUnassign": "This work order cannot be unassigned from its current status."
   }
 }

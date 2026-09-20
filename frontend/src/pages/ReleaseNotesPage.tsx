@@ -59,6 +59,18 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.12.0',
+    name: 'Bons de travail : modes Liste et Dispatch, période, popup',
+    date: 'Septembre 2026',
+    entries: [
+      { type: 'new', text: "🗂 Mode Dispatch sur la page Bons de travail : un tableau par technicien plus « Non assigné », cartes glissables pour assigner ou retirer, tri par heure, priorité, type ou référence" },
+      { type: 'new', text: "👷 Panneau des techniciens à gauche de la page, avec le nombre de BT actifs : cliquer filtre la liste, glisser un BT dessus l'assigne" },
+      { type: 'new', text: "🗓 Sélecteur de période en haut de la page : jour, semaine, mois ou toutes dates, avec navigation et retour à aujourd'hui" },
+      { type: 'improvement', text: "🪟 Cliquer la référence d'un BT l'ouvre en popup par-dessus la liste, sans perdre ses filtres ni sa position" },
+      { type: 'improvement', text: "📏 Lignes de la liste plus compactes pour voir toutes les colonnes sans défiler" },
+    ],
+  },
+  {
     version: '2.11.0',
     name: 'App mobile Dispatch2Go : premières actions terrain (B38, B43)',
     date: 'Septembre 2026',
