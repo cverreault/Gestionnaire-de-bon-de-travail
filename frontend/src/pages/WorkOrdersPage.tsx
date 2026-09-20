@@ -1048,7 +1048,7 @@ export default function WorkOrdersPage() {
               <thead style={{ ...tableStyles.header }}>
                 <tr>
                   {orderedColumns.map((col) => (
-                    <th key={col.id} style={{ ...tableStyles.headerCell, textAlign: 'left', padding: '0.45rem 0.6rem', whiteSpace: 'nowrap' }}>
+                    <th key={col.id} style={{ ...tableStyles.headerCell, textAlign: 'left', padding: '0.45rem 0.6rem', lineHeight: 1.2 }}>
                       {col.label}
                     </th>
                   ))}
@@ -1085,7 +1085,11 @@ export default function WorkOrdersPage() {
                           style={{
                             ...(col.tdStyle ?? tableStyles.cell), padding: '0.35rem 0.6rem', fontSize: theme.font.sizeXs, lineHeight: 1.25,
                             // Long text columns wrap on two lines so every column stays visible without a horizontal scroll.
-                            ...(col.id === 'title' || col.id === 'address' ? { maxWidth: 220, whiteSpace: 'normal', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const } : { whiteSpace: 'nowrap' }),
+                            ...(col.id === 'title' || col.id === 'address'
+                              ? { maxWidth: 220, whiteSpace: 'normal', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }
+                              : col.id === 'referenceNumber' || col.id === 'status' || col.id === 'actions'
+                                ? { whiteSpace: 'nowrap' }
+                                : { whiteSpace: 'normal' }),
                           }}
                         >
                           {col.render(wo, index)}
