@@ -22,6 +22,10 @@ describe('Tags (integration)', () => {
     await createDefaultProcess(ctx.prisma as never);
   });
   afterAll(async () => {
+    // Creating work orders fires fire-and-forget listeners (notifications, reminders) ;
+    // let them settle before the app closes, otherwise their late Prisma calls reopen a
+    // pool after Jest is done and the process exits 1 in CI.
+    await new Promise((r) => setTimeout(r, 1500));
     await ctx.close();
   });
 
