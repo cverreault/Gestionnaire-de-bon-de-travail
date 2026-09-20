@@ -10,6 +10,7 @@ import { getPredominantDisplay } from '../utils/addressPredominant';
 import { formatStreet } from '../utils/addressFormat';
 import TemplateFormRenderer from '../components/TemplateFormRenderer';
 import TemplateValuesView from '../components/TemplateValuesView';
+import AuthImage from '../components/AuthImage';
 import WorkOrderStatusBadge from '../components/WorkOrderStatusBadge';
 import TransitionActionBar from '../components/transitions/TransitionActionBar';
 import ApproveScheduleModal from '../components/ApproveScheduleModal';
@@ -361,6 +362,47 @@ export default function WorkOrderDetailPage({ idOverride, onClose, embedded = fa
 
   const valueStyle: React.CSSProperties = { color: theme.colors.text };
 
+  // Top tabs of the read view : details, history, parts, signatures, attachments, photos.
+  type DetailTab = 'details' | 'history' | 'parts' | 'signatures' | 'attachments' | 'photos';
+  const [tab, setTab] = useState<DetailTab>('details');
+  const [photoPreview, setPhotoPreview] = useState<{ id: string; name: string } | null>(null);
+  const isImage = (mime: string) => mime.startsWith('image/');
+  const photos = (wo?.attachments ?? []).filter((a) => isImage(a.mimeType));
+  const files = (wo?.attachments ?? []).filter((a) => !isImage(a.mimeType));
+  const tabs: Array<{ key: DetailTab; label: string; count?: number; hidden?: boolean }> = [
+    { key: 'details', label: t('detailPage.tabs.details', { defaultValue: 'Détails' }) },
+    { key: 'history', label: t('detailPage.tabs.history', { defaultValue: 'Historique' }), hidden: !canSeeAuditTimeline },
+    { key: 'parts', label: t('detailPage.tabs.parts', { defaultValue: 'Inventaire' }) },
+    { key: 'signatures', label: t('detailPage.tabs.signatures', { defaultValue: 'Signatures' }), count: ((wo as unknown as { signatureClient?: string | null } | undefined)?.signatureClient ? 1 : 0) + ((wo as unknown as { signatureTechnician?: string | null } | undefined)?.signatureTechnician ? 1 : 0) },
+    { key: 'attachments', label: t('detailPage.tabs.attachments', { defaultValue: 'Pièces jointes' }), count: files.length },
+    { key: 'photos', label: t('detailPage.tabs.photos', { defaultValue: 'Photos' }), count: photos.length },
+  ];
+  const tabBar = (
+    <div role="tablist" style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', borderBottom: theme.borders.default, marginBottom: '1.5rem' }}>
+      {tabs.filter((tb) => !tb.hidden).map((tb) => {
+        const active = tab === tb.key;
+        return (
+          <button
+            key={tb.key}
+            role="tab"
+            aria-selected={active}
+            onClick={() => setTab(tb.key)}
+            style={{
+              padding: '0.6rem 1rem', border: 'none', borderBottom: active ? `3px solid ${theme.colors.primary}` : '3px solid transparent', marginBottom: -1,
+              background: 'none', cursor: 'pointer', fontSize: theme.font.sizeSm, fontWeight: active ? theme.font.weightSemibold : theme.font.weightMedium,
+              color: active ? theme.colors.primary : theme.colors.textSecondary, display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+            }}
+          >
+            {tb.label}
+            {tb.count !== undefined && tb.count > 0 && (
+              <span style={{ fontSize: theme.font.sizeXs, background: active ? theme.colors.primaryLight : theme.colors.surfaceAlt, color: active ? theme.colors.primary : theme.colors.textMuted, borderRadius: theme.radius.full, padding: '0 0.45rem' }}>{tb.count}</span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+
   return (
     <div style={{ maxWidth: '900px', ...layoutStyles.page, ...(embedded ? { margin: 0, padding: '1.25rem 1.5rem' } : {}) }}>
       {/* Back */}
@@ -456,6 +498,9 @@ export default function WorkOrderDetailPage({ idOverride, onClose, embedded = fa
         )}
       </div>
 
+      {tabBar}
+
+      {tab === 'details' && (<>
       {/* Details grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
         <div style={cardStyle}>
@@ -632,7 +677,10 @@ export default function WorkOrderDetailPage({ idOverride, onClose, embedded = fa
         </div>
       )}
 
+      </>)}
+
       {/* Parts used (B24) */}
+      {tab === 'parts' && (
       <WorkOrderPartsSection
         workOrderId={wo.id}
         readOnly={wo.status === WorkOrderStatus.COMPLETED_POSITIVE || wo.status === WorkOrderStatus.COMPLETED_NEGATIVE}
@@ -640,7 +688,10 @@ export default function WorkOrderDetailPage({ idOverride, onClose, embedded = fa
         titleStyle={{ fontSize: theme.font.sizeMd, marginBottom: '1rem', color: theme.colors.text }}
       />
 
+      )}
+
       {/* Notes */}
+      {tab === 'details' && (
       <div style={cardStyle}>
         <h2 style={{ fontSize: theme.font.sizeMd, marginBottom: '1rem', color: theme.colors.text }}>{t('sections.notes')}</h2>
 
@@ -694,7 +745,10 @@ export default function WorkOrderDetailPage({ idOverride, onClose, embedded = fa
         </div>
       </div>
 
+      )}
+
       {/* Signatures (B12) */}
+      {tab === 'signatures' && (
       <div style={cardStyle}>
         <h2 style={{ fontSize: theme.font.sizeMd, marginBottom: '1rem', color: theme.colors.text }}>
           ✍️ {t('workOrders:detailPage.signatures', { defaultValue: 'Signatures' })}
@@ -706,15 +760,54 @@ export default function WorkOrderDetailPage({ idOverride, onClose, embedded = fa
         />
       </div>
 
-      {/* Attachments */}
+      )}
+
+      {/* Photos (images) */}
+      {tab === 'photos' && (
+      <div style={cardStyle}>
+        <h2 style={{ fontSize: theme.font.sizeMd, marginBottom: '1rem', color: theme.colors.text }}>📷 {t('detailPage.tabs.photos', { defaultValue: 'Photos' })}</h2>
+        {photos.length === 0 ? (
+          <p style={{ color: theme.colors.textLight, marginBottom: '1rem' }}>{t('messages.noPhoto', { defaultValue: 'Aucune photo' })}</p>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
+            {photos.map((att) => (
+              <div key={att.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <AuthImage
+                  src={`/attachments/${att.id}/content`}
+                  alt={att.fileName}
+                  onClick={() => setPhotoPreview({ id: att.id, name: att.fileName })}
+                  style={{ width: '100%', height: 140, objectFit: 'cover', borderRadius: theme.radius.md, border: theme.borders.light, cursor: 'zoom-in' }}
+                />
+                <span style={{ fontSize: theme.font.sizeXs, color: theme.colors.textLight, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={att.fileName}>{att.fileName}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <div>
+          <input type="file" accept="image/*" onChange={handleFileUpload} style={{ display: 'none' }} id="photo-upload" />
+          <label htmlFor="photo-upload" style={{ ...buttonStyles.secondary, display: 'inline-flex', cursor: 'pointer' }}>
+            {uploadAttachment.isPending ? tCommon('actions.uploading', { defaultValue: 'Envoi...' }) : `+ ${t('actions.uploadPhoto', { defaultValue: 'Ajouter une photo' })}`}
+          </label>
+        </div>
+        {photoPreview && (
+          <div onClick={() => setPhotoPreview(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-out', flexDirection: 'column', gap: '0.75rem' }}>
+            <AuthImage src={`/attachments/${photoPreview.id}/content`} alt={photoPreview.name} style={{ maxWidth: '92vw', maxHeight: '85vh', objectFit: 'contain', borderRadius: theme.radius.md }} />
+            <span style={{ color: '#fff', fontSize: theme.font.sizeSm }}>{photoPreview.name}</span>
+          </div>
+        )}
+      </div>
+      )}
+
+      {/* Attachments (non-image files) */}
+      {tab === 'attachments' && (
       <div style={cardStyle}>
         <h2 style={{ fontSize: theme.font.sizeMd, marginBottom: '1rem', color: theme.colors.text }}>{t('sections.attachments')}</h2>
 
-        {(wo.attachments ?? []).length === 0 ? (
+        {files.length === 0 ? (
           <p style={{ color: theme.colors.textLight, marginBottom: '1rem' }}>{t('messages.noAttachment', { defaultValue: 'Aucune pièce jointe' })}</p>
         ) : (
           <div style={{ marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {(wo.attachments ?? []).map((att) => (
+            {files.map((att) => (
               <div
                 key={att.id}
                 style={{
@@ -750,8 +843,10 @@ export default function WorkOrderDetailPage({ idOverride, onClose, embedded = fa
         </div>
       </div>
 
+      )}
+
       {/* Audit timeline — qui a fait quoi, quand. Visible ADMIN + DISPATCHER. */}
-      {id && (
+      {tab === 'history' && id && (
         <WorkOrderAuditTimeline workOrderId={id} enabled={canSeeAuditTimeline} />
       )}
 

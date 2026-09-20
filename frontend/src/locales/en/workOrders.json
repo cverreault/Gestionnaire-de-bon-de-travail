@@ -87,7 +87,8 @@
     "selectClient": "Select a client",
     "selectTemplate": "Select a template",
     "assignTechnician": "Assign a technician",
-    "searchClient": "Search a client by name or email…"
+    "searchClient": "Search a client by name or email…",
+    "uploadPhoto": "Add a photo"
   },
   "messages": {
     "noActive": "No active work orders",
@@ -95,7 +96,7 @@
     "noHistory": "No events recorded yet.",
     "noNote": "No notes",
     "noAttachment": "No attachments",
-    "noPhoto": "No photos",
+    "noPhoto": "No photo",
     "completed": "This work order is completed and no longer accessible.",
     "backToList": "Back to list",
     "notFound": "Work order not found",
@@ -389,7 +390,15 @@
     "unassignedOption": "— Unassigned —",
     "saveError": "An error occurred while saving. Please try again.",
     "mandatedBy": "Mandated by {{name}}",
-    "subcontracting": "Subcontracting"
+    "subcontracting": "Subcontracting",
+    "tabs": {
+      "details": "Details",
+      "history": "History",
+      "parts": "Inventory",
+      "signatures": "Signatures",
+      "attachments": "Attachments",
+      "photos": "Photos"
+    }
   },
   "modes": {
     "list": "List",
