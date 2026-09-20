@@ -11,6 +11,7 @@ import { EmailVerificationService } from './application/email-verification.servi
 import { TotpService } from './totp/totp.service';
 import { TotpController } from './totp/totp.controller';
 import { DeviceRevokedListener } from './application/device-revoked.listener';
+import { UserSessionsRevokedListener } from './application/user-sessions-revoked.listener';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { DeviceRevokedListener } from './application/device-revoked.listener';
     EmailVerificationService,
     TotpService,
     DeviceRevokedListener,
+    UserSessionsRevokedListener,
   ],
   /**
    * JwtModule est exporté pour que d'autres modules (ex. UsersModule)

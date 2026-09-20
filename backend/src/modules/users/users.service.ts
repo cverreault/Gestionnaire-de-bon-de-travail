@@ -7,7 +7,9 @@ import {
 import * as bcrypt from 'bcrypt';
 import { Role } from '@prisma/client';
 import { Inject } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { USER_SESSIONS_REVOKED_EVENT, type UserSessionsRevokedPayload, type UserSessionsRevokedResult } from '../../common/contracts/user-events.contract';
 import {
   IQuotaService,
   QUOTA_SERVICE,
@@ -39,7 +41,34 @@ export class UsersService {
     @Inject(QUOTA_SERVICE)
     private readonly quotas: IQuotaService,
     private readonly context: RequestContextService,
+    private readonly events: EventEmitter2,
   ) {}
+
+  // ── Sessions ───────────────────────────────────────────────────────────────
+
+  /**
+   * Cuts every session of a user : refresh tokens (web + mobile) and
+   * registered mobile devices, through `users.user.sessionsRevoked`
+   * consumed by `auth` and `mobile`. Access tokens already issued stay
+   * valid until they expire (15 min). Returns the counts reported by the
+   * listeners.
+   */
+  async revokeSessions(
+    userId: string,
+    actorUserId: string | null,
+    reason: UserSessionsRevokedPayload['reason'] = 'admin',
+  ): Promise<{ refreshTokens: number; devices: number }> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { id: true, tenantId: true } });
+    if (!user) throw new NotFoundException(`Utilisateur #${userId} introuvable`);
+    const payload: UserSessionsRevokedPayload = { tenantId: user.tenantId, userId: user.id, actorUserId, reason };
+    const results = (await this.events.emitAsync(USER_SESSIONS_REVOKED_EVENT, payload)) as Array<UserSessionsRevokedResult | undefined>;
+    const totals = { refreshTokens: 0, devices: 0 };
+    for (const r of results) {
+      totals.refreshTokens += r?.refreshTokens ?? 0;
+      totals.devices += r?.devices ?? 0;
+    }
+    return totals;
+  }
 
   // ── Queries ────────────────────────────────────────────────────────────────
 
@@ -121,22 +150,27 @@ export class UsersService {
       }
     }
 
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id },
       data: dto,
       select: USER_SELECT,
     });
+    // Deactivating = logging out everywhere (refresh tokens + mobile devices).
+    if (dto.isActive === false) await this.revokeSessions(id, this.context.current()?.userId ?? null, 'deactivated');
+    return updated;
   }
 
   /** Soft delete : met isActive à false sans supprimer la ligne. */
   async remove(id: string) {
     await this.findOne(id);
 
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id },
       data: { isActive: false },
       select: USER_SELECT,
     });
+    await this.revokeSessions(id, this.context.current()?.userId ?? null, 'deactivated');
+    return updated;
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {

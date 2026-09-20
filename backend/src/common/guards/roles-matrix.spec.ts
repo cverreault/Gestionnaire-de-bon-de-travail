@@ -36,6 +36,7 @@ import { BackupController } from '../../modules/backup/backup.controller';
 import { SearchController } from '../../modules/search/api/search.controller';
 import { NotificationsController } from '../../modules/notifications/api/notifications.controller';
 import { DevicesController } from '../../modules/mobile/api/devices.controller';
+import { AdminDevicesController } from '../../modules/mobile/api/admin-devices.controller';
 import { MobileConfigController } from '../../modules/mobile/api/mobile-config.controller';
 import { SyncController } from '../../modules/mobile/api/sync.controller';
 import { SmsAdminController } from '../../modules/notifications/api/sms-admin.controller';
@@ -107,6 +108,7 @@ const USERS_MATRIX: MatrixRow[] = [
   { controller: UsersController, method: 'adminResetPassword', expectedRoles: [Role.ADMIN],                     note: 'PATCH /users/:id/reset-password' },
   { controller: UsersController, method: 'update',            expectedRoles: [Role.ADMIN],                      note: 'PATCH /users/:id' },
   { controller: UsersController, method: 'remove',            expectedRoles: [Role.ADMIN],                      note: 'DELETE /users/:id' },
+  { controller: UsersController, method: 'revokeSessions',    expectedRoles: [Role.ADMIN],                      note: 'POST /users/:id/revoke-sessions — cuts refresh tokens + devices' },
   // /me/* endpoints are self-service for the current user — must stay open.
   { controller: UsersController, method: 'updateMyProfile',     expectedRoles: 'ANY', note: 'PATCH /users/me' },
   { controller: UsersController, method: 'getMyPreferences',    expectedRoles: 'ANY', note: 'GET /users/me/preferences' },
@@ -121,6 +123,9 @@ const MOBILE_MATRIX: MatrixRow[] = [
   { controller: DevicesController, method: 'heartbeat', expectedRoles: [Role.TECHNICIAN], note: 'POST /me/devices/:installationId/heartbeat' },
   { controller: DevicesController, method: 'report',    expectedRoles: [Role.TECHNICIAN], note: 'POST /me/devices/:installationId/report — diagnostics, own device only' },
   { controller: DevicesController, method: 'revoke',    expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'DELETE /me/devices/:installationId — own devices only' },
+  // Admin view of a user's devices (lost phone, technician who left)
+  { controller: AdminDevicesController, method: 'list',   expectedRoles: [Role.ADMIN], note: 'GET /mobile/users/:userId/devices' },
+  { controller: AdminDevicesController, method: 'revoke', expectedRoles: [Role.ADMIN], note: 'DELETE /mobile/users/:userId/devices/:installationId' },
   // B37.8 — public bootstrap config (@Public, tenant from Host, nothing sensitive)
   { controller: MobileConfigController, method: 'getConfig', expectedRoles: 'ANY', note: 'GET /mobile/config — @Public' },
   // B37.6 — delta pull, visible set filtered on assignedToId in the repository

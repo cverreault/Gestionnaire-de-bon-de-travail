@@ -90,6 +90,20 @@ export interface PrincipalClientRef {
   clientType?: ClientType;
 }
 
+/** Mobile device of a user as exposed by the device registry (never the push token). */
+export interface MobileDevice {
+  installationId: string;
+  platform: 'IOS' | 'ANDROID';
+  appVersion: string;
+  osVersion: string | null;
+  model: string | null;
+  locale: string | null;
+  hasPushToken: boolean;
+  lastSeenAt: string;
+  createdAt: string;
+  revokedAt: string | null;
+}
+
 /** B44 — a coloured label defined by the admin (settings → tags). */
 export interface Tag {
   id: string;
