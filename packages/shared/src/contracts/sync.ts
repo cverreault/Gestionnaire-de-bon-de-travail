@@ -81,11 +81,51 @@ export interface SyncWorkOrder {
   client: ClientRef | null;
   principalClient: ClientRef | null;
   clientAddress_rel: ClientAddressRef | null;
-  taskType: { id: string; name: string; nameFr: string; nameEn: string; icon: string | null; color: string | null } | null;
+  taskType: { id: string; name: string; nameFr: string; nameEn: string; icon: string | null; color: string | null; templateId: string | null } | null;
   currentStep: ProcessStepRef | null;
   notes: NoteRef[];
   attachments: AttachmentRef[];
   parts: SyncWorkOrderPart[];
+}
+
+export type TemplateFieldType =
+  | 'TEXT' | 'TEXTAREA' | 'EMAIL' | 'URL' | 'NUMBER' | 'INTEGER' | 'FLOAT' | 'CURRENCY' | 'PERCENTAGE'
+  | 'CHECKBOX' | 'SELECT' | 'MULTISELECT' | 'RADIO' | 'DATE' | 'TIME' | 'DATETIME' | 'PHONE' | 'PHONE_NA' | 'POSTAL_CODE_CA' | 'GPS';
+
+export interface SyncTemplateField {
+  id: string;
+  label: string;
+  labelFr: string;
+  labelEn: string;
+  fieldType: TemplateFieldType;
+  placeholder: string | null;
+  helpText: string | null;
+  options: unknown;
+  sortOrder: number;
+  viewRoles: string[];
+  editRoles: string[];
+  requiredRoles: string[];
+}
+
+export interface SyncTemplateSection {
+  id: string;
+  name: string;
+  nameFr: string;
+  nameEn: string;
+  sortOrder: number;
+  viewRoles: string[];
+  editRoles: string[];
+  fields: SyncTemplateField[];
+}
+
+/** Form template of a task type (sections + fields) ; values live in `SyncWorkOrder.templateData`. */
+export interface SyncTemplate {
+  id: string;
+  name: string;
+  nameFr: string;
+  nameEn: string;
+  updatedAt: string;
+  sections: SyncTemplateSection[];
 }
 
 export interface PartsStockRow {
@@ -117,6 +157,8 @@ export interface SyncPullResponse {
   visibleWorkOrderIds: string[];
   workOrders: SyncWorkOrder[];
   processSnapshots: Record<string, ProcessSnapshot>;
+  /** Form templates referenced by the page, keyed by template id. */
+  templates?: Record<string, SyncTemplate>;
   partsStock: PartsStockRow[];
   partsCatalog: PartsCatalogRow[];
 }

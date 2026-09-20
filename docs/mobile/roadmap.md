@@ -97,3 +97,9 @@ Ordre : B38.0 → B38.1 → (B38.2 ∥ B38.3) → B38.4 → B38.5 → (B38.6 ∥
 - Universal links / App Links : AASA et `assetlinks.json` servis par nginx sur les sous-domaines wildcard (v1.1).
 - Fenêtre de grâce sur la rotation du refresh token pour une app tuée entre la réponse et l'écriture en SecureStore.
 - `GET /api/users/:id/devices` pour l'ADMIN (révoquer l'appareil d'un technicien parti).
+
+## Après v1 (livré)
+
+| Item | Scope |
+|---|---|
+| B38.13 ✅ | Formulaires des types de tâche dans l'app : `templates{}` dans le pull, table locale, carte Formulaire (rôles de lecture / édition / requis, tous les types de champs dont GPS), opération `template` en file (patch de `templateData`, `PATCH /work-orders/:id` avec `expectedUpdatedAt`, rejeu additif) |

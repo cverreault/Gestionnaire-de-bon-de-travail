@@ -1,9 +1,9 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { ApiError, apiBase, authHeaders, errorMessageFrom, refreshTokens } from '../api/client';
 import { IDEMPOTENCY_KEY_HEADER } from '@taskmgr/shared';
-import { addNote, addWorkOrderPart, removeWorkOrderPart, saveSignatures, transitionWorkOrder } from '../api/endpoints';
+import { addNote, addWorkOrderPart, removeWorkOrderPart, saveSignatures, transitionWorkOrder, updateWorkOrder } from '../api/endpoints';
 import type { SendFailure, Sender } from './drain';
-import type { AttachmentPayload, NotePayload, PartAddPayload, PartRemovePayload, QueuedOp, SignaturePayload, TransitionPayload } from './queue';
+import type { AttachmentPayload, NotePayload, PartAddPayload, PartRemovePayload, QueuedOp, SignaturePayload, TemplatePayload, TransitionPayload } from './queue';
 
 function toFailure(err: unknown): SendFailure {
   if (err instanceof ApiError) {
@@ -41,6 +41,11 @@ export const httpSender: Sender = {
   signature: (op: QueuedOp, expectedUpdatedAt) =>
     guard(async () => {
       const wo = await saveSignatures(op.workOrderId, { ...(op.payload as SignaturePayload), expectedUpdatedAt: expectedUpdatedAt ?? undefined }, op.id);
+      return { updatedAt: wo.updatedAt };
+    }),
+  template: (op: QueuedOp, expectedUpdatedAt) =>
+    guard(async () => {
+      const wo = await updateWorkOrder(op.workOrderId, { templateData: (op.payload as TemplatePayload).templateData, expectedUpdatedAt: expectedUpdatedAt ?? undefined }, op.id);
       return { updatedAt: wo.updatedAt };
     }),
   partAdd: (op: QueuedOp) =>

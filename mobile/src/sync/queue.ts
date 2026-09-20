@@ -2,7 +2,7 @@ import { asc, eq, sql } from 'drizzle-orm';
 import * as s from '../db/schema';
 import type { AppDb } from '../db/types';
 
-export type OpKind = 'transition' | 'note' | 'attachment' | 'signature' | 'part_add' | 'part_remove';
+export type OpKind = 'transition' | 'note' | 'attachment' | 'signature' | 'part_add' | 'part_remove' | 'template';
 export type OpStatus = 'PENDING' | 'IN_FLIGHT' | 'FAILED' | 'CONFLICT';
 
 export interface TransitionPayload {
@@ -38,7 +38,11 @@ export interface PartRemovePayload {
   rowId: string;
   sku: string;
 }
-export type OpPayload = TransitionPayload | NotePayload | AttachmentPayload | SignaturePayload | PartAddPayload | PartRemovePayload;
+export interface TemplatePayload {
+  /** Changed fields only ; the server merges into the stored templateData. */
+  templateData: Record<string, unknown>;
+}
+export type OpPayload = TransitionPayload | NotePayload | AttachmentPayload | SignaturePayload | PartAddPayload | PartRemovePayload | TemplatePayload;
 
 export interface QueuedOp {
   id: string;

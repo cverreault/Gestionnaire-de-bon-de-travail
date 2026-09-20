@@ -60,4 +60,9 @@ describe('projectWorkOrder (ADR-016 §3)', () => {
     expect(out.parts.map((p) => [p.id, p.sku, p.quantity])).toEqual([['pa1', 'B', 3]]);
     expect(base.parts).toHaveLength(1);
   });
+
+  it('merges queued template values over the server templateData', () => {
+    const out = projectWorkOrder({ ...wo, templateData: { a: 1, b: 'x' } }, [op('t', 1, 'template', { templateData: { b: 'y', c: true } })], snap, me);
+    expect(out.templateData).toEqual({ a: 1, b: 'y', c: true });
+  });
 });

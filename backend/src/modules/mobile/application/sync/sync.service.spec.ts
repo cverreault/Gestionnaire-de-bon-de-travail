@@ -5,7 +5,7 @@ const NOW = new Date('2026-09-18T12:00:00Z');
 
 function row(id: string, updatedAt: string, extra: Record<string, unknown> = {}) {
   return {
-    id, referenceNumber: `R-${id}`, status: 'ASSIGNED', title: id, processDefinitionId: 'proc-1', updatedAt: new Date(updatedAt),
+    id, referenceNumber: `R-${id}`, status: 'ASSIGNED', title: id, processDefinitionId: 'proc-1', updatedAt: new Date(updatedAt), taskType: { id: 'tt', templateId: 'tpl-1' },
     signatureClient: null, signatureTechnician: null, partsUsed: [], notes: [], attachments: [], ...extra,
   };
 }
@@ -15,6 +15,7 @@ function make(rows: ReturnType<typeof row>[], visible = rows.map((r) => r.id)) {
     visibleIds: jest.fn().mockResolvedValue(visible),
     pageAfter: jest.fn().mockResolvedValue(rows),
     processSnapshots: jest.fn().mockResolvedValue([{ id: 'proc-1', name: 'Standard BT', statuses: [], transitions: [] }]),
+    templates: jest.fn().mockResolvedValue([{ id: 'tpl-1', name: 'Standard', sections: [] }]),
     partsStock: jest.fn().mockResolvedValue([]),
     partsCatalog: jest.fn().mockResolvedValue([]),
   };
@@ -31,6 +32,8 @@ describe('SyncService.pull (ADR-016 §1)', () => {
     expect(out.workOrders.map((w) => w.id)).toEqual(['a', 'b']);
     expect(out.cursor).toBe(encodeSyncCursor({ t: new Date('2026-09-18T11:00:00Z'), id: 'b' }));
     expect(out.processSnapshots).toHaveProperty('proc-1');
+    expect(out.templates).toHaveProperty('tpl-1');
+    expect(repo.templates).toHaveBeenCalledWith(['tpl-1']);
     expect(repo.pageAfter).toHaveBeenCalledWith('tech-1', expect.any(Date), null, 51);
     // completed rows are visible 14 days
     const since: Date = repo.pageAfter.mock.calls[0][1];

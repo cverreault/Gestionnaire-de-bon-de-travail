@@ -33,4 +33,12 @@ export class UpdateWorkOrderDto extends PartialType(CreateWorkOrderDto) {
   @IsOptional()
   @IsEnum(WorkOrderStatus)
   status?: WorkOrderStatus;
+
+  /**
+   * ADR-016 §4 — optimistic lock from the mobile queue (template fields,
+   * completion notes) : 409 OPTIMISTIC_LOCK_CONFLICT when the row changed.
+   */
+  @IsOptional()
+  @IsString()
+  expectedUpdatedAt?: string;
 }

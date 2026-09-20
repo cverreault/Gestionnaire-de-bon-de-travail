@@ -1,5 +1,5 @@
 import type { ProcessSnapshot, ProcessSnapshotStatus, SyncWorkOrder, WorkOrderStatus } from '@taskmgr/shared';
-import type { AttachmentPayload, NotePayload, PartAddPayload, PartRemovePayload, QueuedOp, SignaturePayload, TransitionPayload } from './queue';
+import type { AttachmentPayload, NotePayload, PartAddPayload, PartRemovePayload, QueuedOp, SignaturePayload, TemplatePayload, TransitionPayload } from './queue';
 
 export interface Me {
   id: string;
@@ -58,6 +58,8 @@ export function projectWorkOrder(wo: SyncWorkOrder, ops: QueuedOp[], snapshot: P
     } else if (op.kind === 'part_remove') {
       const p = op.payload as PartRemovePayload;
       out.parts = out.parts.filter((row) => row.id !== p.rowId);
+    } else if (op.kind === 'template') {
+      out.templateData = { ...(out.templateData ?? {}), ...(op.payload as TemplatePayload).templateData };
     } else if (op.kind === 'signature') {
       const p = op.payload as SignaturePayload;
       if (p.signatureClient !== undefined) out.hasSignatureClient = !!p.signatureClient;

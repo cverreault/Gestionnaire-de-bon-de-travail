@@ -160,7 +160,8 @@
     "part_add": "Part added: {{qty}} × {{sku}}",
     "part_remove": "Part removed: {{sku}}",
     "retryLater": "Will retry at the next sync",
-    "stopped": "Sending stopped on a network or server error; it resumes at the next sync."
+    "stopped": "Sending stopped on a network or server error; it resumes at the next sync.",
+    "template": "Form: {{count}} field(s)"
   },
   "stock": {
     "title": "My stock",
@@ -201,5 +202,21 @@
     "sending": "Sending…",
     "sent": "Report sent, thank you.",
     "failed": "Could not send, retry with network."
+  },
+  "form": {
+    "title": "Form",
+    "save": "Save fields",
+    "saved": "Fields waiting to be sent",
+    "noTemplate": "No form for this task type.",
+    "required": "required",
+    "useMyPosition": "Use my position",
+    "positionDenied": "Position denied",
+    "yes": "Yes",
+    "no": "No",
+    "dateHint": "YYYY-MM-DD",
+    "timeHint": "HH:MM",
+    "datetimeHint": "YYYY-MM-DD HH:MM",
+    "choose": "Choose…",
+    "readOnly": "Read only"
   }
 }

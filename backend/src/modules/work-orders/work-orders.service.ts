@@ -635,6 +635,20 @@ export class WorkOrdersService {
     // Ensure the work order exists — pass currentUser to enforce the IDOR check for technicians
     const existingWo = await this.findOne(id, currentUser);
 
+    // ADR-016 §4 — optimistic lock (mobile queue). Same contract as transition / signatures.
+    if (dto.expectedUpdatedAt) {
+      const currentUpdatedAt = (existingWo as { updatedAt: Date }).updatedAt.toISOString();
+      if (currentUpdatedAt !== dto.expectedUpdatedAt) {
+        throw new ConflictException({
+          code: 'OPTIMISTIC_LOCK_CONFLICT',
+          message: 'The work order was modified since you last fetched it.',
+          currentUpdatedAt,
+          expectedUpdatedAt: dto.expectedUpdatedAt,
+        });
+      }
+      delete (dto as { expectedUpdatedAt?: string }).expectedUpdatedAt;
+    }
+
     // Technicians may only update completionNotes / negativeReason / templateData
     // (templateData entries are then validated field-by-field against the template's
     // editRoles below — a tech can submit values only for fields they may edit).
@@ -643,6 +657,7 @@ export class WorkOrdersService {
         'completionNotes',
         'negativeReason',
         'templateData',
+        'expectedUpdatedAt',
       ];
       const requestedFields = Object.keys(dto) as (keyof UpdateWorkOrderDto)[];
       const forbidden = requestedFields.filter(
