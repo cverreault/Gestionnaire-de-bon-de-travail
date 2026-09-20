@@ -1,6 +1,8 @@
 {
   "dashboard": "Dashboard",
   "workOrders": "Work orders",
+  "dispatch": "Dispatch",
+  "dispatchMap": "Dispatch map",
   "myWorkOrders": "My work orders",
   "calendar": "Calendar",
   "clients": "Clients",
@@ -32,7 +34,6 @@
   "releaseNotes": "Release notes",
   "reports": "Reports",
   "admin": "Administration",
-  "techniciansDragHint": "Technicians — drag a work order",
   "inventory": "Inventory",
   "myStock": "My stock",
   "saGeo": "Address reference"

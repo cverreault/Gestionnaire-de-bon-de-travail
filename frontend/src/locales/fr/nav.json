@@ -1,6 +1,8 @@
 {
   "dashboard": "Tableau de bord",
   "workOrders": "Bons de travail",
+  "dispatch": "Répartition",
+  "dispatchMap": "Carte dispatch",
   "myWorkOrders": "Mes bons de travail",
   "calendar": "Calendrier",
   "clients": "Clients",
@@ -32,7 +34,6 @@
   "releaseNotes": "Notes de version",
   "reports": "Rapports",
   "admin": "Administration",
-  "techniciansDragHint": "Techniciens — glisser un BT",
   "inventory": "Inventaire",
   "myStock": "Mon stock",
   "saGeo": "Référentiel d’adresses"
