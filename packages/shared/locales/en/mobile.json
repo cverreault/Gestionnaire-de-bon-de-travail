@@ -192,5 +192,14 @@
     "install": "Download and install",
     "downloading": "Downloading… {{pct}}%",
     "failed": "Update failed"
+  },
+  "diag": {
+    "title": "Diagnostics",
+    "explain": "Sends the app state to support: versions, sync, pending queue, GPS, notifications and recent events. No photo or note content is sent.",
+    "notePlaceholder": "Describe the problem (optional)…",
+    "send": "Send a report",
+    "sending": "Sending…",
+    "sent": "Report sent, thank you.",
+    "failed": "Could not send, retry with network."
   }
 }

@@ -190,6 +190,10 @@ export function heartbeat(installationId: string, payload: { appVersion?: string
   return api<HeartbeatResponse>(`/me/devices/${installationId}/heartbeat`, { method: 'POST', body: payload });
 }
 
+export function sendDeviceReport(installationId: string, body: { state: Record<string, unknown>; events: Record<string, unknown>[]; note?: string }): Promise<{ receivedAt: string }> {
+  return api<{ receivedAt: string }>(`/me/devices/${installationId}/report`, { method: 'POST', body, timeoutMs: 30_000 });
+}
+
 export function fetchMyDevices(): Promise<DeviceView[]> {
   return api<DeviceView[]>('/me/devices');
 }
@@ -211,6 +215,6 @@ export async function fetchMobileConfig(baseUrl: string): Promise<MobileConfig> 
 
 // ── Sync (B37.6 / B38.4) ─────────────────────────────────────────────────────
 
-export function pullSync(cursor: string | null, limit: number): Promise<SyncPullResponse> {
-  return api<SyncPullResponse>('/me/sync', { query: { cursor: cursor ?? undefined, limit }, timeoutMs: 30_000 });
+export function pullSync(cursor: string | null, limit: number, opts: { allowRefresh?: boolean } = {}): Promise<SyncPullResponse> {
+  return api<SyncPullResponse>('/me/sync', { query: { cursor: cursor ?? undefined, limit }, timeoutMs: 30_000, allowRefresh: opts.allowRefresh ?? true });
 }

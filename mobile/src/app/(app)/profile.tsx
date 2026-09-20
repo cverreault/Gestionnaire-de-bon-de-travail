@@ -1,4 +1,5 @@
-import { Alert, Linking, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, Linking, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -7,6 +8,7 @@ import * as Application from 'expo-application';
 import { fetchMyDevices, logout, revokeDevice, updateMyPreferences } from '../../api/endpoints';
 import { useGpsStore } from '../../gps/gps.store';
 import { usePushStore } from '../../push/push.store';
+import { sendReport } from '../../diag/report';
 import { refreshPermissions } from '../../gps/useGpsController';
 import { useSession } from '../../stores/session.store';
 import { font, radius, spacing, useTheme } from '../../theme/tokens';
@@ -25,6 +27,18 @@ export default function ProfileScreen() {
   });
 
   const gps = useGpsStore();
+  const [reportState, setReportState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [reportNote, setReportNote] = useState('');
+  async function submitReport() {
+    setReportState('sending');
+    try {
+      await sendReport(reportNote.trim() || undefined);
+      setReportState('sent');
+      setReportNote('');
+    } catch {
+      setReportState('error');
+    }
+  }
   const push = usePushStore();
   const pushLine = push.token
     ? t('push.on')
@@ -112,6 +126,29 @@ export default function ProfileScreen() {
           {gps.consentRevoked && <Text style={{ color: theme.danger, fontSize: font.sm }}>{t('gps.revoked')}</Text>}
           {gps.buffered > 0 && <Text style={{ color: theme.textMuted, fontSize: font.xs }}>{t('gps.buffered', { count: gps.buffered })}</Text>}
           {gps.lastFlushAt && <Text style={{ color: theme.textMuted, fontSize: font.xs }}>{t('gps.lastFlush', { time: new Date(gps.lastFlushAt).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' }) })}</Text>}
+        </View>
+      )}
+      {user?.role === 'TECHNICIAN' && (
+        <View style={{ backgroundColor: theme.surface, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.sm, borderWidth: 1, borderColor: theme.border }}>
+          <Text style={{ color: theme.textMuted, fontSize: font.xs, textTransform: 'uppercase', fontWeight: '700' }}>{t('diag.title')}</Text>
+          <Text style={{ color: theme.textMuted, fontSize: font.xs }}>{t('diag.explain')}</Text>
+          <TextInput
+            value={reportNote}
+            onChangeText={setReportNote}
+            placeholder={t('diag.notePlaceholder')}
+            placeholderTextColor={theme.textMuted}
+            multiline
+            style={{ borderWidth: 1, borderColor: theme.border, borderRadius: radius.md, padding: spacing.md, minHeight: 56, color: theme.text, backgroundColor: theme.surfaceAlt }}
+          />
+          <Pressable
+            disabled={reportState === 'sending'}
+            onPress={() => void submitReport()}
+            style={{ padding: spacing.md, borderRadius: radius.md, alignItems: 'center', borderWidth: 1, borderColor: theme.primary, opacity: reportState === 'sending' ? 0.6 : 1 }}
+          >
+            <Text style={{ color: theme.primary, fontWeight: '700' }}>{reportState === 'sending' ? t('diag.sending') : t('diag.send')}</Text>
+          </Pressable>
+          {reportState === 'sent' && <Text style={{ color: theme.success, fontSize: font.sm }}>{t('diag.sent')}</Text>}
+          {reportState === 'error' && <Text style={{ color: theme.danger, fontSize: font.sm }}>{t('diag.failed')}</Text>}
         </View>
       )}
       {devices.data && devices.data.length > 0 && (

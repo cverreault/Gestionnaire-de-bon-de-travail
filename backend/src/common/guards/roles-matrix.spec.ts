@@ -118,6 +118,7 @@ const MOBILE_MATRIX: MatrixRow[] = [
   { controller: DevicesController, method: 'list',      expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'GET /me/devices' },
   { controller: DevicesController, method: 'register',  expectedRoles: [Role.TECHNICIAN], note: 'PUT /me/devices/:installationId — only the app registers phones' },
   { controller: DevicesController, method: 'heartbeat', expectedRoles: [Role.TECHNICIAN], note: 'POST /me/devices/:installationId/heartbeat' },
+  { controller: DevicesController, method: 'report',    expectedRoles: [Role.TECHNICIAN], note: 'POST /me/devices/:installationId/report — diagnostics, own device only' },
   { controller: DevicesController, method: 'revoke',    expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'DELETE /me/devices/:installationId — own devices only' },
   // B37.8 — public bootstrap config (@Public, tenant from Host, nothing sensitive)
   { controller: MobileConfigController, method: 'getConfig', expectedRoles: 'ANY', note: 'GET /mobile/config — @Public' },

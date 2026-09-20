@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { db } from '../db/client';
+import { useSession } from '../stores/session.store';
 import { META, ensureOwner, getMeta } from '../db/repo';
 import { pullSync } from '../api/endpoints';
 import { pullAll } from './apply-pull';
@@ -7,6 +8,7 @@ import { drain, retryOp } from './drain';
 import { countOps, deleteOp, enqueue, type OpKind, type OpPayload, type QueueCounts } from './queue';
 import { httpSender } from './senders';
 import * as Crypto from 'expo-crypto';
+import { logEvent } from '../diag/log';
 
 interface SyncState {
   /** True once the SQLite migrations ran ; local hooks stay idle before that. */
@@ -31,11 +33,28 @@ interface SyncState {
 
 let inFlight: Promise<void> | null = null;
 
-async function pullOnly(userId: string, set: (p: Partial<SyncState>) => void, get: () => SyncState) {
+async function pullOnly(userId: string, set: (p: Partial<SyncState>) => void, get: () => SyncState, allowRefresh = true) {
   const switched = await ensureOwner(db, userId);
   const cursor = switched ? null : await getMeta(db, META.cursor);
-  await pullAll(db, (c, limit) => pullSync(c, limit), cursor);
+  const pages = await pullAll(db, (c, limit) => pullSync(c, limit, { allowRefresh }), cursor);
+  logEvent('pull', `ok ${pages} page(s)`, { fromCursor: !!cursor });
   set({ lastSyncAt: await getMeta(db, META.lastSyncAt), version: get().version + 1 });
+}
+
+/**
+ * Background variant (expo-background-task) : pull only, never drains (the
+ * queue may need UI decisions) and never refreshes tokens (ADR-014).
+ */
+export async function backgroundPull(): Promise<boolean> {
+  const { user, accessToken } = useSession.getState();
+  if (!user || !accessToken || user.role !== 'TECHNICIAN') return false;
+  try {
+    await pullOnly(user.id, (p) => useSyncStore.setState(p), useSyncStore.getState, false);
+    return true;
+  } catch (err) {
+    logEvent('pull', `background failed: ${err instanceof Error ? err.message : String(err)}`);
+    return false;
+  }
 }
 
 export const useSyncStore = create<SyncState>((set, get) => ({
@@ -61,9 +80,11 @@ export const useSyncStore = create<SyncState>((set, get) => ({
         await ensureOwner(db, userId);
         // Queue first (ADR-016 §4) : what the technician did wins over what the pull would overwrite.
         const drained = await drain(db, httpSender, () => pullOnly(userId, set, get));
+        if (drained.sent + drained.conflicts + drained.failed > 0 || drained.stopped) logEvent('drain', JSON.stringify(drained));
         await pullOnly(userId, set, get);
         if (drained.stopped) set({ error: 'offline' });
       } catch (err) {
+        logEvent('sync', `failed: ${err instanceof Error ? err.message : String(err)}`);
         set({ error: err instanceof Error ? err.message : String(err), version: get().version + 1 });
       } finally {
         set({ syncing: false, counts: await countOps(db) });
@@ -75,6 +96,7 @@ export const useSyncStore = create<SyncState>((set, get) => ({
 
   async enqueueOp(userId, workOrderId, kind, payload, id = Crypto.randomUUID()) {
     await enqueue(db, { id, workOrderId, kind, payload });
+    logEvent('queue', `enqueued ${kind}`, { id, workOrderId });
     set({ version: get().version + 1, counts: await countOps(db) });
     if (get().online) void get().pullNow(userId);
     return id;

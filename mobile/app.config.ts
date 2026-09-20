@@ -11,7 +11,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: IS_DEV ? 'Dispatch2Go (dev)' : 'Dispatch2Go',
   slug: 'dispatch2go',
-  version: '0.2.0',
+  version: '0.3.0',
   orientation: 'portrait',
   scheme: 'dispatch2go',
   icon: './assets/images/icon.png',

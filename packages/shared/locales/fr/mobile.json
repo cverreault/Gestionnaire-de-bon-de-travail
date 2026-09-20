@@ -192,5 +192,14 @@
     "install": "Télécharger et installer",
     "downloading": "Téléchargement… {{pct}} %",
     "failed": "Mise à jour impossible"
+  },
+  "diag": {
+    "title": "Diagnostic",
+    "explain": "Envoie au support l'état de l'app : versions, synchronisation, file en attente, GPS, notifications et les derniers événements. Aucune photo ni note n'est transmise.",
+    "notePlaceholder": "Décrivez le problème (facultatif)…",
+    "send": "Envoyer un rapport",
+    "sending": "Envoi…",
+    "sent": "Rapport envoyé, merci.",
+    "failed": "Envoi impossible, réessayez avec le réseau."
   }
 }

@@ -8,6 +8,7 @@ import { useSession } from '../stores/session.store';
 import { projectWorkOrder, type ProjectedWorkOrder } from './project';
 import { listOps, listOpsForWorkOrder, type QueuedOp } from './queue';
 import { useSyncStore } from './sync.store';
+import { registerBackgroundSync, unregisterBackgroundSync } from './background-task';
 
 const PULL_MIN_INTERVAL_MS = 60_000;
 
@@ -26,6 +27,10 @@ export function useSyncScheduler(dbReady: boolean): void {
   }, [dbReady]);
 
   useEffect(() => {
+    if (dbReady && !accessToken) void unregisterBackgroundSync();
+  }, [dbReady, accessToken]);
+
+  useEffect(() => {
     if (!dbReady || !accessToken || user?.role !== 'TECHNICIAN') return;
     const userId = user.id;
     const pull = (force = false) => {
@@ -35,6 +40,7 @@ export function useSyncScheduler(dbReady: boolean): void {
     };
     void getMeta(db, META.lastSyncAt).then((v) => useSyncStore.setState({ lastSyncAt: v }));
     void useSyncStore.getState().refreshCounts();
+    void registerBackgroundSync();
     pull(true);
     const app = AppState.addEventListener('change', (st) => st === 'active' && pull());
     const net = NetInfo.addEventListener((state) => {
