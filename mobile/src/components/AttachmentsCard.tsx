@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Linking, Modal, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
@@ -48,6 +48,7 @@ export default function AttachmentsCard({ workOrderId, attachments, pendingIds, 
   const user = useSession((s) => s.user);
   const enqueueOp = useSyncStore((s) => s.enqueueOp);
   const [error, setError] = useState<string | null>(null);
+  const [viewing, setViewing] = useState<AttachmentRef | null>(null);
 
   // Offline-first (B38.5): the compressed copy is persisted in the sandbox and
   // queued ; the drain uploads it with op.id as Idempotency-Key.
@@ -112,7 +113,9 @@ export default function AttachmentsCard({ workOrderId, attachments, pendingIds, 
       {images.length > 0 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
           {images.map((a) => (
-            <Thumb key={a.id} attachment={a} pending={pendingIds.has(a.id)} />
+            <Pressable key={a.id} onPress={() => !pendingIds.has(a.id) && setViewing(a)}>
+              <Thumb attachment={a} pending={pendingIds.has(a.id)} />
+            </Pressable>
           ))}
         </ScrollView>
       )}
@@ -128,6 +131,7 @@ export default function AttachmentsCard({ workOrderId, attachments, pendingIds, 
         </View>
       )}
       {error && <Text style={{ color: theme.danger, fontSize: font.sm }}>{error}</Text>}
+      <PhotoViewer attachment={viewing} onClose={() => setViewing(null)} />
     </View>
   );
 }
@@ -151,5 +155,24 @@ function Thumb({ attachment, pending }: { attachment: AttachmentRef; pending: bo
       cachePolicy="memory-disk"
       transition={150}
     />
+  );
+}
+
+/** Full-screen photo (proxy + bearer) ; tap anywhere or ✕ to close. */
+function PhotoViewer({ attachment, onClose }: { attachment: AttachmentRef | null; onClose: () => void }) {
+  const { width, height } = useWindowDimensions();
+  const theme = useTheme();
+  if (!attachment) return null;
+  return (
+    <Modal visible animationType="fade" transparent onRequestClose={onClose}>
+      <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', alignItems: 'center', justifyContent: 'center' }}>
+        <Image source={attachmentContentSource(attachment.id)} style={{ width, height: height * 0.8 }} contentFit="contain" cachePolicy="memory-disk" />
+        <Text style={{ position: 'absolute', bottom: 40, color: '#fff', fontSize: font.sm }}>{attachment.fileName}</Text>
+        <Pressable onPress={onClose} style={{ position: 'absolute', top: 50, right: 20, width: 40, height: 40, borderRadius: radius.full, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ color: '#fff', fontSize: font.lg }}>✕</Text>
+        </Pressable>
+        <Text style={{ position: 'absolute', top: 60, left: 20, color: theme.textMuted, fontSize: font.xs }}>{(attachment.fileSize / 1024).toFixed(0)} Ko</Text>
+      </Pressable>
+    </Modal>
   );
 }

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -28,12 +29,18 @@ export default function WorkOrdersScreen() {
   const { syncing, lastSyncAt, error, online, pullNow } = useSyncStore();
   const lang = i18n.language.startsWith('en') ? 'en-CA' : 'fr-CA';
   const items = rows.filter((w) => ACTIVE.has(w.status));
+  // Completed work orders stay locally for 14 days (server visibility window) : shown on demand.
+  const completed = rows.filter((w) => !ACTIVE.has(w.status)).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const [showCompleted, setShowCompleted] = useState(false);
 
-  type SectionKey = 'today' | 'upcoming' | 'unscheduled';
+  type SectionKey = 'today' | 'upcoming' | 'unscheduled' | 'completed';
   const sections = (['today', 'upcoming', 'unscheduled'] as const)
     .map((key: SectionKey) => ({ key, rows: items.filter((w) => dayKey(w.scheduledDate) === key) }))
     .filter((s) => s.rows.length > 0);
-  const flat = sections.flatMap((s) => [{ header: s.key } as const, ...s.rows]);
+  const flat = [
+    ...sections.flatMap((s) => [{ header: s.key } as const, ...s.rows]),
+    ...(completed.length > 0 ? [{ header: 'completed' as const }, ...(showCompleted ? completed : [])] : []),
+  ];
 
   const syncLine = !online
     ? t('sync.offline')
@@ -74,6 +81,16 @@ export default function WorkOrdersScreen() {
       }
       renderItem={({ item }) => {
         if ('header' in item) {
+          if (item.header === 'completed') {
+            return (
+              <Pressable onPress={() => setShowCompleted((v) => !v)} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.md, paddingVertical: spacing.xs }}>
+                <Text style={{ color: theme.textMuted, fontSize: font.xs, fontWeight: '700', textTransform: 'uppercase' }}>
+                  {t('workOrders.completed', { count: completed.length })}
+                </Text>
+                <Text style={{ color: theme.primary, fontSize: font.sm, fontWeight: '600' }}>{showCompleted ? t('workOrders.hideCompleted') : t('workOrders.showCompleted')}</Text>
+              </Pressable>
+            );
+          }
           return (
             <Text style={{ color: theme.textMuted, fontSize: font.xs, fontWeight: '700', textTransform: 'uppercase', marginTop: spacing.md }}>
               {t(`workOrders.${item.header}`)}
@@ -91,7 +108,7 @@ export default function WorkOrdersScreen() {
             onPress={() => router.push(`/(app)/work-orders/${wo.id}`)}
             style={({ pressed }) => ({
               backgroundColor: theme.surface, borderRadius: radius.lg, padding: spacing.lg, gap: 6,
-              borderWidth: 1, borderColor: theme.border, opacity: pressed ? 0.8 : 1,
+              borderWidth: 1, borderColor: theme.border, opacity: pressed ? 0.8 : ACTIVE.has(wo.status) ? 1 : 0.75,
             })}
           >
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm }}>
