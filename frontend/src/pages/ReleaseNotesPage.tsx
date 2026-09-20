@@ -59,6 +59,15 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.12.1',
+    name: 'Menu Répartition',
+    date: 'Septembre 2026',
+    entries: [
+      { type: 'improvement', text: "🚚 Nouveau groupe « Répartition » dans le menu de gauche, qui réunit Bons de travail et Carte dispatch" },
+      { type: 'improvement', text: "👷 La liste des techniciens n'est plus dans le menu de gauche : elle vit dans la page Bons de travail, où l'on glisse les BT" },
+    ],
+  },
+  {
     version: '2.12.0',
     name: 'Bons de travail : modes Liste et Dispatch, période, popup',
     date: 'Septembre 2026',

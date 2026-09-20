@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { NavLink } from 'react-router-dom';
+import { useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { getBranding } from '../../services/super-admin.service';
@@ -8,21 +8,8 @@ import { useUiStore } from '../../context/ui.store';
 import logoHeaderFr from '../../assets/logo-header-fr.png';
 import logoHeaderEn from '../../assets/logo-header-en.png';
 import { useLogout } from '../../hooks/useAuth';
-import { useTechnicians } from '../../hooks/useUsers';
-import { useWorkOrders } from '../../hooks/useWorkOrders';
-import { Role, WorkOrderStatus } from '../../types';
+import { Role } from '../../types';
 import { theme } from '../../theme';
-import DispatchConfirmModal from '../DispatchConfirmModal';
-import type { DispatchPayload } from '../DispatchConfirmModal';
-
-// ─── Statuses considered "active" for the technician counter ─────────────────
-
-const ACTIVE_STATUSES = new Set<WorkOrderStatus>([
-  WorkOrderStatus.ASSIGNED,
-  WorkOrderStatus.DISPATCHED,
-  WorkOrderStatus.EN_ROUTE,
-  WorkOrderStatus.IN_PROGRESS,
-]);
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -60,6 +47,25 @@ const navLinkStyle = ({ isActive }: { isActive: boolean }): React.CSSProperties 
   transition: 'background 0.15s ease, color 0.15s ease',
   fontSize: theme.font.sizeSm,
   fontWeight: isActive ? theme.font.weightSemibold : theme.font.weightNormal,
+});
+
+/** Collapsible group header (e.g. « Répartition ») — same footprint as a link. */
+const groupHeaderStyle = (childActive: boolean): React.CSSProperties => ({
+  ...navLinkStyle({ isActive: false }),
+  width: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  color: childActive ? '#fff' : theme.colors.sidebarText,
+  fontWeight: childActive ? theme.font.weightSemibold : theme.font.weightNormal,
+});
+
+/** Child link of a group : indented under its header. */
+const groupChildStyle = ({ isActive }: { isActive: boolean }): React.CSSProperties => ({
+  ...navLinkStyle({ isActive }),
+  paddingLeft: '2.5rem',
 });
 
 const sectionLabelStyle: React.CSSProperties = {
@@ -103,16 +109,27 @@ export default function AdminSidebar() {
     retry: false,
   });
 
-  const sharedNavItems = [
-    { to: '/dashboard',        label: `📊 ${t('nav:dashboard')}` },
+  // « Répartition » groups the two dispatcher screens : the work-order page
+  // (list / dispatch board, technician panel) and the dispatch map.
+  const dispatchGroupItems = [
     { to: '/bons-de-travail',  label: `📋 ${t('nav:workOrders')}` },
-    { to: '/calendrier',       label: `📅 ${t('nav:calendar')}` },
     { to: '/carte-dispatch',   label: `🗺️ ${t('nav:dispatchMap', { defaultValue: 'Carte dispatch' })}` },
+  ];
+
+  const sharedNavItems = [
+    { to: '/calendrier',       label: `📅 ${t('nav:calendar')}` },
     { to: '/clients',          label: `🧑‍🤝‍🧑 ${t('nav:clients')}` },
     { to: '/adresses',         label: `📍 ${t('nav:addresses')}` },
-{ to: '/inventaire', label: `📦 ${t('nav:inventory')}` },
+    { to: '/inventaire',       label: `📦 ${t('nav:inventory')}` },
     { to: '/rapports',         label: `📈 ${t('nav:reports', { defaultValue: 'Rapports' })}` },
   ];
+
+  // The group stays open while one of its pages is active ; otherwise the
+  // user can fold it.
+  const { pathname } = useLocation();
+  const dispatchChildActive = dispatchGroupItems.some((i) => pathname.startsWith(i.to));
+  const [dispatchOpen, setDispatchOpen] = useState(true);
+  const dispatchExpanded = dispatchOpen || dispatchChildActive;
 
   const adminOnlyNavItems = [
     { to: '/utilisateurs',    label: `👥 ${t('nav:users')}` },
@@ -138,66 +155,6 @@ export default function AdminSidebar() {
     { to: '/super-admin/sauvegarde', label: `💾 ${t('nav:backup')}` },
     { to: '/super-admin',          label: `⚙️ ${t('nav:saConfig', { defaultValue: 'Configuration plateforme' })}` },
   ];
-
-  // ── Pending dispatch state (modal) ───────────────────────────────────────
-  const [pendingDispatch, setPendingDispatch] = useState<DispatchPayload | null>(null);
-
-  // ── Drag-over highlight ──────────────────────────────────────────────────
-  const [dragOverTechId, setDragOverTechId] = useState<string | null>(null);
-
-  // ── Data ────────────────────────────────────────────────────────────────
-  // SA never touches tenant data — skip these fetches so its console stays
-  // clean of 401s (its JWT.tenantId may not even match the request scope on
-  // IP-based access) and we don't pull other tenants' counts into its view.
-  const { data: technicians = [] } = useTechnicians({ enabled: !isSuperAdmin });
-
-  // Fetch work orders (large limit, cached) to build per-technician active counts
-  const { data: woPage } = useWorkOrders(
-    { limit: 100, page: 1 },
-    { enabled: !isSuperAdmin },
-  );
-  const allWOs = woPage?.data ?? [];
-
-  const activeCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const wo of allWOs) {
-      if (wo.assignedToId && ACTIVE_STATUSES.has(wo.status)) {
-        counts[wo.assignedToId] = (counts[wo.assignedToId] ?? 0) + 1;
-      }
-    }
-    return counts;
-  }, [allWOs]);
-
-  // ── DnD handlers ────────────────────────────────────────────────────────
-
-  function handleDragOver(e: React.DragEvent, techId: string) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    setDragOverTechId(techId);
-  }
-
-  function handleDragLeave() {
-    setDragOverTechId(null);
-  }
-
-  function handleDrop(e: React.DragEvent, techId: string, techName: string) {
-    e.preventDefault();
-    setDragOverTechId(null);
-
-    const workOrderId = e.dataTransfer.getData('workOrderId');
-    const workOrderTitle = e.dataTransfer.getData('workOrderTitle');
-    const workOrderStatus = e.dataTransfer.getData('workOrderStatus') as WorkOrderStatus | '';
-
-    if (!workOrderId) return;
-
-    setPendingDispatch({
-      workOrderId,
-      workOrderTitle: workOrderTitle || workOrderId,
-      technicianId: techId,
-      technicianName: techName,
-      workOrderStatus: workOrderStatus || undefined,
-    });
-  }
 
   // ── Render ───────────────────────────────────────────────────────────────
 
@@ -241,6 +198,32 @@ export default function AdminSidebar() {
             SA portal). The SA console is the super-admin nav block below. */}
         {!isSuperAdmin && (
           <nav>
+            <NavLink to="/dashboard" style={navLinkStyle}>
+              📊 {t('nav:dashboard')}
+            </NavLink>
+
+            <button
+              type="button"
+              onClick={() => setDispatchOpen((o) => !o)}
+              aria-expanded={dispatchExpanded}
+              aria-controls="nav-dispatch-group"
+              style={groupHeaderStyle(dispatchChildActive)}
+            >
+              <span>🚚 {t('nav:dispatch', { defaultValue: 'Répartition' })}</span>
+              <span aria-hidden style={{ fontSize: '0.7rem', opacity: 0.7 }}>
+                {dispatchExpanded ? '▾' : '▸'}
+              </span>
+            </button>
+            {dispatchExpanded && (
+              <div id="nav-dispatch-group">
+                {dispatchGroupItems.map((item) => (
+                  <NavLink key={item.to} to={item.to} style={groupChildStyle}>
+                    {item.label}
+                  </NavLink>
+                ))}
+              </div>
+            )}
+
             {sharedNavItems.map((item) => (
               <NavLink key={item.to} to={item.to} style={navLinkStyle}>
                 {item.label}
@@ -277,81 +260,6 @@ export default function AdminSidebar() {
               ))}
             </nav>
           </>
-        )}
-
-        {/* Technicians DnD section — irrelevant for SA (no tenant scope) */}
-        {!isSuperAdmin && technicians.length > 0 && (
-          <div style={{ marginTop: '0.5rem' }}>
-            <div style={sectionLabelStyle}>
-              {t('nav:techniciansDragHint', 'Techniciens — glisser un BT')}
-            </div>
-
-            {technicians
-              .filter((t) => t.isActive)
-              .map((tech) => {
-                const count = activeCounts[tech.id] ?? 0;
-                const isDragOver = dragOverTechId === tech.id;
-
-                return (
-                  <div
-                    key={tech.id}
-                    onDragOver={(e) => handleDragOver(e, tech.id)}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, tech.id, `${tech.firstName} ${tech.lastName}`)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '0.6rem 1.5rem',
-                      borderLeft: isDragOver
-                        ? `4px solid ${theme.colors.success}`
-                        : '3px solid transparent',
-                      borderBottom: `1px solid ${theme.colors.sidebarBorder}`,
-                      background: isDragOver ? theme.colors.success : 'transparent',
-                      boxShadow: isDragOver ? `inset 0 0 0 1px ${theme.colors.success}` : 'none',
-                      transform: isDragOver ? 'scale(1.02)' : 'scale(1)',
-                      transition: 'background 0.12s ease, border-left-color 0.12s ease, transform 0.12s ease',
-                      cursor: 'default',
-                    }}
-                  >
-                    {/* Name */}
-                    <span
-                      style={{
-                        fontSize: theme.font.sizeSm,
-                        color: isDragOver ? '#fff' : theme.colors.sidebarText,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        flex: 1,
-                      }}
-                    >
-                      👷 {tech.firstName} {tech.lastName}
-                    </span>
-
-                    {/* Active BT counter badge */}
-                    {count > 0 && (
-                      <span
-                        style={{
-                          marginLeft: '0.5rem',
-                          background: theme.colors.primary,
-                          color: '#fff',
-                          borderRadius: theme.radius.full,
-                          padding: '0 0.4rem',
-                          fontSize: theme.font.sizeXs,
-                          fontWeight: theme.font.weightBold,
-                          lineHeight: '1.35rem',
-                          minWidth: '1.35rem',
-                          textAlign: 'center',
-                          flexShrink: 0,
-                        }}
-                      >
-                        {count}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-          </div>
         )}
 
         {/* Bottom user info + profile link + logout */}
@@ -459,14 +367,6 @@ export default function AdminSidebar() {
           </button>
         </div>
       </aside>
-
-      {/* Dispatch confirmation modal — rendered at the sidebar level */}
-      {pendingDispatch && (
-        <DispatchConfirmModal
-          payload={pendingDispatch}
-          onClose={() => setPendingDispatch(null)}
-        />
-      )}
     </>
   );
 }
