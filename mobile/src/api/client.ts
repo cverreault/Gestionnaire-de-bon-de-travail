@@ -1,5 +1,5 @@
 import { useSession } from '../stores/session.store';
-import { DEVICE_ID_HEADER, IDEMPOTENCY_KEY_HEADER } from '@taskmgr/shared';
+import { CLIENT_LOCATION_HEADER, DEVICE_ID_HEADER, IDEMPOTENCY_KEY_HEADER, formatClientLocation, type ClientLocation } from '@taskmgr/shared';
 import i18n from '../i18n';
 
 /**
@@ -98,6 +98,7 @@ export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T
     if (body !== undefined && !isForm) h['Content-Type'] = 'application/json';
     if (!anonymous && accessToken) h.Authorization = `Bearer ${accessToken}`;
     if (idempotencyKey) h[IDEMPOTENCY_KEY_HEADER] = idempotencyKey;
+    if (outgoingLocation) h[CLIENT_LOCATION_HEADER] = formatClientLocation(outgoingLocation);
     return fetch(url.toString(), {
       method,
       headers: h,
@@ -125,6 +126,21 @@ export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T
   return envelope as T;
 }
 
+/**
+ * B45 — position attached to the next requests (X-Client-Location). The drain
+ * sets it per queued op (sequential), so the server records where the action
+ * was performed, not where the phone is when the queue finally uploads.
+ */
+let outgoingLocation: ClientLocation | null = null;
+export async function withOutgoingLocation<T>(loc: ClientLocation | null, fn: () => Promise<T>): Promise<T> {
+  outgoingLocation = loc;
+  try {
+    return await fn();
+  } finally {
+    outgoingLocation = null;
+  }
+}
+
 /** Headers every authenticated call carries (also used by the native file upload). */
 export function authHeaders(extra: Record<string, string> = {}): Record<string, string> {
   const { accessToken, deviceId } = useSession.getState();
@@ -132,6 +148,7 @@ export function authHeaders(extra: Record<string, string> = {}): Record<string, 
     Accept: 'application/json',
     'Accept-Language': i18n.language?.startsWith('en') ? 'en' : 'fr',
     [DEVICE_ID_HEADER]: deviceId,
+    ...(outgoingLocation ? { [CLIENT_LOCATION_HEADER]: formatClientLocation(outgoingLocation) } : {}),
     ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     ...extra,
   };

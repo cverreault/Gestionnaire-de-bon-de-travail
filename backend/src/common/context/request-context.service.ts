@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AsyncLocalStorage } from 'node:async_hooks';
+import type { ClientLocation } from '../contracts/client-location.contract';
 
 /**
  * Request-scoped context propagation (B6.3).
@@ -23,6 +24,8 @@ export interface RequestContext {
   userId: string | null;
   /** `X-Device-Id` of the mobile app (ADR-014 §4); null for web / API clients. */
   deviceId?: string | null;
+  /** `X-Client-Location` (B45) : where the client was when it performed the action ; null when absent. */
+  clientLocation?: ClientLocation | null;
 }
 
 @Injectable()

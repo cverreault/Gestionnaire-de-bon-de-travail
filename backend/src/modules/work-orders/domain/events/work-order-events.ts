@@ -23,6 +23,10 @@ export const WO_EVENT_NAMES = {
   /// the pre-approval « Demandé » step). Consumed by notifications
   /// (in-app fan-out to ADMIN/DISPATCHER) and the alerts engine.
   REQUESTED:       'workOrders.workOrder.requested',
+  /// B45 — every action lands in the history : note, signatures, field edits.
+  NOTE_ADDED:      'workOrders.workOrder.noteAdded',
+  SIGNED:          'workOrders.workOrder.signed',
+  UPDATED:         'workOrders.workOrder.updated',
 } as const;
 
 export type WoEventName = typeof WO_EVENT_NAMES[keyof typeof WO_EVENT_NAMES];
@@ -212,3 +216,33 @@ export type AnyWorkOrderEvent =
   | WorkOrderStatusChangedEvent
   | WorkOrderCompletedEvent
   | WorkOrderSlaBreachedEvent;
+
+// ── B45 — child actions ────────────────────────────────────────────────────
+
+export interface WorkOrderNoteAddedData {
+  noteId: string;
+  /** First characters of the note, for the timeline. */
+  excerpt: string;
+}
+
+export function workOrderNoteAdded(workOrderId: string, actorUserId: string | null, data: WorkOrderNoteAddedData) {
+  return makeEvent({ name: WO_EVENT_NAMES.NOTE_ADDED, workOrderId, actorUserId, data });
+}
+
+export interface WorkOrderSignedData {
+  client: boolean;
+  technician: boolean;
+}
+
+export function workOrderSigned(workOrderId: string, actorUserId: string | null, data: WorkOrderSignedData) {
+  return makeEvent({ name: WO_EVENT_NAMES.SIGNED, workOrderId, actorUserId, data });
+}
+
+export interface WorkOrderUpdatedData {
+  /** DTO keys that were sent (not the values). */
+  fields: string[];
+}
+
+export function workOrderUpdated(workOrderId: string, actorUserId: string | null, data: WorkOrderUpdatedData) {
+  return makeEvent({ name: WO_EVENT_NAMES.UPDATED, workOrderId, actorUserId, data });
+}

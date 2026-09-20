@@ -62,8 +62,19 @@
       "dispatched": "Dispatched",
       "statusChanged": "Status changed",
       "completedPositive": "Completed (positive)",
-      "completedNegative": "Completed (negative)"
-    }
+      "completedNegative": "Completed (negative)",
+      "noteAdded": "Note added",
+      "signed": "Signatures saved",
+      "updated": "Work order edited",
+      "photoAdded": "Photo added",
+      "attachmentAdded": "Attachment added",
+      "attachmentRemoved": "Attachment removed",
+      "partAdded": "Part added",
+      "partRemoved": "Part removed"
+    },
+    "location": "Location",
+    "signatureClient": "client",
+    "signatureTechnician": "technician"
   },
   "sections": {
     "info": "Information",

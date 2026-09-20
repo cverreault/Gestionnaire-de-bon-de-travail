@@ -7,7 +7,9 @@ import {
 } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import * as path from 'path';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { createDomainEvent } from '../../common/contracts/domain-event.interface';
 import { MinioService } from '../../common/storage/minio.service';
 import { Role } from '@prisma/client';
 
@@ -35,6 +37,10 @@ export interface CurrentUserRef {
   role: Role;
 }
 
+/** B45 — domain events (aggregateId = workOrderId) ; consumed by `audit`. */
+export const ATTACHMENT_UPLOADED_EVENT = 'attachments.attachment.uploaded' as const;
+export const ATTACHMENT_REMOVED_EVENT = 'attachments.attachment.removed' as const;
+
 @Injectable()
 export class AttachmentsService {
   private readonly logger = new Logger(AttachmentsService.name);
@@ -42,6 +48,7 @@ export class AttachmentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly minio: MinioService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   // ── Upload ─────────────────────────────────────────────────────────────────
@@ -116,6 +123,11 @@ export class AttachmentsService {
     ]);
 
     this.logger.log(`Attachment ${attachment.id} uploaded for WorkOrder ${workOrderId}`);
+    // B45 — photos and files are actions of the history (audit listens to `attachments.**`).
+    this.eventEmitter.emit(
+      ATTACHMENT_UPLOADED_EVENT,
+      createDomainEvent({ name: ATTACHMENT_UPLOADED_EVENT, aggregateId: workOrderId, actorUserId: currentUser.id, data: { attachmentId: attachment.id, fileName: file.originalname, mimeType: file.mimetype, fileSize: file.size } }),
+    );
     return { ...attachment, workOrderUpdatedAt: touched.updatedAt };
   }
 
@@ -249,6 +261,10 @@ export class AttachmentsService {
     ]);
 
     this.logger.log(`Attachment ${attachmentId} deleted`);
+    this.eventEmitter.emit(
+      ATTACHMENT_REMOVED_EVENT,
+      createDomainEvent({ name: ATTACHMENT_REMOVED_EVENT, aggregateId: attachment.workOrderId, actorUserId: currentUser?.id ?? null, data: { attachmentId, fileName: attachment.fileName, mimeType: attachment.mimeType } }),
+    );
     return { message: 'Pièce jointe supprimée avec succès', workOrderUpdatedAt: touched.updatedAt };
   }
 }

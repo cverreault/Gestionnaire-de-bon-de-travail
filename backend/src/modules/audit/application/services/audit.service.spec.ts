@@ -103,7 +103,7 @@ function makeMockPrisma(opts: {
 }
 
 function buildService(prisma: any) {
-  return new AuditService(prisma as any);
+  return new AuditService(prisma as any, { current: () => null } as any);
 }
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────

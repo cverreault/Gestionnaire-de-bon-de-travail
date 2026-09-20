@@ -1462,6 +1462,10 @@ model AuditLog {
   // Payload de l'event (variable selon eventName)
   data Json? // = IDomainEvent.data
 
+  // B45 — position du client au moment de l'action ({ lat, lng, accuracy?, recordedAt? }),
+  // lue dans l'en-tête X-Client-Location par le middleware tenant. Null pour le web / système.
+  location Json?
+
   // Timestamp serveur (peut différer de occurredAt si traitement async)
   createdAt DateTime @default(now()) @map("created_at")
 

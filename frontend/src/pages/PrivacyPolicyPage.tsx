@@ -8,7 +8,7 @@ import { theme, cardStyles, buttonStyles } from '../theme';
  * not UI strings. Update LAST_UPDATED whenever the content changes.
  */
 
-const LAST_UPDATED = '2026-09-19';
+const LAST_UPDATED = '2026-09-21';
 const COMPANY = 'Télécommunication Carl Verreault inc.';
 const CONTACT = 'info@dispatch2go.com';
 
@@ -48,7 +48,7 @@ function FrenchPolicy() {
         <li style={li}><strong>Comptes utilisateurs</strong> (employés et clients invités au portail) : nom, courriel, téléphone, mot de passe (haché), préférences d'interface.</li>
         <li style={li}><strong>Dossiers clients</strong> : coordonnées, adresses d'intervention, historique des bons de travail.</li>
         <li style={li}><strong>Contenu opérationnel</strong> : descriptions de travaux, notes, photos et pièces jointes, signatures électroniques (client et technicien).</li>
-        <li style={li}><strong>Géolocalisation des techniciens</strong> : uniquement avec consentement explicite (activation dans le profil), conservée <strong>7 jours</strong> puis supprimée automatiquement. Dans l'application mobile, la position n'est recueillie que pendant qu'un bon de travail est « en route » ou « en cours », y compris en arrière-plan si la permission « Toujours » a été accordée ; aucune collecte en dehors de ces périodes.</li>
+        <li style={li}><strong>Géolocalisation des techniciens</strong> : uniquement avec consentement explicite (activation dans le profil), conservée <strong>7 jours</strong> puis supprimée automatiquement. Dans l'application mobile, la position n'est recueillie que pendant qu'un bon de travail est « en route » ou « en cours », y compris en arrière-plan si la permission « Toujours » a été accordée ; aucune collecte en dehors de ces périodes. Chaque action faite dans l'application (changement de statut, note, photo, signature, pièce) est en outre horodatée et associée à la position du téléphone à ce moment, lorsque la permission de localisation est accordée ; cette position est conservée avec l'historique du bon de travail.</li>
         <li style={li}><strong>Application mobile</strong> : identifiant d'installation (généré aléatoirement sur le téléphone, non publicitaire), modèle et version du système, version de l'application, jeton de notification — utilisés pour sécuriser les sessions par appareil, forcer les mises à jour critiques et acheminer les notifications. Chaque appareil peut être révoqué depuis le profil.</li>
         <li style={li}><strong>Journaux d'audit et techniques</strong> : actions effectuées dans l'application, conservés 365 jours par défaut.</li>
       </ul>
@@ -135,7 +135,7 @@ function EnglishPolicy() {
         <li style={li}><strong>User accounts</strong> (employees and portal-invited clients): name, email, phone, password (hashed), interface preferences.</li>
         <li style={li}><strong>Client records</strong>: contact details, service addresses, work-order history.</li>
         <li style={li}><strong>Operational content</strong>: work descriptions, notes, photos and attachments, electronic signatures (client and technician).</li>
-        <li style={li}><strong>Technician geolocation</strong>: only with explicit consent (enabled from the profile), kept for <strong>7 days</strong> then automatically deleted. In the mobile app, location is collected only while a work order is "en route" or "in progress", including in the background when the "Always" permission was granted; nothing is collected outside those periods.</li>
+        <li style={li}><strong>Technician geolocation</strong>: only with explicit consent (enabled from the profile), kept for <strong>7 days</strong> then automatically deleted. In the mobile app, location is collected only while a work order is "en route" or "in progress", including in the background when the "Always" permission was granted; nothing is collected outside those periods. Every action performed in the app (status change, note, photo, signature, part) is also timestamped and tied to the phone's position at that moment, when the location permission is granted; that position is kept with the work-order history.</li>
         <li style={li}><strong>Mobile app</strong>: installation identifier (randomly generated on the phone, not an advertising id), device model and OS version, app version, notification token — used to secure per-device sessions, enforce critical updates and route notifications. Each device can be revoked from the profile.</li>
         <li style={li}><strong>Audit and technical logs</strong>: actions performed in the application, kept 365 days by default.</li>
       </ul>

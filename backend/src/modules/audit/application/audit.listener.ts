@@ -26,6 +26,20 @@ export class AuditListener {
   }
 
   /**
+   * B45 — child mutations of a work order emitted by other modules with
+   * `aggregateId = workOrderId`, so the BT timeline shows every action.
+   */
+  @OnEvent('attachments.**', { async: true, promisify: true })
+  async onAttachmentEvent(event: IDomainEvent & { data?: unknown }) {
+    await this.auditService.record(event);
+  }
+
+  @OnEvent('inventory.workOrderPart.**', { async: true, promisify: true })
+  async onWorkOrderPartEvent(event: IDomainEvent & { data?: unknown }) {
+    await this.auditService.record(event);
+  }
+
+  /**
    * Cross-cutting security events emitted from `common/` (RolesGuard, future
    * JWT/throttler hooks). Same persistence path as the business events so
    * the admin sees everything in one timeline.

@@ -73,6 +73,8 @@ export const syncQueue = sqliteTable('sync_queue', {
   attempts: integer('attempts').notNull().default(0),
   lastError: text('last_error'),
   createdAt: text('created_at').notNull(),
+  /** B45 — where the technician was when they did the action (JSON ClientLocation), null if unknown. */
+  location: text('location'),
 });
 
 /** Buffered GPS fixes awaiting POST /api/me/locations/batch (ADR-017, B38.8). */

@@ -59,6 +59,16 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.14.0',
+    name: 'Historique complet et géolocalisé des actions',
+    date: 'Septembre 2026',
+    entries: [
+      { type: 'new', text: "📍 Chaque action faite depuis l'app mobile (statut, note, photo, signature, pièce, formulaire) est enregistrée avec la position du téléphone à ce moment ; l'onglet Historique du BT affiche un lien vers la carte avec la précision" },
+      { type: 'improvement', text: "📜 L'historique montre désormais toutes les actions : notes, signatures, photos et pièces jointes ajoutées ou retirées, pièces posées, modifications de champs. Les signatures n'y apparaissaient pas auparavant" },
+      { type: 'improvement', text: "📱 App mobile 0.6.0 : la position est capturée au moment de l'action, même hors ligne, et envoyée avec la synchronisation" },
+    ],
+  },
+  {
     version: '2.13.1',
     name: 'Sessions et appareils gérés par l\'admin',
     date: 'Septembre 2026',

@@ -14,6 +14,7 @@ import {
   WorkOrderStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../../common/prisma/prisma.service';
+import { createDomainEvent } from '../../../common/contracts/domain-event.interface';
 
 /** Authenticated caller, as attached by JwtStrategy. */
 export interface StockActor {
@@ -22,6 +23,9 @@ export interface StockActor {
 }
 
 export const STOCK_LOW_EVENT = 'inventory.stock.low';
+/** B45 — parts added / removed on a work order (aggregateId = workOrderId) ; consumed by `audit`. */
+export const WORK_ORDER_PART_ADDED_EVENT = 'inventory.workOrderPart.added';
+export const WORK_ORDER_PART_REMOVED_EVENT = 'inventory.workOrderPart.removed';
 
 export interface StockLowEvent {
   partId: string;
@@ -234,6 +238,10 @@ export class StockService {
       const touched = await tx.workOrder.update({ where: { id: workOrderId }, data: { updatedAt: new Date() }, select: { updatedAt: true } });
       return { ...created, workOrderUpdatedAt: touched.updatedAt };
     });
+    this.eventEmitter.emit(
+      WORK_ORDER_PART_ADDED_EVENT,
+      createDomainEvent({ name: WORK_ORDER_PART_ADDED_EVENT, aggregateId: workOrderId, actorUserId: actor.id, data: { rowId: row.id, partId: part.id, sku: part.sku, name: part.name, quantity: input.quantity, source: row.source } }),
+    );
     return row;
   }
 
@@ -271,6 +279,10 @@ export class StockService {
       const touched = await tx.workOrder.update({ where: { id: workOrderId }, data: { updatedAt: new Date() }, select: { updatedAt: true } });
       return touched.updatedAt;
     });
+    this.eventEmitter.emit(
+      WORK_ORDER_PART_REMOVED_EVENT,
+      createDomainEvent({ name: WORK_ORDER_PART_REMOVED_EVENT, aggregateId: workOrderId, actorUserId: actor.id, data: { rowId, partId: row.partId, quantity: row.quantity } }),
+    );
     return { removed: true, workOrderUpdatedAt };
   }
 

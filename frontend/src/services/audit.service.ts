@@ -25,6 +25,8 @@ export interface AuditLogEntry {
   createdAt: string;
   /** Actor info denormalisé (null si actorUserId est null ou user supprimé). */
   actor: AuditActor | null;
+  /** B45 — position du client (app mobile) au moment de l'action ; null pour le web / système. */
+  location?: { lat: number; lng: number; accuracy?: number; recordedAt?: string } | null;
 }
 
 /** Timeline d'un agrégat (typiquement un workOrderId). 50 events récents. */
