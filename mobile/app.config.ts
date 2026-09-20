@@ -37,6 +37,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     './plugins/with-ios-scene-lifecycle',
+    './plugins/with-android-abis',
     'expo-router',
     'expo-secure-store',
     'expo-localization',

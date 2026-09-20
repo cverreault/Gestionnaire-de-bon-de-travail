@@ -33,7 +33,7 @@ mobile/
 ├── app.config.ts     # identité (Dispatch2Go, com.dispatch2go.app, dispatch2go://), plugins
 ├── eas.json          # profils de build development / preview / production (docs/mobile/release.md)
 ├── .maestro/         # flows de bout en bout (connexion, note hors ligne)
-├── plugins/          # config plugins maison (cycle de vie UIScene pour iOS 27)
+├── plugins/          # config plugins maison (UIScene iOS 27 ; ABIs Android limitées à arm64-v8a + armeabi-v7a, ANDROID_ABIS pour l'émulateur)
 ├── metro.config.js   # résolution monorepo (packages/shared) + .sql (migrations drizzle)
 ├── drizzle/          # migrations SQLite générées (npm run db:generate après src/db/schema.ts)
 ├── jest.config.js    # jest-expo, transforme @taskmgr/shared
