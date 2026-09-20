@@ -6,7 +6,9 @@ import WorkOrderStatusBadge from './WorkOrderStatusBadge';
 import { theme } from '../theme';
 import { formatStreet } from '../utils/addressFormat';
 
-export type DispatchSort = 'time' | 'priority' | 'type' | 'reference';
+import { groupByTechnician, sortDispatchRows, type DispatchSort } from '../utils/dispatchBoard';
+
+export type { DispatchSort };
 
 interface Props {
   workOrders: WorkOrder[];
@@ -15,20 +17,6 @@ interface Props {
   onOpen: (workOrderId: string) => void;
   onAssign: (payload: DispatchPayload) => void;
   onUnassign: (workOrder: WorkOrder) => void;
-}
-
-function sortRows(rows: WorkOrder[], sort: DispatchSort): WorkOrder[] {
-  const copy = [...rows];
-  switch (sort) {
-    case 'priority':
-      return copy.sort((a, b) => b.priority - a.priority || (a.scheduledStartTime ?? a.scheduledDate ?? '').localeCompare(b.scheduledStartTime ?? b.scheduledDate ?? ''));
-    case 'type':
-      return copy.sort((a, b) => (a.taskType?.name ?? a.type).localeCompare(b.taskType?.name ?? b.type) || a.referenceNumber.localeCompare(b.referenceNumber));
-    case 'reference':
-      return copy.sort((a, b) => a.referenceNumber.localeCompare(b.referenceNumber));
-    default:
-      return copy.sort((a, b) => (a.scheduledStartTime ?? a.scheduledDate ?? '9').localeCompare(b.scheduledStartTime ?? b.scheduledDate ?? '9'));
-  }
 }
 
 /**
@@ -43,18 +31,8 @@ export default function DispatchBoard({ workOrders, technicians, sort, onOpen, o
   const locale = i18n.language.startsWith('en') ? 'en-CA' : 'fr-CA';
 
   const columns = useMemo(() => {
-    const byTech = new Map<string, WorkOrder[]>();
-    const unassigned: WorkOrder[] = [];
-    for (const wo of workOrders) {
-      if (wo.assignedToId) {
-        const arr = byTech.get(wo.assignedToId) ?? [];
-        arr.push(wo);
-        byTech.set(wo.assignedToId, arr);
-      } else {
-        unassigned.push(wo);
-      }
-    }
-    return { unassigned: sortRows(unassigned, sort), byTech };
+    const g = groupByTechnician(workOrders);
+    return { unassigned: sortDispatchRows(g.unassigned, sort), byTech: g.byTech };
   }, [workOrders, sort]);
 
   function dragStart(e: React.DragEvent, wo: WorkOrder) {
@@ -145,7 +123,7 @@ export default function DispatchBoard({ workOrders, technicians, sort, onOpen, o
   return (
     <div style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: '0.5rem', alignItems: 'flex-start' }}>
       {column('unassigned', t('dispatch.unassigned'), columns.unassigned, null)}
-      {technicians.filter((u) => u.isActive).map((tech) => column(tech.id, `${tech.firstName} ${tech.lastName}`, sortRows(columns.byTech.get(tech.id) ?? [], sort), tech))}
+      {technicians.filter((u) => u.isActive).map((tech) => column(tech.id, `${tech.firstName} ${tech.lastName}`, sortDispatchRows(columns.byTech.get(tech.id) ?? [], sort), tech))}
     </div>
   );
 }

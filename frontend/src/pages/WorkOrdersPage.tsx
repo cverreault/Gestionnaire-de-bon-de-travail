@@ -20,6 +20,7 @@ import { priorityLabel } from '../utils/entityLabels';
 import { periodRange, periodLabel, shiftPeriod, type PeriodScope } from '../utils/periodRange';
 import TechnicianPanel from '../components/TechnicianPanel';
 import DispatchBoard, { type DispatchSort } from '../components/DispatchBoard';
+import { countByTechnician } from '../utils/dispatchBoard';
 import WorkOrderModal from '../components/WorkOrderModal';
 import DispatchConfirmModal, { type DispatchPayload } from '../components/DispatchConfirmModal';
 
@@ -381,15 +382,7 @@ export default function WorkOrdersPage() {
   const { data, isLoading, error } = useWorkOrders(filters);
   // Whole active set for the technician panel counts (independent of the filters).
   const { data: activeSet } = useWorkOrders({ excludeCompleted: true, limit: 100 });
-  const panelCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    let unassigned = 0;
-    for (const wo of activeSet?.data ?? []) {
-      if (wo.assignedToId) counts[wo.assignedToId] = (counts[wo.assignedToId] ?? 0) + 1;
-      else unassigned += 1;
-    }
-    return { counts, unassigned };
-  }, [activeSet]);
+  const panelCounts = useMemo(() => countByTechnician(activeSet?.data ?? []), [activeSet]);
 
   async function handleUnassign(wo: WorkOrder) {
     // « Non assigné » column : go back to the initial step through the process (the engine clears the technician).
