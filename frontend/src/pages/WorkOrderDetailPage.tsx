@@ -40,6 +40,8 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 
+type DetailTab = 'details' | 'history' | 'parts' | 'signatures' | 'attachments' | 'photos';
+
 interface DetailProps {
   /** When rendered inside WorkOrderModal : the id comes from props, not the route. */
   idOverride?: string;
@@ -61,6 +63,9 @@ export default function WorkOrderDetailPage({ idOverride, onClose, embedded = fa
   const updateStatus = useUpdateWorkOrderStatus(id!);
   // B23 — one-step approval of a portal work request (date + technician)
   const [showApproveModal, setShowApproveModal] = useState(false);
+  // Tabs of the read view (hooks must stay above the loading / error returns).
+  const [tab, setTab] = useState<DetailTab>('details');
+  const [photoPreview, setPhotoPreview] = useState<{ id: string; name: string } | null>(null);
   const addNote = useAddNote(id!);
   const uploadAttachment = useUploadAttachment(id!);
   const currentUser = useAuthStore((s) => s.user);
@@ -363,9 +368,6 @@ export default function WorkOrderDetailPage({ idOverride, onClose, embedded = fa
   const valueStyle: React.CSSProperties = { color: theme.colors.text };
 
   // Top tabs of the read view : details, history, parts, signatures, attachments, photos.
-  type DetailTab = 'details' | 'history' | 'parts' | 'signatures' | 'attachments' | 'photos';
-  const [tab, setTab] = useState<DetailTab>('details');
-  const [photoPreview, setPhotoPreview] = useState<{ id: string; name: string } | null>(null);
   const isImage = (mime: string) => mime.startsWith('image/');
   const photos = (wo?.attachments ?? []).filter((a) => isImage(a.mimeType));
   const files = (wo?.attachments ?? []).filter((a) => !isImage(a.mimeType));
