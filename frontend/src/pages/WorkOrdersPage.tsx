@@ -46,6 +46,19 @@ interface FilterPreset {
   priorityMin?: number;
 }
 
+/** Share of the table width per column (fixed layout) ; unlisted columns split the remainder. */
+const COLUMN_WEIGHTS: Record<string, number> = {
+  referenceNumber: 13,
+  title: 19,
+  address: 19,
+  type: 8,
+  priority: 8,
+  status: 12,
+  technician: 10,
+  scheduledDate: 9,
+  actions: 10,
+};
+
 function loadPresets(): Record<string, FilterPreset> {
   try {
     const raw = localStorage.getItem(LS_FILTER_PRESETS_KEY);
@@ -1044,11 +1057,17 @@ export default function WorkOrdersPage() {
 
           {/* Table */}
           <div style={{ ...tableStyles.container, overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            {/* Fixed layout : columns share the available width (weights below) and long text wraps, so nothing is cut off. */}
+            <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+              <colgroup>
+                {orderedColumns.map((col) => (
+                  <col key={col.id} style={{ width: COLUMN_WEIGHTS[col.id] ? `${COLUMN_WEIGHTS[col.id]}%` : undefined }} />
+                ))}
+              </colgroup>
               <thead style={{ ...tableStyles.header }}>
                 <tr>
                   {orderedColumns.map((col) => (
-                    <th key={col.id} style={{ ...tableStyles.headerCell, textAlign: 'left', padding: '0.45rem 0.6rem', lineHeight: 1.2, whiteSpace: col.id === 'referenceNumber' || col.id === 'status' ? 'nowrap' : 'normal' }}>
+                    <th key={col.id} style={{ ...tableStyles.headerCell, textAlign: 'left', padding: '0.45rem 0.5rem', lineHeight: 1.2, whiteSpace: 'normal', overflow: 'hidden' }}>
                       {col.label}
                     </th>
                   ))}
@@ -1083,13 +1102,7 @@ export default function WorkOrdersPage() {
                         <td
                           key={col.id}
                           style={{
-                            ...(col.tdStyle ?? tableStyles.cell), padding: '0.35rem 0.6rem', fontSize: theme.font.sizeXs, lineHeight: 1.25,
-                            // Long text columns wrap on two lines so every column stays visible without a horizontal scroll.
-                            ...(col.id === 'title' || col.id === 'address'
-                              ? { maxWidth: 220, whiteSpace: 'normal', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }
-                              : col.id === 'referenceNumber' || col.id === 'status' || col.id === 'actions'
-                                ? { whiteSpace: 'nowrap' }
-                                : { whiteSpace: 'normal' }),
+                            ...(col.tdStyle ?? tableStyles.cell), padding: '0.35rem 0.5rem', fontSize: theme.font.sizeXs, lineHeight: 1.25, overflow: 'hidden', whiteSpace: 'normal', overflowWrap: 'anywhere',
                           }}
                         >
                           {col.render(wo, index)}
