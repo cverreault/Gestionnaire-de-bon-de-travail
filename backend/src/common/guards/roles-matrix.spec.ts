@@ -47,6 +47,7 @@ import { SuperAdminController } from '../../modules/system-configs/api/super-adm
 import { TenantConfigsController } from '../../modules/system-configs/api/tenant-configs.controller';
 import { SuperAdminTenantsController } from '../../modules/tenants/api/super-admin-tenants.controller';
 import { ImpersonateController } from '../../modules/tenants/api/impersonate.controller';
+import { SettingsController } from '../../modules/settings/settings.controller';
 import { SuperAdminStatsController } from '../../modules/tenants/api/super-admin-stats.controller';
 import { SuperAdminAuditController } from '../../modules/tenants/api/super-admin-audit.controller';
 import { SuperAdminUsersController } from '../../modules/tenants/api/super-admin-users.controller';
@@ -229,7 +230,20 @@ const LOCATIONS_MATRIX: MatrixRow[] = [
   { controller: LocationsController, method: 'latestPositions', expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'GET /dispatcher/technicians/positions' },
 ];
 
+const SETTINGS_MATRIX: MatrixRow[] = [
+  { controller: SettingsController, method: 'findAll',     expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'GET /settings/task-types' },
+  { controller: SettingsController, method: 'create',      expectedRoles: [Role.ADMIN], note: 'POST /settings/task-types' },
+  { controller: SettingsController, method: 'update',      expectedRoles: [Role.ADMIN], note: 'PATCH /settings/task-types/:id' },
+  { controller: SettingsController, method: 'softDelete',  expectedRoles: [Role.ADMIN], note: 'DELETE /settings/task-types/:id' },
+  // B44 — tags
+  { controller: SettingsController, method: 'findAllTags', expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'GET /settings/tags — pickers and filters for all staff' },
+  { controller: SettingsController, method: 'createTag',   expectedRoles: [Role.ADMIN], note: 'POST /settings/tags' },
+  { controller: SettingsController, method: 'updateTag',   expectedRoles: [Role.ADMIN], note: 'PATCH /settings/tags/:id' },
+  { controller: SettingsController, method: 'removeTag',   expectedRoles: [Role.ADMIN], note: 'DELETE /settings/tags/:id' },
+];
+
 const ALL_ROWS: { name: string; rows: MatrixRow[] }[] = [
+  { name: 'SettingsController',   rows: SETTINGS_MATRIX },
   { name: 'WorkOrdersController', rows: WORK_ORDERS_MATRIX },
   { name: 'ClientsController',    rows: CLIENTS_MATRIX },
   { name: 'UsersController',      rows: USERS_MATRIX },

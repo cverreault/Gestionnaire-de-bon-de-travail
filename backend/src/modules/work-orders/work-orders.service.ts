@@ -13,6 +13,7 @@ import { RemindersService } from '../reminders/application/reminders.service';
 import { ProcessEngineService } from '../process/process-engine.service';
 import { ProcessCacheService } from '../process/process-cache.service';
 import { WORK_ORDER_DETAIL_INCLUDE } from './work-order-includes';
+import { TAG_LINK_SELECT, assertTagIds, tagLinksCreate, tagLinksReplace } from '../../common/prisma/tag-links';
 import { filterTemplateForUser } from '../templates/templates.service';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto';
 import { UpdateWorkOrderDto } from './dto/update-work-order.dto';
@@ -135,77 +136,16 @@ export class WorkOrdersService {
       _count: { select: { notes: true, attachments: true } },
       // Process-engine column
       currentStep: true,
+      // B44 — flattened by the tag-flatten middleware
+      tags: TAG_LINK_SELECT,
     };
   }
 
   // ── Work Orders CRUD ───────────────────────────────────────────────────────
 
   async findAll(filters: WorkOrderFilterDto, currentUser: CurrentUserRef) {
-    const {
-      status,
-      type,
-      assignedToId,
-      scheduledDateFrom,
-      scheduledDateTo,
-      priorityMin,
-      search,
-      clientId,
-      taskTypeId,
-      excludeCompleted,
-      slaBreached,
-      page = 1,
-      limit = 20,
-    } = filters;
-
-    const where: Prisma.WorkOrderWhereInput = {};
-
-    // Technicians only see their own work orders
-    if (currentUser.role === Role.TECHNICIAN) {
-      where.assignedToId = currentUser.id;
-    } else if (assignedToId) {
-      where.assignedToId = assignedToId;
-    }
-
-    if (status) {
-      where.status = status;
-    } else if (excludeCompleted) {
-      where.status = { notIn: [WorkOrderStatus.COMPLETED_POSITIVE, WorkOrderStatus.COMPLETED_NEGATIVE] };
-    }
-    if (type) where.type = type;
-    if (clientId) where.clientId = clientId;
-    if (taskTypeId) where.taskTypeId = taskTypeId;
-
-    if (scheduledDateFrom || scheduledDateTo) {
-      where.scheduledDate = {
-        ...(scheduledDateFrom ? { gte: new Date(scheduledDateFrom) } : {}),
-        ...(scheduledDateTo ? { lte: new Date(scheduledDateTo) } : {}),
-      };
-    }
-
-    if (priorityMin !== undefined) {
-      where.priority = { gte: priorityMin };
-    }
-
-    if (slaBreached) {
-      where.slaBreachedAt = { not: null };
-    }
-
-    if (search) {
-      where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { referenceNumber: { contains: search, mode: 'insensitive' } },
-        { externalClientName: { contains: search, mode: 'insensitive' } },
-        { clientAddress: { contains: search, mode: 'insensitive' } },
-        {
-          temporaryClient: {
-            OR: [
-              { firstName: { contains: search, mode: 'insensitive' } },
-              { lastName: { contains: search, mode: 'insensitive' } },
-            ],
-          },
-        },
-      ];
-    }
+    const { page = 1, limit = 20 } = filters;
+    const where = this.buildWorkOrderWhere(filters, currentUser);
 
     const skip = (page - 1) * limit;
 
@@ -262,6 +202,8 @@ export class WorkOrdersService {
     if (filters.clientId) where.clientId = filters.clientId;
     if (filters.principalClientId) where.principalClientId = filters.principalClientId;
     if (filters.taskTypeId) where.taskTypeId = filters.taskTypeId;
+    // B44 — any of the given tags
+    if (filters.tagIds?.length) where.tags = { some: { tagId: { in: filters.tagIds } } };
 
     if (filters.scheduledDateFrom || filters.scheduledDateTo) {
       where.scheduledDate = {
@@ -463,6 +405,8 @@ export class WorkOrdersService {
       }
     }
 
+    const tagIds = await assertTagIds(this.prisma, dto.tagIds);
+
     const workOrder = await this.prisma.workOrder.create({
       data: {
         referenceNumber,
@@ -492,6 +436,8 @@ export class WorkOrdersService {
         currentStepId,
         // Template data (filled values for the form template fields)
         templateData: (dto.templateData ?? undefined) as Prisma.InputJsonValue | undefined,
+        // B44
+        tags: tagLinksCreate(tagIds),
       },
       include: WORK_ORDER_DETAIL_INCLUDE,
     });
@@ -815,6 +761,10 @@ export class WorkOrdersService {
     if (dto.negativeReason !== undefined) data.negativeReason = dto.negativeReason;
     if (dto.templateData !== undefined) {
       data.templateData = (dto.templateData ?? Prisma.JsonNull) as Prisma.InputJsonValue | typeof Prisma.JsonNull;
+    }
+    // B44 — replace the whole tag set when provided
+    if (dto.tagIds !== undefined) {
+      data.tags = tagLinksReplace(await assertTagIds(this.prisma, dto.tagIds));
     }
 
     const updated = await this.prisma.workOrder.update({

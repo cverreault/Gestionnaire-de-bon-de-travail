@@ -51,7 +51,8 @@
     "count_other": "{{count}} BT actifs",
     "completed": "Terminés ({{count}})",
     "showCompleted": "Afficher",
-    "hideCompleted": "Masquer"
+    "hideCompleted": "Masquer",
+    "allTags": "Tous"
   },
   "workOrder": {
     "client": "Client",

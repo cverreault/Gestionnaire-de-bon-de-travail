@@ -59,6 +59,17 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.13.0',
+    name: 'Tags sur les clients, les adresses et les BT',
+    date: 'Septembre 2026',
+    entries: [
+      { type: 'new', text: "🏷 Tags libres définis par l'admin dans Paramètres (nom + couleur), posés sur les clients, les adresses et les bons de travail" },
+      { type: 'new', text: "🔎 Filtre par tag dans la liste des BT (modes Liste et Dispatch, enregistrable dans les filtres), dans la liste des clients et dans celle des adresses" },
+      { type: 'improvement', text: "📝 À la création d'un BT, les tags du client et de l'adresse choisis sont proposés d'office ; modifiables ensuite depuis le détail du BT" },
+      { type: 'improvement', text: "📱 App mobile 0.5.0 : les tags s'affichent sur les BT et servent de filtre rapide dans Mes BT" },
+    ],
+  },
+  {
     version: '2.12.1',
     name: 'Menu Répartition',
     date: 'Septembre 2026',

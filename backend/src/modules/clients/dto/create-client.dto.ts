@@ -97,6 +97,12 @@ export class CreateClientAddressDto {
   })
   @IsOptional()
   typeData?: Record<string, unknown> | null;
+
+  @ApiPropertyOptional({ description: 'B44 — UUIDs des tags (remplace l\'ensemble à la mise à jour)', type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  tagIds?: string[];
 }
 
 export class CreateClientDto {
@@ -157,4 +163,10 @@ export class CreateClientDto {
   @Type(() => CreateClientAddressDto)
   @ArrayMaxSize(20)
   addresses?: CreateClientAddressDto[];
+
+  @ApiPropertyOptional({ description: 'B44 — UUIDs des tags (remplace l\'ensemble à la mise à jour)', type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  tagIds?: string[];
 }

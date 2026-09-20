@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { User, WorkOrder, WorkOrderStatus } from '../types';
 import type { DispatchPayload } from './DispatchConfirmModal';
 import WorkOrderStatusBadge from './WorkOrderStatusBadge';
+import { TagChips } from './TagChip';
 import { theme } from '../theme';
 import { formatStreet } from '../utils/addressFormat';
 
@@ -90,6 +91,7 @@ export default function DispatchBoard({ workOrders, technicians, sort, onOpen, o
           {wo.priority > 0 && <span title={t('fields.priority')} style={{ fontSize: theme.font.sizeXs, color: wo.priority >= 3 ? theme.colors.danger : theme.colors.warning }}>{'!'.repeat(Math.min(wo.priority, 3))}</span>}
         </div>
         <div style={{ fontSize: theme.font.sizeSm, fontWeight: theme.font.weightMedium, color: theme.colors.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={wo.title}>{wo.title}</div>
+        {wo.tags && wo.tags.length > 0 && <div><TagChips tags={wo.tags} max={3} /></div>}
         {(client || addr) && <div style={{ fontSize: theme.font.sizeXs, color: theme.colors.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{[client, addr].filter(Boolean).join(' · ')}</div>}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
           <span style={{ fontSize: theme.font.sizeXs, color: theme.colors.textSecondary }}>🕒 {when}</span>

@@ -10,6 +10,7 @@ import {
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma, WorkOrderStatus } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { TAG_LINK_SELECT, assertTagIds, tagLinksCreate, tagLinksReplace } from '../../common/prisma/tag-links';
 import { RequestContextService } from '../../common/context/request-context.service';
 import {
   ADDRESS_GEO_RESET,
@@ -63,6 +64,8 @@ const CLIENT_LIST_SELECT = {
     take: 1,
   },
   _count: { select: { workOrders: true } },
+  // B44 — flattened by the tag-flatten middleware
+  tags: TAG_LINK_SELECT,
 } as const;
 
 /** Projection pour le détail d'un client (avec toutes ses adresses) */
@@ -76,7 +79,10 @@ const CLIENT_DETAIL_INCLUDE = {
       { isDefault: 'desc' as const },
       { createdAt: 'asc' as const },
     ] as { isDefault?: 'asc' | 'desc'; createdAt?: 'asc' | 'desc' }[],
+    include: { tags: TAG_LINK_SELECT },
   },
+  // B44 — flattened by the tag-flatten middleware
+  tags: TAG_LINK_SELECT,
   // B21 — portal accounts linked to this client (admin UI shows access
   // status + revoke button). Never expose password-adjacent fields.
   portalUsers: {
@@ -200,7 +206,7 @@ export class ClientsService {
    * La recherche ILIKE porte sur : prénom, nom, email.
    */
   async findAll(query: FindAllClientsDto): Promise<PaginatedResponseDto<any>> {
-    const { search, clientType, isActive, page = 1, limit = 20 } = query;
+    const { search, clientType, isActive, tagIds, page = 1, limit = 20 } = query;
     const skip = (page - 1) * limit;
 
     // Construction dynamique du filtre WHERE
@@ -232,6 +238,11 @@ export class ClientsService {
 
     if (isActive !== undefined) {
       where.isActive = isActive;
+    }
+
+    // B44 — any of the given tags
+    if (tagIds?.length) {
+      where.tags = { some: { tagId: { in: tagIds } } };
     }
 
     const [data, total] = await Promise.all([
@@ -288,6 +299,8 @@ export class ClientsService {
   async create(dto: CreateClientDto) {
     const pendingGeocode: string[] = [];
     await this.assertPrincipal(dto.principalClientId);
+    const clientTagIds = await assertTagIds(this.prisma, dto.tagIds);
+    const addressTagIds = await Promise.all((dto.addresses ?? []).map((a) => assertTagIds(this.prisma, a.tagIds)));
     const created = await this.prisma.$transaction(async (tx) => {
       // Créer le client
       const client = await tx.client.create({
@@ -300,6 +313,7 @@ export class ClientsService {
           clientType:  dto.clientType,
           notes:       dto.notes,
           principalClientId: dto.principalClientId ?? null,
+          tags:        tagLinksCreate(clientTagIds),
         },
       });
 
@@ -339,6 +353,7 @@ export class ClientsService {
               latitude:     addr.latitude,
               longitude:    addr.longitude,
               typeData:     (addr.typeData ?? undefined) as Prisma.InputJsonValue | undefined,
+              tags:         tagLinksCreate(addressTagIds[i]),
             },
           });
           if (addr.latitude == null) pendingGeocode.push(createdAddr.id);
@@ -363,10 +378,12 @@ export class ClientsService {
   async update(id: string, dto: UpdateClientDto) {
     await this.findOne(id);
     await this.assertPrincipal(dto.principalClientId, id);
+    const { tagIds, ...fields } = dto;
+    const tags = tagLinksReplace(await assertTagIds(this.prisma, tagIds));
 
     const updated = await this.prisma.client.update({
       where: { id },
-      data: dto,
+      data: { ...fields, ...(tags ? { tags } : {}) },
       include: CLIENT_DETAIL_INCLUDE,
     });
     this.emitClientEvent('clients.client.updated', updated);
@@ -408,8 +425,10 @@ export class ClientsService {
    * Retourne toutes les adresses (toutes clients confondus) avec
    * les infos du client lié (firstName, lastName, email).
    */
-  async findAllAddresses(search?: string) {
+  async findAllAddresses(search?: string, tagIds?: string[]) {
     const where: Record<string, any> = {};
+    // B44 — any of the given tags
+    if (tagIds?.length) where.tags = { some: { tagId: { in: tagIds } } };
     if (search && search.trim()) {
       const q = { contains: search.trim(), mode: 'insensitive' as const };
       where.OR = [
@@ -442,6 +461,7 @@ export class ClientsService {
             isActive: true,
           },
         },
+        tags: TAG_LINK_SELECT,
       },
       orderBy: [
         { client: { lastName: 'asc' } },
@@ -459,6 +479,7 @@ export class ClientsService {
    * qu'on pourra ensuite rattacher à un client.
    */
   async createStandaloneAddress(dto: CreateClientAddressDto) {
+    const tagIds = await assertTagIds(this.prisma, dto.tagIds);
     const created = await this.prisma.clientAddress.create({
       data: {
         clientId:     null,
@@ -477,7 +498,9 @@ export class ClientsService {
         latitude:     dto.latitude,
         longitude:    dto.longitude,
         typeData:     (dto.typeData ?? undefined) as Prisma.InputJsonValue | undefined,
+        tags:         tagLinksCreate(tagIds),
       },
+      include: { tags: TAG_LINK_SELECT },
     });
     if (dto.latitude == null) this.scheduleGeocode(created.id);
     return created;
@@ -490,6 +513,7 @@ export class ClientsService {
    */
   async addAddress(clientId: string, dto: CreateClientAddressDto) {
     await this.findOne(clientId);
+    const tagIds = await assertTagIds(this.prisma, dto.tagIds);
 
     const created = await this.prisma.$transaction(async (tx) => {
       if (dto.isDefault) {
@@ -515,7 +539,9 @@ export class ClientsService {
           latitude:     dto.latitude,
           longitude:    dto.longitude,
           typeData:     (dto.typeData ?? undefined) as Prisma.InputJsonValue | undefined,
+          tags:         tagLinksCreate(tagIds),
         },
+        include: { tags: TAG_LINK_SELECT },
       });
     });
     if (dto.latitude == null) this.scheduleGeocode(created.id);
@@ -548,6 +574,8 @@ export class ClientsService {
       (k) => dto[k] !== undefined && (dto[k] ?? null) !== (address[k] ?? null),
     );
     const resetCoords = postalPartsChanged && dto.latitude === undefined && dto.longitude === undefined;
+    const { tagIds, ...fields } = dto;
+    const tags = tagLinksReplace(await assertTagIds(this.prisma, tagIds));
 
     const updated = await this.prisma.$transaction(async (tx) => {
       if (dto.isDefault === true) {
@@ -561,12 +589,14 @@ export class ClientsService {
       return tx.clientAddress.update({
         where: { id: addressId },
         data: {
-          ...dto,
+          ...fields,
           ...(resetCoords ? ADDRESS_GEO_RESET : {}),
           ...(dto.typeData !== undefined && {
             typeData: (dto.typeData ?? Prisma.JsonNull) as Prisma.InputJsonValue | typeof Prisma.JsonNull,
           }),
+          ...(tags ? { tags } : {}),
         } as Prisma.ClientAddressUpdateInput,
+        include: { tags: TAG_LINK_SELECT },
       });
     });
     if (resetCoords || (updated.latitude === null && dto.latitude == null)) this.scheduleGeocode(addressId);
@@ -659,6 +689,7 @@ export class ClientsService {
       (k) => dto[k] !== undefined && (dto[k] ?? null) !== (existing[k] ?? null),
     );
     const resetCoords = postalPartsChanged && dto.latitude === undefined && dto.longitude === undefined;
+    const tags = tagLinksReplace(await assertTagIds(this.prisma, dto.tagIds));
 
     const updated = await this.prisma.$transaction(async (tx) => {
       // Si on passe cette adresse en default, retirer le flag des autres
@@ -671,9 +702,10 @@ export class ClientsService {
       }
 
       // Extraire le clientId du dto (géré séparément ci-dessous).
-      const { clientId: _ignored, isDefault: _ignored2, typeData, ...rest } = dto;
+      const { clientId: _ignored, isDefault: _ignored2, typeData, tagIds: _ignored3, ...rest } = dto;
       void _ignored;
       void _ignored2;
+      void _ignored3;
 
       return tx.clientAddress.update({
         where: { id: addressId },
@@ -694,6 +726,7 @@ export class ClientsService {
           ...(effectiveIsDefault !== undefined && {
             isDefault: effectiveIsDefault,
           }),
+          ...(tags ? { tags } : {}),
         } as Prisma.ClientAddressUpdateInput,
         include: {
           client: {
@@ -707,6 +740,7 @@ export class ClientsService {
               isActive: true,
             },
           },
+          tags: TAG_LINK_SELECT,
         },
       });
     });

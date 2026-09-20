@@ -90,9 +90,22 @@ export interface PrincipalClientRef {
   clientType?: ClientType;
 }
 
+/** B44 — a coloured label defined by the admin (settings → tags). */
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  _count?: { workOrders: number; clients: number; addresses: number };
+}
+
 export interface ClientAddress {
   id: string;
   clientId: string | null;
+  /** B44 */
+  tags?: Tag[];
   streetNumber?: string | null;
   street: string;
   apartment?: string | null;
@@ -150,6 +163,8 @@ export interface Client {
   id: string;
   firstName: string;
   lastName: string;
+  /** B44 */
+  tags?: Tag[];
   companyName?: string | null;
   email?: string | null;
   phone?: string | null;
@@ -373,6 +388,8 @@ export interface Attachment {
 export interface WorkOrder {
   id: string;
   referenceNumber: string;
+  /** B44 */
+  tags?: Tag[];
   status: WorkOrderStatus;
   type: WorkOrderType;
   title: string;
@@ -590,6 +607,8 @@ export interface PaginatedResponse<T> {
 }
 
 export interface WorkOrderFilters {
+  /** B44 — any of these tags (sent comma-separated). */
+  tagIds?: string[];
   principalClientId?: string;
   status?: WorkOrderStatus;
   type?: WorkOrderType;

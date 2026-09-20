@@ -31,13 +31,19 @@ import {
   CreateAddressTypeFieldDto,
   UpdateAddressTypeFieldDto,
 } from './dto/address-type-field.dto';
+import { CreateTagDto } from './dto/create-tag.dto';
+import { UpdateTagDto } from './dto/update-tag.dto';
+import { TagsService } from './tags.service';
 import { Roles } from '../../common/decorators/roles.decorator';
 
 @ApiTags('Settings')
 @ApiBearerAuth('access-token')
 @Controller('settings')
 export class SettingsController {
-  constructor(private readonly settingsService: SettingsService) {}
+  constructor(
+    private readonly settingsService: SettingsService,
+    private readonly tagsService: TagsService,
+  ) {}
 
   // ── TaskTypes ─────────────────────────────────────────────────────────────
 
@@ -362,5 +368,50 @@ export class SettingsController {
     @Param('fieldId', ParseUUIDPipe) fieldId: string,
   ) {
     return this.settingsService.removeAddressTypeField(id, fieldId);
+  }
+
+  // ── Tags (B44) ────────────────────────────────────────────────────────────
+
+  /** GET /settings/tags — lecture pour tout le personnel (sélecteurs, filtres). */
+  @Get('tags')
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN) // B21 — CLIENT portal users must not reach staff routes
+  @ApiOperation({ summary: 'Lister les tags', description: 'Paramètre optionnel isActive pour filtrer.' })
+  @ApiQuery({ name: 'isActive', required: false, type: Boolean })
+  findAllTags(@Query('isActive') isActive?: string) {
+    const parsed = isActive === undefined ? undefined : isActive === 'true';
+    return this.tagsService.findAll({ isActive: parsed });
+  }
+
+  /** POST /settings/tags — ADMIN. */
+  @Post('tags')
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Créer un tag', description: 'Réservé aux administrateurs. Le nom doit être unique.' })
+  @ApiResponse({ status: 201, description: 'Tag créé' })
+  @ApiResponse({ status: 409, description: 'Nom déjà utilisé' })
+  createTag(@Body() dto: CreateTagDto) {
+    return this.tagsService.create(dto);
+  }
+
+  /** PATCH /settings/tags/:id — ADMIN. */
+  @Patch('tags/:id')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Modifier un tag (nom, couleur, actif)' })
+  @ApiParam({ name: 'id', description: 'UUID du tag' })
+  @ApiResponse({ status: 404, description: 'Tag introuvable' })
+  @ApiResponse({ status: 409, description: 'Nom déjà utilisé' })
+  updateTag(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateTagDto) {
+    return this.tagsService.update(id, dto);
+  }
+
+  /** DELETE /settings/tags/:id — ADMIN. Retire le tag de tous les clients, adresses et BT. */
+  @Delete('tags/:id')
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Supprimer un tag', description: 'Le tag est retiré partout où il était posé.' })
+  @ApiParam({ name: 'id', description: 'UUID du tag' })
+  @ApiResponse({ status: 404, description: 'Tag introuvable' })
+  removeTag(@Param('id', ParseUUIDPipe) id: string) {
+    return this.tagsService.remove(id);
   }
 }

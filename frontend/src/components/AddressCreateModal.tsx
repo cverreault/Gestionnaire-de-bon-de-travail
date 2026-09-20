@@ -99,6 +99,7 @@ export default function AddressCreateModal({ onClose, onCreated, address }: Prop
           isDefault: address.isDefault ?? false,
           latitude: address.latitude ?? null,
           longitude: address.longitude ?? null,
+          tagIds: address.tags?.map((tg) => tg.id) ?? [],
         }
       : ADDRESS_FORM_DEFAULTS,
   });
@@ -154,6 +155,7 @@ export default function AddressCreateModal({ onClose, onCreated, address }: Prop
       typeData: Object.keys(typeData).length > 0 ? typeData : undefined,
       latitude: a.latitude ?? undefined,
       longitude: a.longitude ?? undefined,
+      tagIds: a.tagIds ?? [],
     };
 
     setSubmitting(true);

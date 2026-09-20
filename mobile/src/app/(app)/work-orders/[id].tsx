@@ -15,6 +15,7 @@ import SignaturePad from '../../../components/SignaturePad';
 import PartsCard from '../../../components/PartsCard';
 import TemplateFieldsCard from '../../../components/TemplateFieldsCard';
 import StatusBadge from '../../../components/StatusBadge';
+import TagChips from '../../../components/TagChips';
 import { useSession } from '../../../stores/session.store';
 import { useSyncStore } from '../../../sync/sync.store';
 import { useLocalWorkOrder } from '../../../sync/useSync';
@@ -97,6 +98,7 @@ export default function WorkOrderDetailScreen() {
               <Text style={{ color: theme.textMuted, fontSize: font.sm }}>{w.referenceNumber}</Text>
               <Text style={{ color: theme.text, fontSize: font.xl, fontWeight: '700' }}>{w.title}</Text>
               <StatusBadge status={w.status} step={w.currentStep} />
+              <TagChips tags={w.tags} />
             </View>
 
             {(w.client || w.principalClient) && (

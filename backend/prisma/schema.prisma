@@ -192,6 +192,7 @@ model Tenant {
   technicianPartStocks TechnicianPartStock[]
   stockMovements      StockMovement[]
   workOrderParts      WorkOrderPart[]
+  tags                Tag[]
 
   @@index([isActive], map: "idx_tenants_is_active")
   @@map("tenants")
@@ -894,6 +895,7 @@ model Client {
   principalWorkOrders WorkOrder[] @relation("WorkOrderPrincipal")
   portalUsers User[]             @relation("ClientPortalUsers")
   portalInvitations PortalInvitation[]
+  tags        ClientTag[]
 
   @@index([clientType], map: "idx_clients_type")
   @@index([isActive], map: "idx_clients_is_active")
@@ -954,6 +956,8 @@ model ClientAddress {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   workOrders WorkOrder[]
+
+  tags         AddressTag[]
 
   @@index([clientId], map: "idx_client_addresses_client_id")
   @@index([tenantId], map: "idx_client_addresses_tenant_id")
@@ -1262,6 +1266,7 @@ model WorkOrder {
   reminders    WorkOrderReminder[]
   partsUsed    WorkOrderPart[]
   stockMovements StockMovement[]
+  tags         WorkOrderTag[]
 
   @@index([status])
   @@index([assignedToId])
@@ -1776,4 +1781,65 @@ model IdempotencyKey {
   @@unique([tenantId, userId, key], map: "uq_idempotency_tenant_user_key")
   @@index([createdAt], map: "idx_idempotency_created_at")
   @@map("idempotency_keys")
+}
+
+// ─── B44 — Tags (libellés colorés définis par l'admin) ─────────────────────
+// Un tag se pose sur un client, une adresse ou un BT. Les tables de liaison
+// n'ont pas de tenant_id : les deux extrémités sont déjà scopées, et le
+// service vérifie que le tag appartient au tenant avant de lier.
+
+model Tag {
+  id        String   @id @default(uuid())
+  tenantId  String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  name      String
+  /// Hex colour (#rrggbb), chosen by the admin.
+  color     String   @default("#6b7280")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  workOrders WorkOrderTag[]
+  clients    ClientTag[]
+  addresses  AddressTag[]
+
+  @@unique([tenantId, name], map: "idx_tags_tenant_name")
+  @@index([tenantId], map: "idx_tags_tenant_id")
+  @@map("tags")
+}
+
+model WorkOrderTag {
+  workOrderId String    @map("work_order_id")
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  tagId       String    @map("tag_id")
+  tag         Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@id([workOrderId, tagId])
+  @@index([tagId], map: "idx_work_order_tags_tag_id")
+  @@map("work_order_tags")
+}
+
+model ClientTag {
+  clientId  String   @map("client_id")
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  tagId     String   @map("tag_id")
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@id([clientId, tagId])
+  @@index([tagId], map: "idx_client_tags_tag_id")
+  @@map("client_tags")
+}
+
+model AddressTag {
+  addressId String        @map("address_id")
+  address   ClientAddress @relation(fields: [addressId], references: [id], onDelete: Cascade)
+  tagId     String        @map("tag_id")
+  tag       Tag           @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  @@id([addressId, tagId])
+  @@index([tagId], map: "idx_address_tags_tag_id")
+  @@map("address_tags")
 }

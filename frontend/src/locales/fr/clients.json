@@ -28,7 +28,8 @@
     "principalCreateConfirm": "Créer et sélectionner",
     "principalCreateError": "Création impossible, vérifiez les champs.",
     "principalSelfExcluded": "{{name}} ne peut pas être son propre donneur d’ordre.",
-    "principalNoOther": "Aucun autre donneur d’ordre."
+    "principalNoOther": "Aucun autre donneur d’ordre.",
+    "tags": "Tags"
   },
   "types": {
     "RESIDENTIAL": "Résidentiel",
@@ -93,6 +94,7 @@
     "newClientTitle": "Nouveau client",
     "editClientTitle": "Modifier — {{name}}",
     "createPrincipal": "➕ Donneur d’ordre",
-    "createPrincipalTitle": "Nouveau donneur d’ordre"
+    "createPrincipalTitle": "Nouveau donneur d’ordre",
+    "filterTags": "Tags"
   }
 }

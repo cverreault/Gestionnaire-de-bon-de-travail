@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as settingsService from '../services/settings.service';
-import type { TaskType, ClientTypeConfig, AddressTypeConfig } from '../types';
+import type { TaskType, ClientTypeConfig, AddressTypeConfig, Tag } from '../types';
 
 // ── TaskType ──────────────────────────────────────────────────────────────────
 
@@ -74,6 +74,49 @@ export function useDeleteTaskType() {
   return useMutation({
     mutationFn: (id: string) => settingsService.deleteTaskType(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: [TASK_TYPES_KEY] }),
+  });
+}
+
+// ── Tags (B44) ────────────────────────────────────────────────────────────────
+
+export const TAGS_KEY = 'tags';
+
+export function useTags(isActive?: boolean) {
+  return useQuery({
+    queryKey: [TAGS_KEY, isActive],
+    queryFn: () => settingsService.getTags(isActive).then((r) => (r.data?.data ?? r.data) as Tag[]),
+    staleTime: 60_000,
+  });
+}
+
+export function useCreateTag() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { name: string; color?: string; isActive?: boolean }) => settingsService.createTag(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [TAGS_KEY] }),
+  });
+}
+
+export function useUpdateTag() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<{ name: string; color: string; isActive: boolean }> }) =>
+      settingsService.updateTag(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [TAGS_KEY] }),
+  });
+}
+
+export function useDeleteTag() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => settingsService.deleteTag(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [TAGS_KEY] });
+      // The tag disappears from every entity : refresh the lists that show chips.
+      qc.invalidateQueries({ queryKey: ['work-orders'] });
+      qc.invalidateQueries({ queryKey: ['clients'] });
+      qc.invalidateQueries({ queryKey: ['addresses'] });
+    },
   });
 }
 

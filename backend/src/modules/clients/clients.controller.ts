@@ -50,8 +50,10 @@ export class ClientsController {
   })
   @ApiResponse({ status: 200, description: 'Liste des adresses avec leur client' })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
-  findAllAddresses(@Query('search') search?: string) {
-    return this.clientsService.findAllAddresses(search);
+  findAllAddresses(@Query('search') search?: string, @Query('tagIds') tagIds?: string) {
+    // B44 — comma-separated tag UUIDs (any-of)
+    const ids = tagIds ? tagIds.split(',').filter(Boolean) : undefined;
+    return this.clientsService.findAllAddresses(search, ids);
   }
 
   /**

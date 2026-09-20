@@ -72,6 +72,17 @@ Un BT peut être exécuté chez un client (ou un emplacement) **pour le compte d
 
 > **ADR-016 §2 (B37.6)** — toute mutation enfant rafraîchit `work_orders.updated_at` : `createNote` (ici), upload / suppression de pièce jointe (`attachments`), ajout / retrait de pièce (`parts`). Chaque réponse porte `workOrderUpdatedAt`, que l'app mobile renvoie comme prochain `expectedUpdatedAt`. Conséquence acceptée : un technicien peut recevoir 409 `OPTIMISTIC_LOCK_CONFLICT` après une note du répartiteur ; l'app resynchronise puis rejoue.
 
+## Tags (B44)
+
+Libellés colorés définis par l'admin (`settings` : `GET/POST/PATCH/DELETE /settings/tags`, table `tags`, unique `(tenant_id, name)`), posés sur les BT, les clients et les adresses via des tables de liaison sans `tenant_id` (`work_order_tags`, `client_tags`, `address_tags`, `ON DELETE CASCADE` des deux côtés). Règles :
+
+- `tagIds: string[]` dans `POST/PATCH /work-orders` (et dans les DTOs clients / adresses) **remplace l'ensemble** ; `[]` retire tout, absent = inchangé. Chaque id est vérifié dans le tenant courant (`common/prisma/tag-links.ts`, 400 sinon).
+- Filtre `?tagIds=a,b` (**au moins un** des tags) sur `GET /work-orders`, `GET /clients`, `GET /clients/addresses/all`.
+- Réponse : `tags: [{ id, name, color }]` **à plat** sur le BT, le client et l'adresse. Le middleware Prisma `tag-flatten.middleware.ts` aplatit `[{ tag }]` sur tout résultat des modèles `WorkOrder`, `Client`, `ClientAddress` (relations imbriquées comprises), donc aucun site de retour n'a à s'en soucier ; la projection sync mobile les expose aussi (`SyncWorkOrder.tags`).
+- Supprimer un tag le retire partout (cascade) ; le désactiver (`isActive=false`) le cache seulement des sélecteurs.
+- Le web propose d'office les tags du client et de l'adresse à la création du BT (copie côté client, aucune règle serveur).
+- Hors périmètre pour l'instant : groupes de techniciens et permissions de répartiteur par tag (visibilité), à traiter dans une ADR dédiée.
+
 ## Domain events publiés
 
 | Event | Quand | Payload |
@@ -105,6 +116,7 @@ Indexes notables :
 - `notes` (`Note[]`) — texte libre, auteur, timestamp
 - `attachments` (`Attachment[]`) — métadonnées (le binaire est dans MinIO via `attachments` module)
 - `appointments` (`Appointment[]`) — événements calendrier
+- `tags` (`WorkOrderTag[]` → `Tag`) — B44, exposé à plat
 
 ## Dépendances
 

@@ -66,6 +66,8 @@ const TENANT_SCOPED_MODELS = new Set<string>([
   'TechnicianPartStock',
   'StockMovement',
   'WorkOrderPart',
+  // B44 — tags (join tables have no tenant_id : both ends are scoped)
+  'Tag',
 ]);
 
 // Actions that take args.where — we inject tenantId there.

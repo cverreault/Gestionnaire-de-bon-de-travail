@@ -54,6 +54,8 @@ export interface CreateV3ClientDto {
   notes?: string;
   /** B42 — donneur d'ordre (null pour retirer). */
   principalClientId?: string | null;
+  /** B44 — tag ids ; on update the set is replaced. */
+  tagIds?: string[];
   /** Optionally include addresses to be created atomically with the client. */
   addresses?: CreateClientAddressDto[];
 }
@@ -79,19 +81,41 @@ export interface CreateClientAddressDto {
   /** From the address autocomplete (B40); omitted → the backend geocodes. */
   latitude?: number;
   longitude?: number;
+  /** B44 — tag ids ; on update the set is replaced. */
+  tagIds?: string[];
 }
 
 export interface UpdateClientAddressDto extends Partial<CreateClientAddressDto> {}
 
 // ─── V3 Named Exports ─────────────────────────────────────────────────────────
 
-export const getClients = (params?: {
+export interface ClientListParams {
   search?: string;
   clientType?: ClientType;
   isActive?: boolean;
   page?: number;
   limit?: number;
-}) => api.get('/clients', { params });
+  /** B44 — any of these tag ids (sent comma-separated). */
+  tagIds?: string[];
+}
+
+export interface AddressListParams {
+  search?: string;
+  /** B44 — any of these tag ids (sent comma-separated). */
+  tagIds?: string[];
+}
+
+/** Serialise `tagIds` as the comma-joined `tagIds` query param expected by the backend. */
+function withTagIds<T extends { tagIds?: string[] }>(
+  params?: T,
+): (Omit<T, 'tagIds'> & { tagIds?: string }) | undefined {
+  if (!params) return undefined;
+  const { tagIds, ...rest } = params;
+  return tagIds && tagIds.length > 0 ? { ...rest, tagIds: tagIds.join(',') } : rest;
+}
+
+export const getClients = (params?: ClientListParams) =>
+  api.get('/clients', { params: withTagIds(params) });
 
 export const getClient = (id: string) => api.get(`/clients/${id}`);
 
@@ -115,8 +139,10 @@ export const updateClientAddress = (
 export const deleteClientAddress = (clientId: string, addressId: string) =>
   api.delete(`/clients/${clientId}/addresses/${addressId}`);
 
-export const getAllAddresses = (search?: string) =>
-  api.get('/clients/addresses/all', { params: search ? { search } : undefined });
+export const getAllAddresses = (params?: AddressListParams) =>
+  api.get('/clients/addresses/all', {
+    params: withTagIds({ ...params, search: params?.search || undefined }),
+  });
 
 /** Standalone address — no client linked. */
 export const createStandaloneAddress = (data: CreateClientAddressDto) =>

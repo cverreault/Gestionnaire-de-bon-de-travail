@@ -64,9 +64,13 @@ export class SyncService {
 
 /** Signatures leave the payload (ADR-016 §6) ; everything else is the row as selected. */
 export function projectWorkOrder(row: SyncWorkOrderRow) {
-  const { signatureClient, signatureTechnician, partsUsed, ...rest } = row;
+  const { signatureClient, signatureTechnician, partsUsed, tags, ...rest } = row;
   return {
     ...rest,
+    // Already flat at runtime (tag-flatten middleware) ; the Prisma type still says `{ tag }`.
+    tags: ((tags ?? []) as unknown as Array<{ id: string; name: string; color: string } | { tag: { id: string; name: string; color: string } }>).map(
+      (t) => ('tag' in t ? t.tag : t),
+    ),
     hasSignatureClient: !!signatureClient,
     hasSignatureTechnician: !!signatureTechnician,
     parts: partsUsed.map((p) => ({

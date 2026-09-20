@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsInt, IsEnum, IsBoolean, Min, Max } from 'class-validator';
+import { IsOptional, IsString, IsInt, IsEnum, IsBoolean, IsArray, IsUUID, Min, Max } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ClientType } from '@prisma/client';
@@ -34,6 +34,15 @@ export class FindAllClientsDto {
   })
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional({ description: 'B44 — clients portant au moins un de ces tags (UUIDs séparés par des virgules)', type: String })
+  @IsOptional()
+  @Transform(({ value }) =>
+    Array.isArray(value) ? value : typeof value === 'string' && value.length ? value.split(',').filter(Boolean) : undefined,
+  )
+  @IsArray()
+  @IsUUID('4', { each: true })
+  tagIds?: string[];
 
   @ApiPropertyOptional({ example: 1, default: 1, description: 'Numéro de page (base 1)' })
   @IsOptional()

@@ -29,6 +29,8 @@ export interface CreateWorkOrderDto {
   clientId?: string;
   clientAddressId?: string;
   taskTypeId?: string;
+  /** B44 — replaces the whole set of tags on the work order. */
+  tagIds?: string[];
 }
 
 export interface UpdateWorkOrderDto extends Partial<CreateWorkOrderDto> {
@@ -49,10 +51,22 @@ export interface TransitionDynamicDto {
   expectedUpdatedAt?: string;
 }
 
+/**
+ * B44 — array filters (tagIds) are sent comma-joined ; empty arrays are dropped
+ * so they don't appear as `tagIds=` in the query string.
+ */
+function toQueryParams(filters?: WorkOrderFilters): Record<string, unknown> | undefined {
+  if (!filters) return undefined;
+  const { tagIds, ...rest } = filters;
+  const params: Record<string, unknown> = { ...rest };
+  if (tagIds && tagIds.length > 0) params.tagIds = tagIds.join(',');
+  return params;
+}
+
 const workOrdersService = {
   async findAll(filters?: WorkOrderFilters): Promise<PaginatedResponse<WorkOrder>> {
     const { data } = await api.get<ApiResponse<PaginatedResponse<WorkOrder>>>('/work-orders', {
-      params: filters,
+      params: toQueryParams(filters),
     });
     return data.data;
   },
@@ -131,7 +145,7 @@ const workOrdersService = {
    */
   async exportCsv(filters?: WorkOrderFilters): Promise<{ filename: string; size: number }> {
     const response = await api.get('/work-orders/export.csv', {
-      params: filters,
+      params: toQueryParams(filters),
       responseType: 'blob',
     });
 

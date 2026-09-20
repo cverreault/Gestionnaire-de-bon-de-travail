@@ -51,7 +51,8 @@
     "count_other": "{{count}} active WOs",
     "completed": "Completed ({{count}})",
     "showCompleted": "Show",
-    "hideCompleted": "Hide"
+    "hideCompleted": "Hide",
+    "allTags": "All"
   },
   "workOrder": {
     "client": "Client",

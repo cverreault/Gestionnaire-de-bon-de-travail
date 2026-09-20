@@ -23,6 +23,8 @@ import DispatchBoard, { type DispatchSort } from '../components/DispatchBoard';
 import { countByTechnician } from '../utils/dispatchBoard';
 import WorkOrderModal from '../components/WorkOrderModal';
 import DispatchConfirmModal, { type DispatchPayload } from '../components/DispatchConfirmModal';
+import { TagChips } from '../components/TagChip';
+import TagPicker from '../components/TagPicker';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -45,9 +47,14 @@ interface FilterPreset {
   scheduledDateFrom?: string;
   scheduledDateTo?: string;
   priorityMin?: number;
+  /** B44 */
+  tagIds?: string[];
 }
 
-/** Share of the table width per column (fixed layout) ; unlisted columns split the remainder. */
+/**
+ * Relative share of the table width per column (fixed layout). Weights are normalised over the
+ * visible columns at render time, so any subset sums to 100 % ; unlisted columns split the remainder.
+ */
 const COLUMN_WEIGHTS: Record<string, number> = {
   referenceNumber: 14,
   title: 15,
@@ -57,8 +64,20 @@ const COLUMN_WEIGHTS: Record<string, number> = {
   status: 14,
   technician: 9,
   scheduledDate: 8,
+  tags: 8,
   actions: 10,
 };
+
+/** Percent width per visible column (weights normalised to 100) ; undefined for unweighted columns. */
+function columnWidths(ids: string[]): Record<string, string | undefined> {
+  const total = ids.reduce((sum, id) => sum + (COLUMN_WEIGHTS[id] ?? 0), 0);
+  const out: Record<string, string | undefined> = {};
+  for (const id of ids) {
+    const w = COLUMN_WEIGHTS[id];
+    out[id] = w && total > 0 ? `${(w / total) * 100}%` : undefined;
+  }
+  return out;
+}
 
 function loadPresets(): Record<string, FilterPreset> {
   try {
@@ -111,6 +130,7 @@ function countActiveFilters(filters: Omit<WorkOrderFilters, 'page' | 'limit'>): 
   if (filters.scheduledDateFrom) count++;
   if (filters.scheduledDateTo) count++;
   if (filters.priorityMin !== undefined && filters.priorityMin > 0) count++;
+  if (filters.tagIds && filters.tagIds.length > 0) count++;
   return count;
 }
 
@@ -159,7 +179,18 @@ function buildWorkOrderColumnCatalog(t: TFunc, tCommon: TFunc, onOpen: (id: stri
       id: 'title',
       label: t('fields.title'),
       tdStyle: { ...tableStyles.cell, fontWeight: theme.font.weightMedium },
-      render: (wo) => wo.title,
+      // B44 — tags shown inline after the title so they are visible without enabling the column.
+      render: (wo) => (
+        <>
+          {wo.title}
+          {wo.tags && wo.tags.length > 0 && (
+            <>
+              {' '}
+              <TagChips tags={wo.tags} max={3} wrap={false} />
+            </>
+          )}
+        </>
+      ),
     },
     {
       id: 'address',
@@ -198,6 +229,11 @@ function buildWorkOrderColumnCatalog(t: TFunc, tCommon: TFunc, onOpen: (id: stri
       label: t('fields.scheduledDate'),
       tdStyle: { ...tableStyles.cellMuted },
       render: (wo) => (wo.scheduledDate ? new Date(wo.scheduledDate).toLocaleDateString(t('common:bcp47', { defaultValue: 'fr-CA' })) : '—'),
+    },
+    {
+      id: 'tags',
+      label: t('fields.tags', { defaultValue: 'Tags' }),
+      render: (wo) => <TagChips tags={wo.tags} max={2} wrap={false} />,
     },
     {
       id: 'actions',
@@ -282,6 +318,8 @@ export default function WorkOrdersPage() {
   const [scheduledDateFrom, setScheduledDateFrom] = useState('');
   const [scheduledDateTo, setScheduledDateTo] = useState('');
   const [priorityMin, setPriorityMin] = useState<number | undefined>();
+  // B44 — any of these tags
+  const [tagIds, setTagIds] = useState<string[]>([]);
   const [page, setPage] = useState(1);
 
   // Panel visibility
@@ -357,6 +395,8 @@ export default function WorkOrdersPage() {
     return out;
   }, [visibleIds, catalogById]);
 
+  const colWidths = useMemo(() => columnWidths(orderedColumns.map((c) => c.id)), [orderedColumns]);
+
   function setColumnsOrder(next: string[]) {
     updatePrefs.mutate({ workOrderColumns: next });
   }
@@ -372,6 +412,7 @@ export default function WorkOrdersPage() {
     ...((period.from ?? scheduledDateFrom) ? { scheduledDateFrom: period.from ?? scheduledDateFrom } : {}),
     ...((period.to ?? scheduledDateTo) ? { scheduledDateTo: period.to ?? scheduledDateTo } : {}),
     ...(priorityMin !== undefined && priorityMin > 0 ? { priorityMin } : {}),
+    ...(tagIds.length > 0 ? { tagIds } : {}),
     ...(slaBreachedOnly ? { slaBreached: true } : {}),
     // Dispatch mode shows the whole (active) set on one board.
     ...(mode === 'dispatch' ? { excludeCompleted: true, page: 1, limit: 100 } : { page, limit: 20 }),
@@ -420,6 +461,7 @@ export default function WorkOrdersPage() {
     setScheduledDateFrom('');
     setScheduledDateTo('');
     setPriorityMin(undefined);
+    setTagIds([]);
     setPage(1);
     setActivePreset('');
   }
@@ -443,6 +485,7 @@ export default function WorkOrdersPage() {
     setScheduledDateFrom(p.scheduledDateFrom ?? '');
     setScheduledDateTo(p.scheduledDateTo ?? '');
     setPriorityMin(p.priorityMin);
+    setTagIds(p.tagIds ?? []);
     setPage(1);
     setActivePreset(name);
   }
@@ -469,6 +512,7 @@ export default function WorkOrdersPage() {
       ...(scheduledDateFrom ? { scheduledDateFrom } : {}),
       ...(scheduledDateTo ? { scheduledDateTo } : {}),
       ...(priorityMin !== undefined && priorityMin > 0 ? { priorityMin } : {}),
+      ...(tagIds.length > 0 ? { tagIds } : {}),
     };
 
     const next = { ...presets, [name]: payload };
@@ -895,6 +939,19 @@ export default function WorkOrdersPage() {
               </select>
             </div>
 
+            {/* B44 — Tags (any of) */}
+            <div style={{ flex: '0 0 auto' }}>
+              <label style={{ display: 'block', fontSize: theme.font.sizeXs, color: theme.colors.textMuted, marginBottom: '0.25rem', fontWeight: theme.font.weightMedium }}>
+                {t('list.filterTags', { defaultValue: 'Tags' })}
+              </label>
+              <TagPicker
+                variant="filter"
+                value={tagIds}
+                onChange={(next) => { setTagIds(next); setPage(1); }}
+                placeholder={t('list.filterTags', { defaultValue: 'Tags' })}
+              />
+            </div>
+
             {/* Technician */}
             <div style={{ flex: '0 1 180px', minWidth: '140px' }}>
               <label style={{ display: 'block', fontSize: theme.font.sizeXs, color: theme.colors.textMuted, marginBottom: '0.25rem', fontWeight: theme.font.weightMedium }}>
@@ -1054,7 +1111,7 @@ export default function WorkOrdersPage() {
             <table style={{ width: '100%', minWidth: 0, borderCollapse: 'collapse', tableLayout: 'fixed' }}>
               <colgroup>
                 {orderedColumns.map((col) => (
-                  <col key={col.id} style={{ width: COLUMN_WEIGHTS[col.id] ? `${COLUMN_WEIGHTS[col.id]}%` : undefined }} />
+                  <col key={col.id} style={{ width: colWidths[col.id] }} />
                 ))}
               </colgroup>
               <thead style={{ ...tableStyles.header }}>
@@ -1097,7 +1154,7 @@ export default function WorkOrdersPage() {
                           style={{
                             ...(col.tdStyle ?? tableStyles.cell), padding: '0.35rem 0.5rem', fontSize: theme.font.sizeXs, lineHeight: 1.25, overflow: 'hidden',
                             // Reference and status chips stay on one line ; everything else wraps.
-                            ...(col.id === 'referenceNumber' || col.id === 'status' ? { whiteSpace: 'nowrap', textOverflow: 'ellipsis' } : { whiteSpace: 'normal', overflowWrap: 'anywhere' }),
+                            ...(col.id === 'referenceNumber' || col.id === 'status' || col.id === 'tags' ? { whiteSpace: 'nowrap', textOverflow: 'ellipsis' } : { whiteSpace: 'normal', overflowWrap: 'anywhere' }),
                           }}
                         >
                           {col.render(wo, index)}

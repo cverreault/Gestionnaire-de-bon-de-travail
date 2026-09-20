@@ -20,6 +20,8 @@ import WorkOrderPartsSection from '../components/WorkOrderPartsSection';
 import WorkOrderAuditTimeline from '../components/WorkOrderAuditTimeline';
 import SignaturePad from '../components/SignaturePad';
 import SlaBadge from '../components/SlaBadge';
+import { TagChips } from '../components/TagChip';
+import TagPicker from '../components/TagPicker';
 import PrintWorkOrder from '../components/PrintWorkOrder';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useState, useRef, useEffect } from 'react';
@@ -65,6 +67,9 @@ export default function WorkOrderDetailPage({ idOverride, onClose, embedded = fa
   const updateStatus = useUpdateWorkOrderStatus(id!);
   // B23 — one-step approval of a portal work request (date + technician)
   const [showApproveModal, setShowApproveModal] = useState(false);
+  // B44 — inline tag editor (ADMIN + DISPATCHER) ; hooks stay above the loading / error returns.
+  const [editingTags, setEditingTags] = useState(false);
+  const [draftTagIds, setDraftTagIds] = useState<string[]>([]);
   // Tabs of the read view (hooks must stay above the loading / error returns).
   const [tab, setTab] = useState<DetailTab>('details');
   const queryClientForAttachments = useQueryClient();
@@ -95,6 +100,7 @@ export default function WorkOrderDetailPage({ idOverride, onClose, embedded = fa
   const canSeeAuditTimeline =
     currentUser?.role === Role.ADMIN || currentUser?.role === Role.DISPATCHER;
   const canDuplicate = canSeeAuditTimeline; // ADMIN + DISPATCHER
+  const canEditTags = canSeeAuditTimeline; // ADMIN + DISPATCHER
   const [isDuplicating, setIsDuplicating] = useState(false);
 
   const [noteContent, setNoteContent] = useState('');
@@ -455,6 +461,22 @@ export default function WorkOrderDetailPage({ idOverride, onClose, embedded = fa
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
             <WorkOrderStatusBadge step={wo.currentStep} status={wo.status} />
             <SlaBadge wo={wo} />
+            <TagChips tags={wo.tags} size="md" />
+            {canEditTags && (
+              <button
+                type="button"
+                onClick={() => {
+                  setDraftTagIds((wo.tags ?? []).map((tg) => tg.id));
+                  setEditingTags((v) => !v);
+                }}
+                title={tCommon('tags.edit', { defaultValue: 'Modifier les tags' })}
+                aria-label={tCommon('tags.edit', { defaultValue: 'Modifier les tags' })}
+                aria-expanded={editingTags}
+                style={{ ...buttonStyles.ghost, fontSize: theme.font.sizeSm, padding: '0.25rem 0.5rem' }}
+              >
+                🏷
+              </button>
+            )}
             {(wo.currentStep?.isRequested || wo.status === WorkOrderStatus.REQUESTED) && isAdmin && (
               <button
                 onClick={() => setShowApproveModal(true)}
@@ -517,6 +539,30 @@ export default function WorkOrderDetailPage({ idOverride, onClose, embedded = fa
             </button>
           </div>
         </div>
+        {editingTags && canEditTags && (
+          <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'flex-end', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <div style={{ flex: '1 1 260px' }}>
+              <label style={labelStyle}>{tCommon('tags.label', { defaultValue: 'Tags' })}</label>
+              <TagPicker variant="form" includeInactive value={draftTagIds} onChange={setDraftTagIds} disabled={updateWorkOrder.isPending} />
+            </div>
+            <button
+              type="button"
+              disabled={updateWorkOrder.isPending}
+              onClick={() => updateWorkOrder.mutate({ tagIds: draftTagIds }, { onSuccess: () => setEditingTags(false) })}
+              style={{ ...buttonStyles.primary, fontSize: theme.font.sizeSm }}
+            >
+              {tCommon('actions.save', { defaultValue: 'Enregistrer' })}
+            </button>
+            <button
+              type="button"
+              disabled={updateWorkOrder.isPending}
+              onClick={() => setEditingTags(false)}
+              style={{ ...buttonStyles.secondary, fontSize: theme.font.sizeSm }}
+            >
+              {tCommon('actions.cancel', { defaultValue: 'Annuler' })}
+            </button>
+          </div>
+        )}
         {wo.description && (
           <p style={{ marginTop: '1rem', color: theme.colors.textSecondary, lineHeight: 1.6 }}>{wo.description}</p>
         )}

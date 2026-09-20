@@ -28,7 +28,8 @@
     "principalCreateConfirm": "Create and select",
     "principalCreateError": "Could not create, check the fields.",
     "principalSelfExcluded": "{{name}} cannot be its own principal.",
-    "principalNoOther": "No other principal."
+    "principalNoOther": "No other principal.",
+    "tags": "Tags"
   },
   "types": {
     "RESIDENTIAL": "Residential",
@@ -93,6 +94,7 @@
     "newClientTitle": "New client",
     "editClientTitle": "Edit — {{name}}",
     "createPrincipal": "➕ Principal",
-    "createPrincipalTitle": "New principal"
+    "createPrincipalTitle": "New principal",
+    "filterTags": "Tags"
   }
 }
