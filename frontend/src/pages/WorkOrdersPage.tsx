@@ -1043,12 +1043,12 @@ export default function WorkOrdersPage() {
           </div>
 
           {/* Table */}
-          <div style={{ ...tableStyles.container }}>
+          <div style={{ ...tableStyles.container, overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead style={{ ...tableStyles.header }}>
                 <tr>
                   {orderedColumns.map((col) => (
-                    <th key={col.id} style={{ ...tableStyles.headerCell, textAlign: 'left', padding: '0.45rem 0.6rem', lineHeight: 1.2 }}>
+                    <th key={col.id} style={{ ...tableStyles.headerCell, textAlign: 'left', padding: '0.45rem 0.6rem', lineHeight: 1.2, whiteSpace: col.id === 'referenceNumber' || col.id === 'status' ? 'nowrap' : 'normal' }}>
                       {col.label}
                     </th>
                   ))}
