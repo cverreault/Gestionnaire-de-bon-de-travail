@@ -48,15 +48,15 @@ interface FilterPreset {
 
 /** Share of the table width per column (fixed layout) ; unlisted columns split the remainder. */
 const COLUMN_WEIGHTS: Record<string, number> = {
-  referenceNumber: 13,
-  title: 17,
-  address: 17,
-  type: 8,
+  referenceNumber: 14,
+  title: 16,
+  address: 16,
+  type: 7,
   priority: 8,
-  status: 10,
-  technician: 10,
+  status: 12,
+  technician: 9,
   scheduledDate: 8,
-  actions: 9,
+  actions: 10,
 };
 
 function loadPresets(): Record<string, FilterPreset> {
@@ -1102,7 +1102,9 @@ export default function WorkOrdersPage() {
                         <td
                           key={col.id}
                           style={{
-                            ...(col.tdStyle ?? tableStyles.cell), padding: '0.35rem 0.5rem', fontSize: theme.font.sizeXs, lineHeight: 1.25, overflow: 'hidden', whiteSpace: 'normal', overflowWrap: 'anywhere',
+                            ...(col.tdStyle ?? tableStyles.cell), padding: '0.35rem 0.5rem', fontSize: theme.font.sizeXs, lineHeight: 1.25, overflow: 'hidden',
+                            // Reference and status chips stay on one line ; everything else wraps.
+                            ...(col.id === 'referenceNumber' || col.id === 'status' ? { whiteSpace: 'nowrap', textOverflow: 'ellipsis' } : { whiteSpace: 'normal', overflowWrap: 'anywhere' }),
                           }}
                         >
                           {col.render(wo, index)}
