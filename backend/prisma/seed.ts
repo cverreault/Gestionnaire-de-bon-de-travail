@@ -9,6 +9,9 @@ if (process.env.NODE_ENV === 'production') {
   process.exit(0);
 }
 
+// Users are unique per (tenant, email) since B6 ; the seed targets the default tenant.
+const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+
 const prisma = new PrismaClient();
 
 async function main() {
@@ -19,7 +22,7 @@ async function main() {
   // ── Admin user ────────────────────────────────────────────────────────────
   const adminPassword = await bcrypt.hash('admin123!', SALT_ROUNDS);
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@taskmgr.local' },
+    where: { tenantId_email: { tenantId: DEFAULT_TENANT_ID, email: 'admin@taskmgr.local' } },
     update: {},
     create: {
       email: 'admin@taskmgr.local',
@@ -36,7 +39,7 @@ async function main() {
   // ── Technician users ──────────────────────────────────────────────────────
   const techPassword = await bcrypt.hash('tech123!', SALT_ROUNDS);
   const tech1 = await prisma.user.upsert({
-    where: { email: 'tech1@taskmgr.local' },
+    where: { tenantId_email: { tenantId: DEFAULT_TENANT_ID, email: 'tech1@taskmgr.local' } },
     update: {},
     create: {
       email: 'tech1@taskmgr.local',
@@ -50,7 +53,7 @@ async function main() {
   });
 
   const tech2 = await prisma.user.upsert({
-    where: { email: 'tech2@taskmgr.local' },
+    where: { tenantId_email: { tenantId: DEFAULT_TENANT_ID, email: 'tech2@taskmgr.local' } },
     update: {},
     create: {
       email: 'tech2@taskmgr.local',

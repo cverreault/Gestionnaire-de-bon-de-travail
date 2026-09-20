@@ -127,6 +127,7 @@ cd frontend && npm run lint
 # Tests
 cd backend && npm test
 cd frontend && npm test
+cd e2e && BASE_URL=http://localhost:8088 npx playwright test   # parcours navigateur ; en CI : job e2e sur une pile seedée
 
 # Mobile (workspaces npm racine : mobile + packages/*)
 npm ci                      # à la racine, une fois

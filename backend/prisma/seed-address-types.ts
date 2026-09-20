@@ -1,5 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 
+// Config rows are unique per (tenant, key) since B6 ; the seed targets the default tenant.
+const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+
 /**
  * Seed the address_type_configs table with 4 default address types.
  * Uses upsert (keyed on `code`) to remain idempotent across re-runs.
@@ -42,7 +45,7 @@ export async function seedAddressTypes(prisma: PrismaClient): Promise<void> {
 
   for (const addressType of addressTypes) {
     await prisma.addressTypeConfig.upsert({
-      where: { code: addressType.code },
+      where: { tenantId_code: { tenantId: DEFAULT_TENANT_ID, code: addressType.code } },
       update: {
         name: addressType.name,
         description: addressType.description,
