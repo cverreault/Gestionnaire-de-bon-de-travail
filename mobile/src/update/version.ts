@@ -14,5 +14,5 @@ export function isNewerVersion(candidate: string | null | undefined, current: st
 }
 
 export interface ApkManifest {
-  android?: { version: string; url: string; size?: number; sha256?: string; publishedAt?: string; notes?: string };
+  android?: { version: string; url: string; file?: string; size?: number; sha256?: string; publishedAt?: string; notes?: string };
 }
