@@ -62,4 +62,16 @@ describe('AttachmentsController.getContent — roles', () => {
     expect(roles).toEqual([Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN]);
     expect(roles).not.toContain(Role.CLIENT);
   });
+
+  it('delete is open to staff ; a technician is refused on someone else\'s work order', async () => {
+    const roles = new Reflector().get<Role[]>(ROLES_KEY, AttachmentsController.prototype.remove);
+    expect(roles).toEqual([Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN]);
+    const prisma = { attachment: { findUnique: jest.fn().mockResolvedValue({ ...ATT, workOrderId: 'wo-1' }), delete: jest.fn().mockResolvedValue({}) }, workOrder: { update: jest.fn().mockResolvedValue({ updatedAt: new Date() }) }, $transaction: jest.fn((ops: unknown[]) => Promise.all(ops as Promise<unknown>[])) };
+    const minio = { deleteFile: jest.fn().mockResolvedValue(undefined) };
+    const svc = new AttachmentsService(prisma as never, minio as never);
+    await expect(svc.remove('att-1', { id: 'tech-2', role: Role.TECHNICIAN })).rejects.toBeInstanceOf(ForbiddenException);
+    expect(minio.deleteFile).not.toHaveBeenCalled();
+    await expect(svc.remove('att-1', { id: 'tech-1', role: Role.TECHNICIAN })).resolves.toMatchObject({ message: expect.any(String) });
+    expect(minio.deleteFile).toHaveBeenCalledWith('wo-1/photo.jpg');
+  });
 });

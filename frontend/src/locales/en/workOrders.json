@@ -88,7 +88,10 @@
     "selectTemplate": "Select a template",
     "assignTechnician": "Assign a technician",
     "searchClient": "Search a client by name or email…",
-    "uploadPhoto": "Add a photo"
+    "uploadPhoto": "Add a photo",
+    "viewAttachment": "View",
+    "downloadAttachment": "Download",
+    "deleteAttachment": "Delete"
   },
   "messages": {
     "noActive": "No active work orders",
@@ -104,7 +107,8 @@
     "offlineMode": "Offline mode",
     "hello": "Hi {{name}} 👋",
     "activeCount_one": "{{count}} active work order",
-    "activeCount_other": "{{count}} active work orders"
+    "activeCount_other": "{{count}} active work orders",
+    "deleteAttachmentConfirm": "Delete “{{name}}”? This cannot be undone."
   },
   "hello": "Hi {{name}} 👋",
   "activeCount_one": "{{count}} active work order",
