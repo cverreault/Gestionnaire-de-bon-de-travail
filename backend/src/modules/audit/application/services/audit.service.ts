@@ -1,6 +1,8 @@
 import { Injectable, Logger, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { Role, type Prisma } from '@prisma/client';
+import { Role, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
+import { RequestContextService } from '../../../../common/context/request-context.service';
+import type { ClientLocation } from '../../../../common/contracts/client-location.contract';
 import { toCsv } from '../../../../common/utils/csv.util';
 import type { IDomainEvent } from '../../../../common/contracts';
 
@@ -31,14 +33,20 @@ export interface AuditListOpts {
 export class AuditService {
   private readonly logger = new Logger(AuditService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly context: RequestContextService,
+  ) {}
 
   /**
    * Persiste un domain event. Idempotent par `eventId` :
    * si deux listeners reçoivent le même event, la 2e insertion est
    * silencieusement ignorée (`skipDuplicates: true`).
    */
-  async record(event: IDomainEvent & { data?: unknown }): Promise<void> {
+  async record(event: IDomainEvent & { data?: unknown; location?: ClientLocation | null }): Promise<void> {
+    // B45 — where the actor was : carried by the event, else by the request
+    // (X-Client-Location, propagated through AsyncLocalStorage to this async listener).
+    const location = event.location ?? this.context.current()?.clientLocation ?? null;
     try {
       await this.prisma.auditLog.create({
         data: {
@@ -48,6 +56,7 @@ export class AuditService {
           occurredAt:  event.occurredAt,
           actorUserId: event.actorUserId,
           data:        (event.data ?? null) as Prisma.InputJsonValue,
+          location:    location ? (location as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
         },
       });
     } catch (err) {

@@ -158,7 +158,27 @@ function TimelineRow({ entry, canDrillDown }: { entry: AuditLogEntry; canDrillDo
         </p>
         <p style={{ margin: '0.125rem 0 0', fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>
           {actorNode} · {formatDateTime(entry.occurredAt)}
+          {entry.location && (
+            <>
+              {' · '}
+              <a
+                href={`https://www.google.com/maps?q=${entry.location.lat},${entry.location.lng}`}
+                target="_blank"
+                rel="noreferrer"
+                title={`${entry.location.lat}, ${entry.location.lng}`}
+                style={{ color: theme.colors.primary, textDecoration: 'none' }}
+              >
+                📍 {t('audit.location', { defaultValue: 'Position' })}
+                {typeof entry.location.accuracy === 'number' ? ` (± ${Math.round(entry.location.accuracy)} m)` : ''}
+              </a>
+            </>
+          )}
         </p>
+        {meta.detail && (
+          <p style={{ margin: '0.2rem 0 0', fontSize: theme.font.sizeXs, color: theme.colors.textSecondary, whiteSpace: 'pre-wrap' }}>
+            {meta.detail}
+          </p>
+        )}
       </div>
     </li>
   );
@@ -171,7 +191,8 @@ type TFunc = (key: string, opts?: Record<string, unknown>) => string;
 function describeEvent(
   entry: AuditLogEntry,
   t: TFunc,
-): { icon: string; label: string; color: string } {
+): { icon: string; label: string; color: string; detail?: string } {
+  const d = (entry.data ?? {}) as Record<string, unknown>;
   switch (entry.eventName) {
     case 'workOrders.workOrder.created':
       return {
@@ -212,6 +233,43 @@ function describeEvent(
             color: theme.colors.danger,
           };
     }
+    // B45 — every action of the technician / dispatcher
+    case 'workOrders.workOrder.noteAdded':
+      return { icon: '📝', label: t('audit.events.noteAdded', { defaultValue: 'Note ajoutée' }), color: theme.colors.info, detail: typeof d.excerpt === 'string' ? d.excerpt : undefined };
+    case 'workOrders.workOrder.signed':
+      return {
+        icon: '✍️',
+        label: t('audit.events.signed', { defaultValue: 'Signatures enregistrées' }),
+        color: theme.colors.success,
+        detail: [d.client ? t('audit.signatureClient', { defaultValue: 'client' }) : null, d.technician ? t('audit.signatureTechnician', { defaultValue: 'technicien' }) : null].filter(Boolean).join(' · ') || undefined,
+      };
+    case 'workOrders.workOrder.updated':
+      return {
+        icon: '✏️',
+        label: t('audit.events.updated', { defaultValue: 'Bon de travail modifié' }),
+        color: theme.colors.textMuted,
+        detail: Array.isArray(d.fields) ? (d.fields as string[]).join(', ') : undefined,
+      };
+    case 'attachments.attachment.uploaded': {
+      const photo = typeof d.mimeType === 'string' && d.mimeType.startsWith('image/');
+      return {
+        icon: photo ? '📷' : '📎',
+        label: photo ? t('audit.events.photoAdded', { defaultValue: 'Photo ajoutée' }) : t('audit.events.attachmentAdded', { defaultValue: 'Pièce jointe ajoutée' }),
+        color: theme.colors.info,
+        detail: typeof d.fileName === 'string' ? d.fileName : undefined,
+      };
+    }
+    case 'attachments.attachment.removed':
+      return { icon: '🗑', label: t('audit.events.attachmentRemoved', { defaultValue: 'Pièce jointe supprimée' }), color: theme.colors.danger, detail: typeof d.fileName === 'string' ? d.fileName : undefined };
+    case 'inventory.workOrderPart.added':
+      return {
+        icon: '📦',
+        label: t('audit.events.partAdded', { defaultValue: 'Pièce ajoutée' }),
+        color: theme.colors.info,
+        detail: [d.quantity, '×', d.sku, d.name].filter((x) => x !== undefined && x !== null).join(' '),
+      };
+    case 'inventory.workOrderPart.removed':
+      return { icon: '📦', label: t('audit.events.partRemoved', { defaultValue: 'Pièce retirée' }), color: theme.colors.warning, detail: d.quantity !== undefined ? `${d.quantity} ×` : undefined };
     default:
       return {
         icon: '•',

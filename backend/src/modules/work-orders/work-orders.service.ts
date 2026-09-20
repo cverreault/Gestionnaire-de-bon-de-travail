@@ -27,6 +27,9 @@ import {
   workOrderCreated,
   workOrderRequested,
   workOrderAssigned,
+  workOrderNoteAdded,
+  workOrderSigned,
+  workOrderUpdated,
 } from './domain/events/work-order-events';
 import { toCsv } from '../../common/utils/csv.util';
 
@@ -769,6 +772,9 @@ export class WorkOrdersService {
       data,
       include: WORK_ORDER_DETAIL_INCLUDE,
     });
+    // B45 — field edits (form values, tags, planning…) are part of the history.
+    const fields = Object.keys(dto).filter((k) => k !== 'expectedUpdatedAt' && (dto as Record<string, unknown>)[k] !== undefined);
+    if (fields.length > 0) this.eventEmitter.emit(WO_EVENT_NAMES.UPDATED, workOrderUpdated(id, currentUser.id, { fields }));
     return applyTemplateRbac(updated, currentUser.role);
   }
 
@@ -1223,19 +1229,12 @@ export class WorkOrdersService {
         updatedAt: true,
       },
     });
-    this.eventEmitter.emit(WO_EVENT_NAMES.STATUS_CHANGED, {
-      // Piggyback the existing event for audit/webhooks — receivers can
-      // filter on data.signaturesUpdated=true if they care.
-      eventName: 'workOrders.workOrder.signaturesUpdated',
-      occurredAt: new Date(),
-      aggregateId: workOrderId,
-      actorUserId: currentUser.id,
-      data: {
-        signedAt: updated.signedAt,
-        hasClientSignature: !!updated.signatureClient,
-        hasTechnicianSignature: !!updated.signatureTechnician,
-      },
-    });
+    // B45 — a proper event (the former piggyback on STATUS_CHANGED had no `name`
+    // and was silently dropped by the audit store).
+    this.eventEmitter.emit(
+      WO_EVENT_NAMES.SIGNED,
+      workOrderSigned(workOrderId, currentUser.id, { client: !!updated.signatureClient, technician: !!updated.signatureTechnician }),
+    );
     return updated;
   }
 
@@ -1279,6 +1278,7 @@ export class WorkOrdersService {
       }),
       this.prisma.workOrder.update({ where: { id: workOrderId }, data: { updatedAt: new Date() }, select: { updatedAt: true } }),
     ]);
+    this.eventEmitter.emit(WO_EVENT_NAMES.NOTE_ADDED, workOrderNoteAdded(workOrderId, currentUser.id, { noteId: note.id, excerpt: dto.content.slice(0, 120) }));
     return { ...note, workOrderUpdatedAt: touched.updatedAt };
   }
 

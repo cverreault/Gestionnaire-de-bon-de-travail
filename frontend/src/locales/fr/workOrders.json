@@ -62,8 +62,19 @@
       "dispatched": "Réparti",
       "statusChanged": "Changement de statut",
       "completedPositive": "Terminé (positif)",
-      "completedNegative": "Terminé (négatif)"
-    }
+      "completedNegative": "Terminé (négatif)",
+      "noteAdded": "Note ajoutée",
+      "signed": "Signatures enregistrées",
+      "updated": "Bon de travail modifié",
+      "photoAdded": "Photo ajoutée",
+      "attachmentAdded": "Pièce jointe ajoutée",
+      "attachmentRemoved": "Pièce jointe supprimée",
+      "partAdded": "Pièce ajoutée",
+      "partRemoved": "Pièce retirée"
+    },
+    "location": "Position",
+    "signatureClient": "client",
+    "signatureTechnician": "technicien"
   },
   "sections": {
     "info": "Informations",

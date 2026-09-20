@@ -1,5 +1,5 @@
 import * as FileSystem from 'expo-file-system/legacy';
-import { ApiError, apiBase, authHeaders, errorMessageFrom, refreshTokens } from '../api/client';
+import { ApiError, apiBase, authHeaders, errorMessageFrom, refreshTokens, withOutgoingLocation } from '../api/client';
 import { IDEMPOTENCY_KEY_HEADER } from '@taskmgr/shared';
 import { addNote, addWorkOrderPart, removeWorkOrderPart, saveSignatures, transitionWorkOrder, updateWorkOrder } from '../api/endpoints';
 import type { SendFailure, Sender } from './drain';
@@ -13,9 +13,10 @@ function toFailure(err: unknown): SendFailure {
   return { status: 0, message: err instanceof Error ? err.message : String(err) };
 }
 
-async function guard<T>(fn: () => Promise<T>): Promise<T> {
+/** Runs a sender with the op's action location on the wire (B45) and normalises failures. */
+async function guard<T>(op: QueuedOp, fn: () => Promise<T>): Promise<T> {
   try {
-    return await fn();
+    return await withOutgoingLocation(op.location ?? null, fn);
   } catch (err) {
     throw toFailure(err);
   }
@@ -24,7 +25,7 @@ async function guard<T>(fn: () => Promise<T>): Promise<T> {
 /** Real HTTP sender for the drain : op.id is the Idempotency-Key (ADR-016 §3). */
 export const httpSender: Sender = {
   transition: (op: QueuedOp, expectedUpdatedAt) =>
-    guard(async () => {
+    guard(op, async () => {
       const p = op.payload as TransitionPayload;
       const wo = await transitionWorkOrder(
         op.workOrderId,
@@ -34,33 +35,33 @@ export const httpSender: Sender = {
       return { updatedAt: wo.updatedAt };
     }),
   note: (op: QueuedOp) =>
-    guard(async () => {
+    guard(op, async () => {
       const res = (await addNote(op.workOrderId, (op.payload as NotePayload).content, op.id)) as { workOrderUpdatedAt?: string };
       return { workOrderUpdatedAt: res.workOrderUpdatedAt };
     }),
   signature: (op: QueuedOp, expectedUpdatedAt) =>
-    guard(async () => {
+    guard(op, async () => {
       const wo = await saveSignatures(op.workOrderId, { ...(op.payload as SignaturePayload), expectedUpdatedAt: expectedUpdatedAt ?? undefined }, op.id);
       return { updatedAt: wo.updatedAt };
     }),
   template: (op: QueuedOp, expectedUpdatedAt) =>
-    guard(async () => {
+    guard(op, async () => {
       const wo = await updateWorkOrder(op.workOrderId, { templateData: (op.payload as TemplatePayload).templateData, expectedUpdatedAt: expectedUpdatedAt ?? undefined }, op.id);
       return { updatedAt: wo.updatedAt };
     }),
   partAdd: (op: QueuedOp) =>
-    guard(async () => {
+    guard(op, async () => {
       const p = op.payload as PartAddPayload;
       const res = await addWorkOrderPart(op.workOrderId, { partId: p.partId, quantity: p.quantity, source: p.source }, op.id);
       return { workOrderUpdatedAt: res.workOrderUpdatedAt };
     }),
   partRemove: (op: QueuedOp) =>
-    guard(async () => {
+    guard(op, async () => {
       const res = await removeWorkOrderPart(op.workOrderId, (op.payload as PartRemovePayload).rowId, op.id);
       return { workOrderUpdatedAt: res.workOrderUpdatedAt };
     }),
   attachment: (op: QueuedOp) =>
-    guard(async () => {
+    guard(op, async () => {
       const p = op.payload as AttachmentPayload;
       const res = await uploadFile(op.workOrderId, p, op.id);
       // Best effort : the local copy is no longer needed.

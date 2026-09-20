@@ -93,8 +93,13 @@ Libellés colorés définis par l'admin (`settings` : `GET/POST/PATCH/DELETE /se
 | `workOrders.workOrder.statusChanged` | Toute transition de statut | `{ fromStatusId, toStatusId, fromStatusCode, toStatusCode }` |
 | `workOrders.workOrder.completed` | Transition vers `COMPLETED_*` | `{ outcome: 'positive' \| 'negative', completedStatusId }` |
 | `workOrders.workOrder.slaBreached` (B4) | `SlaCheckService` détecte un breach | `{ slaTargetAt, detectedAt, slaHours, assignedToId }` — `actorUserId: null` (système) |
+| `workOrders.workOrder.noteAdded` (B45) | `createNote` | `{ noteId, excerpt }` |
+| `workOrders.workOrder.signed` (B45) | `saveSignatures` | `{ client, technician }` (booléens : signatures présentes) |
+| `workOrders.workOrder.updated` (B45) | `update` (champs de formulaire, tags, planification…) | `{ fields: string[] }` — clés du DTO envoyées, jamais les valeurs |
+| `attachments.attachment.uploaded` / `.removed` (B45, module `attachments`) | upload / suppression d'une pièce jointe | `{ attachmentId, fileName, mimeType, fileSize? }` — `aggregateId = workOrderId` |
+| `inventory.workOrderPart.added` / `.removed` (B45, module `parts`) | pièce posée / retirée sur le BT | `{ rowId, partId, sku?, name?, quantity, source? }` — `aggregateId = workOrderId` |
 
-Tous ces events sont consommés automatiquement par le module `audit` (wildcard `workOrders.**`) et par `notifications` (handlers explicites pour `assigned` + `slaBreached`).
+Tous ces events sont consommés automatiquement par le module `audit` (wildcards `workOrders.**`, `attachments.**`, `inventory.workOrderPart.**`) ; chaque ligne d'audit porte la **position du client** au moment de l'action quand la requête arrivait avec `X-Client-Location` (B45, `common/contracts/client-location.contract.ts`, app mobile : capturée à l'action, envoyée au drain de la file) et par `notifications` (handlers explicites pour `assigned` + `slaBreached`).
 
 ## Domain events consommés
 

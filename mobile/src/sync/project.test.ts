@@ -13,7 +13,7 @@ const snap: ProcessSnapshot = {
 const wo = { id: 'a', status: 'DISPATCHED', currentStepId: 's200', notes: [], attachments: [], updatedAt: '1' } as unknown as SyncWorkOrder;
 const me = { id: 'me', firstName: 'Kevin', lastName: 'A' };
 const op = (id: string, seq: number, kind: QueuedOp['kind'], payload: QueuedOp['payload'], workOrderId = 'a'): QueuedOp =>
-  ({ id, seq, kind, payload, workOrderId, status: 'PENDING', attempts: 0, lastError: null, createdAt: '2026-09-18T10:00:00Z' });
+  ({ id, seq, kind, payload, workOrderId, status: 'PENDING', attempts: 0, lastError: null, location: null, createdAt: '2026-09-18T10:00:00Z' });
 
 describe('projectWorkOrder (ADR-016 §3)', () => {
   it('chains queued transitions, prepends notes and attachments, ignores other work orders', () => {

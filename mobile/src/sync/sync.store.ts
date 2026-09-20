@@ -9,6 +9,7 @@ import { countOps, deleteOp, enqueue, type OpKind, type OpPayload, type QueueCou
 import { httpSender } from './senders';
 import * as Crypto from 'expo-crypto';
 import { logEvent } from '../diag/log';
+import { captureActionLocation } from './action-location';
 
 interface SyncState {
   /** True once the SQLite migrations ran ; local hooks stay idle before that. */
@@ -95,8 +96,10 @@ export const useSyncStore = create<SyncState>((set, get) => ({
   },
 
   async enqueueOp(userId, workOrderId, kind, payload, id = Crypto.randomUUID()) {
-    await enqueue(db, { id, workOrderId, kind, payload });
-    logEvent('queue', `enqueued ${kind}`, { id, workOrderId });
+    // B45 — geotag the action itself, not its later upload.
+    const location = await captureActionLocation();
+    await enqueue(db, { id, workOrderId, kind, payload, location });
+    logEvent('queue', `enqueued ${kind}`, { id, workOrderId, located: !!location });
     set({ version: get().version + 1, counts: await countOps(db) });
     if (get().online) void get().pullNow(userId);
     return id;

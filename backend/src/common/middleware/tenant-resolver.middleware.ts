@@ -15,6 +15,7 @@ import {
   extractTenantSlug,
 } from '../contracts/tenant-context.contract';
 import { DEVICE_ID_HEADER, extractDeviceId } from '../contracts/device-context.contract';
+import { CLIENT_LOCATION_HEADER, parseClientLocation } from '../contracts/client-location.contract';
 
 /**
  * TenantResolver — runs at the head of every HTTP request (B6.2).
@@ -102,7 +103,9 @@ export class TenantResolverMiddleware implements NestMiddleware {
     // B37.3 — the mobile app tags every request with its installation id so
     // auth can bind refresh tokens to the device (ADR-015 §4).
     const deviceId = extractDeviceId(req.headers[DEVICE_ID_HEADER]);
-    this.context.run({ tenantId: tenant.id, userId: null, deviceId }, () => next());
+    // B45 — position of the client at the time of the action, for the audit trail.
+    const clientLocation = parseClientLocation(req.headers[CLIENT_LOCATION_HEADER]);
+    this.context.run({ tenantId: tenant.id, userId: null, deviceId, clientLocation }, () => next());
   }
 
   /** Test-only — wipe the slug→tenant cache. */

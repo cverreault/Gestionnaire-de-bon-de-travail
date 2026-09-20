@@ -1,6 +1,7 @@
 import { asc, eq, sql } from 'drizzle-orm';
 import * as s from '../db/schema';
 import type { AppDb } from '../db/types';
+import type { ClientLocation } from '@taskmgr/shared';
 
 export type OpKind = 'transition' | 'note' | 'attachment' | 'signature' | 'part_add' | 'part_remove' | 'template';
 export type OpStatus = 'PENDING' | 'IN_FLIGHT' | 'FAILED' | 'CONFLICT';
@@ -54,15 +55,24 @@ export interface QueuedOp {
   attempts: number;
   lastError: string | null;
   createdAt: string;
+  /** B45 — position captured when the action was done ; sent as X-Client-Location at drain time. */
+  location: ClientLocation | null;
 }
 
 function rowToOp(r: typeof s.syncQueue.$inferSelect): QueuedOp {
-  return { ...r, kind: r.kind as OpKind, status: r.status as OpStatus, payload: JSON.parse(r.payload) as OpPayload };
+  return {
+    ...r,
+    kind: r.kind as OpKind,
+    status: r.status as OpStatus,
+    payload: JSON.parse(r.payload) as OpPayload,
+    location: r.location ? (JSON.parse(r.location) as ClientLocation) : null,
+  };
 }
 
-export async function enqueue(db: AppDb, op: { id: string; workOrderId: string; kind: OpKind; payload: OpPayload }): Promise<QueuedOp> {
+export async function enqueue(db: AppDb, op: { id: string; workOrderId: string; kind: OpKind; payload: OpPayload; location?: ClientLocation | null }): Promise<QueuedOp> {
   const [{ max }] = await db.select({ max: sql<number | null>`max(${s.syncQueue.seq})` }).from(s.syncQueue);
-  const row = { ...op, payload: JSON.stringify(op.payload), seq: (max ?? 0) + 1, status: 'PENDING', attempts: 0, lastError: null, createdAt: new Date().toISOString() };
+  const { location, ...rest } = op;
+  const row = { ...rest, payload: JSON.stringify(op.payload), location: location ? JSON.stringify(location) : null, seq: (max ?? 0) + 1, status: 'PENDING', attempts: 0, lastError: null, createdAt: new Date().toISOString() };
   await db.insert(s.syncQueue).values(row);
   return rowToOp(row as typeof s.syncQueue.$inferSelect);
 }

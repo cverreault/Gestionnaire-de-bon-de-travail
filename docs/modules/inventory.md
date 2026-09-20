@@ -23,6 +23,10 @@ Contrat verrouillé par `roles-matrix.spec.ts` (rangées PartsControllers). Logi
 
 ## Domain events
 
+### `inventory.workOrderPart.added` / `inventory.workOrderPart.removed` (B45)
+
+`aggregateId = workOrderId`, `actorUserId` = qui a posé / retiré la pièce ; consommés par `audit` pour l'historique du BT (avec la position du client si `X-Client-Location`).
+
 ### `inventory.stock.low` (émis par `StockService`)
 
 | Champ | Type |
