@@ -8,7 +8,7 @@ import { theme, cardStyles, buttonStyles } from '../theme';
  * not UI strings. Update LAST_UPDATED whenever the content changes.
  */
 
-const LAST_UPDATED = '2026-07-06';
+const LAST_UPDATED = '2026-09-19';
 const COMPANY = 'Télécommunication Carl Verreault inc.';
 const CONTACT = 'info@dispatch2go.com';
 
@@ -48,7 +48,8 @@ function FrenchPolicy() {
         <li style={li}><strong>Comptes utilisateurs</strong> (employés et clients invités au portail) : nom, courriel, téléphone, mot de passe (haché), préférences d'interface.</li>
         <li style={li}><strong>Dossiers clients</strong> : coordonnées, adresses d'intervention, historique des bons de travail.</li>
         <li style={li}><strong>Contenu opérationnel</strong> : descriptions de travaux, notes, photos et pièces jointes, signatures électroniques (client et technicien).</li>
-        <li style={li}><strong>Géolocalisation des techniciens</strong> : uniquement avec consentement explicite (activation dans le profil), conservée <strong>7 jours</strong> puis supprimée automatiquement.</li>
+        <li style={li}><strong>Géolocalisation des techniciens</strong> : uniquement avec consentement explicite (activation dans le profil), conservée <strong>7 jours</strong> puis supprimée automatiquement. Dans l'application mobile, la position n'est recueillie que pendant qu'un bon de travail est « en route » ou « en cours », y compris en arrière-plan si la permission « Toujours » a été accordée ; aucune collecte en dehors de ces périodes.</li>
+        <li style={li}><strong>Application mobile</strong> : identifiant d'installation (généré aléatoirement sur le téléphone, non publicitaire), modèle et version du système, version de l'application, jeton de notification — utilisés pour sécuriser les sessions par appareil, forcer les mises à jour critiques et acheminer les notifications. Chaque appareil peut être révoqué depuis le profil.</li>
         <li style={li}><strong>Journaux d'audit et techniques</strong> : actions effectuées dans l'application, conservés 365 jours par défaut.</li>
       </ul>
 
@@ -67,6 +68,7 @@ function FrenchPolicy() {
         <li style={li}><strong>Twilio</strong> : envoi de messages texte (numéro de téléphone et contenu du message), lorsque les notifications SMS sont activées.</li>
         <li style={li}><strong>Stripe</strong> : traitement des paiements en ligne (les données bancaires sont recueillies directement par Stripe ; nous n'y avons jamais accès).</li>
         <li style={li}><strong>Fournisseur de courriel (SMTP)</strong> : acheminement des notifications par courriel.</li>
+        <li style={li}><strong>Expo Push Service, Apple (APNs) et Google (FCM)</strong> : relais des notifications de l'application mobile. Seuls le titre, le texte de la notification et l'identifiant du bon de travail transitent ; aucune donnée client ni position GPS.</li>
       </ul>
 
       <h2 style={h2}>5. Sécurité</h2>
@@ -98,6 +100,14 @@ function FrenchPolicy() {
         session et vos préférences (langue, thème). Aucun témoin publicitaire ou de suivi n'est
         utilisé.
       </p>
+      <p style={p}>
+        L'application mobile conserve sur le téléphone une copie chiffrée par le système de vos
+        bons de travail assignés, des notes, photos et signatures en attente d'envoi, ainsi que des
+        positions GPS non encore transmises, afin de fonctionner hors ligne. Ces données sont
+        effacées à la déconnexion d'un autre utilisateur sur le même appareil et à la
+        désinstallation. La caméra n'est utilisée que pour les photos de pièces jointes et la
+        lecture de codes-barres de pièces ; aucune image n'est analysée à d'autres fins.
+      </p>
     </>
   );
 }
@@ -125,7 +135,8 @@ function EnglishPolicy() {
         <li style={li}><strong>User accounts</strong> (employees and portal-invited clients): name, email, phone, password (hashed), interface preferences.</li>
         <li style={li}><strong>Client records</strong>: contact details, service addresses, work-order history.</li>
         <li style={li}><strong>Operational content</strong>: work descriptions, notes, photos and attachments, electronic signatures (client and technician).</li>
-        <li style={li}><strong>Technician geolocation</strong>: only with explicit consent (enabled from the profile), kept for <strong>7 days</strong> then automatically deleted.</li>
+        <li style={li}><strong>Technician geolocation</strong>: only with explicit consent (enabled from the profile), kept for <strong>7 days</strong> then automatically deleted. In the mobile app, location is collected only while a work order is "en route" or "in progress", including in the background when the "Always" permission was granted; nothing is collected outside those periods.</li>
+        <li style={li}><strong>Mobile app</strong>: installation identifier (randomly generated on the phone, not an advertising id), device model and OS version, app version, notification token — used to secure per-device sessions, enforce critical updates and route notifications. Each device can be revoked from the profile.</li>
         <li style={li}><strong>Audit and technical logs</strong>: actions performed in the application, kept 365 days by default.</li>
       </ul>
 
@@ -143,6 +154,7 @@ function EnglishPolicy() {
         <li style={li}><strong>Twilio</strong>: text-message delivery (phone number and message content), when SMS notifications are enabled.</li>
         <li style={li}><strong>Stripe</strong>: online payment processing (banking details are collected directly by Stripe; we never access them).</li>
         <li style={li}><strong>Email provider (SMTP)</strong>: delivery of email notifications.</li>
+        <li style={li}><strong>Expo Push Service, Apple (APNs) and Google (FCM)</strong>: relay of mobile app notifications. Only the title, the notification text and the work-order identifier transit; no client data and no GPS position.</li>
       </ul>
 
       <h2 style={h2}>5. Security</h2>
@@ -172,6 +184,13 @@ function EnglishPolicy() {
       <p style={p}>
         The application only uses the browser's local storage to maintain your session and
         preferences (language, theme). No advertising or tracking cookies are used.
+      </p>
+      <p style={p}>
+        The mobile app keeps on the phone a system-encrypted copy of your assigned work orders,
+        of notes, photos and signatures waiting to be sent, and of GPS positions not yet
+        transmitted, so that it works offline. This data is erased when another user signs in on
+        the same device and when the app is uninstalled. The camera is used only for attachment
+        photos and part barcodes; images are not analysed for any other purpose.
       </p>
     </>
   );
