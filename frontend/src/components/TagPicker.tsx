@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { theme, buttonStyles } from '../theme';
 import { useTags } from '../hooks/useSettings';
@@ -27,11 +28,35 @@ export default function TagPicker({ value, onChange, variant = 'form', placehold
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const ref = useRef<HTMLDivElement | null>(null);
+  const popRef = useRef<HTMLDivElement | null>(null);
+  const btnRef = useRef<HTMLButtonElement | null>(null);
+  // The popover is portaled to <body> (fixed position) so it is never clipped by a card
+  // with overflow hidden, e.g. the work-order header.
+  const [pos, setPos] = useState<{ top: number; left: number; maxHeight: number }>({ top: 0, left: 0, maxHeight: 280 });
+
+  useLayoutEffect(() => {
+    if (!open || !btnRef.current) return;
+    function place() {
+      const r = btnRef.current!.getBoundingClientRect();
+      const below = window.innerHeight - r.bottom - 12;
+      const maxHeight = Math.max(160, Math.min(320, below));
+      setPos({ top: r.bottom + 4, left: Math.min(r.left, window.innerWidth - 240), maxHeight });
+    }
+    place();
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    return () => {
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
     function onClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (ref.current?.contains(target) || popRef.current?.contains(target)) return;
+      setOpen(false);
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') setOpen(false);
@@ -65,6 +90,7 @@ export default function TagPicker({ value, onChange, variant = 'form', placehold
       )}
       <button
         id={id}
+        ref={btnRef}
         type="button"
         disabled={disabled}
         onClick={() => setOpen((o) => !o)}
@@ -80,7 +106,7 @@ export default function TagPicker({ value, onChange, variant = 'form', placehold
           ...(variant === 'filter' && selected.length > 0 ? { borderColor: theme.colors.primary, color: theme.colors.primary } : {}),
         }}
       >
-        🏷 {label}
+        {label}
         {variant === 'filter' && selected.length > 0 && (
           <span style={{ background: theme.colors.primary, color: '#fff', borderRadius: theme.radius.full, padding: '0 0.4rem', fontSize: theme.font.sizeXs }}>
             {selected.length}
@@ -89,17 +115,18 @@ export default function TagPicker({ value, onChange, variant = 'form', placehold
         <span aria-hidden style={{ fontSize: '0.6rem', opacity: 0.7 }}>▾</span>
       </button>
 
-      {open && (
+      {open && createPortal(
         <div
+          ref={popRef}
           role="listbox"
           aria-multiselectable
           style={{
-            position: 'absolute',
-            zIndex: 30,
-            top: 'calc(100% + 4px)',
-            left: 0,
+            position: 'fixed',
+            zIndex: 1100,
+            top: pos.top,
+            left: pos.left,
             minWidth: 220,
-            maxHeight: 280,
+            maxHeight: pos.maxHeight,
             overflowY: 'auto',
             background: theme.colors.surface,
             border: `1px solid ${theme.colors.border}`,
@@ -143,7 +170,8 @@ export default function TagPicker({ value, onChange, variant = 'form', placehold
               {t('common:tags.clear', { defaultValue: 'Tout décocher' })}
             </button>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

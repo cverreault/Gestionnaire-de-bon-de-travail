@@ -472,9 +472,9 @@ export default function WorkOrderDetailPage({ idOverride, onClose, embedded = fa
                 title={tCommon('tags.edit', { defaultValue: 'Modifier les tags' })}
                 aria-label={tCommon('tags.edit', { defaultValue: 'Modifier les tags' })}
                 aria-expanded={editingTags}
-                style={{ ...buttonStyles.ghost, fontSize: theme.font.sizeSm, padding: '0.25rem 0.5rem' }}
+                style={{ ...buttonStyles.secondary, fontSize: theme.font.sizeSm }}
               >
-                🏷
+                {tCommon('tags.label', { defaultValue: 'Tags' })}
               </button>
             )}
             {(wo.currentStep?.isRequested || wo.status === WorkOrderStatus.REQUESTED) && isAdmin && (
