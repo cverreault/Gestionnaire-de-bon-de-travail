@@ -102,7 +102,6 @@ export default function SuperAdminCreateTenantPage() {
     create.error as { response?: { data?: { message?: unknown } } } | undefined
   )?.response?.data?.message;
   const errorMessages: string[] = flattenValidationMessage(rawMessage);
-  const errorText = errorMessages.join(', ');
 
   return (
     <div style={layoutStyles.page}>

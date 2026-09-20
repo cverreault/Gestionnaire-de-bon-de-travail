@@ -189,8 +189,6 @@ describe('BUG DETECTION — missing offline guards in TechnicianWorkOrderDetailP
   });
 
   it('BUG-2: handleAddNote has no offline support — notes lost when offline', () => {
-    const isOnline = false;
-
     // Current code has no isOnline check and no offlineStore.addToSyncQueue call
     // Unlike handleEnRoute and handleStartWork which correctly check isOnline
 

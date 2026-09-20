@@ -232,7 +232,7 @@ export class BackupService {
               resolved = true;
               resolve(parsed as BackupManifest);
               extract.destroy();
-            } catch (e) {
+            } catch {
               reject(new BadRequestException('Manifest illisible (JSON invalide)'));
             }
             next();

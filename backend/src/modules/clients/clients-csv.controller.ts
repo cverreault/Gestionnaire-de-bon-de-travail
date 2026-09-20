@@ -56,7 +56,6 @@ const CLIENT_COLUMNS = [
 ] as const satisfies readonly CsvColumn<
   'firstName' | 'lastName' | 'companyName' | 'email' | 'phone' | 'clientType' | 'notes'
 >[];
-type ClientKey = (typeof CLIENT_COLUMNS)[number]['key'];
 
 const ADDRESS_COLUMNS = [
   { label: 'Courriel client', key: 'clientEmail', required: true, hint: 'doit correspondre à un client existant' },
@@ -83,7 +82,6 @@ const ADDRESS_COLUMNS = [
   | 'label'
   | 'isDefault'
 >[];
-type AddressKey = (typeof ADDRESS_COLUMNS)[number]['key'];
 
 /** Accept the enum keys OR their French labels. */
 const CLIENT_TYPE_ALIASES: Record<string, ClientType> = {
@@ -489,8 +487,8 @@ async function validateAndDecodeCsv(
 
 /**
  * UTF-8 BOM prefix so Excel opens the file with correct accent rendering.
- * `﻿` is (U+FEFF) — writing it as — the escape sequence \uFEFF
- * the source file is fragile because some editors strip or duplicate it.
+ * Written as the escape sequence \uFEFF rather than the raw character because
+ * some editors strip or duplicate the raw character.
  */
 function withBom(csv: string): string {
   return '\uFEFF' + csv;

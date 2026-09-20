@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { theme, cardStyles, layoutStyles, buttonStyles } from '../theme';
+import { theme, cardStyles, layoutStyles } from '../theme';
 import { getOpenApiSpec } from '../services/api-docs.service';
 
 /**

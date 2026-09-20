@@ -71,7 +71,7 @@ describe('ADMIN_TRANSITIONS — completeness', () => {
   });
 
   it('no entry has an empty transitions array', () => {
-    for (const [status, transitions] of Object.entries(ADMIN_TRANSITIONS)) {
+    for (const transitions of Object.values(ADMIN_TRANSITIONS)) {
       expect(transitions.length).toBeGreaterThan(0);
     }
   });

@@ -57,8 +57,8 @@ interface ClientFormValues {
   tagIds: string[];
 }
 
-import AddressFormFields, { ADDRESS_FORM_DEFAULTS } from '../components/AddressFormFields';
-import PrincipalClientPicker, { principalDisplayName } from '../components/PrincipalClientPicker';
+import AddressFormFields from '../components/AddressFormFields';
+import PrincipalClientPicker from '../components/PrincipalClientPicker';
 import type { AddressFormValues } from '../components/AddressFormFields';
 import AddressTypeCustomFields from '../components/AddressTypeCustomFields';
 import TagPicker from '../components/TagPicker';
@@ -681,7 +681,6 @@ function ClientDetailModal({
 
 export default function ClientsPage() {
   const { t } = useTranslation('clients');
-  const { t: tCommon } = useTranslation('common');
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [filterType, setFilterType] = useState<ClientType | ''>('');

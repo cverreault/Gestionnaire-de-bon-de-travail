@@ -30,20 +30,7 @@ import {
   getRowStyle,
 } from '../theme';
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function hexToRgb(hex: string) {
-  const clean = hex.replace('#', '').padEnd(6, '0');
-  const r = parseInt(clean.slice(0, 2), 16);
-  const g = parseInt(clean.slice(2, 4), 16);
-  const b = parseInt(clean.slice(4, 6), 16);
-  return { r, g, b };
-}
-
-function contrastText(hex: string): string {
-  const { r, g, b } = hexToRgb(hex);
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.5 ? '#1e293b' : '#ffffff';
-}
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const ROLE_OPTIONS = ['ADMIN', 'DISPATCHER', 'TECHNICIAN'];
 const REQUIRED_FIELD_OPTIONS = [

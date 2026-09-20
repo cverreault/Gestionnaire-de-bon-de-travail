@@ -22,29 +22,21 @@ import {
   getMinutes,
   differenceInMinutes,
 } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { currentDateFnsLocale } from '../utils/dateFormat';
 import { useAuthStore } from '../context/auth.store';
 import api from '../services/api';
 import workOrdersService from '../services/work-orders.service';
-import type { CreateWorkOrderDto, UpdateWorkOrderDto } from '../services/work-orders.service';
+import type { UpdateWorkOrderDto } from '../services/work-orders.service';
 import LoadingSpinner from '../components/LoadingSpinner';
 import type { CalendarEvent, ApiResponse, User } from '../types';
-import { Role, WorkOrderType } from '../types';
+import { Role } from '../types';
 import { theme, cardStyles, formStyles, modalStyles, layoutStyles } from '../theme';
 import { useBreakpoint } from '../hooks/useBreakpoint';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type CalendarView = 'day' | '3days' | 'week' | 'month';
-
-interface QuickCreateInitial {
-  day: Date;
-  startHour: number;
-  startMin: number;
-  technicianId?: string;
-}
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -62,22 +54,6 @@ const DAY_NAMES  = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 const MONTH_NAMES = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'jul', 'aoû', 'sep', 'oct', 'nov', 'déc'];
 
 const WEEK_DAYS_FR = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-
-const WORK_ORDER_TYPE_FR: Record<string, string> = {
-  [WorkOrderType.INSTALLATION]: 'Installation',
-  [WorkOrderType.REPAIR]:       'Réparation',
-  [WorkOrderType.MAINTENANCE]:  'Maintenance',
-  [WorkOrderType.INSPECTION]:   'Inspection',
-  [WorkOrderType.OTHER]:        'Autre',
-};
-
-const PRIORITY_OPTIONS = [
-  { value: 1, label: 'Très basse' },
-  { value: 2, label: 'Basse' },
-  { value: 3, label: 'Normale' },
-  { value: 4, label: 'Haute' },
-  { value: 5, label: 'Critique' },
-];
 
 // ─── Status colors ────────────────────────────────────────────────────────────
 
@@ -166,270 +142,6 @@ function getEventHeight(ev: CalendarEvent): number {
   const endMin   = startMin + duration;
   const clampedEnd = Math.min(endMin, TOTAL_HEIGHT);
   return Math.max(20, clampedEnd - Math.max(0, startMin));
-}
-
-// ─── Quick-create modal ───────────────────────────────────────────────────────
-
-function QuickCreateModal({
-  initial,
-  technicians,
-  isSaving,
-  onClose,
-  onSave,
-}: {
-  initial: QuickCreateInitial;
-  technicians?: User[];
-  isSaving: boolean;
-  onClose: () => void;
-  onSave: (dto: CreateWorkOrderDto) => void;
-}) {
-  const { t } = useTranslation('common');
-  const { day, startHour, startMin, technicianId: initTechId } = initial;
-
-  const workOrderTypeLabel = (code: string): string => {
-    switch (code) {
-      case WorkOrderType.INSTALLATION: return t('common:calendarPage.typeInstallation', { defaultValue: 'Installation' });
-      case WorkOrderType.REPAIR: return t('common:calendarPage.typeRepair', { defaultValue: 'Réparation' });
-      case WorkOrderType.MAINTENANCE: return t('common:calendarPage.typeMaintenance', { defaultValue: 'Maintenance' });
-      case WorkOrderType.INSPECTION: return t('common:calendarPage.typeInspection', { defaultValue: 'Inspection' });
-      case WorkOrderType.OTHER: return t('common:calendarPage.typeOther', { defaultValue: 'Autre' });
-      default: return WORK_ORDER_TYPE_FR[code] ?? code;
-    }
-  };
-
-  const priorityLabel = (value: number): string => {
-    switch (value) {
-      case 1: return t('common:calendarPage.priorityVeryLow', { defaultValue: 'Très basse' });
-      case 2: return t('common:calendarPage.priorityLow', { defaultValue: 'Basse' });
-      case 3: return t('common:calendarPage.priorityNormal', { defaultValue: 'Normale' });
-      case 4: return t('common:calendarPage.priorityHigh', { defaultValue: 'Haute' });
-      case 5: return t('common:calendarPage.priorityCritical', { defaultValue: 'Critique' });
-      default: return String(value);
-    }
-  };
-
-  const defaultEndH = startMin + 60 >= 60 ? startHour + 1 : startHour;
-  const defaultEndM = (startMin + 60) % 60;
-
-  const [title, setTitle]           = useState('');
-  const [type, setType]             = useState<string>(WorkOrderType.REPAIR);
-  const [priority, setPriority]     = useState<number>(3);
-  const [description, setDesc]      = useState('');
-  const [technicianId, setTechId]   = useState(initTechId ?? '');
-  const [scheduledDate, setDate]    = useState(format(day, 'yyyy-MM-dd'));
-  const [startTime, setStart]       = useState(fmtTime(startHour, startMin));
-  const [endTime, setEnd]           = useState(fmtTime(defaultEndH, defaultEndM));
-  const [titleError, setTitleError] = useState('');
-
-  const doSubmit = () => {
-    if (!title.trim()) {
-      setTitleError(t('common:calendarPage.titleRequired', { defaultValue: 'Le titre est requis' }));
-      return;
-    }
-    onSave({
-      title:               title.trim(),
-      type,
-      priority,
-      description:         description.trim() || undefined,
-      assignedToId:        technicianId || undefined,
-      scheduledDate,
-      scheduledStartTime:  startTime,
-      scheduledEndTime:    endTime,
-    });
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    doSubmit();
-  };
-
-  return (
-    <div
-      style={{ ...modalStyles.overlay }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div
-        style={{
-          ...modalStyles.content,
-          maxWidth: '520px',
-          borderTop: `4px solid ${theme.colors.primary}`,
-        }}
-      >
-        {/* Header */}
-        <div style={{ ...modalStyles.header }}>
-          <h3 style={{ ...modalStyles.headerTitle }}>{t('common:calendarPage.quickCreateTitle', { defaultValue: 'Nouveau bon de travail' })}</h3>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '1.1rem',
-              color: theme.colors.textLight,
-              lineHeight: 1,
-            }}
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Body */}
-        <form onSubmit={handleSubmit} style={{ ...modalStyles.body }}>
-          {/* Title */}
-          <div style={{ ...formStyles.fieldGroup }}>
-            <label style={{ ...formStyles.labelRequired }}>
-              {t('common:calendarPage.titleLabel', { defaultValue: 'Titre' })} <span style={{ color: theme.colors.danger }}>*</span>
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => { setTitle(e.target.value); setTitleError(''); }}
-              placeholder={t('common:calendarPage.titlePlaceholder', { defaultValue: 'Ex : Réparation chaudière' })}
-              autoFocus
-              style={{ ...formStyles.input }}
-            />
-            {titleError && (
-              <span style={{ ...formStyles.fieldError }}>{titleError}</span>
-            )}
-          </div>
-
-          {/* Type + Priority */}
-          <div style={{ ...formStyles.fieldGrid2, marginBottom: '1rem' }}>
-            <div>
-              <label style={{ ...formStyles.label }}>{t('common:calendarPage.typeLabel', { defaultValue: 'Type' })}</label>
-              <select
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-                style={{ ...formStyles.select }}
-              >
-                {Object.values(WorkOrderType).map((code) => (
-                  <option key={code} value={code}>
-                    {workOrderTypeLabel(code)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label style={{ ...formStyles.label }}>{t('common:calendarPage.priorityLabel', { defaultValue: 'Priorité' })}</label>
-              <select
-                value={priority}
-                onChange={(e) => setPriority(Number(e.target.value))}
-                style={{ ...formStyles.select }}
-              >
-                {PRIORITY_OPTIONS.map((p) => (
-                  <option key={p.value} value={p.value}>
-                    {priorityLabel(p.value)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Technician */}
-          {technicians && technicians.length > 0 && (
-            <div style={{ ...formStyles.fieldGroup }}>
-              <label style={{ ...formStyles.label }}>{t('common:calendarPage.technicianLabel', { defaultValue: 'Technicien' })}</label>
-              <select
-                value={technicianId}
-                onChange={(e) => setTechId(e.target.value)}
-                style={{ ...formStyles.select }}
-              >
-                <option value="">{t('common:calendarPage.noneOption', { defaultValue: '— Aucun —' })}</option>
-                {technicians.map((tech) => (
-                  <option key={tech.id} value={tech.id}>
-                    {tech.firstName} {tech.lastName}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Date */}
-          <div style={{ ...formStyles.fieldGroup }}>
-            <label style={{ ...formStyles.label }}>{t('common:calendarPage.scheduledDate', { defaultValue: 'Date planifiée' })}</label>
-            <input
-              type="date"
-              value={scheduledDate}
-              onChange={(e) => setDate(e.target.value)}
-              style={{ ...formStyles.input }}
-            />
-          </div>
-
-          {/* Start + End time */}
-          <div style={{ ...formStyles.fieldGrid2, marginBottom: '1rem' }}>
-            <div>
-              <label style={{ ...formStyles.label }}>{t('common:calendarPage.startTime', { defaultValue: 'Heure de début' })}</label>
-              <input
-                type="time"
-                value={startTime}
-                onChange={(e) => setStart(e.target.value)}
-                style={{ ...formStyles.input }}
-              />
-            </div>
-            <div>
-              <label style={{ ...formStyles.label }}>{t('common:calendarPage.endTime', { defaultValue: 'Heure de fin' })}</label>
-              <input
-                type="time"
-                value={endTime}
-                onChange={(e) => setEnd(e.target.value)}
-                style={{ ...formStyles.input }}
-              />
-            </div>
-          </div>
-
-          {/* Description */}
-          <div style={{ ...formStyles.fieldGroup }}>
-            <label style={{ ...formStyles.label }}>{t('common:calendarPage.description', { defaultValue: 'Description' })}</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDesc(e.target.value)}
-              placeholder={t('common:calendarPage.descPlaceholder', { defaultValue: 'Détails supplémentaires…' })}
-              rows={3}
-              style={{ ...formStyles.textarea }}
-            />
-          </div>
-        </form>
-
-        {/* Footer */}
-        <div style={{ ...modalStyles.footer }}>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSaving}
-            style={{
-              padding: '0.45rem 1.1rem',
-              background: theme.colors.surface,
-              border: theme.borders.default,
-              borderRadius: theme.radius.md,
-              cursor: 'pointer',
-              fontSize: theme.font.sizeSm,
-              color: theme.colors.text,
-              opacity: isSaving ? 0.6 : 1,
-            }}
-          >
-            {t('common:calendarPage.cancel', { defaultValue: 'Annuler' })}
-          </button>
-          <button
-            type="button"
-            onClick={doSubmit}
-            disabled={isSaving}
-            style={{
-              padding: '0.45rem 1.25rem',
-              background: isSaving ? theme.colors.textLight : theme.colors.primary,
-              border: 'none',
-              borderRadius: theme.radius.md,
-              cursor: isSaving ? 'not-allowed' : 'pointer',
-              fontSize: theme.font.sizeSm,
-              fontWeight: theme.font.weightSemibold,
-              color: '#fff',
-            }}
-          >
-            {isSaving ? t('common:calendarPage.saving', { defaultValue: 'Enregistrement…' }) : t('common:calendarPage.createWorkOrder', { defaultValue: 'Créer le BT' })}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 // ─── Timeline column for a single day ────────────────────────────────────────

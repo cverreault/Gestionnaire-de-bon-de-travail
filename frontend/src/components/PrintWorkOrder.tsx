@@ -107,17 +107,6 @@ const checkboxRow: React.CSSProperties = {
   margin: '2pt 0',
 };
 
-const signRow: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  gap: '12pt',
-  marginTop: '4pt',
-};
-
-const signBlock: React.CSSProperties = {
-  flex: 1,
-};
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 interface Props {

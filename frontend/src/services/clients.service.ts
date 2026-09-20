@@ -1,7 +1,6 @@
 import api from './api';
 import type {
   TemporaryClient,
-  Client,
   ClientAddress,
   ClientType,
   ApiResponse,

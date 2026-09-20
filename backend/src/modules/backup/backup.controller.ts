@@ -21,7 +21,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { tmpdir } from 'os';
 import { unlinkSync } from 'fs';
-import { join } from 'path';
 import { randomUUID } from 'crypto';
 import { Response } from 'express';
 import { Role } from '@prisma/client';
