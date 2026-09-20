@@ -67,3 +67,7 @@ Chaque geste du technicien (transition, note, photo) est écrit dans `sync_queue
 ## Notifications push (B38.9)
 
 `src/push/` : permission et canal Android au démarrage de session, token Expo obtenu avec le `projectId` EAS (`EAS_PROJECT_ID` dans l'environnement de build ; absent en dev client → statut « indisponible » sur le profil, rien ne casse) et transmis au serveur par l'enregistrement de l'appareil. Réception → tirage delta ; toucher → ouverture du BT (`data.workOrderId` ou `data.url`). Le serveur relaie via Expo Push Service (B37.4).
+
+## Diagnostic et synchronisation en arrière-plan
+
+Profil → « Envoyer un rapport » : l'app envoie son état (versions, sync, file, GPS, push) et ses 200 derniers événements (`src/diag`) à `POST /api/me/devices/:id/report` ; le serveur le journalise (`docker logs taskmgr_backend | grep mobile-report`). Une tâche expo-background-task (`src/sync/background-task.ts`) tire les BT toutes les ~15 min quand l'app est fermée, sans drain ni refresh de jeton.

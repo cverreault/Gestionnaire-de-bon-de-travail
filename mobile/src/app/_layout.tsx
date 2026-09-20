@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import '../i18n';
 // Registers the headless background-location task before any render (expo-task-manager).
 import '../gps/location-task';
+import '../sync/background-task';
 import { useGpsController } from '../gps/useGpsController';
 import { usePushNotifications } from '../push/usePushNotifications';
 import { useApkUpdateChecker } from '../update/useApkUpdate';

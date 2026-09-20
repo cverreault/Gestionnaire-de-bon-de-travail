@@ -92,4 +92,14 @@ describe('DevicesService (B37.3)', () => {
     await svc.listMine(OWNER);
     expect(prisma.device.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { tenantId: 't-1', userId: 'u-1', revokedAt: null } }));
   });
+
+  it('report logs the diagnostics for an owned device and refuses others (404)', async () => {
+    const { svc } = make(BASE);
+    const warn = jest.spyOn((svc as unknown as { logger: { warn: (m: string) => void } }).logger, 'warn').mockImplementation(() => undefined);
+    const out = await svc.report(OWNER, 'inst-1', { state: { app: '0.3.0' }, events: [{ kind: 'pull', at: 't' }], note: 'photo bloquée' });
+    expect(out.receivedAt).toEqual(expect.any(String));
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('"tag":"mobile-report"'));
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('photo bloquée'));
+    await expect(make({ ...BASE, userId: 'u-other' }).svc.report(OWNER, 'inst-1', { state: {}, events: [] })).rejects.toBeInstanceOf(NotFoundException);
+  });
 });

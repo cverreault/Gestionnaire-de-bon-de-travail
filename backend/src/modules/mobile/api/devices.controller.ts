@@ -19,6 +19,7 @@ import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { DEVICE_ID_HEADER, extractDeviceId } from '../../../common/contracts/device-context.contract';
 import { DevicesService, type DeviceOwner } from '../application/devices/devices.service';
 import { HeartbeatDto, RegisterDeviceDto } from './dto/register-device.dto';
+import { DeviceReportDto } from './dto/device-report.dto';
 
 /**
  * Self-service device registry of the mobile app (B37.3, ADR-015).
@@ -64,6 +65,20 @@ export class DevicesController {
   ) {
     assertHeaderMatches(header, installationId);
     return this.devices.heartbeat(user, installationId.toLowerCase(), dto);
+  }
+
+  @Post(':installationId/report')
+  @Roles(Role.TECHNICIAN)
+  @HttpCode(HttpStatus.ACCEPTED)
+  @ApiOperation({ summary: "Rapport de diagnostic de l'app (journalisé côté serveur)" })
+  report(
+    @Param('installationId', ParseUUIDPipe) installationId: string,
+    @Headers(DEVICE_ID_HEADER) header: string | undefined,
+    @Body() dto: DeviceReportDto,
+    @CurrentUser() user: DeviceOwner,
+  ) {
+    assertHeaderMatches(header, installationId);
+    return this.devices.report(user, installationId.toLowerCase(), dto);
   }
 
   @Delete(':installationId')

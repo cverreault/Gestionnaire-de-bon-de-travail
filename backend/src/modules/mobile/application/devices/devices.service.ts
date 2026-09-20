@@ -9,6 +9,7 @@ import {
   type MobileDeviceRevokedPayload,
 } from '../../../../common/contracts/mobile-events.contract';
 import type { HeartbeatDto, RegisterDeviceDto } from '../../api/dto/register-device.dto';
+import type { DeviceReportDto } from '../../api/dto/device-report.dto';
 import { MobileConfigService } from '../config/mobile-config.service';
 
 export interface DeviceOwner {
@@ -113,6 +114,20 @@ export class DevicesService {
     });
     const gate = await this.config.upgradeRequired(updated.platform, updated.appVersion);
     return { ...gate, latestAppVersion: (await this.config.versionPolicy()).latestAppVersion, serverTime: new Date().toISOString() };
+  }
+
+  /**
+   * Diagnostics sent from the app's profile screen : written to the server
+   * log as one structured line (tag `mobile-report`) so support can read it
+   * with `docker logs` ; nothing is stored in the database.
+   */
+  async report(owner: DeviceOwner, installationId: string, dto: DeviceReportDto): Promise<{ receivedAt: string }> {
+    await this.findOwned(owner, installationId);
+    const receivedAt = new Date().toISOString();
+    this.logger.warn(
+      JSON.stringify({ tag: 'mobile-report', receivedAt, tenantId: owner.tenantId, userId: owner.id, installationId, note: dto.note ?? null, state: dto.state, events: dto.events.slice(-300) }),
+    );
+    return { receivedAt };
   }
 
   async revoke(owner: DeviceOwner, installationId: string, reason: MobileDeviceRevokedPayload['reason'] = 'user'): Promise<void> {

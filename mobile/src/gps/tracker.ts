@@ -5,6 +5,7 @@ import { postLocationBatch } from '../api/endpoints';
 import { db } from '../db/client';
 import { bufferFixes, countFixes, deleteFixes, nextBatch } from './fixes.repo';
 import { useGpsStore } from './gps.store';
+import { logEvent } from '../diag/log';
 import { LOCATION_TASK } from './location-task';
 import type { TrackingDecision } from './rules';
 
@@ -42,6 +43,7 @@ export async function applyTracking(mode: TrackingDecision): Promise<void> {
     );
   }
   current = mode;
+  logEvent('gps', `tracking ${mode}`);
   useGpsStore.getState().set({ mode });
 }
 
@@ -73,6 +75,7 @@ export async function flushFixes(): Promise<void> {
       try {
         await postLocationBatch(batch.map(({ id: _id, ...f }) => f), Crypto.randomUUID());
       } catch (err) {
+        logEvent('gps', `flush failed: ${err instanceof Error ? err.message : String(err)}`);
         if (err instanceof ApiError && err.status === 403) {
           useGpsStore.getState().set({ consentRevoked: true, error: err.message });
           await applyTracking('off');

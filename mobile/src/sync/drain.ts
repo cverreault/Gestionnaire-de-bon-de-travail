@@ -3,6 +3,7 @@ import { IDEMPOTENCY_IN_PROGRESS, OPTIMISTIC_LOCK_CONFLICT } from '@taskmgr/shar
 import * as s from '../db/schema';
 import type { AppDb } from '../db/types';
 import { deleteOp, listOps, recoverInFlight, setOpStatus, type QueuedOp } from './queue';
+import { logEvent } from '../diag/log';
 
 const MAX_ADDITIVE_RETRIES = 3;
 
@@ -94,6 +95,7 @@ export async function drain(db: AppDb, sender: Sender, pull: () => Promise<void>
       } catch (err) {
         const f = isFailure(err) ? err : { status: 0, message: String(err) };
         const message = f.message ?? `HTTP ${f.status}`;
+        logEvent('drain', `${op.kind} ${op.id} → ${f.status} ${f.code ?? ''} ${message}`.trim());
         if (f.status === 409 && f.code === OPTIMISTIC_LOCK_CONFLICT) {
           await pull();
           if (!BLOCKING_KINDS.has(op.kind) && attempts + 1 < MAX_ADDITIVE_RETRIES) {
