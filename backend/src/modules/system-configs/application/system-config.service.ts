@@ -157,22 +157,23 @@ export class SystemConfigService implements OnModuleInit {
 
     const stored = encrypted ? encrypt(value, this.masterKey!) : value;
 
-    await this.prisma.systemConfig.upsert({
-      where: { tenantId_key: { tenantId: tenantId as unknown as string, key } },
-      create: {
-        key,
-        value: stored,
-        encrypted,
-        scope,
-        tenantId,
-        updatedBy: opts.updatedBy ?? null,
-      },
-      update: {
-        value: stored,
-        encrypted,
-        updatedBy: opts.updatedBy ?? null,
-      },
+    // GLOBAL rows have tenantId = NULL, which Prisma refuses inside the
+    // composite unique of an upsert (500 « tenantId: String » on the SA
+    // page). Find-then-write covers both scopes.
+    const existing = await this.prisma.systemConfig.findFirst({
+      where: { key, tenantId },
+      select: { id: true },
     });
+    if (existing) {
+      await this.prisma.systemConfig.update({
+        where: { id: existing.id },
+        data: { value: stored, encrypted, updatedBy: opts.updatedBy ?? null },
+      });
+    } else {
+      await this.prisma.systemConfig.create({
+        data: { key, value: stored, encrypted, scope, tenantId, updatedBy: opts.updatedBy ?? null },
+      });
+    }
   }
 
   /** Remove a config entry. The hierarchical resolver will fall back to env. */

@@ -11,16 +11,28 @@ interface ConfigRow {
   updatedBy: string | null;
   updatedAt: Date;
   createdAt: Date;
+  id?: string;
+  tenantId?: string | null;
 }
 
 function makeMockPrisma(seed: ConfigRow[] = []) {
-  const rows: ConfigRow[] = [...seed];
+  const rows: ConfigRow[] = seed.map((r, i) => ({ id: `seed-${i + 1}`, ...r }));
   return {
     _rows: rows,
     systemConfig: {
       findFirst: jest.fn(({ where }: any) =>
-        Promise.resolve(rows.find((r) => r.key === where.key) ?? null),
+        Promise.resolve(rows.find((r) => r.key === where.key && (where.tenantId === undefined || (r.tenantId ?? null) === where.tenantId)) ?? null),
       ),
+      create: jest.fn(({ data }: any) => {
+        const row = { id: `row-${rows.length + 1}`, updatedAt: new Date(), ...data };
+        rows.push(row);
+        return Promise.resolve(row);
+      }),
+      update: jest.fn(({ where, data }: any) => {
+        const row = rows.find((r) => r.id === where.id);
+        if (row) Object.assign(row, data, { updatedAt: new Date() });
+        return Promise.resolve(row);
+      }),
       findMany: jest.fn(() =>
         Promise.resolve([...rows].sort((a, b) => a.key.localeCompare(b.key))),
       ),
