@@ -60,12 +60,12 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 const VERSIONS: ReleaseVersion[] = [
   {
     version: '2.16.0',
-    name: 'Kilométrage aller-retour',
+    name: 'Kilométrage à la demande',
     date: 'Septembre 2026',
     entries: [
-      { type: 'new', text: "🚗 Chaque bon de travail reçoit son kilométrage aller-retour (adresse de départ de l'entreprise → site → retour), calculé automatiquement à la fin des travaux par le moteur de routage ; recalcul ou saisie manuelle possible" },
-      { type: 'new', text: "🗺 Sur le BT, « Voir le trajet » affiche l'aller-retour sur la carte et « GPX » exporte le tracé pour un GPS ou un tableur" },
-      { type: 'new', text: "📊 Rapports : section Kilométrage par technicien sur la période, avec export CSV détaillé (référence, client, adresse, date, km, minutes)" },
+      { type: 'new', text: "🚗 Sur chaque BT, « Calculer » le kilométrage depuis le point de départ de votre choix : la position GPS du technicien ou un point prédéfini (bureau, entrepôt…, définis dans Paramètres → Entreprise), en aller simple ou aller-retour. Rien n'est calculé sans le demander ; saisie manuelle possible" },
+      { type: 'new', text: "📱 App mobile 0.7.0 : le technicien calcule le kilométrage depuis sa position (aller simple ou aller-retour) directement sur le BT" },
+      { type: 'new', text: "🗺 « Voir le trajet » affiche le tracé sur la carte et « GPX » exporte le trajet ; Rapports → Kilométrage donne le total par technicien avec export CSV" },
     ],
   },
   {

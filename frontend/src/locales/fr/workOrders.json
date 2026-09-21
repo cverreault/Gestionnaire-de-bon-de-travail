@@ -453,21 +453,26 @@
   "travel": {
     "title": "Kilométrage",
     "roundTrip": "aller-retour",
-    "none": "Pas encore calculé : il l'est automatiquement à la fin des travaux, si l'adresse de départ de l'entreprise est définie.",
+    "none": "Pas encore calculé. Choisissez le point de départ et le type de trajet, puis Calculer.",
     "sourceManual": "Saisi à la main",
-    "sourceRouter": "Calculé par le moteur de routage (départ → site → départ)",
+    "sourceRouter": "Départ : {{origin}} · calculé par le moteur de routage",
     "showMap": "Voir le trajet",
     "recompute": "Recalculer",
     "computing": "Calcul…",
-    "manual": "Saisir",
+    "manual": "Saisir à la main",
     "error": "Calcul impossible.",
     "loading": "Calcul du trajet…",
     "close": "Fermer",
     "roundTripSummary": "Aller-retour : {{km}} km · {{min}} min de route",
-    "noRoute": "Tracé indisponible (adresse de départ, coordonnées ou moteur manquants).",
+    "noRoute": "Tracé indisponible.",
     "from": "Départ",
     "base": "Départ",
     "site": "Site",
-    "exportGpx": "Exporter le trajet (GPX)"
+    "exportGpx": "Exporter le trajet (GPX)",
+    "oneWay": "aller simple",
+    "origin": "Point de départ",
+    "originGps": "Position GPS du technicien",
+    "mode": "Trajet",
+    "compute": "Calculer"
   }
 }

@@ -365,17 +365,20 @@
   },
   "company": {
     "title": "Entreprise",
-    "subtitle": "Courriel des travaux complétés et adresse de départ des techniciens.",
+    "subtitle": "Courriel des travaux complétés et points de départ pour le kilométrage.",
     "smtpMissing": "L'envoi de courriels n'est pas encore configuré sur le serveur (SMTP). Les courriels sont enregistrés dans le journal du serveur jusqu'à ce que ce soit fait.",
     "completedJobsEmail": "Courriel qui reçoit chaque travail complété",
     "completedJobsEmailHint": "Résumé envoyé à chaque bon de travail complété ou terminé en échec : client, adresse, technicien, heures, notes, pièces, signatures. Vide = aucun envoi.",
-    "baseAddress": "Adresse de départ des techniciens (kilométrage aller-retour)",
-    "baseAddressPlaceholder": "Choisissez une adresse ci-dessus ou saisissez-la",
-    "baseLocated": "Position connue ({{lat}}, {{lng}}) : le kilométrage peut être calculé.",
-    "baseNotLocated": "Sans position, le kilométrage ne peut pas être calculé : choisissez une suggestion.",
     "save": "Enregistrer",
     "saving": "Enregistrement…",
     "saved": "Réglages enregistrés.",
-    "error": "Impossible d'enregistrer. Vérifiez le courriel."
+    "error": "Impossible d'enregistrer. Vérifiez le courriel.",
+    "departurePoints": "Points de départ pour le kilométrage",
+    "departurePointsHint": "Proposés dans la liste déroulante quand on calcule le kilométrage d'un BT (bureau, entrepôt, dépôt…). La position GPS du technicien reste toujours disponible.",
+    "removePointConfirm": "Retirer « {{label}} » ?",
+    "remove": "Retirer",
+    "pointLabelPlaceholder": "Nom du point (ex. : Entrepôt)",
+    "pickAddress": "Choisissez une adresse dans les suggestions.",
+    "addPoint": "Ajouter le point"
   }
 }

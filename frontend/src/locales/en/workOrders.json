@@ -453,21 +453,26 @@
   "travel": {
     "title": "Mileage",
     "roundTrip": "round trip",
-    "none": "Not computed yet: it is computed automatically at completion, when the company starting address is set.",
+    "none": "Not computed yet. Pick the departure point and the trip type, then Compute.",
     "sourceManual": "Entered by hand",
-    "sourceRouter": "Computed by the routing engine (base → site → base)",
+    "sourceRouter": "From: {{origin}} · computed by the routing engine",
     "showMap": "Show route",
     "recompute": "Recompute",
     "computing": "Computing…",
-    "manual": "Enter",
+    "manual": "Enter by hand",
     "error": "Could not compute.",
     "loading": "Computing the route…",
     "close": "Close",
     "roundTripSummary": "Round trip: {{km}} km · {{min}} min drive",
-    "noRoute": "Route unavailable (missing base address, coordinates or engine).",
+    "noRoute": "Route unavailable.",
     "from": "From",
     "base": "Base",
     "site": "Site",
-    "exportGpx": "Export route (GPX)"
+    "exportGpx": "Export route (GPX)",
+    "oneWay": "one way",
+    "origin": "Departure point",
+    "originGps": "Technician's GPS position",
+    "mode": "Trip",
+    "compute": "Compute"
   }
 }

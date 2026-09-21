@@ -88,6 +88,32 @@ export function useTenantSettings() {
   });
 }
 
+export const DEPARTURE_POINTS_KEY = 'departure-points';
+
+export function useDeparturePoints() {
+  return useQuery({
+    queryKey: [DEPARTURE_POINTS_KEY],
+    queryFn: () => settingsService.getDeparturePoints().then((r) => (r.data?.data ?? r.data) as settingsService.DeparturePoint[]),
+    staleTime: 60_000,
+  });
+}
+
+export function useAddDeparturePoint() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { label: string; address: string; lat: number; lng: number }) => settingsService.addDeparturePoint(data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: [DEPARTURE_POINTS_KEY] }); qc.invalidateQueries({ queryKey: [TENANT_SETTINGS_KEY] }); },
+  });
+}
+
+export function useRemoveDeparturePoint() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => settingsService.removeDeparturePoint(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: [DEPARTURE_POINTS_KEY] }); qc.invalidateQueries({ queryKey: [TENANT_SETTINGS_KEY] }); },
+  });
+}
+
 export function useUpdateTenantSettings() {
   const qc = useQueryClient();
   return useMutation({

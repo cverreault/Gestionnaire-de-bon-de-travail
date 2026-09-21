@@ -83,9 +83,9 @@ Libellés colorés définis par l'admin (`settings` : `GET/POST/PATCH/DELETE /se
 - Le web propose d'office les tags du client et de l'adresse à la création du BT (copie côté client, aucune règle serveur).
 - Hors périmètre pour l'instant : groupes de techniciens et permissions de répartiteur par tag (visibilité), à traiter dans une ADR dédiée.
 
-## Kilométrage aller-retour (B49)
+## Kilométrage (B49)
 
-Colonnes `travel_distance_km`, `travel_duration_min`, `travel_source` (`ROUTER` | `MANUAL`), `travel_computed_at`. `application/travel.service.ts` calcule base de l'entreprise (`tenants.base_lat/lng`, Paramètres → Entreprise) → site (`client_addresses` géocodée) → base via le contrat `ROUTER` (ADR-019) ; `TravelListener` le fait à `workOrders.workOrder.completed` (silencieux si base, coordonnées ou moteur manquent) sans écraser une valeur `MANUAL`. Routes : `GET /work-orders/travel-report[.csv]?from&to&technicianId` (admin, répartiteur : totaux par technicien + lignes), `GET /:id/travel` (valeurs + tracé aller-retour, IDOR technicien via `findOne`), `POST /:id/travel/compute` (recalcul forcé), `GET /:id/travel.gpx` (trace GPX 1.1). `PATCH /:id` accepte `travelDistanceKm` (saisie manuelle, `null` efface).
+Colonnes `travel_distance_km`, `travel_duration_min`, `travel_source` (`ROUTER` | `MANUAL`), `travel_computed_at`, `travel_round_trip`, `travel_origin_label/lat/lng`. **Calcul à la demande uniquement** (jamais automatique) par `application/travel.service.ts` : l'origine est choisie — `GPS` (dernière position du technicien assigné), `POINT` (point de départ prédéfini de l'entreprise, table `departure_points` gérée dans Paramètres → Entreprise, `GET/POST/DELETE /tenants/settings/departure-points`) ou `COORDS` (position du téléphone, envoyée par l'app) — et le trajet est aller simple ou aller-retour ; le contrat `ROUTER` (ADR-019) donne km et minutes, stockés avec l'origine pour redessiner le tracé. Routes : `POST /:id/travel/compute` (tout le personnel, IDOR technicien via `findOne`), `GET /:id/travel` (valeurs + tracé), `GET /:id/travel.gpx`, `GET /work-orders/travel-report[.csv]?from&to&technicianId` (admin, répartiteur). `PATCH /:id` accepte `travelDistanceKm` (saisie manuelle, `null` efface).
 
 ## Domain events publiés
 

@@ -234,5 +234,14 @@
     "openSettings": "Open Settings",
     "retry": "Check again",
     "logout": "Sign out"
+  },
+  "mileage": {
+    "title": "Mileage",
+    "explain": "Computes the distance from your current position to the site and saves it on the work order.",
+    "oneWay": "One way",
+    "roundTrip": "Round trip",
+    "computing": "Computing…",
+    "result": "{{km}} km · {{min}} min ({{mode}})",
+    "noPermission": "Allow location to compute mileage."
   }
 }

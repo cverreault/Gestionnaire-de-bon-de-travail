@@ -54,6 +54,11 @@ export function fetchRoute(from: { lat: number; lng: number }, to: { lat: number
   return api<RouteEstimate>('/geo/route', { method: 'POST', body: { from, to, language }, timeoutMs: 12_000 });
 }
 
+/** B49 — mileage of a work order from the phone position (one way or round trip). */
+export function computeTravelFromHere(workOrderId: string, pos: { lat: number; lng: number }, roundTrip: boolean): Promise<{ distanceKm: number; durationMin: number; roundTrip: boolean; originLabel: string }> {
+  return api(`/work-orders/${workOrderId}/travel/compute`, { method: 'POST', body: { origin: { type: 'COORDS', lat: pos.lat, lng: pos.lng, label: 'Position du téléphone' }, roundTrip }, timeoutMs: 15_000 });
+}
+
 export function fetchMe(): Promise<AuthUser> {
   return api<AuthUser>('/auth/me');
 }

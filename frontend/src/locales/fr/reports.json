@@ -44,7 +44,7 @@
   },
   "mileage": {
     "title": "Kilométrage",
-    "subtitle": "Aller-retour départ → site → départ des BT terminés dans la période, calculé par le moteur de routage ou saisi.",
+    "subtitle": "Kilométrage des BT terminés dans la période, calculé à la demande depuis le point de départ choisi (aller simple ou aller-retour) ou saisi.",
     "allTechnicians": "Tous les techniciens",
     "exportCsv": "Exporter CSV",
     "pickPeriod": "Choisissez une période.",
@@ -52,9 +52,9 @@
     "technician": "Technicien",
     "workOrders": "BT terminés",
     "withMileage": "Avec km",
-    "km": "Km aller-retour",
+    "km": "Km",
     "hours": "Heures de route",
     "total": "Total",
-    "hint": "Le CSV liste chaque BT (référence, client, adresse, date, km, minutes, source). Les BT sans km n'ont pas d'adresse géocodée ou l'adresse de départ n'était pas définie : « Recalculer » sur le BT les complète."
+    "hint": "Le CSV liste chaque BT (référence, client, adresse, date, départ, trajet, km, minutes, source). Les BT sans km n'ont pas encore été calculés depuis leur fiche."
   }
 }

@@ -34,7 +34,7 @@ function Fit({ points }: { points: [number, number][] }) {
 export default function RouteMapModal({ title, info, onClose, onExportGpx }: Props) {
   const { t } = useTranslation('workOrders');
   const shape: [number, number][] = (info.route?.shape ?? []).map((p) => [p.lat, p.lng]);
-  const points: [number, number][] = shape.length > 1 ? shape : [info.base, info.site].filter((p): p is NonNullable<typeof p> => !!p).map((p) => [p.lat, p.lng]);
+  const points: [number, number][] = shape.length > 1 ? shape : [info.origin, info.site].filter((p): p is NonNullable<typeof p> => !!p).map((p) => [p.lat, p.lng]);
   const center: [number, number] = points[0] ?? [46.8, -71.2];
 
   return (
@@ -47,16 +47,16 @@ export default function RouteMapModal({ title, info, onClose, onExportGpx }: Pro
         <div style={{ padding: '0.75rem 1rem 1rem' }}>
           <p style={{ margin: '0 0 0.6rem', fontSize: theme.font.sizeSm, color: theme.colors.textSecondary }}>
             {info.route
-              ? t('travel.roundTripSummary', { defaultValue: 'Aller-retour : {{km}} km · {{min}} min de route', km: info.route.distanceKm, min: Math.round(info.route.durationMin) })
-              : t('travel.noRoute', { defaultValue: 'Tracé indisponible (adresse de départ, coordonnées ou moteur manquants).' })}
-            {info.base?.address ? ` · ${t('travel.from', { defaultValue: 'Départ' })} : ${info.base.address}` : ''}
+              ? `${info.roundTrip ? t('travel.roundTrip', { defaultValue: 'aller-retour' }) : t('travel.oneWay', { defaultValue: 'aller simple' })} : ${info.route.distanceKm} km · ${Math.round(info.route.durationMin)} min`
+              : t('travel.noRoute', { defaultValue: 'Tracé indisponible.' })}
+            {info.origin?.label ? ` · ${t('travel.from', { defaultValue: 'Départ' })} : ${info.origin.label}` : ''}
           </p>
           <div style={{ height: 460, borderRadius: theme.radius.md, overflow: 'hidden', border: theme.borders.default }}>
             <MapContainer center={center} zoom={11} style={{ height: '100%', width: '100%' }} scrollWheelZoom>
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' />
-              {info.base && (
-                <Marker position={[info.base.lat, info.base.lng]} icon={pin(t('travel.base', { defaultValue: 'Départ' }), '#1e40af')}>
-                  <Popup>{info.base.address ?? t('travel.base', { defaultValue: 'Départ' })}</Popup>
+              {info.origin && (
+                <Marker position={[info.origin.lat, info.origin.lng]} icon={pin(t('travel.base', { defaultValue: 'Départ' }), '#1e40af')}>
+                  <Popup>{info.origin.label ?? t('travel.base', { defaultValue: 'Départ' })}</Popup>
                 </Marker>
               )}
               {info.site && (

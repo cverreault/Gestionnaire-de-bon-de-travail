@@ -365,17 +365,20 @@
   },
   "company": {
     "title": "Company",
-    "subtitle": "Completed-jobs email and technicians’ starting address.",
+    "subtitle": "Completed-jobs email and departure points for mileage.",
     "smtpMissing": "Email sending is not configured on the server yet (SMTP). Emails go to the server log until it is.",
     "completedJobsEmail": "Email that receives every completed job",
     "completedJobsEmailHint": "Summary sent for every completed or failed work order: client, address, technician, times, notes, parts, signatures. Empty = nothing sent.",
-    "baseAddress": "Technicians’ starting address (round-trip mileage)",
-    "baseAddressPlaceholder": "Pick an address above or type it",
-    "baseLocated": "Position known ({{lat}}, {{lng}}): mileage can be computed.",
-    "baseNotLocated": "Without a position mileage cannot be computed: pick a suggestion.",
     "save": "Save",
     "saving": "Saving…",
     "saved": "Settings saved.",
-    "error": "Could not save. Check the email."
+    "error": "Could not save. Check the email.",
+    "departurePoints": "Departure points for mileage",
+    "departurePointsHint": "Offered in the drop-down when computing a work order's mileage (office, warehouse, depot…). The technician's GPS position is always available too.",
+    "removePointConfirm": "Remove “{{label}}”?",
+    "remove": "Remove",
+    "pointLabelPlaceholder": "Point name (e.g. Warehouse)",
+    "pickAddress": "Pick an address from the suggestions.",
+    "addPoint": "Add point"
   }
 }

@@ -44,7 +44,7 @@
   },
   "mileage": {
     "title": "Mileage",
-    "subtitle": "Round trip base → site → base of the work orders completed in the period, computed by the routing engine or entered by hand.",
+    "subtitle": "Mileage of the work orders completed in the period, computed on demand from the chosen departure point (one way or round trip) or entered by hand.",
     "allTechnicians": "All technicians",
     "exportCsv": "Export CSV",
     "pickPeriod": "Pick a period.",
@@ -52,9 +52,9 @@
     "technician": "Technician",
     "workOrders": "Completed WOs",
     "withMileage": "With km",
-    "km": "Round-trip km",
+    "km": "Km",
     "hours": "Driving hours",
     "total": "Total",
-    "hint": "The CSV lists every work order (reference, client, address, date, km, minutes, source). Work orders without km have no geocoded address or the base address was not set: “Recompute” on the work order fills them."
+    "hint": "The CSV lists every work order (reference, client, address, date, departure, trip, km, minutes, source). Work orders without km have not been computed from their page yet."
   }
 }

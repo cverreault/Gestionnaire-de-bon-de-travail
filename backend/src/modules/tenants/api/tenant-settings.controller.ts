@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Patch } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Inject, NotFoundException, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { PrismaService } from '../../../common/prisma/prisma.service';
@@ -7,15 +7,16 @@ import { CurrentTenant } from '../../../common/decorators/current-tenant.decorat
 import type { TenantContext } from '../../../common/contracts/tenant-context.contract';
 import { SYSTEM_CONFIG_RESOLVER, type ISystemConfigResolver } from '../../../common/contracts/system-config-resolver.contract';
 import { UpdateTenantSettingsDto } from './dto/tenant-settings.dto';
+import { CreateDeparturePointDto } from './dto/departure-point.dto';
 
-const SETTINGS_SELECT = { completedJobsEmail: true, baseAddress: true, baseLat: true, baseLng: true } as const;
+const POINT_SELECT = { id: true, label: true, address: true, lat: true, lng: true, sortOrder: true } as const;
 
 /**
- * B48 — company settings of the current tenant (ADMIN) :
+ * B48 / B49.2 — company settings of the current tenant (ADMIN) :
  *   - `completedJobsEmail` : one address that receives a summary of every completed job ;
- *   - `baseAddress` (+ coordinates from the address autocomplete) : where the
- *     technicians start from, used for the round-trip mileage of each job.
- * `emailConfigured` tells the UI whether SMTP is set up (otherwise emails only reach the server log).
+ *   - `departurePoints` : predefined starting points offered when computing a job's mileage
+ *     (read by every staff role for the picker).
+ * `emailConfigured` tells the UI whether SMTP is set up.
  */
 @ApiTags('Tenants')
 @ApiBearerAuth('access-token')
@@ -26,32 +27,58 @@ export class TenantSettingsController {
     @Inject(SYSTEM_CONFIG_RESOLVER) private readonly configs: ISystemConfigResolver,
   ) {}
 
+  private async payload(tenantId: string) {
+    const [row, points, smtpHost] = await Promise.all([
+      this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { completedJobsEmail: true } }),
+      this.prisma.departurePoint.findMany({ where: { tenantId }, orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }], select: POINT_SELECT }),
+      this.configs.resolve('smtp.host', 'SMTP_HOST'),
+    ]);
+    return { ...row, departurePoints: points, emailConfigured: !!smtpHost };
+  }
+
   @Get()
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: "[Admin] Réglages d'entreprise (courriel des travaux complétés, adresse de départ)" })
-  async get(@CurrentTenant() tenant: TenantContext) {
-    const row = await this.prisma.tenant.findUnique({ where: { id: tenant.id }, select: SETTINGS_SELECT });
-    const smtpHost = await this.configs.resolve('smtp.host', 'SMTP_HOST');
-    return { ...row, emailConfigured: !!smtpHost };
+  @ApiOperation({ summary: "[Admin] Réglages d'entreprise (courriel des travaux complétés, points de départ)" })
+  get(@CurrentTenant() tenant: TenantContext) {
+    return this.payload(tenant.id);
   }
 
   @Patch()
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: "[Admin] Modifier les réglages d'entreprise" })
   async update(@CurrentTenant() tenant: TenantContext, @Body() dto: UpdateTenantSettingsDto) {
-    const data: Record<string, unknown> = {};
-    if (dto.completedJobsEmail !== undefined) data.completedJobsEmail = dto.completedJobsEmail?.trim() || null;
-    if (dto.baseAddress !== undefined) {
-      data.baseAddress = dto.baseAddress?.trim() || null;
-      // Coordinates travel with the address : a new text without coordinates resets them.
-      data.baseLat = dto.baseLat ?? null;
-      data.baseLng = dto.baseLng ?? null;
-    } else if (dto.baseLat !== undefined || dto.baseLng !== undefined) {
-      data.baseLat = dto.baseLat ?? null;
-      data.baseLng = dto.baseLng ?? null;
+    if (dto.completedJobsEmail !== undefined) {
+      await this.prisma.tenant.update({ where: { id: tenant.id }, data: { completedJobsEmail: dto.completedJobsEmail?.trim() || null } });
     }
-    const row = await this.prisma.tenant.update({ where: { id: tenant.id }, data, select: SETTINGS_SELECT });
-    const smtpHost = await this.configs.resolve('smtp.host', 'SMTP_HOST');
-    return { ...row, emailConfigured: !!smtpHost };
+    return this.payload(tenant.id);
+  }
+
+  @Get('departure-points')
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN)
+  @ApiOperation({ summary: 'Points de départ prédéfinis (kilométrage, B49.2)' })
+  listPoints(@CurrentTenant() tenant: TenantContext) {
+    return this.prisma.departurePoint.findMany({ where: { tenantId: tenant.id }, orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }], select: POINT_SELECT });
+  }
+
+  @Post('departure-points')
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: '[Admin] Ajouter un point de départ' })
+  async addPoint(@CurrentTenant() tenant: TenantContext, @Body() dto: CreateDeparturePointDto) {
+    const count = await this.prisma.departurePoint.count({ where: { tenantId: tenant.id } });
+    return this.prisma.departurePoint.create({
+      data: { tenantId: tenant.id, label: dto.label.trim(), address: dto.address.trim(), lat: dto.lat, lng: dto.lng, sortOrder: count },
+      select: POINT_SELECT,
+    });
+  }
+
+  @Delete('departure-points/:id')
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: '[Admin] Retirer un point de départ' })
+  async removePoint(@CurrentTenant() tenant: TenantContext, @Param('id', ParseUUIDPipe) id: string) {
+    const found = await this.prisma.departurePoint.findFirst({ where: { id, tenantId: tenant.id }, select: { id: true } });
+    if (!found) throw new NotFoundException('Point de départ introuvable');
+    await this.prisma.departurePoint.delete({ where: { id } });
   }
 }
