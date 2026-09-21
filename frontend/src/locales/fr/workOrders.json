@@ -449,5 +449,25 @@
     "sortReference": "Tri : référence",
     "unassignConfirm": "Retirer {{ref}} à son technicien ?",
     "cannotUnassign": "Ce BT ne peut pas être désassigné depuis son statut actuel."
+  },
+  "travel": {
+    "title": "Kilométrage",
+    "roundTrip": "aller-retour",
+    "none": "Pas encore calculé : il l'est automatiquement à la fin des travaux, si l'adresse de départ de l'entreprise est définie.",
+    "sourceManual": "Saisi à la main",
+    "sourceRouter": "Calculé par le moteur de routage (départ → site → départ)",
+    "showMap": "Voir le trajet",
+    "recompute": "Recalculer",
+    "computing": "Calcul…",
+    "manual": "Saisir",
+    "error": "Calcul impossible.",
+    "loading": "Calcul du trajet…",
+    "close": "Fermer",
+    "roundTripSummary": "Aller-retour : {{km}} km · {{min}} min de route",
+    "noRoute": "Tracé indisponible (adresse de départ, coordonnées ou moteur manquants).",
+    "from": "Départ",
+    "base": "Départ",
+    "site": "Site",
+    "exportGpx": "Exporter le trajet (GPX)"
   }
 }

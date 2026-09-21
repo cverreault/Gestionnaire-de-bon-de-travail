@@ -77,6 +77,12 @@ type MatrixRow = {
 const WORK_ORDERS_MATRIX: MatrixRow[] = [
   { controller: WorkOrdersController, method: 'findAll',                 expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'GET /work-orders — B21: staff only (CLIENT uses /portal), service filters by assignedToId for TECH' },
   { controller: WorkOrdersController, method: 'findOne',                 expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'GET /work-orders/:id — B21: staff only, service enforces IDOR for TECH' },
+  // B49 — mileage
+  { controller: WorkOrdersController, method: 'travelReport',    expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'GET /work-orders/travel-report' },
+  { controller: WorkOrdersController, method: 'travelReportCsv', expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'GET /work-orders/travel-report.csv' },
+  { controller: WorkOrdersController, method: 'travelInfo',      expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'GET /work-orders/:id/travel — IDOR via findOne' },
+  { controller: WorkOrdersController, method: 'travelCompute',   expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'POST /work-orders/:id/travel/compute' },
+  { controller: WorkOrdersController, method: 'travelGpx',       expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'GET /work-orders/:id/travel.gpx — IDOR via findOne' },
   { controller: WorkOrdersController, method: 'getAvailableTransitions', expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'GET /:id/available-transitions — B21: staff only' },
   { controller: WorkOrdersController, method: 'exportCsv',               expectedRoles: [Role.ADMIN, Role.DISPATCHER],      note: 'GET /work-orders/export.csv — A3' },
   { controller: WorkOrdersController, method: 'create',                  expectedRoles: [Role.ADMIN, Role.DISPATCHER],      note: 'POST /work-orders' },

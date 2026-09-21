@@ -1270,6 +1270,12 @@ model WorkOrder {
   slaTargetAt   DateTime? @map("sla_target_at")
   slaBreachedAt DateTime? @map("sla_breached_at")
 
+  // B49 — kilométrage aller-retour (base de l'entreprise → site → base), moteur de routage ou saisie
+  travelDistanceKm  Float?    @map("travel_distance_km")
+  travelDurationMin Float?    @map("travel_duration_min")
+  travelSource      String?   @map("travel_source")
+  travelComputedAt  DateTime? @map("travel_computed_at")
+
   notes        Note[]
   attachments  Attachment[]
   appointments Appointment[]

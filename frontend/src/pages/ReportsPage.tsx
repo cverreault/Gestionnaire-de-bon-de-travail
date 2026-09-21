@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import MileageReportSection from '../components/MileageReportSection';
 import { useTranslation } from 'react-i18next';
 import {
   getResolutionTime,
@@ -206,6 +207,7 @@ export default function ReportsPage() {
         description={t('sections.throughput.description')}
         columns={t('columns', { returnObjects: true }) as Record<string, string>}
       />
+      <MileageReportSection from={params.from} to={params.to} />
     </div>
   );
 }

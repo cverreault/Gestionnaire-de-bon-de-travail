@@ -762,6 +762,15 @@ export class WorkOrdersService {
     if (dto.templateData !== undefined) {
       data.templateData = (dto.templateData ?? Prisma.JsonNull) as Prisma.InputJsonValue | typeof Prisma.JsonNull;
     }
+    // B49 — manual mileage (null clears it) ; the automatic computation then leaves it alone
+    if (dto.travelDistanceKm !== undefined) {
+      Object.assign(
+        data,
+        dto.travelDistanceKm == null
+          ? { travelDistanceKm: null, travelDurationMin: null, travelSource: null, travelComputedAt: null }
+          : { travelDistanceKm: Math.round(dto.travelDistanceKm * 10) / 10, travelSource: 'MANUAL', travelComputedAt: new Date() },
+      );
+    }
     // B44 — replace the whole tag set when provided
     if (dto.tagIds !== undefined) {
       data.tags = tagLinksReplace(await assertTagIds(this.prisma, dto.tagIds));

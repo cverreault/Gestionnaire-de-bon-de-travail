@@ -408,6 +408,11 @@ export interface WorkOrder {
   referenceNumber: string;
   /** B44 */
   tags?: Tag[];
+  /** B49 — round-trip mileage (base → site → base). */
+  travelDistanceKm?: number | null;
+  travelDurationMin?: number | null;
+  travelSource?: 'ROUTER' | 'MANUAL' | null;
+  travelComputedAt?: string | null;
   status: WorkOrderStatus;
   type: WorkOrderType;
   title: string;
