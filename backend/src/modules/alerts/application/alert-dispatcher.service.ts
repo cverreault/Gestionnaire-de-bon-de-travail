@@ -116,7 +116,16 @@ export interface DispatchContext {
     title?: string;
     priority?: number | string | null;
     negativeReason?: string | null;
+    description?: string;
+    completionNotes?: string;
+    scheduledDate?: string;
+    scheduledTime?: string;
+    startedAt?: string;
+    completedAt?: string;
+    url?: string;
   };
+  address?: { line?: string; city?: string; postalCode?: string; full?: string };
+  event?: { date?: string; time?: string };
   transition?: {
     from?: string | null;
     to?: string | null;
@@ -127,11 +136,13 @@ export interface DispatchContext {
     id?: string | null;
     name?: string | null;
     email?: string | null;
+    phone?: string | null;
   };
   client?: {
     id?: string | null;
     name?: string | null;
     email?: string | null;
+    phone?: string | null;
   };
   tenant?: {
     id: string;

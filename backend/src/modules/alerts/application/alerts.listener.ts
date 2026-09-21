@@ -122,6 +122,12 @@ export class AlertsListener {
         title: true,
         priority: true,
         negativeReason: true,
+        description: true,
+        completionNotes: true,
+        scheduledDate: true,
+        scheduledStartTime: true,
+        actualStartTime: true,
+        actualEndTime: true,
         clientId: true,
         assignedToId: true,
         taskTypeId: true,
@@ -138,10 +144,11 @@ export class AlertsListener {
             lastName: true,
             companyName: true,
             clientType: true,
+            phone: true,
           },
         },
         clientAddress_rel: {
-          select: { addressType: true },
+          select: { addressType: true, streetNumber: true, street: true, apartment: true, city: true, postalCode: true },
         },
         assignedTo: {
           select: {
@@ -149,6 +156,7 @@ export class AlertsListener {
             firstName: true,
             lastName: true,
             email: true,
+            phone: true,
           },
         },
       },
@@ -222,14 +230,35 @@ export class AlertsListener {
         (data.toStatusId as string | undefined) ?? null,
       );
 
+      const fmtDate = (d: Date | null) => (d ? d.toLocaleDateString('fr-CA', { timeZone: 'America/Toronto', dateStyle: 'long' }) : '');
+      const fmtTime = (d: Date | null) => (d ? d.toLocaleTimeString('fr-CA', { timeZone: 'America/Toronto', hour: '2-digit', minute: '2-digit' }) : '');
+      const fmtDateTime = (d: Date | null) => (d ? `${fmtDate(d)} ${fmtTime(d)}` : '');
+      const a = wo.clientAddress_rel;
+      const addressLine = a ? [[a.streetNumber, a.street].filter(Boolean).join(' '), a.apartment ? `app. ${a.apartment}` : null].filter(Boolean).join(', ') : '';
+      const origin = (process.env.PLATFORM_ORIGIN ?? 'http://localhost:8088').replace(/\/+$/, '');
+      const now = new Date();
       return {
         workOrder: {
           id: wo.id,
           referenceNumber: wo.referenceNumber,
           title: wo.title,
           priority: wo.priority,
-          negativeReason: (wo as unknown as { negativeReason: string | null }).negativeReason ?? null,
+          negativeReason: wo.negativeReason ?? null,
+          description: wo.description ?? '',
+          completionNotes: wo.completionNotes ?? '',
+          scheduledDate: fmtDate(wo.scheduledDate),
+          scheduledTime: fmtTime(wo.scheduledStartTime),
+          startedAt: fmtDateTime(wo.actualStartTime),
+          completedAt: fmtDateTime(wo.actualEndTime),
+          url: `${origin}/bons-de-travail/${wo.id}`,
         },
+        address: {
+          line: addressLine,
+          city: a?.city ?? '',
+          postalCode: a?.postalCode ?? '',
+          full: a ? [addressLine, a.city, a.postalCode].filter(Boolean).join(', ') : '',
+        },
+        event: { date: fmtDate(now), time: fmtTime(now) },
         transition: {
           from: (data.fromStatusId as string | undefined) ?? null,
           to: (data.toStatusId as string | undefined) ?? null,
@@ -241,8 +270,9 @@ export class AlertsListener {
               id: wo.assignedTo.id,
               name: `${wo.assignedTo.firstName ?? ''} ${wo.assignedTo.lastName ?? ''}`.trim(),
               email: wo.assignedTo.email ?? null,
+              phone: wo.assignedTo.phone ?? '',
             }
-          : { id: null, name: null, email: null },
+          : { id: null, name: null, email: null, phone: '' },
         client: wo.client
           ? {
               id: wo.client.id,
@@ -250,8 +280,9 @@ export class AlertsListener {
                 wo.client.companyName ??
                 `${wo.client.firstName ?? ''} ${wo.client.lastName ?? ''}`.trim(),
               email: wo.client.email ?? null,
+              phone: wo.client.phone ?? '',
             }
-          : { id: null, name: null, email: null },
+          : { id: null, name: null, email: null, phone: '' },
         tenant: tenant
           ? { id: tenant.id, name: tenant.name }
           : { id: tenantId },
@@ -299,6 +330,12 @@ interface HydratedWO {
   title: string;
   priority: number | null;
   negativeReason: string | null;
+  description: string | null;
+  completionNotes: string | null;
+  scheduledDate: Date | null;
+  scheduledStartTime: Date | null;
+  actualStartTime: Date | null;
+  actualEndTime: Date | null;
   clientId: string | null;
   assignedToId: string | null;
   taskTypeId: string | null;
@@ -311,13 +348,15 @@ interface HydratedWO {
     lastName: string | null;
     companyName: string | null;
     clientType: string | null;
+    phone: string | null;
   } | null;
-  clientAddress_rel: { addressType: string | null } | null;
+  clientAddress_rel: { addressType: string | null; streetNumber: string | null; street: string; apartment: string | null; city: string; postalCode: string | null } | null;
   assignedTo: {
     id: string;
     firstName: string | null;
     lastName: string | null;
     email: string | null;
+    phone: string | null;
   } | null;
 }
 

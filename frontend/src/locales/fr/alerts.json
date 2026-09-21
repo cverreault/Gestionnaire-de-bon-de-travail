@@ -79,13 +79,22 @@
     "recipientsLabel": "Destinataires",
     "channelsLabel": "Canaux",
     "templateLabel": "Message interne",
-    "templateHint": "Utilisez {{workOrder.referenceNumber}}, {{workOrder.title}}, {{transition.toLabel}}, {{technician.name}}, {{client.name}}, {{tenant.name}}. Aperçu ci-dessous.",
+    "templateHint": "Écrivez le message et insérez des variables avec la liste « Insérer une variable » : elles sont remplacées par les valeurs du BT à l'envoi. Aperçu ci-dessous.",
     "titleField": "Titre",
     "bodyField": "Corps",
     "previewLabel": "Aperçu",
     "clientTemplateLabel": "Message client (obligatoire quand la case « Client » est cochée)",
     "clientTemplateHint": "Version externe du message — n'exposez PAS d'IDs internes ou de statuts techniques.",
     "clientTitlePlaceholder": "Suivi de votre demande {{workOrder.referenceNumber}}",
-    "clientBodyPlaceholder": "Bonjour {{client.name}}, votre demande de service a été traitée."
+    "clientBodyPlaceholder": "Bonjour {{client.name}}, votre demande de service a été traitée.",
+    "stepLabel": "Étape du processus",
+    "stepHint": "Choisissez le processus, puis l'étape vers laquelle le BT doit passer pour déclencher l'alerte. Vide = toutes les étapes.",
+    "processField": "Processus",
+    "anyProcess": "Tous les processus",
+    "toStepField": "Déclencher à l'arrivée sur l'étape",
+    "fromStepField": "Seulement depuis l'étape (facultatif)",
+    "anyStep": "Toutes les étapes",
+    "pickProcessFirst": "Choisir d'abord un processus",
+    "insertVariable": "Insérer une variable"
   }
 }
