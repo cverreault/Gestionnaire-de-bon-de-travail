@@ -21,6 +21,7 @@ import WorkOrderAuditTimeline from '../components/WorkOrderAuditTimeline';
 import SignaturePad from '../components/SignaturePad';
 import SlaBadge from '../components/SlaBadge';
 import { TagChips } from '../components/TagChip';
+import TravelCard from '../components/TravelCard';
 import TagPicker from '../components/TagPicker';
 import PrintWorkOrder from '../components/PrintWorkOrder';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -734,6 +735,9 @@ export default function WorkOrderDetailPage({ idOverride, onClose, embedded = fa
         })()}
       </div>
 
+
+      {/* B49 — kilométrage aller-retour */}
+      <TravelCard wo={wo} canEdit={canSeeAuditTimeline} cardStyle={cardStyle} />
       {/* Template fields (read-only) */}
       {woTemplate && woTemplate.sections.length > 0 && (
         <div style={cardStyle}>

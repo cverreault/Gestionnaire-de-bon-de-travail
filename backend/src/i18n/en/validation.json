@@ -14,5 +14,6 @@
   "PREFIX_REQUIRED": "Prefix is required",
   "NAME_REQUIRED": "Name is required",
   "IS_DATA_URL_PNG": "Must be a base64 image/png data URL",
-  "INVALID_COLOR": "Invalid colour (#RRGGBB expected)"
+  "INVALID_COLOR": "Invalid colour (#RRGGBB expected)",
+  "IS_DATE": "Must be a valid date (ISO 8601)"
 }

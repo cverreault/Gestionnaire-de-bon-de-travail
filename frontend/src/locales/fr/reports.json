@@ -8,7 +8,6 @@
   "lastNDays": "Derniers {{n}} jours",
   "noData": "Aucune donnée pour cette période",
   "pdfUnavailable": "Génération PDF désactivée sur ce serveur",
-
   "sections": {
     "resolutionTime": {
       "title": "Temps de résolution",
@@ -27,7 +26,6 @@
       "description": "Nombre de BTs créés et complétés par jour sur la période."
     }
   },
-
   "columns": {
     "taskType": "Type",
     "completed": "Complétés",
@@ -43,5 +41,20 @@
     "created": "Créés",
     "date": "Date",
     "untyped": "Sans type"
+  },
+  "mileage": {
+    "title": "Kilométrage",
+    "subtitle": "Aller-retour départ → site → départ des BT terminés dans la période, calculé par le moteur de routage ou saisi.",
+    "allTechnicians": "Tous les techniciens",
+    "exportCsv": "Exporter CSV",
+    "pickPeriod": "Choisissez une période.",
+    "empty": "Aucun BT terminé dans la période.",
+    "technician": "Technicien",
+    "workOrders": "BT terminés",
+    "withMileage": "Avec km",
+    "km": "Km aller-retour",
+    "hours": "Heures de route",
+    "total": "Total",
+    "hint": "Le CSV liste chaque BT (référence, client, adresse, date, km, minutes, source). Les BT sans km n'ont pas d'adresse géocodée ou l'adresse de départ n'était pas définie : « Recalculer » sur le BT les complète."
   }
 }

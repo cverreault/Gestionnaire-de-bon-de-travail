@@ -1,6 +1,7 @@
+import { i18nValidationMessage } from 'nestjs-i18n';
 import { PartialType } from '@nestjs/swagger';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsEnum, MaxLength } from 'class-validator';
+import { IsOptional, IsString, IsEnum, MaxLength, ValidateIf, IsNumber, Min, Max } from 'class-validator';
 import { WorkOrderStatus } from '@prisma/client';
 import { CreateWorkOrderDto } from './create-work-order.dto';
 
@@ -41,4 +42,12 @@ export class UpdateWorkOrderDto extends PartialType(CreateWorkOrderDto) {
   @IsOptional()
   @IsString()
   expectedUpdatedAt?: string;
+
+  @ApiPropertyOptional({ description: 'B49 — kilométrage aller-retour saisi à la main (null pour effacer)', nullable: true })
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @IsNumber({}, { message: i18nValidationMessage('validation.IS_NUMBER') })
+  @Min(0)
+  @Max(5000)
+  travelDistanceKm?: number | null;
 }

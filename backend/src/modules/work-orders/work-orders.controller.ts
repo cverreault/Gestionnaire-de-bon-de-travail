@@ -23,6 +23,8 @@ import { Throttle } from '@nestjs/throttler';
 import { Role } from '@prisma/client';
 
 import { WorkOrdersService } from './work-orders.service';
+import { TravelService } from './application/travel.service';
+import { TravelReportQueryDto } from './dto/travel.dto';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto';
 import { UpdateWorkOrderDto } from './dto/update-work-order.dto';
 import { TransitionStatusDto } from './dto/transition-status.dto';
@@ -44,7 +46,10 @@ interface JwtUser {
 @ApiBearerAuth('access-token')
 @Controller('work-orders')
 export class WorkOrdersController {
-  constructor(private readonly workOrdersService: WorkOrdersService) {}
+  constructor(
+    private readonly workOrdersService: WorkOrdersService,
+    private readonly travel: TravelService,
+  ) {}
 
   // ── List ────────────────────────────────────────────────────────────────────
 
@@ -88,6 +93,60 @@ export class WorkOrdersController {
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
     res.send(csv);
+  }
+
+  // ── B49 — kilométrage ───────────────────────────────────────────────────────
+
+  @Get('travel-report')
+  @Roles(Role.ADMIN, Role.DISPATCHER)
+  @ApiOperation({ summary: 'Kilométrage des BT terminés sur une période, par technicien (B49)' })
+  travelReport(@Query() q: TravelReportQueryDto) {
+    return this.travel.report(new Date(q.from), new Date(q.to), q.technicianId);
+  }
+
+  @Get('travel-report.csv')
+  @Roles(Role.ADMIN, Role.DISPATCHER)
+  @ApiOperation({ summary: 'Export CSV du kilométrage (B49)' })
+  async travelReportCsv(@Query() q: TravelReportQueryDto, @Res() res: Response): Promise<void> {
+    const csv = await this.travel.reportCsv(new Date(q.from), new Date(q.to), q.technicianId);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="kilometrage-${q.from.slice(0, 10)}-${q.to.slice(0, 10)}.csv"`);
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    res.send('\uFEFF' + csv);
+  }
+
+  @Get(':id/travel')
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN)
+  @ApiOperation({ summary: 'Kilométrage aller-retour du BT et tracé routier (B49)' })
+  async travelInfo(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() currentUser: JwtUser) {
+    await this.workOrdersService.findOne(id, currentUser); // 404 / IDOR technicien
+    const { assignedToId: _a, ...info } = await this.travel.info(id, { withRoute: true });
+    void _a;
+    return info;
+  }
+
+  @Post(':id/travel/compute')
+  @Roles(Role.ADMIN, Role.DISPATCHER)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Recalculer le kilométrage aller-retour (B49)' })
+  async travelCompute(@Param('id', ParseUUIDPipe) id: string) {
+    return this.travel.compute(id, { force: true });
+  }
+
+  @Get(':id/travel.gpx')
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN)
+  @ApiOperation({ summary: 'Trajet aller-retour au format GPX (B49)' })
+  async travelGpx(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() currentUser: JwtUser, @Res() res: Response): Promise<void> {
+    const wo = await this.workOrdersService.findOne(id, currentUser);
+    const gpx = await this.travel.gpx(id, wo.referenceNumber);
+    if (!gpx) {
+      res.status(404).json({ statusCode: 404, message: 'Trajet indisponible (adresse de départ, coordonnées ou moteur manquants)' });
+      return;
+    }
+    res.setHeader('Content-Type', 'application/gpx+xml; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${wo.referenceNumber}-trajet.gpx"`);
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    res.send(gpx);
   }
 
   // ── Detail ──────────────────────────────────────────────────────────────────

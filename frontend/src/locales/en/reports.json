@@ -8,7 +8,6 @@
   "lastNDays": "Last {{n}} days",
   "noData": "No data for this range",
   "pdfUnavailable": "PDF generation is disabled on this server",
-
   "sections": {
     "resolutionTime": {
       "title": "Resolution time",
@@ -27,7 +26,6 @@
       "description": "BTs created and completed per day over the range."
     }
   },
-
   "columns": {
     "taskType": "Type",
     "completed": "Completed",
@@ -43,5 +41,20 @@
     "created": "Created",
     "date": "Date",
     "untyped": "Untyped"
+  },
+  "mileage": {
+    "title": "Mileage",
+    "subtitle": "Round trip base → site → base of the work orders completed in the period, computed by the routing engine or entered by hand.",
+    "allTechnicians": "All technicians",
+    "exportCsv": "Export CSV",
+    "pickPeriod": "Pick a period.",
+    "empty": "No work order completed in the period.",
+    "technician": "Technician",
+    "workOrders": "Completed WOs",
+    "withMileage": "With km",
+    "km": "Round-trip km",
+    "hours": "Driving hours",
+    "total": "Total",
+    "hint": "The CSV lists every work order (reference, client, address, date, km, minutes, source). Work orders without km have no geocoded address or the base address was not set: “Recompute” on the work order fills them."
   }
 }

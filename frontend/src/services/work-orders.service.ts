@@ -34,6 +34,8 @@ export interface CreateWorkOrderDto {
 }
 
 export interface UpdateWorkOrderDto extends Partial<CreateWorkOrderDto> {
+  /** B49 — manual round-trip mileage ; null clears it. */
+  travelDistanceKm?: number | null;
   status?: WorkOrderStatus;
   completionNotes?: string;
   negativeReason?: string;
@@ -169,3 +171,43 @@ const workOrdersService = {
 };
 
 export default workOrdersService;
+
+// ── B49 — kilométrage ────────────────────────────────────────────────────────
+
+export interface TravelInfo {
+  distanceKm: number | null;
+  durationMin: number | null;
+  source: 'ROUTER' | 'MANUAL' | null;
+  computedAt: string | null;
+  route: { distanceKm: number; durationMin: number; shape: Array<{ lat: number; lng: number }>; legs: Array<{ distanceKm: number; durationMin: number }> } | null;
+  base: { lat: number; lng: number; address: string | null } | null;
+  site: { lat: number; lng: number } | null;
+}
+
+export interface TravelReport {
+  from: string;
+  to: string;
+  totalDistanceKm: number;
+  technicians: Array<{ technicianId: string | null; technician: string; workOrders: number; withMileage: number; distanceKm: number; durationMin: number }>;
+  items: Array<{ id: string; referenceNumber: string; title: string; completedAt: string | null; technician: string | null; client: string | null; address: string | null; distanceKm: number | null; durationMin: number | null; source: string | null }>;
+}
+
+export const getTravelInfo = (id: string) => api.get<ApiResponse<TravelInfo>>(`/work-orders/${id}/travel`);
+export const computeTravel = (id: string) => api.post<ApiResponse<{ distanceKm: number; durationMin: number }>>(`/work-orders/${id}/travel/compute`);
+export const getTravelReport = (from: string, to: string, technicianId?: string) =>
+  api.get<ApiResponse<TravelReport>>('/work-orders/travel-report', { params: { from, to, ...(technicianId ? { technicianId } : {}) } });
+
+/** Downloads a file served with Content-Disposition through the authenticated client. */
+export async function downloadFile(path: string, params: Record<string, string> | undefined, fallbackName: string): Promise<void> {
+  const res = await api.get(path, { params, responseType: 'blob' });
+  const disposition = (res.headers as Record<string, string | undefined>)['content-disposition'] ?? '';
+  const match = /filename="([^"]+)"/.exec(disposition);
+  const url = URL.createObjectURL(res.data as Blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = match?.[1] ?? fallbackName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}

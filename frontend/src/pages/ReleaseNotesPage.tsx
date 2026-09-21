@@ -59,6 +59,16 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.16.0',
+    name: 'Kilométrage aller-retour',
+    date: 'Septembre 2026',
+    entries: [
+      { type: 'new', text: "🚗 Chaque bon de travail reçoit son kilométrage aller-retour (adresse de départ de l'entreprise → site → retour), calculé automatiquement à la fin des travaux par le moteur de routage ; recalcul ou saisie manuelle possible" },
+      { type: 'new', text: "🗺 Sur le BT, « Voir le trajet » affiche l'aller-retour sur la carte et « GPX » exporte le tracé pour un GPS ou un tableur" },
+      { type: 'new', text: "📊 Rapports : section Kilométrage par technicien sur la période, avec export CSV détaillé (référence, client, adresse, date, km, minutes)" },
+    ],
+  },
+  {
     version: '2.15.1',
     name: 'Courriels de fin de travaux',
     date: 'Septembre 2026',

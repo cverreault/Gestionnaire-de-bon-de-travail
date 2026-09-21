@@ -449,5 +449,25 @@
     "sortReference": "Sort: reference",
     "unassignConfirm": "Remove {{ref}} from its technician?",
     "cannotUnassign": "This work order cannot be unassigned from its current status."
+  },
+  "travel": {
+    "title": "Mileage",
+    "roundTrip": "round trip",
+    "none": "Not computed yet: it is computed automatically at completion, when the company starting address is set.",
+    "sourceManual": "Entered by hand",
+    "sourceRouter": "Computed by the routing engine (base → site → base)",
+    "showMap": "Show route",
+    "recompute": "Recompute",
+    "computing": "Computing…",
+    "manual": "Enter",
+    "error": "Could not compute.",
+    "loading": "Computing the route…",
+    "close": "Close",
+    "roundTripSummary": "Round trip: {{km}} km · {{min}} min drive",
+    "noRoute": "Route unavailable (missing base address, coordinates or engine).",
+    "from": "From",
+    "base": "Base",
+    "site": "Site",
+    "exportGpx": "Export route (GPX)"
   }
 }
