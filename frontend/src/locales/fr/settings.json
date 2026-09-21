@@ -378,7 +378,9 @@
     "removePointConfirm": "Retirer « {{label}} » ?",
     "remove": "Retirer",
     "pointLabelPlaceholder": "Nom du point (ex. : Entrepôt)",
-    "pickAddress": "Choisissez une adresse dans les suggestions.",
-    "addPoint": "Ajouter le point"
+    "pickAddress": "Choisissez une adresse dans les suggestions, saisissez les coordonnées ou utilisez « Ma position ».",
+    "addPoint": "Ajouter le point",
+    "addressPlaceholder": "Adresse (choisie ci-dessus ou saisie)",
+    "pointReady": "Position connue : le point peut être ajouté."
   }
 }

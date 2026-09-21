@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAddressTypes } from '../hooks/useSettings';
 import { theme, formStyles } from '../theme';
 import AddressAutocomplete from './AddressAutocomplete';
+import CoordinatesInput from './CoordinatesInput';
 import TagPicker from './TagPicker';
 import type { ResolvedAddress } from '../services/geo.service';
 
@@ -81,7 +82,6 @@ export default function AddressFormFields({
     };
   }
 
-  const hasCoords = typeof watch('latitude') === 'number';
 
   return (
     <div
@@ -98,11 +98,15 @@ export default function AddressFormFields({
         </p>
       )}
       <AddressAutocomplete onSelect={applyResolved} />
-      {hasCoords && (
-        <p style={{ margin: '-0.25rem 0 0.6rem', fontSize: theme.font.sizeXs, color: theme.colors.success }}>
-          📍 {t('autocomplete.geocoded', { defaultValue: 'Position GPS renseignée depuis Adresses Québec.' })}
-        </p>
-      )}
+      <div style={{ gridColumn: '1 / -1' }}>
+        <label style={{ ...formStyles.label }}>{tCommon('coords.title', { defaultValue: 'Coordonnées GPS' })}</label>
+        <CoordinatesInput
+          latitude={watch('latitude')}
+          longitude={watch('longitude')}
+          onChange={({ latitude, longitude }) => { setValue('latitude', latitude, { shouldDirty: true }); setValue('longitude', longitude, { shouldDirty: true }); }}
+          compact
+        />
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: '0.6rem', marginBottom: '0.6rem' }}>
         <div>
           <label style={{ ...formStyles.label }}>{t('fields.streetNumber')}</label>

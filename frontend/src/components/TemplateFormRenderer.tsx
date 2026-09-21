@@ -3,6 +3,7 @@ import { TemplateFieldType, Role } from '../types';
 import type { TemplateField, WorkOrderTemplate } from '../types';
 import { theme, formStyles } from '../theme';
 import { formatPhoneNA, formatPostalCodeCA } from './template-field-formatters';
+import CoordinatesInput from './CoordinatesInput';
 
 type GpsValue = { lat: number | null; lng: number | null };
 
@@ -418,19 +419,14 @@ function FieldInput({
       return (
         <div>
           {labelEl}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-            <input type="number" step="any" min={-90} max={90}
-              value={g.lat === null ? '' : String(g.lat)}
-              onChange={(e) => update({ lat: e.target.value === '' ? null : parseFloat(e.target.value) })}
-              placeholder={t('settings:formRenderer.latitudePlaceholder', { defaultValue: 'Latitude' })} disabled={disabled} style={inputStyle}
-            />
-            <input type="number" step="any" min={-180} max={180}
-              value={g.lng === null ? '' : String(g.lng)}
-              onChange={(e) => update({ lng: e.target.value === '' ? null : parseFloat(e.target.value) })}
-              placeholder={t('settings:formRenderer.longitudePlaceholder', { defaultValue: 'Longitude' })} disabled={disabled} style={inputStyle}
-            />
-          </div>
-          <p style={{ ...formStyles.fieldHint }}>{t('settings:formRenderer.gpsHint', { defaultValue: 'Décimal — ex: 45.50170, -73.56730 (copier-coller depuis Google Maps).' })}</p>
+          <CoordinatesInput
+            latitude={g.lat}
+            longitude={g.lng}
+            disabled={disabled}
+            compact
+            onChange={({ latitude, longitude }) => update({ lat: latitude, lng: longitude })}
+          />
+          <p style={{ ...formStyles.fieldHint }}>{t('settings:formRenderer.gpsHint', { defaultValue: 'Décimal — ex: 45.50170, -73.56730 (copier-coller depuis Google Maps) ou « Ma position ».' })}</p>
           {helpEl}
         </div>
       );
