@@ -12,6 +12,7 @@ import { PeakTrackerService } from './application/peak-tracker.service';
 import { SignupController } from './api/signup.controller';
 import { SuperAdminTenantsController } from './api/super-admin-tenants.controller';
 import { TenantBrandingController } from './api/tenant-branding.controller';
+import { TenantSettingsController } from './api/tenant-settings.controller';
 import { ImpersonateController } from './api/impersonate.controller';
 import { SuperAdminStatsController } from './api/super-admin-stats.controller';
 import { SuperAdminAuditController } from './api/super-admin-audit.controller';
@@ -55,6 +56,7 @@ import { QUOTA_SERVICE } from '../../common/contracts/quota.contract';
     SignupController,
     SuperAdminTenantsController,
     TenantBrandingController,
+    TenantSettingsController,
     ImpersonateController,
     SuperAdminStatsController,
     SuperAdminAuditController,

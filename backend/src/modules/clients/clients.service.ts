@@ -48,6 +48,7 @@ const CLIENT_LIST_SELECT = {
   clientType: true,
   isActive: true,
   notes: true,
+  notifyOnCompletion: true,
   createdAt: true,
   updatedAt: true,
   addresses: {
@@ -313,6 +314,7 @@ export class ClientsService {
           clientType:  dto.clientType,
           notes:       dto.notes,
           principalClientId: dto.principalClientId ?? null,
+          notifyOnCompletion: dto.notifyOnCompletion ?? false,
           tags:        tagLinksCreate(clientTagIds),
         },
       });

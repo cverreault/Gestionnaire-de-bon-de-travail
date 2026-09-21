@@ -23,6 +23,21 @@ export const updateTaskType = (id: string, data: Partial<{
 export const deleteTaskType = (id: string) =>
   api.delete(`/settings/task-types/${id}`);
 
+// ── Company settings (B48) ────────────────────────────────────────────────────
+
+export interface TenantSettings {
+  completedJobsEmail: string | null;
+  baseAddress: string | null;
+  baseLat: number | null;
+  baseLng: number | null;
+  emailConfigured: boolean;
+}
+
+export const getTenantSettings = () => api.get('/tenants/settings');
+
+export const updateTenantSettings = (data: Partial<Pick<TenantSettings, 'completedJobsEmail' | 'baseAddress' | 'baseLat' | 'baseLng'>>) =>
+  api.patch('/tenants/settings', data);
+
 // ── Tags (B44) ────────────────────────────────────────────────────────────────
 
 export const getTags = (isActive?: boolean) =>

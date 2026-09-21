@@ -29,7 +29,9 @@
     "principalCreateError": "Could not create, check the fields.",
     "principalSelfExcluded": "{{name}} cannot be its own principal.",
     "principalNoOther": "No other principal.",
-    "tags": "Tags"
+    "tags": "Tags",
+    "notifyOnCompletion": "Email the client when the job is completed",
+    "notifyOnCompletionHint": "Uses the client email above. The summary is sent when the work order is completed."
   },
   "types": {
     "RESIDENTIAL": "Residential",

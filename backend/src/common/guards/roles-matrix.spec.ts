@@ -46,6 +46,7 @@ import { WorkOrderPartsController } from '../../modules/parts/api/work-order-par
 import { MyStockController } from '../../modules/parts/api/my-stock.controller';
 import { SuperAdminController } from '../../modules/system-configs/api/super-admin.controller';
 import { TenantConfigsController } from '../../modules/system-configs/api/tenant-configs.controller';
+import { TenantSettingsController } from '../../modules/tenants/api/tenant-settings.controller';
 import { SuperAdminTenantsController } from '../../modules/tenants/api/super-admin-tenants.controller';
 import { ImpersonateController } from '../../modules/tenants/api/impersonate.controller';
 import { SettingsController } from '../../modules/settings/settings.controller';
@@ -172,6 +173,12 @@ const SUPER_ADMIN_TENANTS_MATRIX: MatrixRow[] = [
   { controller: SuperAdminTenantsController, method: 'update', expectedRoles: [Role.SUPER_ADMIN], note: 'PATCH /super-admin/tenants/:id' },
 ];
 
+const TENANT_SETTINGS_MATRIX: MatrixRow[] = [
+  // B48 — company settings (completed-jobs email, base address)
+  { controller: TenantSettingsController, method: 'get',    expectedRoles: [Role.ADMIN], note: 'GET /tenants/settings' },
+  { controller: TenantSettingsController, method: 'update', expectedRoles: [Role.ADMIN], note: 'PATCH /tenants/settings' },
+];
+
 const TENANT_CONFIGS_MATRIX: MatrixRow[] = [
   // B6.9 — class-level @Roles(ADMIN). Tenant ADMIN manages TENANT-scoped
   // overrides only ; the GLOBAL surface stays on /super-admin/configs.
@@ -263,6 +270,7 @@ const ALL_ROWS: { name: string; rows: MatrixRow[] }[] = [
   { name: 'SuperAdminController',    rows: SUPER_ADMIN_MATRIX },
   { name: 'LocationsController',     rows: LOCATIONS_MATRIX },
   { name: 'TenantConfigsController', rows: TENANT_CONFIGS_MATRIX },
+  { name: 'TenantSettingsController', rows: TENANT_SETTINGS_MATRIX },
   { name: 'SuperAdminTenantsController', rows: SUPER_ADMIN_TENANTS_MATRIX },
   { name: 'MobileControllers',       rows: MOBILE_MATRIX },
   {

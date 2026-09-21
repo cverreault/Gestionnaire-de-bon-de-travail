@@ -55,6 +55,8 @@ interface ClientFormValues {
   principalClient: PrincipalClientRef | null;
   /** B44 — selected tag ids. */
   tagIds: string[];
+  /** B48 */
+  notifyOnCompletion: boolean;
 }
 
 import AddressFormFields from '../components/AddressFormFields';
@@ -140,6 +142,7 @@ function ClientModal({
       phone: defaultValues?.phone ?? '',
       clientType: defaultValues?.clientType ?? ClientType.RESIDENTIAL,
       notes: defaultValues?.notes ?? '',
+      notifyOnCompletion: defaultValues?.notifyOnCompletion ?? false,
       principalClient: defaultValues?.principalClient ?? null,
       tagIds: defaultValues?.tagIds ?? [],
     },
@@ -310,6 +313,18 @@ function ClientModal({
                   value={watch('tagIds')}
                   onChange={(next) => setValue('tagIds', next, { shouldDirty: true })}
                 />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', cursor: 'pointer', fontSize: theme.font.sizeSm, color: theme.colors.text }}>
+                  <input type="checkbox" {...register('notifyOnCompletion')} style={{ marginTop: 3 }} />
+                  <span>
+                    {t('fields.notifyOnCompletion', { defaultValue: 'Envoyer un courriel au client à la fin des travaux' })}
+                    <br />
+                    <span style={{ color: theme.colors.textMuted, fontSize: theme.font.sizeXs }}>
+                      {t('fields.notifyOnCompletionHint', { defaultValue: "Utilise le courriel du client ci-dessus. Le résumé part quand le bon de travail est complété." })}
+                    </span>
+                  </span>
+                </label>
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={{ ...formStyles.label }}>{t('fields.notes')}</label>
@@ -738,6 +753,7 @@ export default function ClientsPage() {
       phone: values.phone || undefined,
       clientType: values.clientType,
       notes: values.notes || undefined,
+      notifyOnCompletion: values.notifyOnCompletion,
       tagIds: values.tagIds,
     };
     if (addresses && addresses.length > 0) {
@@ -777,6 +793,7 @@ export default function ClientsPage() {
         phone: values.phone || undefined,
         clientType: values.clientType,
         notes: values.notes || undefined,
+        notifyOnCompletion: values.notifyOnCompletion,
         tagIds: values.tagIds,
       },
     });

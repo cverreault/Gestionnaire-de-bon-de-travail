@@ -140,6 +140,11 @@ model Tenant {
   workOrdersResetAt          DateTime? @map("work_orders_reset_at")
 
   ownerEmail String? @map("owner_email")
+  // B48 — réglages d'entreprise : courriel des travaux complétés, adresse de départ (kilométrage)
+  completedJobsEmail String? @map("completed_jobs_email")
+  baseAddress        String? @map("base_address")
+  baseLat            Float?  @map("base_lat")
+  baseLng            Float?  @map("base_lng")
 
   /// B22 — Stripe billing linkage (set by the billing webhook once the
   /// tenant completes a Checkout). Null = never paid online.
@@ -884,6 +889,8 @@ model Client {
   phone       String?
   clientType  ClientType @default(RESIDENTIAL) @map("client_type")
   notes       String?
+  /// B48 — le client reçoit un courriel quand ses travaux sont complétés (nécessite `email`).
+  notifyOnCompletion Boolean @default(false) @map("notify_on_completion")
   isActive    Boolean    @default(true) @map("is_active")
   // B42 — sous-traitance : ce client est « client de » un donneur d'ordre.
   // Proposé par défaut comme « Mandaté par » sur ses nouveaux BT.

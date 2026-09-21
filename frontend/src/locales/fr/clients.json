@@ -29,7 +29,9 @@
     "principalCreateError": "Création impossible, vérifiez les champs.",
     "principalSelfExcluded": "{{name}} ne peut pas être son propre donneur d’ordre.",
     "principalNoOther": "Aucun autre donneur d’ordre.",
-    "tags": "Tags"
+    "tags": "Tags",
+    "notifyOnCompletion": "Envoyer un courriel au client à la fin des travaux",
+    "notifyOnCompletionHint": "Utilise le courriel du client ci-dessus. Le résumé part quand le bon de travail est complété."
   },
   "types": {
     "RESIDENTIAL": "Résidentiel",
