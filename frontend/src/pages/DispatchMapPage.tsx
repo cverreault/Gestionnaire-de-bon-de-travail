@@ -7,7 +7,7 @@ import 'leaflet/dist/leaflet.css';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import { theme, cardStyles, layoutStyles, buttonStyles } from '../theme';
 import { toast } from '../context/toast.store';
-import { getMapSnapshot, optimizeRoute, geocodeMissing, type MapSnapshot, type MapWorkOrder, type SnapshotFilter } from '../services/dispatch-map.service';
+import { getMapSnapshot, optimizeRoute, geocodeMissing, type MapSnapshot, type MapWorkOrder, type OptimizedRoute, type SnapshotFilter } from '../services/dispatch-map.service';
 
 // ─── Period filters ──────────────────────────────────────────────
 // Filter map WOs by their scheduledDate. « Tous » clears the filter.
@@ -76,6 +76,8 @@ export default function DispatchMapPage() {
   const [selectedTechId, setSelectedTechId] = useState<string | null>(null);
   const [orderedRoute, setOrderedRoute] = useState<string[]>([]);
   const [routeDistance, setRouteDistance] = useState<number | null>(null);
+  // B47 — full tour (driving times, legs, road shape) when Valhalla answered.
+  const [tour, setTour] = useState<OptimizedRoute | null>(null);
   const [optimizing, setOptimizing] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
 
@@ -106,6 +108,7 @@ export default function DispatchMapPage() {
   useEffect(() => {
     setOrderedRoute([]);
     setRouteDistance(null);
+    setTour(null);
   }, [selectedTechId]);
 
   const selectedTech = snap?.technicians.find((t) => t.id === selectedTechId);
@@ -134,7 +137,12 @@ export default function DispatchMapPage() {
       );
       setOrderedRoute(res.orderedWorkOrderIds);
       setRouteDistance(res.totalDistanceKm);
-      toast.success(`Tournée optimisée — ${res.totalDistanceKm} km`);
+      setTour(res);
+      toast.success(
+        res.engine === 'valhalla' && res.totalDurationMin !== null
+          ? `Tournée optimisée — ${res.totalDistanceKm} km · ${formatMinutes(res.totalDurationMin)} de route`
+          : `Tournée optimisée — ${res.totalDistanceKm} km (à vol d'oiseau, moteur de routage indisponible)`,
+      );
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       toast.error(msg);
@@ -146,6 +154,8 @@ export default function DispatchMapPage() {
   // Compute route polyline coordinates once we have an order + positions.
   const routeCoords = useMemo<[number, number][]>(() => {
     if (!selectedTech?.position || orderedRoute.length === 0) return [];
+    // B47 — road geometry from the routing engine when available.
+    if (tour?.shape && tour.shape.length > 1) return tour.shape.map((p) => [p.lat, p.lng] as [number, number]);
     const woMap = new Map(assignedWos.map((w) => [w.id, w]));
     const points: [number, number][] = [
       [selectedTech.position.lat, selectedTech.position.lng],
@@ -155,7 +165,7 @@ export default function DispatchMapPage() {
       if (w?.location) points.push([w.location.lat, w.location.lng]);
     }
     return points;
-  }, [selectedTech, orderedRoute, assignedWos]);
+  }, [selectedTech, orderedRoute, assignedWos, tour]);
 
   const initialCenter = deriveCenter(snap);
 
@@ -403,6 +413,14 @@ export default function DispatchMapPage() {
                           <strong style={{ marginRight: 4 }}>{i + 1}.</strong>
                         )}
                         {w.referenceNumber} — {w.title}
+                        {(() => {
+                          const leg = tour?.legs.find((l) => l.workOrderId === w.id);
+                          return leg ? (
+                            <span style={{ display: 'block', color: theme.colors.textMuted, fontSize: 10 }}>
+                              🚗 {leg.distanceKm} km · {formatMinutes(leg.durationMin)}
+                            </span>
+                          ) : null;
+                        })()}
                         {!w.location && (
                           <span
                             style={{ display: 'block', color: '#b45309', fontSize: 10 }}
@@ -432,6 +450,12 @@ export default function DispatchMapPage() {
                       }}
                     >
                       Distance totale : {routeDistance} km
+                      {tour?.engine === 'valhalla' && tour.totalDurationMin !== null && (
+                        <> · {formatMinutes(tour.totalDurationMin)} de route</>
+                      )}
+                      {tour?.engine === 'haversine' && (
+                        <span style={{ display: 'block', color: '#b45309' }}>À vol d'oiseau : moteur de routage indisponible</span>
+                      )}
                     </div>
                   )}
                 </>
@@ -442,6 +466,16 @@ export default function DispatchMapPage() {
       </div>
     </div>
   );
+}
+
+// ─── Formatting ───────────────────────────────────────────────────
+
+function formatMinutes(min: number): string {
+  const m = Math.round(min);
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60);
+  const r = m % 60;
+  return r === 0 ? `${h} h` : `${h} h ${String(r).padStart(2, '0')}`;
 }
 
 // ─── Map helpers ──────────────────────────────────────────────────

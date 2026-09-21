@@ -26,6 +26,7 @@ Ce dossier contient les décisions architecturales structurantes du projet TaskM
 | [016](ADR-016-mobile-offline-sync-protocol.md) | Accepted | Protocole de sync hors ligne : pull delta, rejeux idempotents, verrou optimiste |
 | [017](ADR-017-mobile-background-gps.md) | Accepted | GPS mobile en arrière-plan : envoi groupé et horodatage client |
 | [018](ADR-018-address-reference-and-geocoding.md) | Accepted | Référentiel d'adresses : géocodeur Adresses Québec + rôle d'évaluation importé (fiche propriété) |
+| [019](ADR-019-routing-engine-valhalla.md) | Accepted (amende ADR-018) | Moteur de routage : Valhalla auto-hébergé sur OSM Québec (itinéraires, matrices, tournées) |
 
 ## Comment écrire une nouvelle ADR
 

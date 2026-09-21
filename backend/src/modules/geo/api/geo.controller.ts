@@ -1,10 +1,12 @@
-import { BadRequestException, Controller, Get, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, HttpCode, HttpStatus, Post, Query, ServiceUnavailableException } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { AddressLookupService } from '../application/address-lookup.service';
 import { PropertyService } from '../application/property.service';
 import { PropertyQueryDto, ResolveQueryDto, SuggestQueryDto } from './dto/geo-query.dto';
+import { RouteRequestDto } from './dto/route.dto';
+import { ValhallaClient } from '../infrastructure/valhalla.client';
 
 /**
  * Géo (B40) — autocomplétion d'adresse (Adresses Québec) et fiche propriété
@@ -17,6 +19,7 @@ export class GeoController {
   constructor(
     private readonly lookup: AddressLookupService,
     private readonly properties: PropertyService,
+    private readonly router: ValhallaClient,
   ) {}
 
   @Get('suggest')
@@ -55,5 +58,26 @@ export class GeoController {
         city: query.city,
       }),
     };
+  }
+
+  // ── B47 — routage (Valhalla, OSM Québec) ─────────────────────────────────
+
+  /** Itinéraire routier entre deux points : distance, durée, tracé, manœuvres. */
+  @Post('route')
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Itinéraire routier entre deux points (B47)' })
+  async route(@Body() dto: RouteRequestDto) {
+    const res = await this.router.route([dto.from, dto.to], { language: dto.language });
+    if (!res) throw new ServiceUnavailableException('Moteur de routage indisponible');
+    return res;
+  }
+
+  /** État du moteur de routage (tuiles prêtes ?). */
+  @Get('router/status')
+  @Roles(Role.ADMIN, Role.DISPATCHER)
+  @ApiOperation({ summary: 'État du moteur de routage Valhalla (B47)' })
+  routerStatus() {
+    return this.router.status();
   }
 }

@@ -1,5 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { GEOCODER } from '../../common/contracts/geocoder.contract';
+import { ROUTER } from '../../common/contracts/router.contract';
+import { ValhallaClient } from './infrastructure/valhalla.client';
 import { GeoController } from './api/geo.controller';
 import { SuperAdminGeoController } from './api/super-admin-geo.controller';
 import { AddressLookupService } from './application/address-lookup.service';
@@ -30,7 +32,9 @@ import { NominatimClient } from './infrastructure/nominatim.client';
     PropertyService,
     RollUpdateService,
     { provide: GEOCODER, useExisting: AddressLookupService },
+    ValhallaClient,
+    { provide: ROUTER, useExisting: ValhallaClient },
   ],
-  exports: [GEOCODER],
+  exports: [GEOCODER, ROUTER],
 })
 export class GeoModule {}

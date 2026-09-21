@@ -59,13 +59,18 @@ export async function getMapSnapshot(filter?: SnapshotFilter): Promise<MapSnapsh
   return unwrap<MapSnapshot>(data);
 }
 
-export async function optimizeRoute(
-  technicianId: string,
-  workOrderIds: string[],
-): Promise<{ orderedWorkOrderIds: string[]; totalDistanceKm: number }> {
-  const { data } = await api.post<
-    ApiResponse<{ orderedWorkOrderIds: string[]; totalDistanceKm: number }>
-  >('/dispatch-map/optimize-route', { technicianId, workOrderIds });
+/** B47 — tour result ; `engine: 'valhalla'` = real driving times and road geometry. */
+export interface OptimizedRoute {
+  orderedWorkOrderIds: string[];
+  totalDistanceKm: number;
+  totalDurationMin: number | null;
+  legs: Array<{ workOrderId: string; distanceKm: number; durationMin: number }>;
+  shape: Array<{ lat: number; lng: number }>;
+  engine: 'valhalla' | 'haversine';
+}
+
+export async function optimizeRoute(technicianId: string, workOrderIds: string[]): Promise<OptimizedRoute> {
+  const { data } = await api.post<ApiResponse<OptimizedRoute>>('/dispatch-map/optimize-route', { technicianId, workOrderIds });
   return unwrap(data);
 }
 

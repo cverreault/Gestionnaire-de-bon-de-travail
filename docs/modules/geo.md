@@ -122,6 +122,10 @@ Le MAMH publie un nouveau rôle chaque année (printemps) : relancer l'import av
 - **Arch** : `npm run arch:check` — aucune nouvelle exception (contrat dans `common/contracts`)
 - **Import** : validé sur une base de travail avec `--limit 30000`
 
+## Routage — Valhalla (B47, ADR-019)
+
+Service compose `valhalla` (réseau interne, `VALHALLA_URL`), tuiles construites depuis l'extrait OSM Québec dans le volume `taskmgr_valhalla_data`. Contrat `ROUTER` (`common/contracts/router.contract.ts`) implémenté par `infrastructure/valhalla.client.ts` : `route(points)` (km, minutes, tracé décodé du polyline 1e-6, manœuvres), `matrix(sources, targets)` (minutes / km, `null` si inatteignable), `status()`. Routes : `POST /geo/route` (tout le personnel ; l'app affiche « 12 km · 18 min de route » avant « Y aller »), `GET /geo/router/status` (admin, répartiteur). Toute panne ou construction en cours renvoie `null` : `dispatch-map` retombe sur l'heuristique à vol d'oiseau (`engine: 'haversine'`).
+
 ## Open questions
 
 - Adresses Québec n'a pas de limite publiée : surveiller les 429 dans les logs ; un cache court des suggestions côté backend serait la première mesure.

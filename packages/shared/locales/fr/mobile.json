@@ -105,7 +105,8 @@
     "removePart": "Retirer",
     "removePartConfirm": "Retirer cette pièce du BT ? Le stock sera recrédité.",
     "noMatch": "Aucune pièce trouvée",
-    "scanHint": "Visez le code-barres de la pièce"
+    "scanHint": "Visez le code-barres de la pièce",
+    "eta": "{{km}} km · {{min}} min de route"
   },
   "status": {
     "REQUESTED": "Demandé",

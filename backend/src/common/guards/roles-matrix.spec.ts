@@ -314,6 +314,8 @@ const ALL_ROWS: { name: string; rows: MatrixRow[] }[] = [
     name: 'GeoController',
     rows: [
       { controller: GeoController, method: 'suggest',  expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'GET /geo/suggest' },
+      { controller: GeoController, method: 'route',    expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'POST /geo/route — B47, the app shows distance / ETA' },
+      { controller: GeoController, method: 'routerStatus', expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'GET /geo/router/status' },
       { controller: GeoController, method: 'resolve',  expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'GET /geo/resolve' },
       { controller: GeoController, method: 'property', expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'GET /geo/property' },
     ],

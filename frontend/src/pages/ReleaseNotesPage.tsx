@@ -59,6 +59,16 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.15.0',
+    name: 'Moteur de routage : tournées sur vrais temps de conduite',
+    date: 'Septembre 2026',
+    entries: [
+      { type: 'new', text: "🛣 Moteur de routage auto-hébergé (Valhalla, cartes OpenStreetMap du Québec) : les distances et les temps sont ceux de la route, plus à vol d'oiseau" },
+      { type: 'improvement', text: "🎯 Carte dispatch : « Optimiser la tournée » ordonne les BT d'un technicien sur les temps de conduite réels, affiche le tracé routier, la durée totale et le temps de chaque trajet" },
+      { type: 'new', text: "📱 App mobile 0.7.0 : distance et temps de route jusqu'au site affichés sur le BT, avant « Y aller »" },
+    ],
+  },
+  {
     version: '2.14.1',
     name: 'Localisation obligatoire dans l\'app',
     date: 'Septembre 2026',
