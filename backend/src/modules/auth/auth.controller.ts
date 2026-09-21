@@ -16,6 +16,7 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
+import { requestMeta } from './application/sessions.service';
 import { EmailVerificationService } from './application/email-verification.service';
 import { TotpService } from './totp/totp.service';
 import type { Request } from 'express';
@@ -66,7 +67,7 @@ export class AuthController {
     @Req() req: Request,
   ) {
     const implicit = (req as Request & { [TENANT_IS_IMPLICIT_KEY]?: boolean })[TENANT_IS_IMPLICIT_KEY] === true;
-    return this.authService.login(dto, tenant.id, implicit);
+    return this.authService.login(dto, tenant.id, implicit, requestMeta(req));
   }
 
   // ── POST /api/auth/login/2fa ───────────────────────────────────────────────
@@ -82,11 +83,12 @@ export class AuthController {
   @ApiOperation({
     summary: 'Étape 2 du login 2FA — vérifie le code TOTP et retourne les tokens',
   })
-  async login2fa(@Body() dto: { pendingToken: string; code: string }) {
+  async login2fa(@Body() dto: { pendingToken: string; code: string }, @Req() req: Request) {
     return this.authService.login2fa(
       dto.pendingToken,
       dto.code,
       (userId, code) => this.totp.verify(userId, code).then(() => true),
+      requestMeta(req),
     );
   }
 
@@ -131,8 +133,8 @@ export class AuthController {
     },
   })
   @ApiResponse({ status: 204, description: 'Déconnexion réussie' })
-  async logout(@Body('refreshToken') refreshToken: string) {
-    await this.authService.logout(refreshToken);
+  async logout(@Body('refreshToken') refreshToken: string, @Req() req: Request) {
+    await this.authService.logout(refreshToken, requestMeta(req));
   }
 
   // ── GET /api/auth/me ───────────────────────────────────────────────────────

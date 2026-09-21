@@ -160,10 +160,23 @@
       "deviceRevoked": "Device logged out.",
       "revokeAll": "Log out everywhere",
       "confirmAll": "Log {{name}} out of every device and browser?",
-      "allRevoked": "{{sessions}} session(s) and {{devices}} device(s) logged out."
+      "allRevoked": "{{sessions}} session(s) and {{devices}} device(s) logged out.",
+      "active": "Active sessions",
+      "noSession": "No active session.",
+      "startedSince": "open for {{d}}",
+      "recentLogins": "Recent sign-ins",
+      "noLogin": "No sign-in recorded.",
+      "failed": "failed",
+      "logout": "sign-out",
+      "login": "sign-in"
     },
     "locationRequired": "Location required in the mobile app",
-    "locationRequiredHint": "The app refuses to work until location is allowed. Uncheck to exempt this user."
+    "locationRequiredHint": "The app refuses to work until location is allowed. Uncheck to exempt this user.",
+    "colPresence": "Online",
+    "online": "Online",
+    "since": "for {{d}}",
+    "lastSeen": "seen {{d}} ago",
+    "neverSeen": "never signed in"
   },
   "backupPage": {
     "invalidFormat": "Invalid format: only .tar.gz files are accepted.",
@@ -290,5 +303,23 @@
   "emailList": {
     "placeholder": "Add an email then Enter",
     "invalid": "Invalid email."
+  },
+  "connections": {
+    "title": "Connections",
+    "subtitle": "Who is online now, and who signed in, from where and when.",
+    "backToUsers": "Users",
+    "onlineNow": "Online now",
+    "nobody": "Nobody online in the last 5 minutes.",
+    "since": "signed in for {{d}}",
+    "lastSeen": "seen {{d}} ago",
+    "sessions": "{{n}} sessions",
+    "history": "Sign-in history",
+    "allUsers": "All users",
+    "allKinds": "All kinds",
+    "colWhen": "Date and time",
+    "colUser": "User",
+    "colKind": "Kind",
+    "colDevice": "Device",
+    "empty": "No connection in the period."
   }
 }

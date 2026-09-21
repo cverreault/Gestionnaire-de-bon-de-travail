@@ -12,6 +12,8 @@ import { TotpService } from './totp/totp.service';
 import { TotpController } from './totp/totp.controller';
 import { DeviceRevokedListener } from './application/device-revoked.listener';
 import { UserSessionsRevokedListener } from './application/user-sessions-revoked.listener';
+import { SessionsService } from './application/sessions.service';
+import { SessionsController } from './api/sessions.controller';
 
 @Module({
   imports: [
@@ -25,7 +27,7 @@ import { UserSessionsRevokedListener } from './application/user-sessions-revoked
       inject: [ConfigService],
     }),
   ],
-  controllers: [AuthController, TotpController],
+  controllers: [AuthController, TotpController, SessionsController],
   providers: [
     AuthService,
     JwtStrategy,
@@ -35,6 +37,7 @@ import { UserSessionsRevokedListener } from './application/user-sessions-revoked
     TotpService,
     DeviceRevokedListener,
     UserSessionsRevokedListener,
+    SessionsService,
   ],
   /**
    * JwtModule est exporté pour que d'autres modules (ex. UsersModule)
@@ -45,6 +48,7 @@ import { UserSessionsRevokedListener } from './application/user-sessions-revoked
    */
   exports: [
     AuthService,
+    SessionsService,
     JwtModule,
     PassportModule,
     EmailVerificationService,

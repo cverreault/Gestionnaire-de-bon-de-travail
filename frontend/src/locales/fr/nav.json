@@ -36,5 +36,6 @@
   "admin": "Administration",
   "inventory": "Inventaire",
   "myStock": "Mon stock",
-  "saGeo": "Référentiel d’adresses"
+  "saGeo": "Référentiel d’adresses",
+  "connections": "Connexions"
 }

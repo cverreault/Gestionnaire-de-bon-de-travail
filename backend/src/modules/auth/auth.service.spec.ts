@@ -134,7 +134,7 @@ function makeMockConfig() {
 }
 
 async function buildService(prisma: any, jwt = makeMockJwt(), config = makeMockConfig(), context?: any) {
-  return new AuthService(prisma as any, jwt as any, config as any, context);
+  return new AuthService(prisma as any, jwt as any, config as any, { record: jest.fn().mockResolvedValue(undefined) } as any, context);
 }
 
 /** Request context stub: current tenant + a runWith that records the switch and runs the callback. */

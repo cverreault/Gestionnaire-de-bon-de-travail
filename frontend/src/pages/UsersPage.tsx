@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';
-import { adminResetPassword } from '../services/users.service';
+import { adminResetPassword, getPresence } from '../services/users.service';
+import { formatDuration } from '../utils/presence';
 import LoadingSpinner from '../components/LoadingSpinner';
 import UserSessionsModal from '../components/UserSessionsModal';
 import { Role } from '../types';
@@ -600,7 +601,7 @@ function ResetPasswordModal({ userId, userName, onClose }: ResetPasswordModalPro
 
 export default function UsersPage() {
   const { t: tNav } = useTranslation('nav');
-  const { t } = useTranslation('common');
+  const { t, i18n } = useTranslation('common');
   const queryClient = useQueryClient();
 
   const roleLabel = (role: Role): string => {
@@ -620,6 +621,10 @@ export default function UsersPage() {
   const [sessionsUser, setSessionsUser] = useState<User | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
+
+  // B51 — presence, refreshed every 30 s.
+  const { data: presence } = useQuery({ queryKey: ['presence'], queryFn: () => getPresence().then((r) => r.data.data), refetchInterval: 30_000 });
+  const presenceBy = new Map((presence ?? []).map((p) => [p.userId, p]));
 
   const { data: users, isLoading, isError } = useQuery({
     queryKey: ['users'],
@@ -679,6 +684,7 @@ export default function UsersPage() {
                   t('common:usersPage.colRole', { defaultValue: 'Rôle' }),
                   t('common:usersPage.colPhone', { defaultValue: 'Téléphone' }),
                   t('common:usersPage.colStatus', { defaultValue: 'Statut' }),
+                  t('common:usersPage.colPresence', { defaultValue: 'En ligne' }),
                   t('common:usersPage.colActions', { defaultValue: 'Actions' }),
                 ].map((h) => (
                   <th
@@ -743,6 +749,29 @@ export default function UsersPage() {
                     >
                       {user.isActive ? t('common:usersPage.statusActive', { defaultValue: 'Actif' }) : t('common:usersPage.statusInactive', { defaultValue: 'Inactif' })}
                     </span>
+                  </td>
+
+                  {/* B51 — presence */}
+                  <td style={{ ...tableStyles.cell, whiteSpace: 'nowrap', fontSize: theme.font.sizeXs }}>
+                    {(() => {
+                      const p = presenceBy.get(user.id);
+                      if (!p) return <span style={{ color: theme.colors.textMuted }}>—</span>;
+                      const now = Date.now();
+                      if (p.online) {
+                        return (
+                          <span style={{ color: 'var(--c-successBadgeText)', fontWeight: theme.font.weightMedium }} title={p.lastSeenIp ? `IP ${p.lastSeenIp}` : undefined}>
+                            🟢 {t('common:usersPage.online', { defaultValue: 'En ligne' })}
+                            {p.sessionSince ? ` · ${t('common:usersPage.since', { defaultValue: 'depuis {{d}}', d: formatDuration(now - new Date(p.sessionSince).getTime(), i18n.language) })}` : ''}
+                            {p.mobileSessions > 0 ? ' 📱' : ''}
+                          </span>
+                        );
+                      }
+                      return (
+                        <span style={{ color: theme.colors.textMuted }} title={p.lastSeenIp ? `IP ${p.lastSeenIp}` : undefined}>
+                          ⚪ {p.lastSeenAt ? t('common:usersPage.lastSeen', { defaultValue: 'vu il y a {{d}}', d: formatDuration(now - new Date(p.lastSeenAt).getTime(), i18n.language) }) : t('common:usersPage.neverSeen', { defaultValue: 'jamais connecté' })}
+                        </span>
+                      );
+                    })()}
                   </td>
 
                   {/* Actions */}

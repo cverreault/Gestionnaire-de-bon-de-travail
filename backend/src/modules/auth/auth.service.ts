@@ -11,6 +11,7 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { RequestContextService } from '../../common/context/request-context.service';
+import { SessionsService, type RequestMeta } from './application/sessions.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './types/jwt-payload.interface';
@@ -51,6 +52,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly sessions: SessionsService,
     /** Optional so existing unit tests keep constructing the service with three deps. */
     @Optional() private readonly requestContext?: RequestContextService,
   ) {}
@@ -93,7 +95,7 @@ export class AuthService {
 
   // ── Login ──────────────────────────────────────────────────────────────────
 
-  async login(dto: LoginDto, tenantId: string, tenantIsImplicit = false): Promise<LoginResult> {
+  async login(dto: LoginDto, tenantId: string, tenantIsImplicit = false, meta: RequestMeta = { ip: null, userAgent: null, deviceId: null }): Promise<LoginResult> {
     // Email is now per-tenant unique (B6.3) — same gmail address can
     // exist in two tenants. The sub-domain decides which one is
     // logging in.
@@ -107,18 +109,20 @@ export class AuthService {
     if (!user && tenantIsImplicit) {
       const resolved = await this.resolveTenantByEmail(dto.email);
       if (resolved && resolved !== tenantId) {
-        return this.inTenant(resolved, () => this.login(dto, resolved, false));
+        return this.inTenant(resolved, () => this.login(dto, resolved, false, meta));
       }
     }
 
     // Message volontairement identique pour les deux cas (email inconnu / mauvais mdp)
     // afin d'éviter l'énumération de comptes.
     if (!user || !user.isActive) {
+      await this.sessions.record({ tenantId, userId: user?.id ?? null, email: dto.email, kind: 'FAILED', ...meta });
       throw new UnauthorizedException('Email ou mot de passe invalide');
     }
 
     const passwordValid = await bcrypt.compare(dto.password, user.password);
     if (!passwordValid) {
+      await this.sessions.record({ tenantId, userId: user.id, email: dto.email, kind: 'FAILED', ...meta });
       throw new UnauthorizedException('Email ou mot de passe invalide');
     }
 
@@ -149,7 +153,9 @@ export class AuthService {
       user.role,
       user.tenantId,
       family,
+      meta,
     );
+    await this.sessions.record({ tenantId: user.tenantId, userId: user.id, email: user.email, kind: 'LOGIN', family, ...meta });
     const { password: _pw, ...safeUser } = user;
 
     return {
@@ -167,6 +173,7 @@ export class AuthService {
     pendingToken: string,
     code: string,
     verifyTotp: (userId: string, code: string) => Promise<boolean>,
+    meta: RequestMeta = { ip: null, userAgent: null, deviceId: null },
   ): Promise<TokenPair & { user: SafeUser }> {
     let payload: { sub?: string; typ?: string; tenantId?: string };
     try {
@@ -178,7 +185,7 @@ export class AuthService {
       throw new UnauthorizedException('Session 2FA invalide.');
     }
     if (payload.tenantId && this.requestContext && this.requestContext.current()?.tenantId !== payload.tenantId) {
-      return this.inTenant(payload.tenantId, () => this.login2fa(pendingToken, code, verifyTotp));
+      return this.inTenant(payload.tenantId, () => this.login2fa(pendingToken, code, verifyTotp, meta));
     }
     await verifyTotp(payload.sub, code);
 
@@ -193,7 +200,9 @@ export class AuthService {
       user.role,
       user.tenantId,
       family,
+      meta,
     );
+    await this.sessions.record({ tenantId: user.tenantId, userId: user.id, email: user.email, kind: 'LOGIN_2FA', family, ...meta });
     const { password: _pw, ...safeUser } = user;
     return { ...tokens, user: safeUser };
   }
@@ -279,8 +288,18 @@ export class AuthService {
 
   // ── Logout ─────────────────────────────────────────────────────────────────
 
-  async logout(refreshToken: string): Promise<void> {
+  async logout(refreshToken: string, meta: RequestMeta = { ip: null, userAgent: null, deviceId: null }): Promise<void> {
     if (!refreshToken) return;
+    // B51 — best effort : who logged out, from where.
+    try {
+      const row = await this.prisma.refreshToken.findUnique({ where: { tokenHash: hashToken(refreshToken) }, select: { userId: true, tenantId: true, family: true } });
+      if (row) {
+        const u = await this.prisma.user.findUnique({ where: { id: row.userId }, select: { email: true } });
+        await this.sessions.record({ tenantId: row.tenantId, userId: row.userId, email: u?.email ?? '', kind: 'LOGOUT', family: row.family, ...meta });
+      }
+    } catch {
+      // ignore
+    }
 
     // Best effort: read the tenant claim so the row is found on an implicit host.
     let claims: { tenantId?: string } = {};
@@ -345,6 +364,7 @@ export class AuthService {
     role: string,
     tenantId: string,
     family: string,
+    meta?: RequestMeta,
   ) {
     const payload: JwtPayload = { sub: userId, email, role, tenantId };
 
@@ -371,6 +391,8 @@ export class AuthService {
         userId,
         family,
         deviceId,
+        ip: meta?.ip ?? null,
+        userAgent: meta?.userAgent?.slice(0, 300) ?? null,
         expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
       },
     });

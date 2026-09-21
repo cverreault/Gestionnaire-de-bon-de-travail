@@ -133,6 +133,7 @@ export default function AdminSidebar() {
 
   const adminOnlyNavItems = [
     { to: '/utilisateurs',    label: `👥 ${t('nav:users')}` },
+    { to: '/utilisateurs/connexions', label: `🔐 ${t('nav:connections', { defaultValue: 'Connexions' })}` },
     { to: '/parametres',      label: `⚙️ ${t('nav:settings')}` },
     { to: '/audit',           label: `📜 ${t('nav:audit', { defaultValue: 'Audit' })}` },
     { to: '/mon-abonnement',  label: `💳 ${t('nav:mySubscription', { defaultValue: 'Mon abonnement' })}` },

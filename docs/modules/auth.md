@@ -117,6 +117,10 @@ Aucun pour l'instant. (Évolution future possible : `auth.login.success`, `auth.
 
 `POST /users/:id/revoke-sessions` (ADMIN, module `users`) émet `users.user.sessionsRevoked` avec `emitAsync` ; `auth` (`UserSessionsRevokedListener`) révoque tous les refresh tokens vivants de l'utilisateur, `mobile` révoque ses appareils (chacun réémet `mobile.device.revoked`, déjà consommé ici). La réponse porte les compteurs `{ refreshTokens, devices }`. Le même événement est émis quand un admin désactive un compte (`PATCH /users/:id` avec `isActive=false`, `DELETE /users/:id`). Les access tokens déjà émis restent valides jusqu'à leur expiration (15 min) : pas de liste noire côté JWT.
 
+## Connexions et présence (B51)
+
+Table `login_events` (tenant, user, email tenté, `kind` LOGIN | LOGIN_2FA | FAILED | LOGOUT, IP, user-agent, `X-Device-Id`, famille de refresh token, date ; purge à 365 jours par `SessionsService.cleanup`). `AuthService.login/login2fa/logout` reçoivent la méta de requête (`requestMeta(req)`, IP fiable grâce à `trust proxy`) et enregistrent l'événement ; `refresh_tokens.ip/user_agent` gardent l'origine de chaque jeton. Présence : `JwtAuthGuard.touchPresence` met à jour `users.last_seen_at/last_seen_ip` au plus une fois par minute par utilisateur. Routes (`SessionsController`) : `GET /auth/sessions/presence` (admin, répartiteur : en ligne = vu depuis < 5 min, début de session = premier jeton de la famille vivante), `GET /auth/sessions/history` et `GET /auth/sessions/users/:id` (admin).
+
 ## Open questions
 
 - Politique de purge des `refresh_tokens.revokedAt` > 30 jours (cleanup nocturne) ?

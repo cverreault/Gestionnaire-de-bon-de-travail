@@ -106,6 +106,7 @@ export async function resetDb(prisma: PrismaClient): Promise<void> {
     TRUNCATE TABLE
       tags,
       departure_points,
+      login_events,
       audit_logs,
       notifications,
       push_subscriptions,

@@ -50,6 +50,7 @@ import { TenantSettingsController } from '../../modules/tenants/api/tenant-setti
 import { SuperAdminTenantsController } from '../../modules/tenants/api/super-admin-tenants.controller';
 import { ImpersonateController } from '../../modules/tenants/api/impersonate.controller';
 import { SettingsController } from '../../modules/settings/settings.controller';
+import { SessionsController } from '../../modules/auth/api/sessions.controller';
 import { SuperAdminStatsController } from '../../modules/tenants/api/super-admin-stats.controller';
 import { SuperAdminAuditController } from '../../modules/tenants/api/super-admin-audit.controller';
 import { SuperAdminUsersController } from '../../modules/tenants/api/super-admin-users.controller';
@@ -188,6 +189,13 @@ const TENANT_SETTINGS_MATRIX: MatrixRow[] = [
   { controller: TenantSettingsController, method: 'removePoint', expectedRoles: [Role.ADMIN], note: 'DELETE /tenants/settings/departure-points/:id' },
 ];
 
+const SESSIONS_MATRIX: MatrixRow[] = [
+  // B51 — presence and login history
+  { controller: SessionsController, method: 'presence',     expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'GET /auth/sessions/presence' },
+  { controller: SessionsController, method: 'history',      expectedRoles: [Role.ADMIN], note: 'GET /auth/sessions/history' },
+  { controller: SessionsController, method: 'userSessions', expectedRoles: [Role.ADMIN], note: 'GET /auth/sessions/users/:id' },
+];
+
 const TENANT_CONFIGS_MATRIX: MatrixRow[] = [
   // B6.9 — class-level @Roles(ADMIN). Tenant ADMIN manages TENANT-scoped
   // overrides only ; the GLOBAL surface stays on /super-admin/configs.
@@ -280,6 +288,7 @@ const ALL_ROWS: { name: string; rows: MatrixRow[] }[] = [
   { name: 'LocationsController',     rows: LOCATIONS_MATRIX },
   { name: 'TenantConfigsController', rows: TENANT_CONFIGS_MATRIX },
   { name: 'TenantSettingsController', rows: TENANT_SETTINGS_MATRIX },
+  { name: 'SessionsController',       rows: SESSIONS_MATRIX },
   { name: 'SuperAdminTenantsController', rows: SUPER_ADMIN_TENANTS_MATRIX },
   { name: 'MobileControllers',       rows: MOBILE_MATRIX },
   {
