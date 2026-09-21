@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
@@ -11,6 +11,7 @@ import {
 } from '../services/system-configs.service';
 import { theme, cardStyles, layoutStyles, formStyles, buttonStyles } from '../theme';
 import { toast } from '../context/toast.store';
+import { hydrateLocalValues, planSectionSave } from '../utils/configHydration';
 
 /**
  * Super-admin platform configuration (B7.6 redesign).
@@ -177,22 +178,27 @@ export default function SuperAdminPage() {
   // and local edit state. Both are keyed by config key.
   const [serverValues, setServerValues] = useState<Record<string, string>>({});
   const [values, setValues] = useState<Record<string, string>>({});
+  // Keys the SA has edited locally — only those survive a refetch.
+  const touchedRef = useRef<Set<string>>(new Set());
+  // Keys whose server value has loaded at least once (never delete a key we
+  // have not read — see planSectionSave).
+  const loadedKeys = useMemo(() => {
+    const set = new Set<string>();
+    queries.forEach((q, i) => {
+      if (q.data !== undefined) set.add(ALL_KEYS[i]);
+    });
+    return set;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queries.map((q) => q.dataUpdatedAt).join('|')]);
 
   useEffect(() => {
-    const next: Record<string, string> = {};
+    const loaded: Record<string, string> = {};
     queries.forEach((q, i) => {
-      const key = ALL_KEYS[i];
-      next[key] = q.data?.value ?? '';
+      if (q.data !== undefined) loaded[ALL_KEYS[i]] = q.data.value ?? '';
     });
-    setServerValues(next);
-    // Hydrate local edit state only for keys we haven't touched yet.
-    setValues((prev) => {
-      const merged: Record<string, string> = { ...next };
-      for (const k of Object.keys(prev)) {
-        if (k in prev && prev[k] !== undefined) merged[k] = prev[k];
-      }
-      return merged;
-    });
+    if (Object.keys(loaded).length === 0) return;
+    setServerValues((prev) => ({ ...prev, ...loaded }));
+    setValues((prev) => hydrateLocalValues(prev, loaded, touchedRef.current));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queries.map((q) => q.dataUpdatedAt).join('|')]);
 
@@ -211,23 +217,22 @@ export default function SuperAdminPage() {
 
   async function saveSection(section: ConfigSection) {
     setSaving(true);
-    const toUpsert: Array<{ key: string; value: string; secret: boolean }> = [];
-    const toDelete: string[] = [];
-    for (const field of section.fields) {
-      const next = values[field.key] ?? '';
-      const before = serverValues[field.key] ?? '';
-      if (next === before) continue; // skip untouched fields
-      if (next.trim().length === 0) {
-        toDelete.push(field.key);
-      } else {
-        toUpsert.push({ key: field.key, value: next, secret: !!field.secret });
-      }
-    }
+    const plan = planSectionSave(
+      section.fields.map((f) => f.key),
+      values,
+      serverValues,
+      loadedKeys,
+    );
+    const secretByKey = new Map(section.fields.map((f) => [f.key, !!f.secret]));
+    const toUpsert = plan.upsert.map((u) => ({ ...u, secret: secretByKey.get(u.key) ?? false }));
+    const toDelete = plan.remove;
     try {
       await Promise.all([
         ...toUpsert.map((f) => upsertConfig(f.key, f.value, f.secret)),
         ...toDelete.map((k) => deleteConfig(k)),
       ]);
+      // Saved keys are no longer local edits: let the refetch re-hydrate them.
+      section.fields.forEach((f) => touchedRef.current.delete(f.key));
       await qc.invalidateQueries({ queryKey: ['superAdmin', 'configValue'] });
       toast.success(
         t('config.toasts.saved', {
@@ -366,7 +371,10 @@ export default function SuperAdminPage() {
                   field={field}
                   value={values[field.key] ?? ''}
                   serverValue={serverValues[field.key] ?? ''}
-                  onChange={(v) => setValues({ ...values, [field.key]: v })}
+                  onChange={(v) => {
+                    touchedRef.current.add(field.key);
+                    setValues({ ...values, [field.key]: v });
+                  }}
                 />
               ))}
             </div>
@@ -395,6 +403,7 @@ export default function SuperAdminPage() {
                     const next: Record<string, string> = {};
                     activeSection.fields.forEach((f) => {
                       next[f.key] = serverValues[f.key] ?? '';
+                      touchedRef.current.delete(f.key);
                     });
                     setValues((prev) => ({ ...prev, ...next }));
                   }}
