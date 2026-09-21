@@ -1,6 +1,6 @@
 /**
  * Integration — GPS batch upload (B37.7, ADR-017 §1).
- *   1. opted-out technician → 403
+ *   1. location mandatory by default → accepted ; exempted + opted-out technician → 403
  *   2. valid batch stored with source ; replay of the same batch (same
  *      Idempotency-Key) answers the stored result ; a new key with the same
  *      fixes inserts nothing (unique technician + recordedAt)
@@ -39,7 +39,13 @@ describe('GPS batch (integration)', () => {
       { latitude: 45.51, longitude: -73.51, recordedAt: new Date(t0 - 10_000).toISOString(), source: 'MOBILE_FOREGROUND' },
     ];
 
-    // 1. consent off (default)
+    // 1. B46 — location is mandatory by default : accepted even without the opt-in…
+    const forced = await request(ctx.app.getHttpServer()).post(url).set('Authorization', `Bearer ${token}`).send({ fixes: [fixes[0]] });
+    expect(forced.status).toBe(200);
+    await ctx.prisma.technicianLocation.deleteMany({ where: { technicianId: tech.id } });
+
+    // …but an exempted technician (admin choice) is back to the opt-in rule : consent off → 403.
+    await ctx.prisma.user.update({ where: { id: tech.id }, data: { locationRequired: false } });
     await request(ctx.app.getHttpServer()).post(url).set('Authorization', `Bearer ${token}`).send({ fixes }).expect(403);
 
     await ctx.prisma.user.update({ where: { id: tech.id }, data: { preferences: { gps: { enabled: true } } } });
