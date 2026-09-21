@@ -59,6 +59,16 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.14.1',
+    name: 'Localisation obligatoire dans l\'app',
+    date: 'Septembre 2026',
+    entries: [
+      { type: 'new', text: "📍 L'app mobile exige la localisation : sans autorisation ou avec le GPS éteint, un écran bloquant guide le technicien vers les réglages et rien d'autre n'est accessible" },
+      { type: 'new', text: "🛠 Dans Utilisateurs, la case « Localisation obligatoire dans l'app mobile » permet d'exempter un compte ; l'app applique le changement à sa prochaine ouverture" },
+      { type: 'improvement', text: "🔒 Quand la localisation est obligatoire, le partage de position pendant les BT est imposé : l'interrupteur disparaît du profil du technicien" },
+    ],
+  },
+  {
     version: '2.14.0',
     name: 'Historique complet et géolocalisé des actions',
     date: 'Septembre 2026',

@@ -19,6 +19,8 @@ export interface AuthUser {
   lastName: string;
   role: Role;
   phone?: string | null;
+  /** B46 — the app refuses to work without location permission unless the admin exempted the user. */
+  locationRequired?: boolean;
   preferences?: { locale?: 'fr' | 'en'; theme?: 'light' | 'dark' | 'system'; gps?: { enabled?: boolean } } | null;
 }
 

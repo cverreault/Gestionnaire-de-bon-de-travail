@@ -183,7 +183,8 @@
     "openSettings": "Ouvrir les réglages",
     "revoked": "Le partage a été désactivé depuis le web. Réactivez-le ici si vous le souhaitez.",
     "buffered": "{{count}} position(s) en attente d'envoi",
-    "lastFlush": "Dernier envoi {{time}}"
+    "lastFlush": "Dernier envoi {{time}}",
+    "required": "Position exigée par votre entreprise pendant vos bons de travail : impossible de la désactiver ici."
   },
   "push": {
     "title": "Notifications push",
@@ -222,5 +223,15 @@
     "datetimeHint": "AAAA-MM-JJ HH:MM",
     "choose": "Choisir…",
     "readOnly": "Lecture seule"
+  },
+  "locationRequired": {
+    "title": "Localisation requise",
+    "body": "Votre entreprise exige la position du téléphone pendant l'utilisation de Dispatch2Go. Autorisez la localisation pour continuer.",
+    "servicesOff": "La localisation du téléphone est désactivée. Activez-la dans les réglages.",
+    "denied": "L'autorisation a été refusée. Ouvrez les réglages de l'app et choisissez « Toujours » ou « Pendant l'utilisation ».",
+    "allow": "Autoriser la localisation",
+    "openSettings": "Ouvrir les réglages",
+    "retry": "Revérifier",
+    "logout": "Se déconnecter"
   }
 }

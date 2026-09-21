@@ -112,7 +112,7 @@ export class LocationsService {
   private async assertOptedInTechnician(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, role: true, isActive: true, preferences: true },
+      select: { id: true, role: true, isActive: true, preferences: true, locationRequired: true },
     });
     if (!user || !user.isActive) {
       throw new ForbiddenException('Utilisateur inactif ou introuvable');
@@ -120,7 +120,8 @@ export class LocationsService {
     if (user.role !== Role.TECHNICIAN) {
       throw new ForbiddenException('Seuls les techniciens peuvent envoyer leur position');
     }
-    if (!isGpsEnabled(user.preferences)) {
+    // B46 — when the admin makes location mandatory, the user's own toggle no longer matters.
+    if (!user.locationRequired && !isGpsEnabled(user.preferences)) {
       throw new ForbiddenException('Suivi GPS non activé pour ce compte (preferences.gps.enabled)');
     }
     return user;

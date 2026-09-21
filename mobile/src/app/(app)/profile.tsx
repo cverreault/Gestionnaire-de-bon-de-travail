@@ -112,11 +112,17 @@ export default function ProfileScreen() {
       {user?.role === 'TECHNICIAN' && (
         <View style={{ backgroundColor: theme.surface, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.sm, borderWidth: 1, borderColor: theme.border }}>
           <Text style={{ color: theme.textMuted, fontSize: font.xs, textTransform: 'uppercase', fontWeight: '700' }}>{t('gps.title')}</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-            <Text style={{ flex: 1, color: theme.text, fontSize: font.sm }}>{t('gps.toggle')}</Text>
-            <Switch value={gps.serverConsent} onValueChange={(v) => void toggleGps(v)} trackColor={{ true: theme.primary }} />
-          </View>
-          <Text style={{ color: theme.textMuted, fontSize: font.xs }}>{t('gps.explain')}</Text>
+          {user.locationRequired !== false ? (
+            <Text style={{ color: theme.text, fontSize: font.sm }}>{t('gps.required')}</Text>
+          ) : (
+            <>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+                <Text style={{ flex: 1, color: theme.text, fontSize: font.sm }}>{t('gps.toggle')}</Text>
+                <Switch value={gps.serverConsent} onValueChange={(v) => void toggleGps(v)} trackColor={{ true: theme.primary }} />
+              </View>
+              <Text style={{ color: theme.textMuted, fontSize: font.xs }}>{t('gps.explain')}</Text>
+            </>
+          )}
           <Text style={{ color: gps.mode === 'off' ? theme.textMuted : theme.success ?? theme.primary, fontSize: font.sm, fontWeight: '600' }}>{t(`gps.mode${gps.mode}`)}</Text>
           {gps.serverConsent && !gps.foregroundGranted && (
             <Pressable onPress={() => void Linking.openSettings()}>

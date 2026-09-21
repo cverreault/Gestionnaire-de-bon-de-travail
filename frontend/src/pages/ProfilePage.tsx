@@ -832,6 +832,11 @@ function GpsTrackingSection() {
         <p style={{ color: theme.colors.textMuted, margin: 0, fontSize: theme.font.sizeSm }}>
           {t('auth:profilePage.gpsDescription', { defaultValue: 'En activant ce suivi, votre position GPS est transmise au répartiteur pendant que vous êtes connecté. Les données sont conservées 7 jours puis supprimées automatiquement (Loi 25 / PIPEDA). Vous pouvez désactiver le suivi en tout temps.' })}
         </p>
+        {user.locationRequired !== false ? (
+          <p style={{ margin: 0, color: theme.colors.text, fontSize: theme.font.sizeSm }}>
+            🔒 {t('auth:profilePage.gpsRequired', { defaultValue: 'Suivi de position exigé par votre entreprise pendant vos bons de travail : il ne peut pas être désactivé ici.' })}
+          </p>
+        ) : (
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
           <input
             type="checkbox"
@@ -849,6 +854,7 @@ function GpsTrackingSection() {
             {t('auth:profilePage.gpsShareLabel', { defaultValue: 'Partager ma position avec le répartiteur' })}
           </span>
         </label>
+        )}
         {updatePrefs.isError && (
           <p style={{ color: theme.colors.danger, fontSize: theme.font.sizeSm, margin: 0 }}>
             {t('auth:profilePage.updateFailed', { defaultValue: 'Échec de la mise à jour — la case est revenue à son ancien état.' })}

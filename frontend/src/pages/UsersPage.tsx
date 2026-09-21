@@ -82,6 +82,7 @@ function CreateUserModal({ onClose }: CreateUserModalProps) {
   const [lastName, setLastName] = useState('');
   const [role, setRole] = useState<Role>(Role.TECHNICIAN);
   const [phone, setPhone] = useState('');
+  const [locationRequired, setLocationRequired] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
 
   const createUser = useMutation({
@@ -92,6 +93,7 @@ function CreateUserModal({ onClose }: CreateUserModalProps) {
       lastName: string;
       role: string;
       phone?: string;
+      locationRequired?: boolean;
     }) => {
       const { data } = await api.post<ApiResponse<User>>('/users', dto);
       return data.data;
@@ -118,6 +120,7 @@ function CreateUserModal({ onClose }: CreateUserModalProps) {
       lastName: lastName.trim(),
       role,
       phone: phone.trim() || undefined,
+      locationRequired,
     });
   };
 
@@ -215,6 +218,19 @@ function CreateUserModal({ onClose }: CreateUserModalProps) {
               onChange={setPhone}
               placeholder="+33 6 12 34 56 78"
             />
+            {role === Role.TECHNICIAN && (
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', margin: '0.25rem 0 0.75rem', cursor: 'pointer', fontSize: theme.font.sizeSm, color: theme.colors.text }}>
+                <input type="checkbox" checked={locationRequired} onChange={(e) => setLocationRequired(e.target.checked)} style={{ marginTop: 3 }} />
+                <span>
+                  {t('common:usersPage.locationRequired', { defaultValue: "Localisation obligatoire dans l'app mobile" })}
+                  <br />
+                  <span style={{ color: theme.colors.textMuted, fontSize: theme.font.sizeXs }}>
+                    {t('common:usersPage.locationRequiredHint', { defaultValue: "L'app refuse de fonctionner tant que la position n'est pas autorisée. Décochez pour exempter cet utilisateur." })}
+                  </span>
+                </span>
+              </label>
+            )}
+
 
             <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
               <button
@@ -260,6 +276,7 @@ function EditUserModal({ user, onClose }: EditUserModalProps) {
   const [lastName, setLastName] = useState(user.lastName);
   const [role, setRole] = useState<Role>(user.role);
   const [phone, setPhone] = useState(user.phone ?? '');
+  const [locationRequired, setLocationRequired] = useState(user.locationRequired !== false);
   const [errorMsg, setErrorMsg] = useState('');
 
   const updateUser = useMutation({
@@ -269,6 +286,7 @@ function EditUserModal({ user, onClose }: EditUserModalProps) {
       lastName?: string;
       role?: string;
       phone?: string;
+      locationRequired?: boolean;
     }) => {
       const { data } = await api.patch<ApiResponse<User>>(`/users/${user.id}`, dto);
       return data.data;
@@ -294,6 +312,7 @@ function EditUserModal({ user, onClose }: EditUserModalProps) {
       lastName: lastName.trim(),
       role,
       phone: phone.trim() || undefined,
+      locationRequired,
     });
   };
 
@@ -378,6 +397,19 @@ function EditUserModal({ user, onClose }: EditUserModalProps) {
               onChange={setPhone}
               placeholder="+33 6 12 34 56 78"
             />
+            {role === Role.TECHNICIAN && (
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', margin: '0.25rem 0 0.75rem', cursor: 'pointer', fontSize: theme.font.sizeSm, color: theme.colors.text }}>
+                <input type="checkbox" checked={locationRequired} onChange={(e) => setLocationRequired(e.target.checked)} style={{ marginTop: 3 }} />
+                <span>
+                  {t('common:usersPage.locationRequired', { defaultValue: "Localisation obligatoire dans l'app mobile" })}
+                  <br />
+                  <span style={{ color: theme.colors.textMuted, fontSize: theme.font.sizeXs }}>
+                    {t('common:usersPage.locationRequiredHint', { defaultValue: "L'app refuse de fonctionner tant que la position n'est pas autorisée. Décochez pour exempter cet utilisateur." })}
+                  </span>
+                </span>
+              </label>
+            )}
+
 
             <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
               <button
