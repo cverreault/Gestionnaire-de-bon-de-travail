@@ -362,5 +362,20 @@
     "colorInvalid": "Invalid colour (#RRGGBB expected)",
     "namePlaceholder": "e.g. Lumii, Urgent, Subcontract",
     "previewName": "Preview"
+  },
+  "company": {
+    "title": "Company",
+    "subtitle": "Completed-jobs email and technicians’ starting address.",
+    "smtpMissing": "Email sending is not configured on the server yet (SMTP). Emails go to the server log until it is.",
+    "completedJobsEmail": "Email that receives every completed job",
+    "completedJobsEmailHint": "Summary sent for every completed or failed work order: client, address, technician, times, notes, parts, signatures. Empty = nothing sent.",
+    "baseAddress": "Technicians’ starting address (round-trip mileage)",
+    "baseAddressPlaceholder": "Pick an address above or type it",
+    "baseLocated": "Position known ({{lat}}, {{lng}}): mileage can be computed.",
+    "baseNotLocated": "Without a position mileage cannot be computed: pick a suggestion.",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Settings saved.",
+    "error": "Could not save. Check the email."
   }
 }

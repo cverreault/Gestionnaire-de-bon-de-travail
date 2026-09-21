@@ -327,18 +327,7 @@ export class NotificationsListener {
         return;
       }
 
-      if (to.isTerminalPositive && wo.client.portalUsers.length > 0) {
-        await this.email.send({
-          to: wo.client.email,
-          subject: `Travail ${ref} complété / Work completed`,
-          text:
-            hello +
-            `Le bon de travail ${ref} — « ${wo.title} » est complété. ` +
-            `Le rapport d'intervention (PDF) est disponible sur le portail : ${portalLink}\n\n` +
-            `— Work order ${ref} — "${wo.title}" is complete. ` +
-            `The intervention report (PDF) is available on the portal: ${portalLink}`,
-        });
-      }
+      // Completion emails (client + company) moved to onWorkOrderCompleted (B48).
     } catch (err) {
       this.logger.error(
         `Failed client email for statusChanged ${event.eventId}: ${
@@ -496,5 +485,109 @@ export class NotificationsListener {
         (body ?? 'Un nouveau bon de travail vient de vous être assigné. Connectez-vous à TaskMgr pour le consulter.') +
         `\n\n— TaskMgr`,
     });
+  }
+
+  /**
+   * B48 — every completed job (positive or negative) :
+   *   - a summary to the company's « travaux complétés » address (Paramètres → Entreprise) ;
+   *   - a client email when the client opted in (« courriel à la fin des travaux »)
+   *     or has an active portal account (report downloadable there).
+   */
+  @OnEvent('workOrders.workOrder.completed', { async: true, promisify: true })
+  async onWorkOrderCompleted(event: WorkOrderEvent) {
+    try {
+      const data = event.data as unknown as { outcome: 'positive' | 'negative' };
+      const wo = await this.prisma.workOrder.findUnique({
+        where: { id: event.aggregateId },
+        select: {
+          id: true,
+          tenantId: true,
+          referenceNumber: true,
+          title: true,
+          description: true,
+          completionNotes: true,
+          negativeReason: true,
+          actualStartTime: true,
+          actualEndTime: true,
+          scheduledDate: true,
+          signatureClient: true,
+          signatureTechnician: true,
+          clientAddress: true,
+          assignedTo: { select: { firstName: true, lastName: true } },
+          client: {
+            select: {
+              firstName: true,
+              lastName: true,
+              companyName: true,
+              email: true,
+              notifyOnCompletion: true,
+              portalUsers: { where: { isActive: true }, select: { id: true } },
+            },
+          },
+          clientAddress_rel: { select: { streetNumber: true, street: true, apartment: true, city: true, postalCode: true } },
+          partsUsed: { select: { quantity: true, part: { select: { sku: true, name: true } } } },
+          tenant: { select: { name: true, completedJobsEmail: true } },
+        },
+      });
+      if (!wo) return;
+
+      const origin = (await this.configs.resolve('platform.origin', 'PLATFORM_ORIGIN')) ?? 'http://localhost:8088';
+      const ref = wo.referenceNumber;
+      const positive = data.outcome === 'positive';
+      const outcomeFr = positive ? 'complété' : 'terminé en échec';
+      const a = wo.clientAddress_rel;
+      const address = a
+        ? [[a.streetNumber, a.street].filter(Boolean).join(' '), a.apartment ? `app. ${a.apartment}` : null, a.city, a.postalCode].filter(Boolean).join(', ')
+        : wo.clientAddress ?? '';
+      const clientName = wo.client ? wo.client.companyName || `${wo.client.firstName} ${wo.client.lastName}` : '';
+      const tech = wo.assignedTo ? `${wo.assignedTo.firstName} ${wo.assignedTo.lastName}` : '—';
+      const fmt = (d: Date | null) => (d ? d.toLocaleString('fr-CA', { timeZone: 'America/Toronto', dateStyle: 'medium', timeStyle: 'short' }) : '—');
+      const parts = wo.partsUsed.map((p) => `${p.quantity} × ${p.part.sku} ${p.part.name}`).join('\n  ');
+      const signatures = [wo.signatureClient ? 'client' : null, wo.signatureTechnician ? 'technicien' : null].filter(Boolean).join(', ') || 'aucune';
+
+      // 1. Company summary
+      const companyTo = wo.tenant?.completedJobsEmail?.trim();
+      if (companyTo) {
+        await this.email.send({
+          to: companyTo,
+          subject: `[${wo.tenant?.name ?? 'Dispatch2Go'}] Travail ${ref} ${outcomeFr} — ${wo.title}`,
+          text:
+            `Bon de travail ${ref} ${outcomeFr}.\n\n` +
+            `Titre : ${wo.title}\n` +
+            (clientName ? `Client : ${clientName}\n` : '') +
+            (address ? `Adresse : ${address}\n` : '') +
+            `Technicien : ${tech}\n` +
+            `Début : ${fmt(wo.actualStartTime)}\nFin : ${fmt(wo.actualEndTime)}\n` +
+            `Signatures : ${signatures}\n` +
+            (wo.completionNotes ? `\nNotes de fin de travaux :\n${wo.completionNotes}\n` : '') +
+            (wo.negativeReason ? `\nMotif d'échec :\n${wo.negativeReason}\n` : '') +
+            (parts ? `\nPièces utilisées :\n  ${parts}\n` : '') +
+            `\nVoir le bon de travail : ${origin}/bons-de-travail/${wo.id}\n`,
+        });
+      }
+
+      // 2. Client
+      const client = wo.client;
+      if (client?.email && (client.notifyOnCompletion || client.portalUsers.length > 0)) {
+        const hello = `Bonjour ${client.firstName},\n\n`;
+        const portal = client.portalUsers.length > 0 ? `\nLe rapport d'intervention (PDF) est disponible sur le portail : ${origin}/portail\n` : '';
+        await this.email.send({
+          to: client.email,
+          subject: positive ? `Travail ${ref} complété / Work completed` : `Travail ${ref} — intervention non complétée / Work not completed`,
+          text: positive
+            ? hello +
+              `Le bon de travail ${ref} — « ${wo.title} » est complété` + (address ? ` au ${address}` : '') + `.\n` +
+              (wo.completionNotes ? `\nNotes du technicien :\n${wo.completionNotes}\n` : '') +
+              portal +
+              `\n— Work order ${ref} — "${wo.title}" is complete.` + (client.portalUsers.length > 0 ? ` The intervention report (PDF) is available on the portal: ${origin}/portail` : '')
+            : hello +
+              `L'intervention ${ref} — « ${wo.title} » n'a pas pu être complétée.` + (wo.negativeReason ? `\nMotif : ${wo.negativeReason}` : '') +
+              `\nNous vous recontacterons pour la suite.\n\n` +
+              `— Work order ${ref} — "${wo.title}" could not be completed.` + (wo.negativeReason ? ` Reason: ${wo.negativeReason}` : ''),
+        });
+      }
+    } catch (err) {
+      this.logger.error(`Failed completion emails for ${event.eventId}: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
 }

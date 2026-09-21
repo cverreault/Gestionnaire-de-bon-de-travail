@@ -59,6 +59,16 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.15.1',
+    name: 'Courriels de fin de travaux',
+    date: 'Septembre 2026',
+    entries: [
+      { type: 'new', text: "📧 Paramètres → Entreprise : une adresse courriel reçoit un résumé de chaque travail complété ou terminé en échec (client, adresse, technicien, heures, notes, pièces, signatures, lien vers le BT)" },
+      { type: 'new', text: "👤 Fiche client : case « Envoyer un courriel au client à la fin des travaux » ; le client reçoit alors un message bilingue quand son bon de travail est complété" },
+      { type: 'new', text: "🏢 Paramètres → Entreprise : adresse de départ des techniciens, utilisée pour le kilométrage aller-retour à venir" },
+    ],
+  },
+  {
     version: '2.15.0',
     name: 'Moteur de routage : tournées sur vrais temps de conduite',
     date: 'Septembre 2026',

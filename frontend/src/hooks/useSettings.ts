@@ -77,6 +77,25 @@ export function useDeleteTaskType() {
   });
 }
 
+// ── Company settings (B48) ────────────────────────────────────────────────────
+
+export const TENANT_SETTINGS_KEY = 'tenant-settings';
+
+export function useTenantSettings() {
+  return useQuery({
+    queryKey: [TENANT_SETTINGS_KEY],
+    queryFn: () => settingsService.getTenantSettings().then((r) => (r.data?.data ?? r.data) as settingsService.TenantSettings),
+  });
+}
+
+export function useUpdateTenantSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Parameters<typeof settingsService.updateTenantSettings>[0]) => settingsService.updateTenantSettings(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [TENANT_SETTINGS_KEY] }),
+  });
+}
+
 // ── Tags (B44) ────────────────────────────────────────────────────────────────
 
 export const TAGS_KEY = 'tags';

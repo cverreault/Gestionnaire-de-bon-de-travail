@@ -26,6 +26,7 @@ import AddressTypeFieldsModal from '../components/AddressTypeFieldsModal';
 import { useTemplates } from '../hooks/useTemplates';
 import { useProcesses } from '../hooks/useProcess';
 import LoadingSpinner from '../components/LoadingSpinner';
+import CompanySettingsSection from '../components/CompanySettingsSection';
 import {
   theme,
   tableStyles,
@@ -1422,6 +1423,7 @@ export default function SettingsPage() {
       </div>
 
       {/* ── Accès rapide: Templates de formulaire ─────────────────────────── */}
+      <CompanySettingsSection />
       <Link
         to="/parametres/templates"
         style={{ textDecoration: 'none', display: 'block', marginBottom: '1rem' }}

@@ -153,6 +153,11 @@ export class CreateClientDto {
   @IsUUID()
   principalClientId?: string | null;
 
+  @ApiPropertyOptional({ description: 'B48 — courriel au client à la fin des travaux (nécessite un courriel)' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnCompletion?: boolean;
+
   @ApiPropertyOptional({
     type: [CreateClientAddressDto],
     description: 'Liste des adresses associées au client (max 20)',
