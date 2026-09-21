@@ -321,5 +321,15 @@
     "colKind": "Kind",
     "colDevice": "Device",
     "empty": "No connection in the period."
+  },
+  "coords": {
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "useDevice": "My position",
+    "hint": "Decimal degrees (WGS 84). “My position” uses your device GPS.",
+    "invalid": "Expected decimal degrees, e.g. 45.4035 and -74.0512",
+    "unsupported": "Location not available in this browser.",
+    "denied": "Position denied or unavailable. Allow location in the browser.",
+    "title": "GPS coordinates"
   }
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import AddressAutocomplete from './AddressAutocomplete';
+import CoordinatesInput from './CoordinatesInput';
 import { useAddDeparturePoint, useRemoveDeparturePoint, useTenantSettings, useUpdateTenantSettings } from '../hooks/useSettings';
 import { theme, buttonStyles, formStyles } from '../theme';
 
@@ -93,11 +94,18 @@ export default function CompanySettingsSection() {
             <AddressAutocomplete
               onSelect={(a) => setPicked({ address: [[a.streetNumber, a.street].filter(Boolean).join(' '), a.city, a.postalCode].filter(Boolean).join(', '), lat: a.latitude, lng: a.longitude })}
             />
+            <input style={{ ...formStyles.input }} value={picked?.address ?? ''} onChange={(e) => setPicked((p) => ({ address: e.target.value, lat: p?.lat ?? NaN, lng: p?.lng ?? NaN }))} placeholder={t('company.addressPlaceholder', { defaultValue: 'Adresse (choisie ci-dessus ou saisie)' })} />
+            <CoordinatesInput
+              latitude={picked && Number.isFinite(picked.lat) ? picked.lat : null}
+              longitude={picked && Number.isFinite(picked.lng) ? picked.lng : null}
+              onChange={({ latitude, longitude }) => setPicked((p) => ({ address: p?.address ?? '', lat: latitude ?? NaN, lng: longitude ?? NaN }))}
+              compact
+            />
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: theme.font.sizeXs, color: picked ? theme.colors.success : theme.colors.textMuted, flex: 1 }}>
-                {picked ? picked.address : t('company.pickAddress', { defaultValue: 'Choisissez une adresse dans les suggestions.' })}
+              <span style={{ fontSize: theme.font.sizeXs, color: picked && Number.isFinite(picked.lat) ? theme.colors.success : theme.colors.textMuted, flex: 1 }}>
+                {picked && Number.isFinite(picked.lat) ? t('company.pointReady', { defaultValue: 'Position connue : le point peut être ajouté.' }) : t('company.pickAddress', { defaultValue: 'Choisissez une adresse dans les suggestions, saisissez les coordonnées ou utilisez « Ma position ».' })}
               </span>
-              <button type="button" disabled={!picked || !label.trim() || addPoint.isPending} onClick={submitPoint} style={{ ...buttonStyles.secondary, fontSize: theme.font.sizeSm }}>
+              <button type="button" disabled={!picked || !Number.isFinite(picked.lat) || !Number.isFinite(picked.lng) || !picked.address.trim() || !label.trim() || addPoint.isPending} onClick={submitPoint} style={{ ...buttonStyles.secondary, fontSize: theme.font.sizeSm }}>
                 + {t('company.addPoint', { defaultValue: 'Ajouter le point' })}
               </button>
             </div>

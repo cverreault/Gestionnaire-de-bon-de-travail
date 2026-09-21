@@ -59,6 +59,17 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.17.1',
+    name: 'Menu réorganisé, coordonnées GPS, alertes par étape',
+    date: 'Septembre 2026',
+    entries: [
+      { type: 'improvement', text: "🧭 Menu : « Paramètres » regroupe désormais Paramètres, Clés API, Webhooks et Alertes ; « BT récurrents » rejoint Bons de travail dans Répartition" },
+      { type: 'new', text: "📍 Partout où un formulaire porte des coordonnées GPS (adresses, points de départ, champs GPS des formulaires de BT) : saisie manuelle en degrés décimaux ou bouton « Ma position » qui remplit les champs depuis l'appareil" },
+      { type: 'new', text: "🚨 Alertes : choix du processus et de l'étape qui déclenche l'alerte en listes déroulantes, et liste « Insérer une variable » pour composer le courriel (référence, client, adresse, dates, technicien, lien vers le BT…)" },
+      { type: 'fix', text: "🛠️ Super-admin : les configurations courriel (SMTP) et SMS enregistrées s'affichent de nouveau au retour sur la page ; un champ jamais chargé ne peut plus être effacé par erreur à l'enregistrement" },
+    ],
+  },
+  {
     version: '2.17.0',
     name: 'Connexions et présence',
     date: 'Septembre 2026',

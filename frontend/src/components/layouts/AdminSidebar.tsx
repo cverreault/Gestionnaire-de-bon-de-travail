@@ -113,7 +113,16 @@ export default function AdminSidebar() {
   // (list / dispatch board, technician panel) and the dispatch map.
   const dispatchGroupItems = [
     { to: '/bons-de-travail',  label: `📋 ${t('nav:workOrders')}` },
+    { to: '/parametres/bons-recurrents', label: `🔁 ${t('nav:recurring', { defaultValue: 'BT récurrents' })}` },
     { to: '/carte-dispatch',   label: `🗺️ ${t('nav:dispatchMap', { defaultValue: 'Carte dispatch' })}` },
+  ];
+
+  // « Paramètres » groups the configuration screens.
+  const settingsGroupItems = [
+    { to: '/parametres',          label: `⚙️ ${t('nav:settings')}`, end: true },
+    { to: '/parametres/api-keys', label: `🔑 ${t('nav:apiKeys', { defaultValue: 'Clés API' })}` },
+    { to: '/parametres/webhooks', label: `🔔 ${t('nav:webhooks', { defaultValue: 'Webhooks' })}` },
+    { to: '/parametres/alertes',  label: `🚨 ${t('nav:alerts', { defaultValue: 'Alertes' })}` },
   ];
 
   const sharedNavItems = [
@@ -130,17 +139,15 @@ export default function AdminSidebar() {
   const dispatchChildActive = dispatchGroupItems.some((i) => pathname.startsWith(i.to));
   const [dispatchOpen, setDispatchOpen] = useState(true);
   const dispatchExpanded = dispatchOpen || dispatchChildActive;
+  const settingsChildActive = pathname.startsWith('/parametres') && !pathname.startsWith('/parametres/bons-recurrents');
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsExpanded = settingsOpen || settingsChildActive;
 
   const adminOnlyNavItems = [
-    { to: '/utilisateurs',    label: `👥 ${t('nav:users')}` },
+    { to: '/utilisateurs',    label: `👥 ${t('nav:users')}`, end: true },
     { to: '/utilisateurs/connexions', label: `🔐 ${t('nav:connections', { defaultValue: 'Connexions' })}` },
-    { to: '/parametres',      label: `⚙️ ${t('nav:settings')}` },
     { to: '/audit',           label: `📜 ${t('nav:audit', { defaultValue: 'Audit' })}` },
     { to: '/mon-abonnement',  label: `💳 ${t('nav:mySubscription', { defaultValue: 'Mon abonnement' })}` },
-    { to: '/parametres/api-keys', label: `🔑 ${t('nav:apiKeys', { defaultValue: 'Clés API' })}` },
-    { to: '/parametres/webhooks', label: `🔔 ${t('nav:webhooks', { defaultValue: 'Webhooks' })}` },
-    { to: '/parametres/alertes',  label: `🚨 ${t('nav:alerts', { defaultValue: 'Alertes' })}` },
-    { to: '/parametres/bons-recurrents',  label: `🔁 ${t('nav:recurring', { defaultValue: 'BT récurrents' })}` },
   ];
 
   const superAdminNavItems = [
@@ -238,7 +245,35 @@ export default function AdminSidebar() {
           <>
             <div style={sectionLabelStyle}>{t('nav:admin')}</div>
             <nav>
-              {adminOnlyNavItems.map((item) => (
+              {adminOnlyNavItems.slice(0, 2).map((item) => (
+                <NavLink key={item.to} to={item.to} end={item.end} style={navLinkStyle}>
+                  {item.label}
+                </NavLink>
+              ))}
+
+              <button
+                type="button"
+                onClick={() => setSettingsOpen((o) => !o)}
+                aria-expanded={settingsExpanded}
+                aria-controls="nav-settings-group"
+                style={groupHeaderStyle(settingsChildActive)}
+              >
+                <span>⚙️ {t('nav:settings')}</span>
+                <span aria-hidden style={{ fontSize: '0.7rem', opacity: 0.7 }}>
+                  {settingsExpanded ? '▾' : '▸'}
+                </span>
+              </button>
+              {settingsExpanded && (
+                <div id="nav-settings-group">
+                  {settingsGroupItems.map((item) => (
+                    <NavLink key={item.to} to={item.to} end={item.end} style={groupChildStyle}>
+                      {item.label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+
+              {adminOnlyNavItems.slice(2).map((item) => (
                 <NavLink key={item.to} to={item.to} style={navLinkStyle}>
                   {item.label}
                 </NavLink>
