@@ -424,7 +424,7 @@ function FieldInput({
             longitude={g.lng}
             disabled={disabled}
             compact
-            onChange={({ latitude, longitude }) => (latitude === null && longitude === null ? onChange(null) : onChange({ ...g, lat: latitude, lng: longitude }))}
+            onChange={({ latitude, longitude }) => update({ lat: latitude, lng: longitude })}
           />
           <p style={{ ...formStyles.fieldHint }}>{t('settings:formRenderer.gpsHint', { defaultValue: 'Décimal — ex: 45.50170, -73.56730 (copier-coller depuis Google Maps) ou « Ma position ».' })}</p>
           {helpEl}
