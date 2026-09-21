@@ -188,8 +188,8 @@ export interface Client {
   /** B42 — ce client est « client de » ce donneur d'ordre. */
   principalClientId?: string | null;
   principalClient?: PrincipalClientRef | null;
-  /** B48 — email the client when their job is completed. */
-  notifyOnCompletion?: boolean;
+  /** B48.2 — emails that receive the completion summary. */
+  notificationEmails?: string[];
   notes?: string | null;
   isActive: boolean;
   addresses: ClientAddress[];

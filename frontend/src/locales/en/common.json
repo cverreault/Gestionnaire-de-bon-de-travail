@@ -286,5 +286,9 @@
     "clear": "Clear all",
     "label": "Tags",
     "edit": "Edit tags"
+  },
+  "emailList": {
+    "placeholder": "Add an email then Enter",
+    "invalid": "Invalid email."
   }
 }

@@ -520,7 +520,7 @@ export class NotificationsListener {
               lastName: true,
               companyName: true,
               email: true,
-              notifyOnCompletion: true,
+              notificationEmails: true,
               portalUsers: { where: { isActive: true }, select: { id: true } },
             },
           },
@@ -568,11 +568,13 @@ export class NotificationsListener {
 
       // 2. Client
       const client = wo.client;
-      if (client?.email && (client.notifyOnCompletion || client.portalUsers.length > 0)) {
+      // B48.2 — the client's notification list ; a portal account falls back to the main email.
+      const recipients = [...new Set([...(client?.notificationEmails ?? []), ...(client && client.portalUsers.length > 0 && client.email ? [client.email] : [])].map((e) => e.trim().toLowerCase()).filter(Boolean))];
+      if (client && recipients.length > 0) {
         const hello = `Bonjour ${client.firstName},\n\n`;
         const portal = client.portalUsers.length > 0 ? `\nLe rapport d'intervention (PDF) est disponible sur le portail : ${origin}/portail\n` : '';
         await this.email.send({
-          to: client.email,
+          to: recipients.join(', '),
           subject: positive ? `Travail ${ref} complété / Work completed` : `Travail ${ref} — intervention non complétée / Work not completed`,
           text: positive
             ? hello +

@@ -125,7 +125,7 @@ Sans `VAPID_PUBLIC_KEY/PRIVATE_KEY` → push channel en mode CONSOLE (log).
 
 ## Courriels de fin de travaux (B48)
 
-`NotificationsListener.onWorkOrderCompleted` (`workOrders.workOrder.completed`) envoie : (1) un résumé complet à `tenants.completed_jobs_email` (Paramètres → Entreprise, `GET/PATCH /tenants/settings`) ; (2) un courriel bilingue au client quand `clients.notify_on_completion` est coché ou qu'il a un compte portail actif (lien vers le portail dans ce cas). L'ancien envoi « travail complété » depuis `statusChanged` est retiré pour éviter le doublon. Sans `SMTP_HOST`, les courriels vont dans le journal du serveur (`[CONSOLE EMAIL]`) ; la page Paramètres l'indique (`emailConfigured`).
+`NotificationsListener.onWorkOrderCompleted` (`workOrders.workOrder.completed`) envoie : (1) un résumé complet à `tenants.completed_jobs_email` (Paramètres → Entreprise, `GET/PATCH /tenants/settings`) ; (2) un courriel bilingue aux adresses de `clients.notification_emails` (B48.2, plusieurs par client) plus, s'il a un compte portail actif, à son courriel principal (lien vers le portail dans ce cas). L'ancien envoi « travail complété » depuis `statusChanged` est retiré pour éviter le doublon. Sans `SMTP_HOST`, les courriels vont dans le journal du serveur (`[CONSOLE EMAIL]`) ; la page Paramètres l'indique (`emailConfigured`).
 
 ## Open questions
 

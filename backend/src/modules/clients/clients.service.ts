@@ -48,7 +48,7 @@ const CLIENT_LIST_SELECT = {
   clientType: true,
   isActive: true,
   notes: true,
-  notifyOnCompletion: true,
+  notificationEmails: true,
   createdAt: true,
   updatedAt: true,
   addresses: {
@@ -314,7 +314,7 @@ export class ClientsService {
           clientType:  dto.clientType,
           notes:       dto.notes,
           principalClientId: dto.principalClientId ?? null,
-          notifyOnCompletion: dto.notifyOnCompletion ?? false,
+          notificationEmails: (dto.notificationEmails ?? []).map((e) => e.trim().toLowerCase()).filter(Boolean),
           tags:        tagLinksCreate(clientTagIds),
         },
       });
@@ -380,12 +380,13 @@ export class ClientsService {
   async update(id: string, dto: UpdateClientDto) {
     await this.findOne(id);
     await this.assertPrincipal(dto.principalClientId, id);
-    const { tagIds, ...fields } = dto;
+    const { tagIds, notificationEmails, ...fields } = dto;
     const tags = tagLinksReplace(await assertTagIds(this.prisma, tagIds));
+    const emails = notificationEmails === undefined ? undefined : [...new Set(notificationEmails.map((e) => e.trim().toLowerCase()).filter(Boolean))];
 
     const updated = await this.prisma.client.update({
       where: { id },
-      data: { ...fields, ...(tags ? { tags } : {}) },
+      data: { ...fields, ...(emails ? { notificationEmails: emails } : {}), ...(tags ? { tags } : {}) },
       include: CLIENT_DETAIL_INCLUDE,
     });
     this.emitClientEvent('clients.client.updated', updated);

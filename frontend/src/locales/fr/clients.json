@@ -30,8 +30,8 @@
     "principalSelfExcluded": "{{name}} ne peut pas être son propre donneur d’ordre.",
     "principalNoOther": "Aucun autre donneur d’ordre.",
     "tags": "Tags",
-    "notifyOnCompletion": "Envoyer un courriel au client à la fin des travaux",
-    "notifyOnCompletionHint": "Utilise le courriel du client ci-dessus. Le résumé part quand le bon de travail est complété."
+    "notificationEmails": "Courriels avertis à la fin des travaux",
+    "notificationEmailsHint": "Chacun reçoit le résumé quand un bon de travail de ce client est complété. Vide = aucun envoi (sauf compte portail)."
   },
   "types": {
     "RESIDENTIAL": "Résidentiel",
@@ -97,6 +97,17 @@
     "editClientTitle": "Modifier — {{name}}",
     "createPrincipal": "➕ Donneur d’ordre",
     "createPrincipalTitle": "Nouveau donneur d’ordre",
-    "filterTags": "Tags"
+    "filterTags": "Tags",
+    "tabInfo": "Fiche",
+    "tabWorkOrders": "Bons de travail"
+  },
+  "history": {
+    "empty": "Aucun bon de travail pour ce client.",
+    "count": "{{count}} bon(s) de travail, du plus récent au plus ancien. Cliquer une référence ouvre le BT.",
+    "reference": "Référence",
+    "title": "Titre",
+    "status": "Statut",
+    "date": "Date",
+    "technician": "Technicien"
   }
 }

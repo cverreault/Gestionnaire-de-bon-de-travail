@@ -887,8 +887,8 @@ model Client {
   phone       String?
   clientType  ClientType @default(RESIDENTIAL) @map("client_type")
   notes       String?
-  /// B48 — le client reçoit un courriel quand ses travaux sont complétés (nécessite `email`).
-  notifyOnCompletion Boolean @default(false) @map("notify_on_completion")
+  /// B48.2 — courriels (un ou plusieurs) qui reçoivent le résumé quand les travaux sont complétés.
+  notificationEmails String[] @default([]) @map("notification_emails")
   isActive    Boolean    @default(true) @map("is_active")
   // B42 — sous-traitance : ce client est « client de » un donneur d'ordre.
   // Proposé par défaut comme « Mandaté par » sur ses nouveaux BT.

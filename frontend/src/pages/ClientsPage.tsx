@@ -55,8 +55,8 @@ interface ClientFormValues {
   principalClient: PrincipalClientRef | null;
   /** B44 — selected tag ids. */
   tagIds: string[];
-  /** B48 */
-  notifyOnCompletion: boolean;
+  /** B48.2 */
+  notificationEmails: string[];
 }
 
 import AddressFormFields from '../components/AddressFormFields';
@@ -64,6 +64,8 @@ import PrincipalClientPicker from '../components/PrincipalClientPicker';
 import type { AddressFormValues } from '../components/AddressFormFields';
 import AddressTypeCustomFields from '../components/AddressTypeCustomFields';
 import TagPicker from '../components/TagPicker';
+import EmailListInput from '../components/EmailListInput';
+import ClientWorkOrdersTab from '../components/ClientWorkOrdersTab';
 import { TagChips } from '../components/TagChip';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { invitePortalClient } from '../services/portal.service';
@@ -131,6 +133,8 @@ function ClientModal({
   const updateAddress = useUpdateClientAddress();
   const deleteAddress = useDeleteClientAddress();
   const { data: clientDetail } = useV3Client(clientId ?? '');
+  // B50 — edit mode : « Fiche » | « Bons de travail »
+  const [modalTab, setModalTab] = useState<'info' | 'workOrders'>('info');
   const existingAddresses: ClientAddress[] | undefined = clientDetail?.addresses;
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<ClientFormValues>({
@@ -142,7 +146,7 @@ function ClientModal({
       phone: defaultValues?.phone ?? '',
       clientType: defaultValues?.clientType ?? ClientType.RESIDENTIAL,
       notes: defaultValues?.notes ?? '',
-      notifyOnCompletion: defaultValues?.notifyOnCompletion ?? false,
+      notificationEmails: defaultValues?.notificationEmails ?? [],
       principalClient: defaultValues?.principalClient ?? null,
       tagIds: defaultValues?.tagIds ?? [],
     },
@@ -261,6 +265,24 @@ function ClientModal({
         </div>
 
         <div style={{ ...modalStyles.body }}>
+          {clientId && (
+            <div role="tablist" style={{ display: 'flex', gap: '0.25rem', borderBottom: theme.borders.default, marginBottom: '1rem' }}>
+              {([['info', t('clients:page.tabInfo', { defaultValue: 'Fiche' })], ['workOrders', t('clients:page.tabWorkOrders', { defaultValue: 'Bons de travail' })]] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  role="tab"
+                  aria-selected={modalTab === key}
+                  onClick={() => setModalTab(key)}
+                  style={{ background: 'none', border: 'none', borderBottom: `2px solid ${modalTab === key ? theme.colors.primary : 'transparent'}`, padding: '0.5rem 0.9rem', cursor: 'pointer', fontSize: theme.font.sizeSm, fontWeight: modalTab === key ? theme.font.weightSemibold : theme.font.weightNormal, color: modalTab === key ? theme.colors.primary : theme.colors.textSecondary }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+          {clientId && modalTab === 'workOrders' && <ClientWorkOrdersTab clientId={clientId} />}
+          <div style={{ display: clientId && modalTab === 'workOrders' ? 'none' : undefined }}>
           <form id="client-form" onSubmit={handleSubmit(handleMainSubmit)}>
             <p style={{ margin: '0 0 0.75rem', fontWeight: theme.font.weightSemibold, fontSize: theme.font.sizeSm, color: theme.colors.textSecondary, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               {t('clients:page.clientInfo', { defaultValue: 'Informations client' })}
@@ -315,16 +337,11 @@ function ClientModal({
                 />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
-                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', cursor: 'pointer', fontSize: theme.font.sizeSm, color: theme.colors.text }}>
-                  <input type="checkbox" {...register('notifyOnCompletion')} style={{ marginTop: 3 }} />
-                  <span>
-                    {t('fields.notifyOnCompletion', { defaultValue: 'Envoyer un courriel au client à la fin des travaux' })}
-                    <br />
-                    <span style={{ color: theme.colors.textMuted, fontSize: theme.font.sizeXs }}>
-                      {t('fields.notifyOnCompletionHint', { defaultValue: "Utilise le courriel du client ci-dessus. Le résumé part quand le bon de travail est complété." })}
-                    </span>
-                  </span>
-                </label>
+                <label htmlFor="client-notification-emails" style={{ ...formStyles.label }}>{t('fields.notificationEmails', { defaultValue: 'Courriels avertis à la fin des travaux' })}</label>
+                <EmailListInput id="client-notification-emails" value={watch('notificationEmails')} onChange={(next) => setValue('notificationEmails', next, { shouldDirty: true })} />
+                <p style={{ margin: '0.25rem 0 0', fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>
+                  {t('fields.notificationEmailsHint', { defaultValue: "Chacun reçoit le résumé quand un bon de travail de ce client est complété. Vide = aucun envoi (sauf compte portail)." })}
+                </p>
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={{ ...formStyles.label }}>{t('fields.notes')}</label>
@@ -459,6 +476,7 @@ function ClientModal({
                       : tCommon('actions.removeInitialAddress', { defaultValue: "Retirer l'adresse initiale" }))}
                 </button>
               )}
+          </div>
           </div>
         </div>
 
@@ -753,7 +771,7 @@ export default function ClientsPage() {
       phone: values.phone || undefined,
       clientType: values.clientType,
       notes: values.notes || undefined,
-      notifyOnCompletion: values.notifyOnCompletion,
+      notificationEmails: values.notificationEmails,
       tagIds: values.tagIds,
     };
     if (addresses && addresses.length > 0) {
@@ -793,7 +811,7 @@ export default function ClientsPage() {
         phone: values.phone || undefined,
         clientType: values.clientType,
         notes: values.notes || undefined,
-        notifyOnCompletion: values.notifyOnCompletion,
+        notificationEmails: values.notificationEmails,
         tagIds: values.tagIds,
       },
     });

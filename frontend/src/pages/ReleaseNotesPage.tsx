@@ -59,6 +59,15 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.16.1',
+    name: 'Fiche client : courriels multiples et historique des BT',
+    date: 'Septembre 2026',
+    entries: [
+      { type: 'new', text: "📧 Fiche client : plusieurs courriels peuvent recevoir le résumé de fin de travaux (liste avec ajout par Entrée), à la place de la case unique" },
+      { type: 'new', text: "📜 Fiche client : onglet « Bons de travail » avec l'historique complet du client, du plus récent au plus ancien ; cliquer une référence ouvre le BT en popup" },
+    ],
+  },
+  {
     version: '2.16.0',
     name: 'Kilométrage à la demande',
     date: 'Septembre 2026',

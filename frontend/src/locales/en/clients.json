@@ -30,8 +30,8 @@
     "principalSelfExcluded": "{{name}} cannot be its own principal.",
     "principalNoOther": "No other principal.",
     "tags": "Tags",
-    "notifyOnCompletion": "Email the client when the job is completed",
-    "notifyOnCompletionHint": "Uses the client email above. The summary is sent when the work order is completed."
+    "notificationEmails": "Emails notified at completion",
+    "notificationEmailsHint": "Each one receives the summary when a work order of this client is completed. Empty = nothing sent (except portal accounts)."
   },
   "types": {
     "RESIDENTIAL": "Residential",
@@ -97,6 +97,17 @@
     "editClientTitle": "Edit — {{name}}",
     "createPrincipal": "➕ Principal",
     "createPrincipalTitle": "New principal",
-    "filterTags": "Tags"
+    "filterTags": "Tags",
+    "tabInfo": "Profile",
+    "tabWorkOrders": "Work orders"
+  },
+  "history": {
+    "empty": "No work order for this client.",
+    "count": "{{count}} work order(s), newest first. Click a reference to open it.",
+    "reference": "Reference",
+    "title": "Title",
+    "status": "Status",
+    "date": "Date",
+    "technician": "Technician"
   }
 }

@@ -1,3 +1,4 @@
+import { i18nValidationMessage } from 'nestjs-i18n';
 import {
   IsUUID,
   IsString,
@@ -153,10 +154,12 @@ export class CreateClientDto {
   @IsUUID()
   principalClientId?: string | null;
 
-  @ApiPropertyOptional({ description: 'B48 — courriel au client à la fin des travaux (nécessite un courriel)' })
+  @ApiPropertyOptional({ description: 'B48.2 — courriels qui reçoivent le résumé à la fin des travaux (remplace la liste)', type: [String] })
   @IsOptional()
-  @IsBoolean()
-  notifyOnCompletion?: boolean;
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsEmail({}, { each: true, message: i18nValidationMessage('validation.IS_EMAIL') })
+  notificationEmails?: string[];
 
   @ApiPropertyOptional({
     type: [CreateClientAddressDto],
