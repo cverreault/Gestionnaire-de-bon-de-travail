@@ -34,6 +34,7 @@ import CalendarPage from './pages/CalendarPage';
 import TechnicianWorkOrdersPage from './pages/TechnicianWorkOrdersPage';
 import TechnicianWorkOrderDetailPage from './pages/TechnicianWorkOrderDetailPage';
 import UsersPage from './pages/UsersPage';
+import ConnectionsPage from './pages/ConnectionsPage';
 import ClientsPage from './pages/ClientsPage';
 import AddressesPage from './pages/AddressesPage';
 import ProfilePage from './pages/ProfilePage';
@@ -237,6 +238,7 @@ export default function App() {
           {/* ── Admin only (SA inherits) ──────────────────────────────── */}
           <Route element={<AdminOnlyRoute />}>
             <Route path="/utilisateurs" element={<UsersPage />} />
+            <Route path="/utilisateurs/connexions" element={<ConnectionsPage />} />
             <Route path="/parametres" element={<SettingsPage />} />
             <Route path="/parametres/processus" element={<ProcessSettingsPage />} />
             <Route path="/parametres/templates" element={<TemplatesSettingsPage />} />

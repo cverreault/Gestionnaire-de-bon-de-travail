@@ -91,4 +91,43 @@ export const getUserDevices = (
 export const revokeUserDevice = (userId: string, installationId: string): Promise<import('axios').AxiosResponse<void>> =>
   api.delete<void>(`/mobile/users/${userId}/devices/${installationId}`);
 
+// ── B51 — presence, sessions, login history ─────────────────────────────────
+
+export interface UserPresence {
+  userId: string;
+  online: boolean;
+  lastSeenAt: string | null;
+  lastSeenIp: string | null;
+  sessionSince: string | null;
+  activeSessions: number;
+  mobileSessions: number;
+}
+
+export interface ActiveSession {
+  family: string;
+  startedAt: string;
+  lastRefreshAt: string;
+  expiresAt: string;
+  ip: string | null;
+  userAgent: string | null;
+  deviceId: string | null;
+}
+
+export interface LoginEvent {
+  id: string;
+  userId: string | null;
+  email: string;
+  kind: 'LOGIN' | 'LOGIN_2FA' | 'FAILED' | 'LOGOUT';
+  ip: string | null;
+  userAgent: string | null;
+  deviceId: string | null;
+  createdAt: string;
+  user: { id: string; firstName: string; lastName: string; role: string } | null;
+}
+
+export const getPresence = () => api.get<ApiResponse<UserPresence[]>>('/auth/sessions/presence');
+export const getUserSessions = (userId: string) => api.get<ApiResponse<ActiveSession[]>>(`/auth/sessions/users/${userId}`);
+export const getLoginHistory = (params: { userId?: string; kind?: string; from?: string; to?: string; page?: number; limit?: number }) =>
+  api.get<ApiResponse<{ data: LoginEvent[]; meta: { page: number; limit: number; total: number; totalPages: number } }>>('/auth/sessions/history', { params });
+
 export default usersService;

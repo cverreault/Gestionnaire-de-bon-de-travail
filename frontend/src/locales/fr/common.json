@@ -160,10 +160,23 @@
       "deviceRevoked": "Appareil déconnecté.",
       "revokeAll": "Déconnecter partout",
       "confirmAll": "Déconnecter {{name}} de tous ses appareils et navigateurs ?",
-      "allRevoked": "{{sessions}} session(s) et {{devices}} appareil(s) déconnectés."
+      "allRevoked": "{{sessions}} session(s) et {{devices}} appareil(s) déconnectés.",
+      "active": "Sessions actives",
+      "noSession": "Aucune session active.",
+      "startedSince": "ouverte depuis {{d}}",
+      "recentLogins": "Dernières connexions",
+      "noLogin": "Aucune connexion enregistrée.",
+      "failed": "échec",
+      "logout": "déconnexion",
+      "login": "connexion"
     },
     "locationRequired": "Localisation obligatoire dans l'app mobile",
-    "locationRequiredHint": "L'app refuse de fonctionner tant que la position n'est pas autorisée. Décochez pour exempter cet utilisateur."
+    "locationRequiredHint": "L'app refuse de fonctionner tant que la position n'est pas autorisée. Décochez pour exempter cet utilisateur.",
+    "colPresence": "En ligne",
+    "online": "En ligne",
+    "since": "depuis {{d}}",
+    "lastSeen": "vu il y a {{d}}",
+    "neverSeen": "jamais connecté"
   },
   "backupPage": {
     "invalidFormat": "Format invalide : seuls les fichiers .tar.gz sont acceptés.",
@@ -290,5 +303,23 @@
   "emailList": {
     "placeholder": "Ajouter un courriel puis Entrée",
     "invalid": "Courriel invalide."
+  },
+  "connections": {
+    "title": "Connexions",
+    "subtitle": "Qui est en ligne maintenant, et qui s’est connecté, d’où et quand.",
+    "backToUsers": "Utilisateurs",
+    "onlineNow": "En ligne maintenant",
+    "nobody": "Personne en ligne depuis 5 minutes.",
+    "since": "connecté depuis {{d}}",
+    "lastSeen": "vu il y a {{d}}",
+    "sessions": "{{n}} sessions",
+    "history": "Historique des connexions",
+    "allUsers": "Tous les utilisateurs",
+    "allKinds": "Tous les types",
+    "colWhen": "Date et heure",
+    "colUser": "Utilisateur",
+    "colKind": "Type",
+    "colDevice": "Appareil",
+    "empty": "Aucune connexion dans la période."
   }
 }

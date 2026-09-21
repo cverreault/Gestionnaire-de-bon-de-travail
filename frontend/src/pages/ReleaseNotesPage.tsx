@@ -59,6 +59,16 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.17.0',
+    name: 'Connexions et présence',
+    date: 'Septembre 2026',
+    entries: [
+      { type: 'new', text: "🔐 Page Connexions (Administration) : historique de qui s'est connecté, avec l'adresse IP, l'appareil ou le navigateur, la date et l'heure ; les échecs de connexion et les déconnexions y figurent aussi, filtrables par utilisateur, type et période" },
+      { type: 'new', text: "🟢 Qui est en ligne maintenant et depuis combien de temps, sur la page Connexions et dans la colonne « En ligne » des Utilisateurs (rafraîchie toutes les 30 s)" },
+      { type: 'new', text: "💻 Dans Sessions d'un utilisateur : ses sessions actives (ouverte depuis, IP, appareil) et ses dernières connexions" },
+    ],
+  },
+  {
     version: '2.16.1',
     name: 'Fiche client : courriels multiples et historique des BT',
     date: 'Septembre 2026',

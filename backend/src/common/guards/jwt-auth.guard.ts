@@ -25,6 +25,21 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     super();
   }
 
+  /** Last write per user id, so presence costs one UPDATE a minute at most. */
+  private static readonly presenceWrites = new Map<string, number>();
+  private static readonly PRESENCE_INTERVAL_MS = 60_000;
+
+  private touchPresence(userId: string | undefined, ip: string | null): void {
+    if (!userId) return;
+    const now = Date.now();
+    const last = JwtAuthGuard.presenceWrites.get(userId) ?? 0;
+    if (now - last < JwtAuthGuard.PRESENCE_INTERVAL_MS) return;
+    JwtAuthGuard.presenceWrites.set(userId, now);
+    void this.prisma.user
+      .updateMany({ where: { id: userId }, data: { lastSeenAt: new Date(now), lastSeenIp: ip } })
+      .catch(() => undefined);
+  }
+
   canActivate(context: ExecutionContext) {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
@@ -68,6 +83,8 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
     if (ctx) {
       const req = ctx.switchToHttp().getRequest();
+      // B51 — presence heartbeat (users.last_seen_at / last_seen_ip), throttled per user.
+      this.touchPresence((user as unknown as { id?: string }).id, (req as { ip?: string }).ip ?? null);
       const requestTenant = req[TENANT_REQUEST_KEY] as TenantContext | undefined;
       const isImplicit = req[TENANT_IS_IMPLICIT_KEY] === true;
       const userWithTenant = user as unknown as { id: string; tenantId?: string };

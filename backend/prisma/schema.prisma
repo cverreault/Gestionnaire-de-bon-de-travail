@@ -143,6 +143,7 @@ model Tenant {
   // B48 — réglages d'entreprise : courriel des travaux complétés
   completedJobsEmail String? @map("completed_jobs_email")
   departurePoints    DeparturePoint[]
+  loginEvents        LoginEvent[]
 
   /// B22 — Stripe billing linkage (set by the billing webhook once the
   /// tenant completes a Checkout). Null = never paid online.
@@ -626,6 +627,10 @@ model User {
   /// B46 — the mobile app refuses to work without location permission ; an admin
   /// can exempt a user (false). Ignored for non-technicians.
   locationRequired Boolean @default(true) @map("location_required")
+  /// B51 — presence : last authenticated request (throttled to once a minute) and its IP.
+  lastSeenAt DateTime? @map("last_seen_at")
+  lastSeenIp String?   @map("last_seen_ip")
+  loginEvents LoginEvent[]
 
   /// B21 — set only for role=CLIENT portal accounts: the Client record
   /// this login belongs to. One client can have several portal users.
@@ -1550,6 +1555,9 @@ model RefreshToken {
   /// B37 — installation mobile (header X-Device-Id) qui a ouvert cette session ;
   /// null pour le web. Permet de révoquer un appareil d'un coup (ADR-015 §4).
   deviceId String? @map("device_id")
+  /// B51 — where the token was issued from (login / refresh), for the sessions view.
+  ip        String?
+  userAgent String? @map("user_agent")
 
   createdAt DateTime @default(now()) @map("created_at")
   expiresAt DateTime @map("expires_at")
@@ -1881,4 +1889,27 @@ model DeparturePoint {
 
   @@index([tenantId], map: "idx_departure_points_tenant_id")
   @@map("departure_points")
+}
+
+// ─── B51 — Historique des connexions ─────────────────────────────────────────
+model LoginEvent {
+  id        String   @id @default(uuid())
+  tenantId  String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId    String?  @map("user_id")
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  /// Email attempted (kept for FAILED rows, whose user may not exist).
+  email     String
+  /// LOGIN | LOGIN_2FA | FAILED | LOGOUT
+  kind      String
+  ip        String?
+  userAgent String?  @map("user_agent")
+  deviceId  String?  @map("device_id")
+  /// Refresh-token family opened by this login (links to the active session).
+  family    String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId, createdAt(sort: Desc)], map: "idx_login_events_tenant_created")
+  @@index([userId, createdAt(sort: Desc)], map: "idx_login_events_user_created")
+  @@map("login_events")
 }
