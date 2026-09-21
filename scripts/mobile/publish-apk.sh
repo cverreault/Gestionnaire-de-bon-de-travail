@@ -25,6 +25,11 @@ ALIAS="$DIR/dispatch2go.apk"
 
 if [[ -n "$APK_SRC" ]]; then
   cp "$APK_SRC" "$DEST"
+elif [[ -L "$ALIAS" && ! -f "$DEST" ]]; then
+  # scp écrit À TRAVERS le lien symbolique : le fichier fraîchement déposé est la
+  # cible de l'alias (nom de l'ancienne version). On le renomme en version courante.
+  TARGET="$(readlink -f "$ALIAS")"
+  [[ -f "$TARGET" ]] && mv "$TARGET" "$DEST"
 elif [[ -f "$ALIAS" && ! -L "$ALIAS" ]]; then
   # Fichier brut déposé par scp sous le nom de l'alias : on le renomme.
   mv "$ALIAS" "$DEST"

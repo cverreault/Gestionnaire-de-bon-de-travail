@@ -44,6 +44,16 @@ export async function logout(): Promise<void> {
   }
 }
 
+/** B47 — driving route (Valhalla) : distance, ETA and maneuvers. */
+export interface RouteEstimate {
+  distanceKm: number;
+  durationMin: number;
+  legs: Array<{ maneuvers: Array<{ instruction: string; distanceKm: number; durationMin: number }> }>;
+}
+export function fetchRoute(from: { lat: number; lng: number }, to: { lat: number; lng: number }, language: 'fr' | 'en'): Promise<RouteEstimate> {
+  return api<RouteEstimate>('/geo/route', { method: 'POST', body: { from, to, language }, timeoutMs: 12_000 });
+}
+
 export function fetchMe(): Promise<AuthUser> {
   return api<AuthUser>('/auth/me');
 }

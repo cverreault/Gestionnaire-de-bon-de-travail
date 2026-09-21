@@ -31,6 +31,8 @@ export { DEVICE_ID_HEADER, extractDeviceId } from './device-context.contract';
 export { MOBILE_DEVICE_REGISTERED_EVENT, MOBILE_DEVICE_REVOKED_EVENT } from './mobile-events.contract';
 export type { MobileDeviceRegisteredPayload, MobileDeviceRevokedPayload } from './mobile-events.contract';
 export { USER_SESSIONS_REVOKED_EVENT } from './user-events.contract';
+export { ROUTER } from './router.contract';
+export type { IRouter, LatLng, RouteResult, RouteLeg, RouteManeuver, MatrixResult, RouterStatus } from './router.contract';
 export { CLIENT_LOCATION_HEADER, parseClientLocation, formatClientLocation } from './client-location.contract';
 export type { ClientLocation } from './client-location.contract';
 export type { UserSessionsRevokedPayload, UserSessionsRevokedResult } from './user-events.contract';

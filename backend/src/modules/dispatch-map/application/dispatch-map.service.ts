@@ -1,6 +1,7 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Optional } from '@nestjs/common';
+import { ROUTER, type IRouter, type LatLng } from '../../../common/contracts/router.contract';
 import { PrismaService } from '../../../common/prisma/prisma.service';
-import { optimize, type Stop } from './route-optimizer';
+import { optimize, type Stop, orderByMatrix } from './route-optimizer';
 
 /**
  * B13 — Data source for the dispatcher map view.
@@ -15,7 +16,11 @@ import { optimize, type Stop } from './route-optimizer';
  */
 @Injectable()
 export class DispatchMapService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    // B47 — Valhalla when available ; straight-line heuristic otherwise.
+    @Optional() @Inject(ROUTER) private readonly router?: IRouter,
+  ) {}
 
   async snapshot(params?: {
     /** Filter WOs whose scheduledDate falls in [from, to]. */
@@ -164,12 +169,9 @@ export class DispatchMapService {
   async optimizeRoute(
     technicianId: string,
     workOrderIds: string[],
-  ): Promise<{
-    orderedWorkOrderIds: string[];
-    totalDistanceKm: number;
-  }> {
+  ): Promise<OptimizedRoute> {
     if (workOrderIds.length === 0) {
-      return { orderedWorkOrderIds: [], totalDistanceKm: 0 };
+      return { orderedWorkOrderIds: [], totalDistanceKm: 0, totalDurationMin: null, legs: [], shape: [], engine: 'haversine' };
     }
     if (workOrderIds.length > 50) {
       throw new BadRequestException(
@@ -211,18 +213,61 @@ export class DispatchMapService {
       );
     }
 
-    const result = optimize({
-      start: { lat: startPos.latitude, lng: startPos.longitude },
-      stops,
-    });
+    const start: LatLng = { lat: startPos.latitude, lng: startPos.longitude };
+
+    // B47 — real driving times (Valhalla matrix + 2-opt), then the route for legs and shape.
+    if (this.router) {
+      const points: LatLng[] = [start, ...stops.map((st) => ({ lat: st.lat, lng: st.lng }))];
+      const matrix = await this.router.matrix(points, points);
+      if (matrix) {
+        const order = orderByMatrix(matrix.durationsMin);
+        const orderedStops = order.map((k) => stops[k - 1]);
+        const route = await this.router.route([start, ...orderedStops.map((st) => ({ lat: st.lat, lng: st.lng }))], { language: 'fr' });
+        const legs = orderedStops.map((st, i) => {
+          const from = i === 0 ? 0 : order[i - 1];
+          const to = order[i];
+          return {
+            workOrderId: st.id,
+            distanceKm: route?.legs[i]?.distanceKm ?? matrix.distancesKm[from][to] ?? 0,
+            durationMin: route?.legs[i]?.durationMin ?? matrix.durationsMin[from][to] ?? 0,
+          };
+        });
+        return {
+          orderedWorkOrderIds: orderedStops.map((st) => st.id),
+          totalDistanceKm: Math.round((route?.distanceKm ?? legs.reduce((a, l) => a + l.distanceKm, 0)) * 10) / 10,
+          totalDurationMin: Math.round(route?.durationMin ?? legs.reduce((a, l) => a + l.durationMin, 0)),
+          legs,
+          shape: route?.shape ?? [],
+          engine: 'valhalla',
+        };
+      }
+    }
+
+    const result = optimize({ start, stops });
     return {
       orderedWorkOrderIds: result.orderedStopIds,
       totalDistanceKm: result.totalDistanceKm,
+      totalDurationMin: null,
+      legs: [],
+      shape: [],
+      engine: 'haversine',
     };
   }
 }
 
-// ─── Types ────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────
+
+/** B47 — tour result ; `engine` tells the UI whether times are real driving times. */
+export interface OptimizedRoute {
+  orderedWorkOrderIds: string[];
+  totalDistanceKm: number;
+  /** Null with the straight-line fallback. */
+  totalDurationMin: number | null;
+  legs: Array<{ workOrderId: string; distanceKm: number; durationMin: number }>;
+  /** Road geometry start → last stop (empty with the fallback). */
+  shape: LatLng[];
+  engine: 'valhalla' | 'haversine';
+}
 
 export interface MapSnapshot {
   technicians: Array<{

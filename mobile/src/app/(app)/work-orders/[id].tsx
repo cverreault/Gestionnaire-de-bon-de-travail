@@ -15,6 +15,7 @@ import SignaturePad from '../../../components/SignaturePad';
 import PartsCard from '../../../components/PartsCard';
 import TemplateFieldsCard from '../../../components/TemplateFieldsCard';
 import StatusBadge from '../../../components/StatusBadge';
+import { useRouteEstimate } from '../../../gps/useRouteEstimate';
 import TagChips from '../../../components/TagChips';
 import { useSession } from '../../../stores/session.store';
 import { useSyncStore } from '../../../sync/sync.store';
@@ -38,6 +39,8 @@ export default function WorkOrderDetailScreen() {
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
   const [signing, setSigning] = useState<'signatureClient' | 'signatureTechnician' | null>(null);
+  // B47 — driving distance / ETA to the address (null offline or without the routing engine).
+  const route = useRouteEstimate(w?.clientAddress_rel ? { lat: w.clientAddress_rel.latitude, lng: w.clientAddress_rel.longitude } : null);
   const blocked = ops.some((o) => o.status === 'CONFLICT' || (o.status === 'FAILED' && o.kind === 'transition'));
   const pendingIds = new Set(ops.map((o) => o.id));
 

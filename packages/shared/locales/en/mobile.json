@@ -105,7 +105,8 @@
     "removePart": "Remove",
     "removePartConfirm": "Remove this part from the work order? Stock will be credited back.",
     "noMatch": "No part found",
-    "scanHint": "Point at the part's barcode"
+    "scanHint": "Point at the part's barcode",
+    "eta": "{{km}} km · {{min}} min drive"
   },
   "status": {
     "REQUESTED": "Requested",
