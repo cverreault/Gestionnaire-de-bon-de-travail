@@ -258,7 +258,7 @@ function ClientModal({
 
   return (
     <div style={{ ...modalStyles.overlay }} onClick={(e) => e.target === e.currentTarget && onCancel()}>
-      <div style={{ ...modalStyles.content, maxWidth: '620px' }}>
+      <div style={{ ...modalStyles.content, maxWidth: clientId && modalTab === 'workOrders' ? '820px' : '620px' }}>
         <div style={{ ...modalStyles.header }}>
           <h2 style={{ ...modalStyles.headerTitle }}>{title}</h2>
           <button onClick={onCancel} style={{ ...buttonStyles.ghost, padding: '0.25rem 0.5rem' }}>✕</button>
