@@ -102,6 +102,10 @@ No cross-module imports. The frontend hook reads from `useUserPreferences()` and
 
 Total : 16 new cases.
 
+## Localisation obligatoire (B46)
+
+`users.location_required` (défaut `true`, géré par l'admin dans `POST/PATCH /users`, exposé par `/auth/me` et le login). Pour un technicien avec ce drapeau, l'app mobile refuse de fonctionner tant que la permission de localisation n'est pas accordée et que les services de localisation sont éteints (écran bloquant `location-required`), et le consentement `preferences.gps.enabled` est considéré comme acquis : le serveur accepte ses positions quel que soit l'interrupteur, et l'interrupteur disparaît des profils web et mobile. `false` = utilisateur exempté, comportement opt-in d'origine.
+
 ## Open questions
 
 - **Right-of-access export** : a tech may legitimately ask "give me my history". Today there's no endpoint to export their own positions — the 7-day window makes this less acute but not zero. Open in ADR-008.

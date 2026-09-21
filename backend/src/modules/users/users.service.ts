@@ -30,6 +30,7 @@ const USER_SELECT = {
   role: true,
   isActive: true,
   phone: true,
+  locationRequired: true,
   createdAt: true,
   updatedAt: true,
 } as const;

@@ -183,7 +183,8 @@
     "openSettings": "Open Settings",
     "revoked": "Sharing was turned off from the web. Turn it back on here if you wish.",
     "buffered": "{{count}} fix(es) waiting to be sent",
-    "lastFlush": "Last sent {{time}}"
+    "lastFlush": "Last sent {{time}}",
+    "required": "Location is required by your company during your work orders and cannot be turned off here."
   },
   "push": {
     "title": "Push notifications",
@@ -222,5 +223,15 @@
     "datetimeHint": "YYYY-MM-DD HH:MM",
     "choose": "Choose…",
     "readOnly": "Read only"
+  },
+  "locationRequired": {
+    "title": "Location required",
+    "body": "Your company requires the phone location while using Dispatch2Go. Allow location to continue.",
+    "servicesOff": "Phone location is turned off. Turn it on in Settings.",
+    "denied": "Permission was denied. Open the app settings and choose “Always” or “While using”.",
+    "allow": "Allow location",
+    "openSettings": "Open Settings",
+    "retry": "Check again",
+    "logout": "Sign out"
   }
 }

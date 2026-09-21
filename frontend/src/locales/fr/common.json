@@ -161,7 +161,9 @@
       "revokeAll": "Déconnecter partout",
       "confirmAll": "Déconnecter {{name}} de tous ses appareils et navigateurs ?",
       "allRevoked": "{{sessions}} session(s) et {{devices}} appareil(s) déconnectés."
-    }
+    },
+    "locationRequired": "Localisation obligatoire dans l'app mobile",
+    "locationRequiredHint": "L'app refuse de fonctionner tant que la position n'est pas autorisée. Décochez pour exempter cet utilisateur."
   },
   "backupPage": {
     "invalidFormat": "Format invalide : seuls les fichiers .tar.gz sont acceptés.",

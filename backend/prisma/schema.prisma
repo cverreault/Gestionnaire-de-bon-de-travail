@@ -620,6 +620,9 @@ model User {
   role      Role    @default(TECHNICIAN)
   isActive  Boolean @default(true) @map("is_active")
   phone     String?
+  /// B46 — the mobile app refuses to work without location permission ; an admin
+  /// can exempt a user (false). Ignored for non-technicians.
+  locationRequired Boolean @default(true) @map("location_required")
 
   /// B21 — set only for role=CLIENT portal accounts: the Client record
   /// this login belongs to. One client can have several portal users.

@@ -8,6 +8,8 @@ import '../i18n';
 import '../gps/location-task';
 import '../sync/background-task';
 import { useGpsController } from '../gps/useGpsController';
+import { useLocationGate } from '../gps/useLocationGate';
+import { useProfileRefresh } from '../stores/useProfileRefresh';
 import { usePushNotifications } from '../push/usePushNotifications';
 import { useApkUpdateChecker } from '../update/useApkUpdate';
 import i18n from '../i18n';
@@ -29,6 +31,7 @@ const queryClient = new QueryClient({
  *   no workspace     → /workspace
  *   no session       → /login
  *   upgrade required → /upgrade-required (heartbeat says this build is too old)
+ *   location required and missing → /location-required (B46, technicians unless exempted)
  *   otherwise        → /(app)
  */
 export default function RootLayout() {
@@ -43,6 +46,8 @@ export default function RootLayout() {
   useGpsController(dbReady);
   usePushNotifications();
   useApkUpdateChecker();
+  useProfileRefresh();
+  const locationGate = useLocationGate();
 
   useEffect(() => {
     void hydrate();
@@ -59,10 +64,13 @@ export default function RootLayout() {
       if (top !== 'login' && top !== 'workspace') router.replace('/login');
     } else if (upgradeRequired) {
       if (top !== 'upgrade-required') router.replace('/upgrade-required');
-    } else if (top !== '(app)') {
+    } else if (locationGate.ok === false) {
+      // B46 — company rule : no location, no app (until an admin exempts the user).
+      if (top !== 'location-required') router.replace('/location-required');
+    } else if (locationGate.ok === true && top !== '(app)') {
       router.replace('/(app)');
     }
-  }, [hydrated, workspace, accessToken, user, upgradeRequired, segments, router]);
+  }, [hydrated, workspace, accessToken, user, upgradeRequired, locationGate.ok, segments, router]);
 
   if (dbError) {
     return (

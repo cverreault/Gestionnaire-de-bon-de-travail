@@ -161,7 +161,9 @@
       "revokeAll": "Log out everywhere",
       "confirmAll": "Log {{name}} out of every device and browser?",
       "allRevoked": "{{sessions}} session(s) and {{devices}} device(s) logged out."
-    }
+    },
+    "locationRequired": "Location required in the mobile app",
+    "locationRequiredHint": "The app refuses to work until location is allowed. Uncheck to exempt this user."
   },
   "backupPage": {
     "invalidFormat": "Invalid format: only .tar.gz files are accepted.",

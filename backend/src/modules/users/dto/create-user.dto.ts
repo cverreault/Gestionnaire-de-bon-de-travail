@@ -1,4 +1,5 @@
-import { IsEmail, IsString, MinLength, IsEnum, IsOptional } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsEnum, IsOptional, IsBoolean } from 'class-validator';
+import { i18nValidationMessage } from 'nestjs-i18n';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 
@@ -28,4 +29,9 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   phone?: string;
+
+  @ApiPropertyOptional({ example: true, description: "B46 — l'app mobile exige la localisation pour ce compte (défaut : oui)" })
+  @IsOptional()
+  @IsBoolean({ message: i18nValidationMessage('validation.IS_BOOLEAN') })
+  locationRequired?: boolean;
 }

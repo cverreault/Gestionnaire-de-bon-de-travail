@@ -30,10 +30,12 @@ export function useGpsController(dbReady: boolean): void {
   const { serverConsent, foregroundGranted, backgroundGranted, consentRevoked, set } = useGpsStore();
   const lastFlush = useRef(0);
 
-  // Server consent comes with the user profile (preferences.gps.enabled).
+  // Server consent comes with the user profile (preferences.gps.enabled) ;
+  // B46 — forced on when the company requires location for this user.
+  const forced = user?.role === 'TECHNICIAN' && user.locationRequired !== false;
   useEffect(() => {
-    set({ serverConsent: !!user?.preferences?.gps?.enabled });
-  }, [user?.preferences?.gps?.enabled, set]);
+    set({ serverConsent: forced || !!user?.preferences?.gps?.enabled, ...(forced ? { consentRevoked: false } : {}) });
+  }, [forced, user?.preferences?.gps?.enabled, set]);
 
   useEffect(() => {
     if (!dbReady || !accessToken || user?.role !== 'TECHNICIAN') {

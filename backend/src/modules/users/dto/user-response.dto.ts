@@ -23,6 +23,12 @@ export class UserResponseDto {
   @ApiPropertyOptional({ example: '+33612345678', nullable: true })
   phone: string | null;
 
+  @ApiPropertyOptional({ example: true, description: "B46 — l'app mobile exige la localisation (l'admin peut exempter)" })
+  locationRequired?: boolean;
+
+  @ApiPropertyOptional({ description: 'Préférences (locale, thème, gps)' })
+  preferences?: Record<string, unknown> | null;
+
   @ApiProperty()
   createdAt: Date;
 

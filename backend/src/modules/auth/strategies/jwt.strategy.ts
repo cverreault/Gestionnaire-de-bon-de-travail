@@ -41,12 +41,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       is_active: boolean;
       phone: string | null;
       client_id: string | null;
+      location_required: boolean;
+      preferences: unknown;
       created_at: Date;
       updated_at: Date;
     };
     const rows = await this.prisma.$queryRawUnsafe<Row[]>(
       `SELECT id, tenant_id, email, first_name, last_name, role,
-              is_active, phone, client_id, created_at, updated_at
+              is_active, phone, client_id, location_required, preferences, created_at, updated_at
        FROM users WHERE id = $1 LIMIT 1`,
       payload.sub,
     );
@@ -75,6 +77,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       isActive: r.is_active,
       phone: r.phone,
       clientId: r.client_id,
+      // B46 / B38.3 — the mobile app refreshes its profile from /auth/me.
+      locationRequired: r.location_required,
+      preferences: (r.preferences as Record<string, unknown> | null) ?? null,
       createdAt: r.created_at,
       updatedAt: r.updated_at,
     };

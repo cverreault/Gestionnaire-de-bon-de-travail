@@ -84,6 +84,19 @@ describe('LocationsService.recordLocation', () => {
     expect(prisma.technicianLocation.create).not.toHaveBeenCalled();
   });
 
+  it('B46 — accepts when the admin made location mandatory, whatever the user toggle says', async () => {
+    const prisma = makePrisma();
+    prisma.user.findUnique.mockResolvedValueOnce({
+      id: 'tech-1',
+      role: Role.TECHNICIAN,
+      isActive: true,
+      locationRequired: true,
+      preferences: { gps: { enabled: false } },
+    });
+    await makeService(prisma).recordLocation(validInput);
+    expect(prisma.technicianLocation.create).toHaveBeenCalled();
+  });
+
   it('rejects when the gps key is missing entirely (default OFF)', async () => {
     const prisma = makePrisma();
     prisma.user.findUnique.mockResolvedValueOnce({

@@ -56,6 +56,8 @@ export interface User {
   role: Role;
   isActive: boolean;
   phone?: string | null;
+  /** B46 — the mobile app requires location for this user (admin-managed, default true). */
+  locationRequired?: boolean;
   createdAt: string;
   updatedAt: string;
 }
