@@ -21,8 +21,15 @@ export default function ClientWorkOrdersTab({ clientId }: { clientId: string }) 
       <p style={{ margin: '0 0 0.5rem', fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>
         {t('history.count', { defaultValue: '{{count}} bon(s) de travail, du plus récent au plus ancien. Cliquer une référence ouvre le BT.', count: rows.length })}
       </p>
-      <div style={{ maxHeight: 420, overflowY: 'auto', border: theme.borders.light, borderRadius: theme.radius.md }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 0 }}>
+      <div style={{ maxHeight: 420, overflow: 'auto', border: theme.borders.light, borderRadius: theme.radius.md }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 0, tableLayout: 'fixed' }}>
+          <colgroup>
+            <col style={{ width: '20%' }} />
+            <col style={{ width: '34%' }} />
+            <col style={{ width: '18%' }} />
+            <col style={{ width: '13%' }} />
+            <col style={{ width: '15%' }} />
+          </colgroup>
           <thead style={{ ...tableStyles.header }}>
             <tr>
               <th style={{ ...tableStyles.headerCell }}>{t('history.reference', { defaultValue: 'Référence' })}</th>
@@ -40,10 +47,10 @@ export default function ClientWorkOrdersTab({ clientId }: { clientId: string }) 
                     {wo.referenceNumber}
                   </button>
                 </td>
-                <td style={{ ...tableStyles.cell }}>{wo.title}</td>
+                <td style={{ ...tableStyles.cell, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={wo.title}>{wo.title}</td>
                 <td style={{ ...tableStyles.cell, whiteSpace: 'nowrap' }}><WorkOrderStatusBadge status={wo.status} step={wo.currentStep ?? undefined} size="sm" /></td>
                 <td style={{ ...tableStyles.cell, whiteSpace: 'nowrap' }}>{formatDate(wo.scheduledDate ?? wo.createdAt)}</td>
-                <td style={{ ...tableStyles.cell, whiteSpace: 'nowrap' }}>{wo.assignedTo ? `${wo.assignedTo.firstName} ${wo.assignedTo.lastName}` : '—'}</td>
+                <td style={{ ...tableStyles.cell, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{wo.assignedTo ? `${wo.assignedTo.firstName} ${wo.assignedTo.lastName}` : '—'}</td>
               </tr>
             ))}
           </tbody>
