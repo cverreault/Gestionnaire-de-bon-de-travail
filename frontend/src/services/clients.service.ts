@@ -44,8 +44,8 @@ export interface UpdateTemporaryClientDto extends Partial<CreateTemporaryClientD
 // ─── V3 DTOs ──────────────────────────────────────────────────────────────────
 
 export interface CreateV3ClientDto {
-  /** B48 */
-  notifyOnCompletion?: boolean;
+  /** B48.2 */
+  notificationEmails?: string[];
   firstName: string;
   lastName: string;
   companyName?: string;

@@ -286,5 +286,9 @@
     "clear": "Tout décocher",
     "label": "Tags",
     "edit": "Modifier les tags"
+  },
+  "emailList": {
+    "placeholder": "Ajouter un courriel puis Entrée",
+    "invalid": "Courriel invalide."
   }
 }
