@@ -22,6 +22,8 @@ import {
 } from '../services/alerts.service';
 import { getTaskTypes, getClientTypes, getAddressTypes } from '../services/settings.service';
 import { listTemplates } from '../services/templates.service';
+import { useProcess, useProcesses } from '../hooks/useProcess';
+import { useRef } from 'react';
 
 /**
  * Admin UI for configurable alert rules (B10).
@@ -56,16 +58,99 @@ const PRIORITY_OPTIONS = [
 
 const FAKE_CONTEXT = {
   workOrder: {
-    referenceNumber: 'STD-20260702-0042',
-    title: 'Fuite chauffe-eau chambre 3',
+    referenceNumber: 'PLB-20260514-0001',
+    title: 'Fuite sous évier',
     priority: 2,
-    negativeReason: 'Pièce en rupture de stock',
+    negativeReason: 'Pièce manquante',
+    description: 'Le client signale une fuite sous l’évier de la cuisine.',
+    completionNotes: 'Joint remplacé, test effectué.',
+    scheduledDate: '14 mai 2026',
+    scheduledTime: '09 h 00',
+    startedAt: '14 mai 2026 09 h 12',
+    completedAt: '14 mai 2026 10 h 05',
+    url: 'https://www.dispatch2go.com/bons-de-travail/…',
   },
-  transition: { fromLabel: 'En cours', toLabel: 'Complété négatif' },
-  technician: { name: 'Marie Tremblay' },
-  client: { name: 'Camping Plein Bois' },
-  tenant: { name: 'Camping Plein Bois' },
+  transition: { fromLabel: 'Dispatché', toLabel: 'En cours' },
+  technician: { name: 'Marie Tremblay', email: 'marie@exemple.com', phone: '514-555-0102' },
+  client: { name: 'Camping Plein Bois', email: 'info@pleinbois.ca', phone: '450-555-0199' },
+  address: { line: '669 rue Principale', city: 'Sainte-Marthe', postalCode: 'J0P 1W0', full: '669 rue Principale, Sainte-Marthe, J0P 1W0' },
+  event: { date: '14 mai 2026', time: '10 h 05' },
+  tenant: { name: 'Plomberie Tremblay' },
 };
+
+/** B52 — every variable the templates can use, grouped for the picker. */
+const VARIABLE_GROUPS: Array<{ group: string; items: Array<{ path: string; label: string }> }> = [
+  { group: 'Bon de travail', items: [
+    { path: 'workOrder.referenceNumber', label: 'Référence' },
+    { path: 'workOrder.title', label: 'Titre' },
+    { path: 'workOrder.description', label: 'Description' },
+    { path: 'workOrder.priority', label: 'Priorité' },
+    { path: 'workOrder.scheduledDate', label: 'Date planifiée' },
+    { path: 'workOrder.scheduledTime', label: 'Heure planifiée' },
+    { path: 'workOrder.startedAt', label: 'Début réel' },
+    { path: 'workOrder.completedAt', label: 'Fin réelle' },
+    { path: 'workOrder.completionNotes', label: 'Notes de fin de travaux' },
+    { path: 'workOrder.negativeReason', label: "Motif d'échec" },
+    { path: 'workOrder.url', label: 'Lien vers le BT' },
+  ] },
+  { group: 'Statut', items: [
+    { path: 'transition.fromLabel', label: 'Statut précédent' },
+    { path: 'transition.toLabel', label: 'Nouveau statut' },
+  ] },
+  { group: 'Adresse', items: [
+    { path: 'address.full', label: 'Adresse complète' },
+    { path: 'address.line', label: 'Numéro et rue' },
+    { path: 'address.city', label: 'Ville' },
+    { path: 'address.postalCode', label: 'Code postal' },
+  ] },
+  { group: 'Client', items: [
+    { path: 'client.name', label: 'Nom du client' },
+    { path: 'client.email', label: 'Courriel du client' },
+    { path: 'client.phone', label: 'Téléphone du client' },
+  ] },
+  { group: 'Technicien', items: [
+    { path: 'technician.name', label: 'Nom du technicien' },
+    { path: 'technician.email', label: 'Courriel du technicien' },
+    { path: 'technician.phone', label: 'Téléphone du technicien' },
+  ] },
+  { group: 'Divers', items: [
+    { path: 'event.date', label: "Date de l'événement" },
+    { path: 'event.time', label: "Heure de l'événement" },
+    { path: 'tenant.name', label: "Nom de l'entreprise" },
+  ] },
+];
+
+/** Inserts `{{path}}` at the caret of the given field and returns the new value. */
+function insertAtCaret(el: HTMLInputElement | HTMLTextAreaElement | null, value: string, token: string): string {
+  const start = el?.selectionStart ?? value.length;
+  const end = el?.selectionEnd ?? value.length;
+  const next = value.slice(0, start) + token + value.slice(end);
+  if (el) {
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + token.length, start + token.length);
+    });
+  }
+  return next;
+}
+
+function VariablePicker({ onPick, label }: { onPick: (path: string) => void; label: string }) {
+  return (
+    <select
+      value=""
+      onChange={(e) => { if (e.target.value) onPick(e.target.value); }}
+      style={{ ...formStyles.select, width: 'auto', fontSize: 12, marginLeft: 8 }}
+      aria-label={label}
+    >
+      <option value="">{`{ } ${label}`}</option>
+      {VARIABLE_GROUPS.map((g) => (
+        <optgroup key={g.group} label={g.group}>
+          {g.items.map((v) => <option key={v.path} value={v.path}>{v.label} — {`{{${v.path}}}`}</option>)}
+        </optgroup>
+      ))}
+    </select>
+  );
+}
 
 export default function AlertsPage() {
   const { t } = useTranslation('alerts');
@@ -298,6 +383,17 @@ function EditModal({
   const [eventName, setEventName] = useState(
     existing?.eventName ?? 'workOrders.workOrder.statusChanged',
   );
+  // B52 — process step scoping (dropdowns)
+  const [processDefinitionId, setProcessDefinitionId] = useState<string>(existing?.processDefinitionId ?? '');
+  const [fromStatusId, setFromStatusId] = useState<string>(existing?.fromStatusId ?? '');
+  const [toStatusId, setToStatusId] = useState<string>(existing?.toStatusId ?? '');
+  const { data: processes } = useProcesses();
+  const { data: processDetail } = useProcess(processDefinitionId);
+  const steps = [...(processDetail?.statuses ?? [])].sort((a, b) => a.position - b.position);
+  const titleRef = useRef<HTMLInputElement | null>(null);
+  const bodyRef = useRef<HTMLTextAreaElement | null>(null);
+  const clientTitleRef = useRef<HTMLInputElement | null>(null);
+  const clientBodyRef = useRef<HTMLTextAreaElement | null>(null);
   const [priorityIn, setPriorityIn] = useState<Set<string>>(
     new Set(existing?.priorityIn ?? []),
   );
@@ -422,6 +518,9 @@ function EditModal({
       name: name.trim(),
       description: description.trim(),
       eventName,
+      processDefinitionId: processDefinitionId || null,
+      fromStatusId: eventName === 'workOrders.workOrder.statusChanged' && fromStatusId ? fromStatusId : null,
+      toStatusId: eventName === 'workOrders.workOrder.statusChanged' && toStatusId ? toStatusId : null,
       priorityIn: [...priorityIn],
       taskTypeIds: [...taskTypeIds],
       templateIds: [...templateIds],
@@ -471,6 +570,41 @@ function EditModal({
           </option>
         ))}
       </select>
+
+      {eventName.startsWith('workOrders.') && (
+        <FieldGroup label={t('edit.stepLabel', { defaultValue: 'Étape du processus' })}>
+          <div style={{ fontSize: 11, color: theme.colors.textMuted, marginBottom: 8 }}>
+            {t('edit.stepHint', { defaultValue: "Choisissez le processus, puis l'étape vers laquelle le BT doit passer pour déclencher l'alerte. Vide = toutes les étapes." })}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: eventName === 'workOrders.workOrder.statusChanged' ? '1fr 1fr 1fr' : '1fr', gap: 8 }}>
+            <div>
+              <label style={{ ...formStyles.label, marginTop: 0 }}>{t('edit.processField', { defaultValue: 'Processus' })}</label>
+              <select style={formStyles.select} value={processDefinitionId} onChange={(e) => { setProcessDefinitionId(e.target.value); setFromStatusId(''); setToStatusId(''); }}>
+                <option value="">{t('edit.anyProcess', { defaultValue: 'Tous les processus' })}</option>
+                {(processes?.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+            {eventName === 'workOrders.workOrder.statusChanged' && (
+              <>
+                <div>
+                  <label style={{ ...formStyles.label, marginTop: 0 }}>{t('edit.toStepField', { defaultValue: "Déclencher à l'arrivée sur l'étape" })}</label>
+                  <select style={formStyles.select} value={toStatusId} onChange={(e) => setToStatusId(e.target.value)} disabled={!processDefinitionId}>
+                    <option value="">{processDefinitionId ? t('edit.anyStep', { defaultValue: 'Toutes les étapes' }) : t('edit.pickProcessFirst', { defaultValue: "Choisir d'abord un processus" })}</option>
+                    {steps.map((st) => <option key={st.id} value={st.id}>{st.nameFr || st.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ ...formStyles.label, marginTop: 0 }}>{t('edit.fromStepField', { defaultValue: "Seulement depuis l'étape (facultatif)" })}</label>
+                  <select style={formStyles.select} value={fromStatusId} onChange={(e) => setFromStatusId(e.target.value)} disabled={!processDefinitionId}>
+                    <option value="">{t('edit.anyStep', { defaultValue: 'Toutes les étapes' })}</option>
+                    {steps.map((st) => <option key={st.id} value={st.id}>{st.nameFr || st.name}</option>)}
+                  </select>
+                </div>
+              </>
+            )}
+          </div>
+        </FieldGroup>
+      )}
 
       <FieldGroup label={t('edit.filtersLabel')}>
         <div style={{ fontSize: 11, color: theme.colors.textMuted, marginBottom: 8 }}>
@@ -588,17 +722,23 @@ function EditModal({
         <div style={{ fontSize: 11, color: theme.colors.textMuted, marginBottom: 6 }}>
           {t('edit.templateHint')}
         </div>
-        <label style={{ ...formStyles.label, marginTop: 0 }}>
+        <label style={{ ...formStyles.label, marginTop: 0, display: 'flex', alignItems: 'center' }}>
           {t('edit.titleField')}
+          <VariablePicker label={t('edit.insertVariable', { defaultValue: 'Insérer une variable' })} onPick={(p) => setTitleTemplate((v) => insertAtCaret(titleRef.current, v, `{{${p}}}`))} />
         </label>
         <input
+          ref={titleRef}
           style={formStyles.input}
           value={titleTemplate}
           onChange={(e) => setTitleTemplate(e.target.value)}
         />
-        <label style={formStyles.label}>{t('edit.bodyField')}</label>
+        <label style={{ ...formStyles.label, display: 'flex', alignItems: 'center' }}>
+          {t('edit.bodyField')}
+          <VariablePicker label={t('edit.insertVariable', { defaultValue: 'Insérer une variable' })} onPick={(p) => setBodyTemplate((v) => insertAtCaret(bodyRef.current, v, `{{${p}}}`))} />
+        </label>
         <textarea
-          style={{ ...formStyles.input, minHeight: 80, fontFamily: 'inherit' }}
+          ref={bodyRef}
+          style={{ ...formStyles.input, minHeight: 120, fontFamily: 'inherit' }}
           value={bodyTemplate}
           onChange={(e) => setBodyTemplate(e.target.value)}
         />
@@ -633,17 +773,23 @@ function EditModal({
           <div style={{ fontSize: 11, color: theme.colors.textMuted, marginBottom: 6 }}>
             {t('edit.clientTemplateHint')}
           </div>
-          <label style={{ ...formStyles.label, marginTop: 0 }}>
+          <label style={{ ...formStyles.label, marginTop: 0, display: 'flex', alignItems: 'center' }}>
             {t('edit.titleField')}
+            <VariablePicker label={t('edit.insertVariable', { defaultValue: 'Insérer une variable' })} onPick={(p) => setClientTitleTemplate((v) => insertAtCaret(clientTitleRef.current, v, `{{${p}}}`))} />
           </label>
           <input
+            ref={clientTitleRef}
             style={formStyles.input}
             value={clientTitleTemplate}
             onChange={(e) => setClientTitleTemplate(e.target.value)}
             placeholder={t('edit.clientTitlePlaceholder')}
           />
-          <label style={formStyles.label}>{t('edit.bodyField')}</label>
+          <label style={{ ...formStyles.label, display: 'flex', alignItems: 'center' }}>
+            {t('edit.bodyField')}
+            <VariablePicker label={t('edit.insertVariable', { defaultValue: 'Insérer une variable' })} onPick={(p) => setClientBodyTemplate((v) => insertAtCaret(clientBodyRef.current, v, `{{${p}}}`))} />
+          </label>
           <textarea
+            ref={clientBodyRef}
             style={{ ...formStyles.input, minHeight: 60, fontFamily: 'inherit' }}
             value={clientBodyTemplate}
             onChange={(e) => setClientBodyTemplate(e.target.value)}

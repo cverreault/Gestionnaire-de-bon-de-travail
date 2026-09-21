@@ -79,13 +79,22 @@
     "recipientsLabel": "Recipients",
     "channelsLabel": "Channels",
     "templateLabel": "Internal message",
-    "templateHint": "Use {{workOrder.referenceNumber}}, {{workOrder.title}}, {{transition.toLabel}}, {{technician.name}}, {{client.name}}, {{tenant.name}}. Preview below.",
+    "templateHint": "Write the message and insert variables with the “Insert a variable” list: they are replaced by the work-order values when sent. Preview below.",
     "titleField": "Title",
     "bodyField": "Body",
     "previewLabel": "Preview",
     "clientTemplateLabel": "Client message (required when \"Client\" is checked)",
     "clientTemplateHint": "External-facing version — do NOT expose internal ids or technical statuses.",
     "clientTitlePlaceholder": "Update on your request {{workOrder.referenceNumber}}",
-    "clientBodyPlaceholder": "Hello {{client.name}}, your service request has been handled."
+    "clientBodyPlaceholder": "Hello {{client.name}}, your service request has been handled.",
+    "stepLabel": "Process step",
+    "stepHint": "Pick the process, then the step the work order must reach to fire the alert. Empty = every step.",
+    "processField": "Process",
+    "anyProcess": "Any process",
+    "toStepField": "Fire when reaching step",
+    "fromStepField": "Only coming from step (optional)",
+    "anyStep": "Any step",
+    "pickProcessFirst": "Pick a process first",
+    "insertVariable": "Insert a variable"
   }
 }
