@@ -1,63 +1,76 @@
-import { BadRequestException, Inject, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { PrismaService } from '../../../common/prisma/prisma.service';
 import { ROUTER, type IRouter, type LatLng, type RouteResult } from '../../../common/contracts/router.contract';
 import { toCsv } from '../../../common/utils/csv.util';
 
 export type TravelSource = 'ROUTER' | 'MANUAL';
 
+/** Where the trip starts (B49.2) : the technician's last GPS fix, a predefined point, or raw coordinates (the phone). */
+export type TravelOrigin =
+  | { type: 'GPS' }
+  | { type: 'POINT'; pointId: string }
+  | { type: 'COORDS'; lat: number; lng: number; label?: string };
+
 export interface TravelInfo {
   distanceKm: number | null;
   durationMin: number | null;
   source: TravelSource | null;
   computedAt: Date | null;
-  /** Base → site → base, when both points are known and the engine answered. */
+  roundTrip: boolean;
+  origin: (LatLng & { label: string | null }) | null;
+  /** Origin → site (→ origin), recomputed live for the map / GPX when the origin is known. */
   route: RouteResult | null;
-  base: (LatLng & { address: string | null }) | null;
   site: LatLng | null;
 }
 
 /**
- * B49 — round-trip mileage of a work order : company base (Paramètres →
- * Entreprise) → site → base, from the routing engine. Stored on the work
- * order at completion (or on demand) ; an admin can overwrite the distance
- * by hand (`MANUAL`), which the automatic computation then leaves alone.
+ * B49 — mileage of a work order, computed on demand only : the dispatcher (web)
+ * or the technician (app) picks the origin and one-way / round trip, the routing
+ * engine gives km and minutes, stored with the origin so the trip can be redrawn.
+ * An admin can overwrite the distance by hand (`MANUAL`).
  */
 @Injectable()
 export class TravelService {
-  private readonly logger = new Logger(TravelService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     @Optional() @Inject(ROUTER) private readonly router?: IRouter,
   ) {}
 
-  private async points(workOrderId: string) {
+  private async load(workOrderId: string) {
     const wo = await this.prisma.workOrder.findUnique({
       where: { id: workOrderId },
       select: {
         id: true,
+        tenantId: true,
         assignedToId: true,
         travelDistanceKm: true,
         travelDurationMin: true,
         travelSource: true,
         travelComputedAt: true,
+        travelRoundTrip: true,
+        travelOriginLabel: true,
+        travelOriginLat: true,
+        travelOriginLng: true,
         clientAddress_rel: { select: { latitude: true, longitude: true } },
-        tenant: { select: { baseAddress: true, baseLat: true, baseLng: true } },
       },
     });
     if (!wo) throw new NotFoundException(`Bon de travail #${workOrderId} introuvable`);
-    const base = wo.tenant.baseLat != null && wo.tenant.baseLng != null ? { lat: wo.tenant.baseLat, lng: wo.tenant.baseLng, address: wo.tenant.baseAddress } : null;
     const a = wo.clientAddress_rel;
     const site = a && a.latitude != null && a.longitude != null ? { lat: a.latitude, lng: a.longitude } : null;
-    return { wo, base, site };
+    const origin = wo.travelOriginLat != null && wo.travelOriginLng != null ? { lat: wo.travelOriginLat, lng: wo.travelOriginLng, label: wo.travelOriginLabel } : null;
+    return { wo, site, origin };
   }
 
-  /** Current stored values + the live round-trip route (for the map / GPX). */
+  private points(origin: LatLng, site: LatLng, roundTrip: boolean): LatLng[] {
+    return roundTrip ? [origin, site, origin] : [origin, site];
+  }
+
+  /** Stored values + the live route for the map / GPX. */
   async info(workOrderId: string, opts: { withRoute?: boolean } = {}): Promise<TravelInfo & { assignedToId: string | null }> {
-    const { wo, base, site } = await this.points(workOrderId);
+    const { wo, site, origin } = await this.load(workOrderId);
     let route: RouteResult | null = null;
-    if (opts.withRoute && base && site && this.router) {
-      route = await this.router.route([base, site, base], { language: 'fr' });
+    if (opts.withRoute && origin && site && this.router) {
+      route = await this.router.route(this.points(origin, site, wo.travelRoundTrip), { language: 'fr' });
     }
     return {
       assignedToId: wo.assignedToId,
@@ -65,71 +78,77 @@ export class TravelService {
       durationMin: wo.travelDurationMin,
       source: (wo.travelSource as TravelSource | null) ?? null,
       computedAt: wo.travelComputedAt,
+      roundTrip: wo.travelRoundTrip,
+      origin,
       route,
-      base,
       site,
     };
   }
 
-  /**
-   * Computes and stores the round trip. `force` overrides a MANUAL value ;
-   * otherwise a manual entry is preserved. Returns null when the base
-   * address, the site coordinates or the engine are missing.
-   */
-  async compute(workOrderId: string, opts: { force?: boolean } = {}): Promise<{ distanceKm: number; durationMin: number } | null> {
-    const { wo, base, site } = await this.points(workOrderId);
-    if (wo.travelSource === 'MANUAL' && !opts.force) return wo.travelDistanceKm != null ? { distanceKm: wo.travelDistanceKm, durationMin: wo.travelDurationMin ?? 0 } : null;
-    if (!base) throw new BadRequestException("Adresse de départ de l'entreprise non définie (Paramètres → Entreprise).");
+  /** Resolves the chosen origin to coordinates + a label. */
+  private async resolveOrigin(origin: TravelOrigin, tenantId: string, assignedToId: string | null): Promise<LatLng & { label: string }> {
+    if (origin.type === 'COORDS') {
+      return { lat: origin.lat, lng: origin.lng, label: origin.label?.trim() || 'Position GPS' };
+    }
+    if (origin.type === 'POINT') {
+      const p = await this.prisma.departurePoint.findFirst({ where: { id: origin.pointId, tenantId } });
+      if (!p) throw new BadRequestException('Point de départ introuvable.');
+      return { lat: p.lat, lng: p.lng, label: p.label };
+    }
+    if (!assignedToId) throw new BadRequestException("Aucun technicien assigné : pas de position GPS à utiliser.");
+    const fix = await this.prisma.technicianLocation.findFirst({
+      where: { technicianId: assignedToId },
+      orderBy: { recordedAt: 'desc' },
+      select: { latitude: true, longitude: true, recordedAt: true },
+    });
+    if (!fix) throw new BadRequestException("Le technicien n'a pas de position GPS enregistrée.");
+    return { lat: fix.latitude, lng: fix.longitude, label: `Position GPS du technicien (${fix.recordedAt.toLocaleString('fr-CA', { timeZone: 'America/Toronto', dateStyle: 'short', timeStyle: 'short' })})` };
+  }
+
+  /** Computes and stores the trip from the chosen origin. */
+  async compute(workOrderId: string, input: { origin: TravelOrigin; roundTrip: boolean }): Promise<{ distanceKm: number; durationMin: number; roundTrip: boolean; originLabel: string }> {
+    const { wo, site } = await this.load(workOrderId);
     if (!site) throw new BadRequestException("L'adresse du bon de travail n'a pas de coordonnées.");
     if (!this.router) throw new BadRequestException('Moteur de routage indisponible.');
-    const route = await this.router.route([base, site, base], { language: 'fr' });
+    const origin = await this.resolveOrigin(input.origin, wo.tenantId, wo.assignedToId);
+    const route = await this.router.route(this.points(origin, site, input.roundTrip), { language: 'fr' });
     if (!route) throw new BadRequestException('Moteur de routage indisponible.');
     const distanceKm = Math.round(route.distanceKm * 10) / 10;
     const durationMin = Math.round(route.durationMin);
     await this.prisma.workOrder.update({
       where: { id: workOrderId },
-      data: { travelDistanceKm: distanceKm, travelDurationMin: durationMin, travelSource: 'ROUTER', travelComputedAt: new Date() },
+      data: {
+        travelDistanceKm: distanceKm,
+        travelDurationMin: durationMin,
+        travelSource: 'ROUTER',
+        travelComputedAt: new Date(),
+        travelRoundTrip: input.roundTrip,
+        travelOriginLabel: origin.label,
+        travelOriginLat: origin.lat,
+        travelOriginLng: origin.lng,
+      },
     });
-    return { distanceKm, durationMin };
+    return { distanceKm, durationMin, roundTrip: input.roundTrip, originLabel: origin.label };
   }
 
-  /** Best-effort variant for the completion listener : never throws. */
-  async computeSilently(workOrderId: string): Promise<void> {
-    try {
-      await this.compute(workOrderId);
-    } catch (err) {
-      this.logger.debug(`Mileage not computed for ${workOrderId}: ${err instanceof Error ? err.message : String(err)}`);
-    }
-  }
-
-  async setManual(workOrderId: string, distanceKm: number | null): Promise<void> {
-    await this.prisma.workOrder.update({
-      where: { id: workOrderId },
-      data:
-        distanceKm == null
-          ? { travelDistanceKm: null, travelDurationMin: null, travelSource: null, travelComputedAt: null }
-          : { travelDistanceKm: Math.round(distanceKm * 10) / 10, travelSource: 'MANUAL', travelComputedAt: new Date() },
-    });
-  }
-
-  /** GPX 1.1 track of the round trip (for GPS apps and spreadsheets). */
+  /** GPX 1.1 track of the stored trip. */
   async gpx(workOrderId: string, referenceNumber: string): Promise<string | null> {
     const info = await this.info(workOrderId, { withRoute: true });
-    if (!info.route || info.route.shape.length === 0) return null;
+    if (!info.route || info.route.shape.length === 0 || !info.origin) return null;
     const esc = (s: string) => s.replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' })[c] as string);
     const pts = info.route.shape.map((p) => `      <trkpt lat="${p.lat.toFixed(6)}" lon="${p.lng.toFixed(6)}"></trkpt>`).join('\n');
     const wpt = (p: LatLng, name: string) => `  <wpt lat="${p.lat.toFixed(6)}" lon="${p.lng.toFixed(6)}"><name>${esc(name)}</name></wpt>`;
+    const mode = info.roundTrip ? 'aller-retour' : 'aller simple';
     return (
       `<?xml version="1.0" encoding="UTF-8"?>\n` +
       `<gpx version="1.1" creator="Dispatch2Go" xmlns="http://www.topografix.com/GPX/1/1">\n` +
-      `  <metadata><name>${esc(referenceNumber)} — aller-retour</name><desc>${info.route.distanceKm} km · ${Math.round(info.route.durationMin)} min</desc></metadata>\n` +
-      (info.base ? wpt(info.base, info.base.address ? `Départ : ${info.base.address}` : 'Départ') + '\n' : '') +
+      `  <metadata><name>${esc(referenceNumber)} — ${mode}</name><desc>${info.route.distanceKm} km · ${Math.round(info.route.durationMin)} min</desc></metadata>\n` +
+      wpt(info.origin, `Départ : ${info.origin.label ?? ''}`) + '\n' +
       (info.site ? wpt(info.site, `Site ${esc(referenceNumber)}`) + '\n' : '') +
       `  <trk><name>${esc(referenceNumber)}</name><trkseg>\n${pts}\n    </trkseg></trk>\n</gpx>\n`
     );
   }
 
-  /** Mileage of the completed work orders in a period, per technician, plus the rows. */
   async report(from: Date, to: Date, technicianId?: string) {
     const rows = await this.prisma.workOrder.findMany({
       where: {
@@ -145,6 +164,8 @@ export class TravelService {
         travelDistanceKm: true,
         travelDurationMin: true,
         travelSource: true,
+        travelRoundTrip: true,
+        travelOriginLabel: true,
         assignedTo: { select: { id: true, firstName: true, lastName: true } },
         client: { select: { firstName: true, lastName: true, companyName: true } },
         clientAddress_rel: { select: { streetNumber: true, street: true, city: true } },
@@ -174,6 +195,8 @@ export class TravelService {
       address: r.clientAddress_rel ? [[r.clientAddress_rel.streetNumber, r.clientAddress_rel.street].filter(Boolean).join(' '), r.clientAddress_rel.city].filter(Boolean).join(', ') : null,
       distanceKm: r.travelDistanceKm,
       durationMin: r.travelDurationMin,
+      roundTrip: r.travelRoundTrip,
+      origin: r.travelOriginLabel,
       source: r.travelSource,
     }));
     return { from, to, technicians, items, totalDistanceKm: Math.round(technicians.reduce((a, t) => a + t.distanceKm, 0) * 10) / 10 };
@@ -188,7 +211,9 @@ export class TravelService {
       { header: 'Client', pick: (r) => r.client ?? '' },
       { header: 'Adresse', pick: (r) => r.address ?? '' },
       { header: 'Terminé le', pick: (r) => (r.completedAt ? new Date(r.completedAt as Date).toISOString() : '') },
-      { header: 'Km aller-retour', pick: (r) => r.distanceKm ?? '' },
+      { header: 'Départ', pick: (r) => r.origin ?? '' },
+      { header: 'Trajet', pick: (r) => (r.distanceKm == null ? '' : r.roundTrip ? 'aller-retour' : 'aller simple') },
+      { header: 'Km', pick: (r) => r.distanceKm ?? '' },
       { header: 'Minutes de route', pick: (r) => r.durationMin ?? '' },
       { header: 'Source', pick: (r) => r.source ?? '' },
     ]);

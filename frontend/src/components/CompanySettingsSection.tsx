@@ -1,38 +1,42 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import AddressAutocomplete from './AddressAutocomplete';
-import { useTenantSettings, useUpdateTenantSettings } from '../hooks/useSettings';
+import { useAddDeparturePoint, useRemoveDeparturePoint, useTenantSettings, useUpdateTenantSettings } from '../hooks/useSettings';
 import { theme, buttonStyles, formStyles } from '../theme';
 
 /**
- * B48 — Paramètres → Entreprise : the address that receives every completed
- * job, and the technicians' starting address (round-trip mileage).
+ * B48 / B49.2 — Paramètres → Entreprise : the address that receives every completed
+ * job, and the predefined departure points offered when computing a job's mileage.
  */
 export default function CompanySettingsSection() {
   const { t } = useTranslation('settings');
   const { data, isLoading } = useTenantSettings();
   const update = useUpdateTenantSettings();
+  const addPoint = useAddDeparturePoint();
+  const removePoint = useRemoveDeparturePoint();
   const [email, setEmail] = useState('');
-  const [baseAddress, setBaseAddress] = useState('');
-  const [base, setBase] = useState<{ lat: number | null; lng: number | null }>({ lat: null, lng: null });
   const [msg, setMsg] = useState<string | null>(null);
+  const [label, setLabel] = useState('');
+  const [picked, setPicked] = useState<{ address: string; lat: number; lng: number } | null>(null);
 
   useEffect(() => {
-    if (!data) return;
-    setEmail(data.completedJobsEmail ?? '');
-    setBaseAddress(data.baseAddress ?? '');
-    setBase({ lat: data.baseLat, lng: data.baseLng });
+    if (data) setEmail(data.completedJobsEmail ?? '');
   }, [data]);
 
-  function save() {
+  function saveEmail() {
     setMsg(null);
     update.mutate(
-      { completedJobsEmail: email.trim() || null, baseAddress: baseAddress.trim() || null, baseLat: baseAddress.trim() ? base.lat : null, baseLng: baseAddress.trim() ? base.lng : null },
+      { completedJobsEmail: email.trim() || null },
       {
         onSuccess: () => setMsg(t('company.saved', { defaultValue: 'Réglages enregistrés.' })),
         onError: () => setMsg(t('company.error', { defaultValue: "Impossible d'enregistrer. Vérifiez le courriel." })),
       },
     );
+  }
+
+  function submitPoint() {
+    if (!picked || !label.trim()) return;
+    addPoint.mutate({ label: label.trim(), address: picked.address, lat: picked.lat, lng: picked.lng }, { onSuccess: () => { setLabel(''); setPicked(null); } });
   }
 
   return (
@@ -42,43 +46,62 @@ export default function CompanySettingsSection() {
           🏢 {t('company.title', { defaultValue: 'Entreprise' })}
         </h2>
         <p style={{ margin: '0.125rem 0 0', fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>
-          {t('company.subtitle', { defaultValue: 'Courriel des travaux complétés et adresse de départ des techniciens.' })}
+          {t('company.subtitle', { defaultValue: 'Courriel des travaux complétés et points de départ pour le kilométrage.' })}
         </p>
       </div>
-      <div style={{ padding: '1.25rem', display: 'grid', gap: '1rem', maxWidth: 720 }}>
+      <div style={{ padding: '1.25rem', display: 'grid', gap: '1.25rem', maxWidth: 760 }}>
         {data && !data.emailConfigured && (
           <div style={{ background: theme.colors.warningLight, color: 'var(--c-warningBadgeText)', border: '1px solid var(--c-warningBadgeBorder)', borderRadius: theme.radius.md, padding: '0.6rem 0.9rem', fontSize: theme.font.sizeSm }}>
             {t('company.smtpMissing', { defaultValue: "L'envoi de courriels n'est pas encore configuré sur le serveur (SMTP). Les courriels sont enregistrés dans le journal du serveur jusqu'à ce que ce soit fait." })}
           </div>
         )}
+
         <div>
           <label htmlFor="company-email" style={{ ...formStyles.label }}>{t('company.completedJobsEmail', { defaultValue: 'Courriel qui reçoit chaque travail complété' })}</label>
-          <input id="company-email" type="email" style={{ ...formStyles.input }} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="travaux@entreprise.com" disabled={isLoading} />
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <input id="company-email" type="email" style={{ ...formStyles.input, maxWidth: 360 }} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="travaux@entreprise.com" disabled={isLoading} />
+            <button type="button" onClick={saveEmail} disabled={update.isPending || isLoading} style={{ ...buttonStyles.primary }}>
+              {update.isPending ? t('company.saving', { defaultValue: 'Enregistrement…' }) : t('company.save', { defaultValue: 'Enregistrer' })}
+            </button>
+            {msg && <span style={{ fontSize: theme.font.sizeSm, color: theme.colors.textMuted }}>{msg}</span>}
+          </div>
           <p style={{ margin: '0.25rem 0 0', fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>
             {t('company.completedJobsEmailHint', { defaultValue: 'Résumé envoyé à chaque bon de travail complété ou terminé en échec : client, adresse, technicien, heures, notes, pièces, signatures. Vide = aucun envoi.' })}
           </p>
         </div>
+
         <div>
-          <label style={{ ...formStyles.label }}>{t('company.baseAddress', { defaultValue: 'Adresse de départ des techniciens (kilométrage aller-retour)' })}</label>
-          <AddressAutocomplete
-            onSelect={(a) => {
-              const line = [[a.streetNumber, a.street].filter(Boolean).join(' '), a.city, a.postalCode].filter(Boolean).join(', ');
-              setBaseAddress(line);
-              setBase({ lat: a.latitude ?? null, lng: a.longitude ?? null });
-            }}
-          />
-          <input style={{ ...formStyles.input, marginTop: '0.5rem' }} value={baseAddress} onChange={(e) => { setBaseAddress(e.target.value); setBase({ lat: null, lng: null }); }} placeholder={t('company.baseAddressPlaceholder', { defaultValue: 'Choisissez une adresse ci-dessus ou saisissez-la' })} />
-          <p style={{ margin: '0.25rem 0 0', fontSize: theme.font.sizeXs, color: base.lat != null ? theme.colors.success : theme.colors.textMuted }}>
-            {base.lat != null
-              ? t('company.baseLocated', { defaultValue: 'Position connue ({{lat}}, {{lng}}) : le kilométrage peut être calculé.', lat: base.lat.toFixed(5), lng: base.lng?.toFixed(5) })
-              : t('company.baseNotLocated', { defaultValue: 'Sans position, le kilométrage ne peut pas être calculé : choisissez une suggestion.' })}
+          <label style={{ ...formStyles.label }}>{t('company.departurePoints', { defaultValue: 'Points de départ pour le kilométrage' })}</label>
+          <p style={{ margin: '0 0 0.5rem', fontSize: theme.font.sizeXs, color: theme.colors.textMuted }}>
+            {t('company.departurePointsHint', { defaultValue: "Proposés dans la liste déroulante quand on calcule le kilométrage d'un BT (bureau, entrepôt, dépôt…). La position GPS du technicien reste toujours disponible." })}
           </p>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <button type="button" onClick={save} disabled={update.isPending || isLoading} style={{ ...buttonStyles.primary }}>
-            {update.isPending ? t('company.saving', { defaultValue: 'Enregistrement…' }) : t('company.save', { defaultValue: 'Enregistrer' })}
-          </button>
-          {msg && <span style={{ fontSize: theme.font.sizeSm, color: theme.colors.textMuted }}>{msg}</span>}
+          {(data?.departurePoints ?? []).length > 0 && (
+            <ul style={{ listStyle: 'none', margin: '0 0 0.75rem', padding: 0, display: 'grid', gap: '0.35rem' }}>
+              {(data?.departurePoints ?? []).map((p) => (
+                <li key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', border: `1px solid ${theme.colors.border}`, borderRadius: theme.radius.md, padding: '0.45rem 0.75rem', fontSize: theme.font.sizeSm }}>
+                  <span style={{ fontWeight: theme.font.weightSemibold }}>{p.label}</span>
+                  <span style={{ flex: 1, color: theme.colors.textMuted }}>{p.address}</span>
+                  <button type="button" onClick={() => { if (window.confirm(t('company.removePointConfirm', { defaultValue: 'Retirer « {{label}} » ?', label: p.label }))) removePoint.mutate(p.id); }} style={{ ...buttonStyles.ghost, color: theme.colors.danger, fontSize: theme.font.sizeXs }}>
+                    🗑 {t('company.remove', { defaultValue: 'Retirer' })}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div style={{ display: 'grid', gap: '0.5rem', border: theme.borders.light, borderRadius: theme.radius.md, padding: '0.75rem' }}>
+            <input style={{ ...formStyles.input, maxWidth: 280 }} value={label} onChange={(e) => setLabel(e.target.value)} placeholder={t('company.pointLabelPlaceholder', { defaultValue: 'Nom du point (ex. : Entrepôt)' })} />
+            <AddressAutocomplete
+              onSelect={(a) => setPicked({ address: [[a.streetNumber, a.street].filter(Boolean).join(' '), a.city, a.postalCode].filter(Boolean).join(', '), lat: a.latitude, lng: a.longitude })}
+            />
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: theme.font.sizeXs, color: picked ? theme.colors.success : theme.colors.textMuted, flex: 1 }}>
+                {picked ? picked.address : t('company.pickAddress', { defaultValue: 'Choisissez une adresse dans les suggestions.' })}
+              </span>
+              <button type="button" disabled={!picked || !label.trim() || addPoint.isPending} onClick={submitPoint} style={{ ...buttonStyles.secondary, fontSize: theme.font.sizeSm }}>
+                + {t('company.addPoint', { defaultValue: 'Ajouter le point' })}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

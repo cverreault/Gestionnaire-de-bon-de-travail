@@ -17,6 +17,7 @@ import TemplateFieldsCard from '../../../components/TemplateFieldsCard';
 import StatusBadge from '../../../components/StatusBadge';
 import { useRouteEstimate } from '../../../gps/useRouteEstimate';
 import TagChips from '../../../components/TagChips';
+import MileageCard from '../../../components/MileageCard';
 import { useSession } from '../../../stores/session.store';
 import { useSyncStore } from '../../../sync/sync.store';
 import { useLocalWorkOrder } from '../../../sync/useSync';
@@ -150,6 +151,8 @@ export default function WorkOrderDetailScreen() {
                 })()}
               </View>
             )}
+
+            {w.clientAddress_rel?.latitude != null && <MileageCard workOrderId={w.id} cardStyle={cardStyle} />}
 
             {(w.scheduledDate || w.description) && (
               <View style={cardStyle}>

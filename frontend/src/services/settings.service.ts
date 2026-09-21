@@ -25,18 +25,26 @@ export const deleteTaskType = (id: string) =>
 
 // ── Company settings (B48) ────────────────────────────────────────────────────
 
+export interface DeparturePoint {
+  id: string;
+  label: string;
+  address: string;
+  lat: number;
+  lng: number;
+  sortOrder: number;
+}
+
 export interface TenantSettings {
   completedJobsEmail: string | null;
-  baseAddress: string | null;
-  baseLat: number | null;
-  baseLng: number | null;
+  departurePoints: DeparturePoint[];
   emailConfigured: boolean;
 }
 
 export const getTenantSettings = () => api.get('/tenants/settings');
-
-export const updateTenantSettings = (data: Partial<Pick<TenantSettings, 'completedJobsEmail' | 'baseAddress' | 'baseLat' | 'baseLng'>>) =>
-  api.patch('/tenants/settings', data);
+export const updateTenantSettings = (data: Partial<Pick<TenantSettings, 'completedJobsEmail'>>) => api.patch('/tenants/settings', data);
+export const getDeparturePoints = () => api.get('/tenants/settings/departure-points');
+export const addDeparturePoint = (data: { label: string; address: string; lat: number; lng: number }) => api.post('/tenants/settings/departure-points', data);
+export const removeDeparturePoint = (id: string) => api.delete(`/tenants/settings/departure-points/${id}`);
 
 // ── Tags (B44) ────────────────────────────────────────────────────────────────
 

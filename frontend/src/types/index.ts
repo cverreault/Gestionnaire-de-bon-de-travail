@@ -413,6 +413,8 @@ export interface WorkOrder {
   travelDurationMin?: number | null;
   travelSource?: 'ROUTER' | 'MANUAL' | null;
   travelComputedAt?: string | null;
+  travelRoundTrip?: boolean;
+  travelOriginLabel?: string | null;
   status: WorkOrderStatus;
   type: WorkOrderType;
   title: string;

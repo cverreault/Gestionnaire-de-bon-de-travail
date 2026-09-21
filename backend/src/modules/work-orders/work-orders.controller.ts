@@ -24,7 +24,7 @@ import { Role } from '@prisma/client';
 
 import { WorkOrdersService } from './work-orders.service';
 import { TravelService } from './application/travel.service';
-import { TravelReportQueryDto } from './dto/travel.dto';
+import { TravelComputeDto, TravelReportQueryDto } from './dto/travel.dto';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto';
 import { UpdateWorkOrderDto } from './dto/update-work-order.dto';
 import { TransitionStatusDto } from './dto/transition-status.dto';
@@ -117,7 +117,7 @@ export class WorkOrdersController {
 
   @Get(':id/travel')
   @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN)
-  @ApiOperation({ summary: 'Kilométrage aller-retour du BT et tracé routier (B49)' })
+  @ApiOperation({ summary: 'Kilométrage du BT et tracé routier (B49)' })
   async travelInfo(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() currentUser: JwtUser) {
     await this.workOrdersService.findOne(id, currentUser); // 404 / IDOR technicien
     const { assignedToId: _a, ...info } = await this.travel.info(id, { withRoute: true });
@@ -126,16 +126,20 @@ export class WorkOrdersController {
   }
 
   @Post(':id/travel/compute')
-  @Roles(Role.ADMIN, Role.DISPATCHER)
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Recalculer le kilométrage aller-retour (B49)' })
-  async travelCompute(@Param('id', ParseUUIDPipe) id: string) {
-    return this.travel.compute(id, { force: true });
+  @ApiOperation({ summary: "Calculer le kilométrage depuis une origine choisie, aller simple ou aller-retour (B49)" })
+  async travelCompute(@Param('id', ParseUUIDPipe) id: string, @Body() dto: TravelComputeDto, @CurrentUser() currentUser: JwtUser) {
+    await this.workOrdersService.findOne(id, currentUser); // 404 / IDOR technicien
+    return this.travel.compute(id, {
+      origin: dto.origin.type === 'COORDS' ? { type: 'COORDS', lat: dto.origin.lat as number, lng: dto.origin.lng as number, label: dto.origin.label } : dto.origin.type === 'POINT' ? { type: 'POINT', pointId: dto.origin.pointId as string } : { type: 'GPS' },
+      roundTrip: dto.roundTrip,
+    });
   }
 
   @Get(':id/travel.gpx')
   @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN)
-  @ApiOperation({ summary: 'Trajet aller-retour au format GPX (B49)' })
+  @ApiOperation({ summary: 'Trajet au format GPX (B49)' })
   async travelGpx(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() currentUser: JwtUser, @Res() res: Response): Promise<void> {
     const wo = await this.workOrdersService.findOne(id, currentUser);
     const gpx = await this.travel.gpx(id, wo.referenceNumber);

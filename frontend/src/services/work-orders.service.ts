@@ -179,10 +179,13 @@ export interface TravelInfo {
   durationMin: number | null;
   source: 'ROUTER' | 'MANUAL' | null;
   computedAt: string | null;
+  roundTrip: boolean;
+  origin: { lat: number; lng: number; label: string | null } | null;
   route: { distanceKm: number; durationMin: number; shape: Array<{ lat: number; lng: number }>; legs: Array<{ distanceKm: number; durationMin: number }> } | null;
-  base: { lat: number; lng: number; address: string | null } | null;
   site: { lat: number; lng: number } | null;
 }
+
+export type TravelOrigin = { type: 'GPS' } | { type: 'POINT'; pointId: string } | { type: 'COORDS'; lat: number; lng: number; label?: string };
 
 export interface TravelReport {
   from: string;
@@ -193,7 +196,8 @@ export interface TravelReport {
 }
 
 export const getTravelInfo = (id: string) => api.get<ApiResponse<TravelInfo>>(`/work-orders/${id}/travel`);
-export const computeTravel = (id: string) => api.post<ApiResponse<{ distanceKm: number; durationMin: number }>>(`/work-orders/${id}/travel/compute`);
+export const computeTravel = (id: string, body: { origin: TravelOrigin; roundTrip: boolean }) =>
+  api.post<ApiResponse<{ distanceKm: number; durationMin: number; roundTrip: boolean; originLabel: string }>>(`/work-orders/${id}/travel/compute`, body);
 export const getTravelReport = (from: string, to: string, technicianId?: string) =>
   api.get<ApiResponse<TravelReport>>('/work-orders/travel-report', { params: { from, to, ...(technicianId ? { technicianId } : {}) } });
 

@@ -3,7 +3,6 @@ import { WorkOrdersController } from './work-orders.controller';
 import { WorkOrdersService } from './work-orders.service';
 import { SlaCheckService } from './sla-check.service';
 import { TravelService } from './application/travel.service';
-import { TravelListener } from './application/travel.listener';
 import { ProcessModule } from '../process/process.module';
 
 /**
@@ -19,7 +18,7 @@ import { ProcessModule } from '../process/process.module';
 @Module({
   imports: [ProcessModule],
   controllers: [WorkOrdersController],
-  providers: [WorkOrdersService, SlaCheckService, TravelService, TravelListener],
+  providers: [WorkOrdersService, SlaCheckService, TravelService],
   exports: [WorkOrdersService],
 })
 export class WorkOrdersModule {}

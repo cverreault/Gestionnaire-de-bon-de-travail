@@ -81,7 +81,7 @@ const WORK_ORDERS_MATRIX: MatrixRow[] = [
   { controller: WorkOrdersController, method: 'travelReport',    expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'GET /work-orders/travel-report' },
   { controller: WorkOrdersController, method: 'travelReportCsv', expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'GET /work-orders/travel-report.csv' },
   { controller: WorkOrdersController, method: 'travelInfo',      expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'GET /work-orders/:id/travel — IDOR via findOne' },
-  { controller: WorkOrdersController, method: 'travelCompute',   expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'POST /work-orders/:id/travel/compute' },
+  { controller: WorkOrdersController, method: 'travelCompute',   expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'POST /work-orders/:id/travel/compute — the app computes from the phone position (IDOR via findOne)' },
   { controller: WorkOrdersController, method: 'travelGpx',       expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'GET /work-orders/:id/travel.gpx — IDOR via findOne' },
   { controller: WorkOrdersController, method: 'getAvailableTransitions', expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'GET /:id/available-transitions — B21: staff only' },
   { controller: WorkOrdersController, method: 'exportCsv',               expectedRoles: [Role.ADMIN, Role.DISPATCHER],      note: 'GET /work-orders/export.csv — A3' },
@@ -183,6 +183,9 @@ const TENANT_SETTINGS_MATRIX: MatrixRow[] = [
   // B48 — company settings (completed-jobs email, base address)
   { controller: TenantSettingsController, method: 'get',    expectedRoles: [Role.ADMIN], note: 'GET /tenants/settings' },
   { controller: TenantSettingsController, method: 'update', expectedRoles: [Role.ADMIN], note: 'PATCH /tenants/settings' },
+  { controller: TenantSettingsController, method: 'listPoints',  expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'GET /tenants/settings/departure-points — mileage picker' },
+  { controller: TenantSettingsController, method: 'addPoint',    expectedRoles: [Role.ADMIN], note: 'POST /tenants/settings/departure-points' },
+  { controller: TenantSettingsController, method: 'removePoint', expectedRoles: [Role.ADMIN], note: 'DELETE /tenants/settings/departure-points/:id' },
 ];
 
 const TENANT_CONFIGS_MATRIX: MatrixRow[] = [

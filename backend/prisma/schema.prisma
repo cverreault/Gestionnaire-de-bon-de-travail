@@ -140,11 +140,9 @@ model Tenant {
   workOrdersResetAt          DateTime? @map("work_orders_reset_at")
 
   ownerEmail String? @map("owner_email")
-  // B48 — réglages d'entreprise : courriel des travaux complétés, adresse de départ (kilométrage)
+  // B48 — réglages d'entreprise : courriel des travaux complétés
   completedJobsEmail String? @map("completed_jobs_email")
-  baseAddress        String? @map("base_address")
-  baseLat            Float?  @map("base_lat")
-  baseLng            Float?  @map("base_lng")
+  departurePoints    DeparturePoint[]
 
   /// B22 — Stripe billing linkage (set by the billing webhook once the
   /// tenant completes a Checkout). Null = never paid online.
@@ -1270,11 +1268,16 @@ model WorkOrder {
   slaTargetAt   DateTime? @map("sla_target_at")
   slaBreachedAt DateTime? @map("sla_breached_at")
 
-  // B49 — kilométrage aller-retour (base de l'entreprise → site → base), moteur de routage ou saisie
+  // B49 — kilométrage calculé à la demande depuis une origine choisie (GPS du technicien,
+  // point de départ prédéfini ou position du téléphone), aller simple ou aller-retour ; ou saisi.
   travelDistanceKm  Float?    @map("travel_distance_km")
   travelDurationMin Float?    @map("travel_duration_min")
   travelSource      String?   @map("travel_source")
   travelComputedAt  DateTime? @map("travel_computed_at")
+  travelRoundTrip   Boolean   @default(true) @map("travel_round_trip")
+  travelOriginLabel String?   @map("travel_origin_label")
+  travelOriginLat   Float?    @map("travel_origin_lat")
+  travelOriginLng   Float?    @map("travel_origin_lng")
 
   notes        Note[]
   attachments  Attachment[]
@@ -1862,4 +1865,20 @@ model AddressTag {
   @@id([addressId, tagId])
   @@index([tagId], map: "idx_address_tags_tag_id")
   @@map("address_tags")
+}
+
+// ─── B49.2 — Points de départ prédéfinis (kilométrage) ────────────────────────
+model DeparturePoint {
+  id        String   @id @default(uuid())
+  tenantId  String   @default("00000000-0000-0000-0000-000000000001") @map("tenant_id")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  label     String
+  address   String
+  lat       Float
+  lng       Float
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId], map: "idx_departure_points_tenant_id")
+  @@map("departure_points")
 }

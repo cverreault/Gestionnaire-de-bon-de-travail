@@ -234,5 +234,14 @@
     "openSettings": "Ouvrir les réglages",
     "retry": "Revérifier",
     "logout": "Se déconnecter"
+  },
+  "mileage": {
+    "title": "Kilométrage",
+    "explain": "Calcule la distance depuis votre position actuelle jusqu’au site et l’enregistre sur le BT.",
+    "oneWay": "Aller simple",
+    "roundTrip": "Aller-retour",
+    "computing": "Calcul…",
+    "result": "{{km}} km · {{min}} min ({{mode}})",
+    "noPermission": "Autorisez la localisation pour calculer le kilométrage."
   }
 }
