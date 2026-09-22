@@ -65,6 +65,70 @@ describe('DispatchMapService.optimizeRoute (B47)', () => {
     expect(res.totalDurationMin).toBeNull();
     expect(res.shape).toEqual([]);
     expect(router.route).not.toHaveBeenCalled();
+    expect(res.reason).toBe('router_unavailable');
+    expect(res.startIgnored).toBe(false);
+  });
+
+  it('reports router_refused when the engine is up but rejected the points', async () => {
+    const router = {
+      matrix: jest.fn().mockResolvedValue(null),
+      route: jest.fn(),
+      status: jest.fn().mockResolvedValue({ available: true, engine: 'valhalla' }),
+    };
+    const svc = new DispatchMapService(makePrisma(stops) as never, router as never);
+    const res = await svc.optimizeRoute('tech', ['a', 'b', 'c']);
+    expect(res.engine).toBe('haversine');
+    expect(res.reason).toBe('router_refused');
+  });
+
+  it('ignores a technician position far from every stop and starts at the nearest one (B53)', async () => {
+    // Emulator default (Mountain View, CA) while the stops are around Montréal.
+    const prisma = makePrisma(stops);
+    prisma.technicianLocation.findFirst.mockResolvedValue({ latitude: 37.422, longitude: -122.084 });
+    // Nearest stop to California is c (westmost) : anchor=c (index 0), rest a=1, b=2 ; fastest c→b→a.
+    const durationsMin = [
+      [0, 30, 5],
+      [30, 0, 5],
+      [5, 5, 0],
+    ];
+    const router = {
+      matrix: jest.fn().mockResolvedValue({ durationsMin, distancesKm: durationsMin }),
+      route: jest.fn().mockResolvedValue({
+        distanceKm: 10,
+        durationMin: 10,
+        legs: [
+          { distanceKm: 5, durationMin: 5, shape: [], maneuvers: [] },
+          { distanceKm: 5, durationMin: 5, shape: [], maneuvers: [] },
+        ],
+        shape: [{ lat: 45.53, lng: -73.53 }, { lat: 45.52, lng: -73.52 }, { lat: 45.51, lng: -73.51 }],
+      }),
+      status: jest.fn(),
+    };
+    const svc = new DispatchMapService(prisma as never, router as never);
+    const res = await svc.optimizeRoute('tech', ['a', 'b', 'c']);
+    expect(res.engine).toBe('valhalla');
+    expect(res.startIgnored).toBe(true);
+    expect(res.startDistanceKm).toBeGreaterThan(3000);
+    expect(res.orderedWorkOrderIds).toEqual(['c', 'b', 'a']);
+    expect(res.legs[0]).toEqual({ workOrderId: 'c', distanceKm: 0, durationMin: 0 });
+    // Neither the matrix nor the route ever saw the Californian point.
+    const matrixPts = router.matrix.mock.calls[0][0] as Array<{ lat: number }>;
+    expect(matrixPts.every((p) => p.lat > 45)).toBe(true);
+    const routePts = router.route.mock.calls[0][0] as Array<{ lat: number }>;
+    expect(routePts.map((p) => p.lat)).toEqual([45.53, 45.52, 45.51]);
+  });
+
+  it('with a far position and a single stop, returns that stop without calling the engine', async () => {
+    const prisma = makePrisma([stops[0]]);
+    prisma.technicianLocation.findFirst.mockResolvedValue({ latitude: 37.422, longitude: -122.084 });
+    const router = { matrix: jest.fn(), route: jest.fn(), status: jest.fn() };
+    const svc = new DispatchMapService(prisma as never, router as never);
+    const res = await svc.optimizeRoute('tech', ['a']);
+    expect(res.orderedWorkOrderIds).toEqual(['a']);
+    expect(res.startIgnored).toBe(true);
+    expect(res.totalDistanceKm).toBe(0);
+    expect(router.matrix).not.toHaveBeenCalled();
+    expect(router.route).not.toHaveBeenCalled();
   });
 
   it('works without any router bound', async () => {

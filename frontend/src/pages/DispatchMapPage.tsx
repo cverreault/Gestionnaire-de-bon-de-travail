@@ -7,7 +7,7 @@ import 'leaflet/dist/leaflet.css';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import { theme, cardStyles, layoutStyles, buttonStyles } from '../theme';
 import { toast } from '../context/toast.store';
-import { getMapSnapshot, optimizeRoute, geocodeMissing, type MapSnapshot, type MapWorkOrder, type OptimizedRoute, type SnapshotFilter } from '../services/dispatch-map.service';
+import { getMapSnapshot, optimizeRoute, geocodeMissing, fallbackReasonLabel, type MapSnapshot, type MapWorkOrder, type OptimizedRoute, type SnapshotFilter } from '../services/dispatch-map.service';
 
 // ─── Period filters ──────────────────────────────────────────────
 // Filter map WOs by their scheduledDate. « Tous » clears the filter.
@@ -141,8 +141,13 @@ export default function DispatchMapPage() {
       toast.success(
         res.engine === 'valhalla' && res.totalDurationMin !== null
           ? `Tournée optimisée — ${res.totalDistanceKm} km · ${formatMinutes(res.totalDurationMin)} de route`
-          : `Tournée optimisée — ${res.totalDistanceKm} km (à vol d'oiseau, moteur de routage indisponible)`,
+          : `Tournée optimisée — ${res.totalDistanceKm} km (à vol d'oiseau, ${fallbackReasonLabel(res.reason)})`,
       );
+      if (res.startIgnored) {
+        toast.info(
+          `Position du technicien ignorée : à ${res.startDistanceKm} km du BT le plus proche (hors carte ?). La tournée part du premier BT.`,
+        );
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       toast.error(msg);
@@ -157,9 +162,10 @@ export default function DispatchMapPage() {
     // B47 — road geometry from the routing engine when available.
     if (tour?.shape && tour.shape.length > 1) return tour.shape.map((p) => [p.lat, p.lng] as [number, number]);
     const woMap = new Map(assignedWos.map((w) => [w.id, w]));
-    const points: [number, number][] = [
-      [selectedTech.position.lat, selectedTech.position.lng],
-    ];
+    // B53 — a far-away position was ignored server-side : do not draw a line to it.
+    const points: [number, number][] = tour?.startIgnored
+      ? []
+      : [[selectedTech.position.lat, selectedTech.position.lng]];
     for (const id of orderedRoute) {
       const w = woMap.get(id);
       if (w?.location) points.push([w.location.lat, w.location.lng]);
@@ -454,7 +460,12 @@ export default function DispatchMapPage() {
                         <> · {formatMinutes(tour.totalDurationMin)} de route</>
                       )}
                       {tour?.engine === 'haversine' && (
-                        <span style={{ display: 'block', color: '#b45309' }}>À vol d'oiseau : moteur de routage indisponible</span>
+                        <span style={{ display: 'block', color: theme.colors.warning }}>À vol d'oiseau : {fallbackReasonLabel(tour.reason)}</span>
+                      )}
+                      {tour?.startIgnored && (
+                        <span style={{ display: 'block', color: theme.colors.warning }}>
+                          Position du technicien ignorée ({tour.startDistanceKm} km du BT le plus proche, hors carte ?) : départ au premier BT.
+                        </span>
                       )}
                     </div>
                   )}
