@@ -59,6 +59,15 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.17.2',
+    name: 'Tournées robustes',
+    date: 'Septembre 2026',
+    entries: [
+      { type: 'fix', text: "🎯 Optimisation de tournée : une position de technicien aberrante (à plus de 300 km de tous ses BT, ex. émulateur) est ignorée et la tournée part du BT le plus proche, au lieu de retomber « à vol d'oiseau »" },
+      { type: 'improvement', text: "🛣 Le message « à vol d'oiseau » précise maintenant si le moteur est indisponible ou s'il a refusé les points (trop éloignés, hors carte) ; le moteur accepte des tournées jusqu'à 1 500 km entre deux arrêts et 60 points" },
+    ],
+  },
+  {
     version: '2.17.1',
     name: 'Menu réorganisé, coordonnées GPS, alertes par étape',
     date: 'Septembre 2026',

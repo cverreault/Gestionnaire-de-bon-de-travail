@@ -1,7 +1,14 @@
 import { BadRequestException, Inject, Injectable, Optional } from '@nestjs/common';
 import { ROUTER, type IRouter, type LatLng } from '../../../common/contracts/router.contract';
 import { PrismaService } from '../../../common/prisma/prisma.service';
-import { optimize, type Stop, orderByMatrix } from './route-optimizer';
+import { haversineKm, optimize, type Stop, orderByMatrix } from './route-optimizer';
+
+/**
+ * B53 — a technician position farther than this from every stop is ignored
+ * for the tour (stale fix, emulator default in California…). Below the
+ * engine's 400 km per-pair matrix limit so the matrix still succeeds.
+ */
+export const MAX_START_DISTANCE_KM = 300;
 
 /**
  * B13 — Data source for the dispatcher map view.
@@ -171,7 +178,7 @@ export class DispatchMapService {
     workOrderIds: string[],
   ): Promise<OptimizedRoute> {
     if (workOrderIds.length === 0) {
-      return { orderedWorkOrderIds: [], totalDistanceKm: 0, totalDurationMin: null, legs: [], shape: [], engine: 'haversine' };
+      return { orderedWorkOrderIds: [], totalDistanceKm: 0, totalDurationMin: null, legs: [], shape: [], engine: 'haversine', reason: null, startIgnored: false, startDistanceKm: null };
     }
     if (workOrderIds.length > 50) {
       throw new BadRequestException(
@@ -215,15 +222,40 @@ export class DispatchMapService {
 
     const start: LatLng = { lat: startPos.latitude, lng: startPos.longitude };
 
+    // B53 — ignore a start that is nowhere near the stops : the engine refuses
+    // pairs > 400 km and the tour would be meaningless anyway. The nearest stop
+    // becomes the anchor (first visit) and the tour is ordered from there.
+    let anchorStop: Stop = stops[0];
+    let nearestStartKm = Infinity;
+    for (const st of stops) {
+      const d = haversineKm(start, st);
+      if (d < nearestStartKm) {
+        nearestStartKm = d;
+        anchorStop = st;
+      }
+    }
+    const startIgnored = nearestStartKm > MAX_START_DISTANCE_KM;
+    const anchor: LatLng = startIgnored ? { lat: anchorStop.lat, lng: anchorStop.lng } : start;
+    const rest: Stop[] = startIgnored ? stops.filter((st) => st.id !== anchorStop.id) : stops;
+    const startNote = {
+      startIgnored,
+      startDistanceKm: startIgnored ? Math.round(nearestStartKm) : null,
+    };
+    const prefixLegs = startIgnored ? [{ workOrderId: anchorStop.id, distanceKm: 0, durationMin: 0 }] : [];
+    const prefixIds = startIgnored ? [anchorStop.id] : [];
+
     // B47 — real driving times (Valhalla matrix + 2-opt), then the route for legs and shape.
+    let reason: OptimizedRoute['reason'] = null;
     if (this.router) {
-      const points: LatLng[] = [start, ...stops.map((st) => ({ lat: st.lat, lng: st.lng }))];
-      const matrix = await this.router.matrix(points, points);
+      const points: LatLng[] = [anchor, ...rest.map((st) => ({ lat: st.lat, lng: st.lng }))];
+      const matrix = points.length > 1 ? await this.router.matrix(points, points) : { durationsMin: [[0]], distancesKm: [[0]] };
       if (matrix) {
         const order = orderByMatrix(matrix.durationsMin);
-        const orderedStops = order.map((k) => stops[k - 1]);
-        const route = await this.router.route([start, ...orderedStops.map((st) => ({ lat: st.lat, lng: st.lng }))], { language: 'fr' });
-        const legs = orderedStops.map((st, i) => {
+        const orderedRest = order.map((k) => rest[k - 1]);
+        const route = orderedRest.length > 0
+          ? await this.router.route([anchor, ...orderedRest.map((st) => ({ lat: st.lat, lng: st.lng }))], { language: 'fr' })
+          : null;
+        const legs = orderedRest.map((st, i) => {
           const from = i === 0 ? 0 : order[i - 1];
           const to = order[i];
           return {
@@ -233,24 +265,39 @@ export class DispatchMapService {
           };
         });
         return {
-          orderedWorkOrderIds: orderedStops.map((st) => st.id),
+          orderedWorkOrderIds: [...prefixIds, ...orderedRest.map((st) => st.id)],
           totalDistanceKm: Math.round((route?.distanceKm ?? legs.reduce((a, l) => a + l.distanceKm, 0)) * 10) / 10,
           totalDurationMin: Math.round(route?.durationMin ?? legs.reduce((a, l) => a + l.durationMin, 0)),
-          legs,
+          legs: [...prefixLegs, ...legs],
           shape: route?.shape ?? [],
           engine: 'valhalla',
+          reason: null,
+          ...startNote,
         };
       }
+      // The engine answered nothing : down / no tiles, or it refused these
+      // points (pair too far apart, point outside the map).
+      let available = false;
+      try {
+        available = (await this.router.status())?.available === true;
+      } catch {
+        available = false;
+      }
+      reason = available ? 'router_refused' : 'router_unavailable';
+    } else {
+      reason = 'router_unavailable';
     }
 
-    const result = optimize({ start, stops });
+    const result = optimize({ start: anchor, stops: rest });
     return {
-      orderedWorkOrderIds: result.orderedStopIds,
+      orderedWorkOrderIds: [...prefixIds, ...result.orderedStopIds],
       totalDistanceKm: result.totalDistanceKm,
       totalDurationMin: null,
       legs: [],
       shape: [],
       engine: 'haversine',
+      reason,
+      ...startNote,
     };
   }
 }
@@ -267,6 +314,12 @@ export interface OptimizedRoute {
   /** Road geometry start → last stop (empty with the fallback). */
   shape: LatLng[];
   engine: 'valhalla' | 'haversine';
+  /** B53 — why the straight-line fallback was used (null with the engine). */
+  reason: 'router_unavailable' | 'router_refused' | null;
+  /** B53 — true when the technician position was too far from every stop and the tour starts at the nearest stop. */
+  startIgnored: boolean;
+  /** Distance (km) from the ignored position to the nearest stop ; null when the start was used. */
+  startDistanceKm: number | null;
 }
 
 export interface MapSnapshot {

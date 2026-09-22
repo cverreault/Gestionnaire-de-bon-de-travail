@@ -67,6 +67,18 @@ export interface OptimizedRoute {
   legs: Array<{ workOrderId: string; distanceKm: number; durationMin: number }>;
   shape: Array<{ lat: number; lng: number }>;
   engine: 'valhalla' | 'haversine';
+  /** Why the straight-line fallback was used (null with the engine). */
+  reason: 'router_unavailable' | 'router_refused' | null;
+  /** True when the technician position was too far from every stop : the tour starts at the nearest stop. */
+  startIgnored: boolean;
+  startDistanceKm: number | null;
+}
+
+/** Human explanation of a straight-line fallback. */
+export function fallbackReasonLabel(reason: OptimizedRoute['reason']): string {
+  return reason === 'router_refused'
+    ? 'le moteur de routage a refusé ces points (trop éloignés entre eux ou hors carte)'
+    : 'moteur de routage indisponible';
 }
 
 export async function optimizeRoute(technicianId: string, workOrderIds: string[]): Promise<OptimizedRoute> {
