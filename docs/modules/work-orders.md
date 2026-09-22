@@ -47,6 +47,7 @@ Publie les domain events qui alimentent l'audit, les notifications, et tout futu
 | `POST` | `/api/work-orders` | ADMIN, DISPATCHER | Création |
 | `POST` | `/api/work-orders/:id/duplicate` | ADMIN, DISPATCHER | Clone (CREATED, sans tech) |
 | `POST` | `/api/work-orders/:id/assign-and-dispatch` | ADMIN, DISPATCHER | Raccourci assigner + dispatcher |
+| `POST` | `/api/work-orders/batch` | ADMIN, DISPATCHER | B55 — action en lot (`ids` ≤ 100, `action` = ASSIGN / DISPATCH / UNASSIGN / CANCEL / SCHEDULE + paramètre) ; chaque BT suit le chemin unitaire, réponse `{ ok[], failed[{ id, referenceNumber, error }] }` |
 | `POST` | `/api/work-orders/:id/transition` | tous (RBAC processus) | Change le statut |
 | `PATCH` | `/api/work-orders/:id` | tous (whitelist tech) | Modification |
 | `GET` | `/api/work-orders/:id/notes` | tous (IDOR) | Notes terrain |

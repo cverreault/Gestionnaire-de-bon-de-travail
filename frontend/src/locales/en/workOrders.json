@@ -477,5 +477,26 @@
     "originGps": "Technician's GPS position",
     "mode": "Trip",
     "compute": "Compute"
+  },
+  "batch": {
+    "selectAll": "Select this page",
+    "selected": "{{count}} selected",
+    "assign": "Assign",
+    "dispatch": "Dispatch",
+    "unassign": "Unassign",
+    "schedule": "Schedule",
+    "cancel": "Cancel work orders",
+    "clear": "Clear selection",
+    "pickTechnician": "— Technician —",
+    "startTime": "Start",
+    "endTime": "End",
+    "notePlaceholder": "Dispatch note (optional)",
+    "reasonPlaceholder": "Cancellation reason (required)",
+    "unassignHint": "Work orders go back to the initial step, without technician.",
+    "running": "Running…",
+    "apply": "Apply to {{count}} work orders",
+    "cancelConfirm": "Cancel {{count}} work order(s)?",
+    "allDone": "{{count}} work order(s) processed",
+    "partial": "{{ok}} succeeded, {{failed}} failed — {{details}}"
   }
 }

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { WorkOrdersController } from './work-orders.controller';
 import { WorkOrdersService } from './work-orders.service';
 import { SlaCheckService } from './sla-check.service';
+import { BatchService } from './application/batch.service';
 import { TravelService } from './application/travel.service';
 import { ProcessModule } from '../process/process.module';
 
@@ -18,7 +19,7 @@ import { ProcessModule } from '../process/process.module';
 @Module({
   imports: [ProcessModule],
   controllers: [WorkOrdersController],
-  providers: [WorkOrdersService, SlaCheckService, TravelService],
+  providers: [WorkOrdersService, SlaCheckService, TravelService, BatchService],
   exports: [WorkOrdersService],
 })
 export class WorkOrdersModule {}

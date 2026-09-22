@@ -90,6 +90,7 @@ const WORK_ORDERS_MATRIX: MatrixRow[] = [
   { controller: WorkOrdersController, method: 'duplicate',               expectedRoles: [Role.ADMIN, Role.DISPATCHER],      note: 'POST /:id/duplicate — A7' },
   { controller: WorkOrdersController, method: 'update',                  expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'PATCH /work-orders/:id — B21: staff only, service whitelists fields per role' },
   { controller: WorkOrdersController, method: 'assignAndDispatch',       expectedRoles: [Role.ADMIN, Role.DISPATCHER],      note: 'POST /:id/assign-and-dispatch' },
+  { controller: WorkOrdersController, method: 'batch',                   expectedRoles: [Role.ADMIN, Role.DISPATCHER],      note: 'POST /work-orders/batch — B55' },
   { controller: WorkOrdersController, method: 'transition',              expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'POST /:id/transition — B21: staff only, TECH transitions own BTs' },
   { controller: WorkOrdersController, method: 'findNotes',               expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'GET /:id/notes — B21: staff only, same IDOR rule as the BT' },
   { controller: WorkOrdersController, method: 'createNote',              expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'POST /:id/notes — B21: staff only, assignee or admin' },

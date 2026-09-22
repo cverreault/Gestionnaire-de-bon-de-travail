@@ -23,6 +23,7 @@ import DispatchBoard, { type DispatchSort } from '../components/DispatchBoard';
 import { countByTechnician } from '../utils/dispatchBoard';
 import WorkOrderModal from '../components/WorkOrderModal';
 import DispatchConfirmModal, { type DispatchPayload } from '../components/DispatchConfirmModal';
+import BatchActionsBar from '../components/BatchActionsBar';
 import { TagChips } from '../components/TagChip';
 import TagPicker from '../components/TagPicker';
 
@@ -338,6 +339,17 @@ export default function WorkOrdersPage() {
 
   // Row hover / drag state
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
+
+  // B55 — multi-selection for batch actions (ids survive paging ; cleared after a run).
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
+  const toggleSelected = useCallback((id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
   const [draggingId, setDraggingId] = useState<string | null>(null);
 
   // CSV export in flight
@@ -1098,6 +1110,14 @@ export default function WorkOrdersPage() {
 
           {mode === 'list' ? (
             <>
+          {/* B55 — batch actions on the selection */}
+          <BatchActionsBar
+            selectedIds={[...selected]}
+            technicians={technicians}
+            onClear={() => setSelected(new Set())}
+            onDone={(result) => setSelected(new Set(result.failed.map((f) => f.id)))}
+          />
+
           {/* Drag hint + Column picker */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', gap: '0.5rem', flexWrap: 'wrap' }}>
             <span style={{ fontSize: theme.font.sizeXs, color: theme.colors.textLight }}>
@@ -1115,12 +1135,31 @@ export default function WorkOrdersPage() {
             {/* Fixed layout : columns share the available width (weights below) and long text wraps, so nothing is cut off. */}
             <table style={{ width: '100%', minWidth: 0, borderCollapse: 'collapse', tableLayout: 'fixed' }}>
               <colgroup>
+                <col style={{ width: 34 }} />
                 {orderedColumns.map((col) => (
                   <col key={col.id} style={{ width: colWidths[col.id] }} />
                 ))}
               </colgroup>
               <thead style={{ ...tableStyles.header }}>
                 <tr>
+                  <th style={{ ...tableStyles.headerCell, padding: '0.45rem 0.4rem', textAlign: 'center' }}>
+                    <input
+                      type="checkbox"
+                      aria-label={t('batch.selectAll', { defaultValue: 'Sélectionner la page' })}
+                      checked={items.length > 0 && items.every((wo) => selected.has(wo.id))}
+                      onChange={(e) => {
+                        const on = e.target.checked;
+                        setSelected((prev) => {
+                          const next = new Set(prev);
+                          for (const wo of items) {
+                            if (on) next.add(wo.id);
+                            else next.delete(wo.id);
+                          }
+                          return next;
+                        });
+                      }}
+                    />
+                  </th>
                   {orderedColumns.map((col) => (
                     <th key={col.id} style={{ ...tableStyles.headerCell, textAlign: 'left', padding: '0.45rem 0.5rem', lineHeight: 1.2, whiteSpace: 'normal', overflow: 'hidden' }}>
                       {col.label}
@@ -1153,6 +1192,16 @@ export default function WorkOrdersPage() {
                       onMouseEnter={() => setHoveredRow(index)}
                       onMouseLeave={() => setHoveredRow(null)}
                     >
+                      <td style={{ ...tableStyles.cell, padding: '0.35rem 0.4rem', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          aria-label={wo.referenceNumber}
+                          checked={selected.has(wo.id)}
+                          onChange={() => toggleSelected(wo.id)}
+                          draggable={false}
+                          onMouseDown={(e) => e.stopPropagation()}
+                        />
+                      </td>
                       {orderedColumns.map((col) => (
                         <td
                           key={col.id}
