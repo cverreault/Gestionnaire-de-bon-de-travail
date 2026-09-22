@@ -7,8 +7,10 @@
 #   scripts/mobile/publish-apk.sh [chemin/app-release.apk] [notes]
 #
 # Sans chemin : reprend downloads/dispatch2go.apk déjà copié par scp (ou l'APK versionné
-# courant) et ne fait que renommer / régénérer version.json. La version vient de
-# mobile/app.config.ts (même commit que le build) ; APK_VERSION=x.y.z la force.
+# courant) et ne fait que renommer / régénérer version.json. La version est LUE DANS
+# L'APK (versionName du manifeste, scripts/mobile/apk-version.py) : un APK construit
+# sur un clone en retard est publié sous sa vraie version, jamais sous celle de
+# mobile/app.config.ts (un écart est signalé). APK_VERSION=x.y.z la force.
 # KEEP_OLD=1 conserve les anciens fichiers versionnés.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -17,24 +19,38 @@ APK_SRC="${1:-}"
 NOTES="${2:-}"
 BASE_URL="${PUBLIC_BASE_URL:-https://www.dispatch2go.com}"
 
-VERSION="${APK_VERSION:-$(grep -oP "version:\s*'\K[0-9]+\.[0-9]+\.[0-9]+" "$ROOT/mobile/app.config.ts" | head -1)}"
-[[ -n "$VERSION" ]] || { echo "Version introuvable dans mobile/app.config.ts" >&2; exit 1; }
-FILE="dispatch2go-$VERSION.apk"
-DEST="$DIR/$FILE"
+CONFIG_VERSION="$(grep -oP "(const VERSION = |version:\s*)'\K[0-9]+\.[0-9]+\.[0-9]+" "$ROOT/mobile/app.config.ts" | head -1 || true)"
 ALIAS="$DIR/dispatch2go.apk"
 
+# 1. Localiser l'APK fraîchement déposé.
 if [[ -n "$APK_SRC" ]]; then
-  cp "$APK_SRC" "$DEST"
-elif [[ -L "$ALIAS" && ! -f "$DEST" ]]; then
+  SRC="$APK_SRC"
+elif [[ -L "$ALIAS" ]]; then
   # scp écrit À TRAVERS le lien symbolique : le fichier fraîchement déposé est la
-  # cible de l'alias (nom de l'ancienne version). On le renomme en version courante.
-  TARGET="$(readlink -f "$ALIAS")"
-  [[ -f "$TARGET" ]] && mv "$TARGET" "$DEST"
-elif [[ -f "$ALIAS" && ! -L "$ALIAS" ]]; then
-  # Fichier brut déposé par scp sous le nom de l'alias : on le renomme.
-  mv "$ALIAS" "$DEST"
+  # cible de l'alias (nom de l'ancienne version).
+  SRC="$(readlink -f "$ALIAS")"
+elif [[ -f "$ALIAS" ]]; then
+  # Fichier brut déposé par scp sous le nom de l'alias.
+  SRC="$ALIAS"
+else
+  SRC=""
 fi
-[[ -f "$DEST" ]] || { echo "APK introuvable : $DEST (copie-le par scp sous downloads/dispatch2go.apk ou passe son chemin)" >&2; exit 1; }
+[[ -n "$SRC" && -f "$SRC" ]] || { echo "APK introuvable (copie-le par scp sous downloads/dispatch2go.apk ou passe son chemin)" >&2; exit 1; }
+
+# 2. La version vient de l'APK lui-même.
+APK_REAL="$(python3 "$ROOT/scripts/mobile/apk-version.py" "$SRC" --name)"
+VERSION="${APK_VERSION:-$APK_REAL}"
+if [[ -n "$CONFIG_VERSION" && "$APK_REAL" != "$CONFIG_VERSION" ]]; then
+  echo "⚠️  L'APK contient la version $APK_REAL alors que mobile/app.config.ts est en $CONFIG_VERSION :" >&2
+  echo "    le build vient d'un clone en retard (git pull sur le Mac, puis rebuild). Publié en $VERSION." >&2
+fi
+FILE="dispatch2go-$VERSION.apk"
+DEST="$DIR/$FILE"
+
+# 3. Le déposer sous son nom versionné.
+if [[ "$(readlink -f "$SRC")" != "$(readlink -f "$DEST" 2>/dev/null || true)" ]]; then
+  if [[ "$(dirname "$(readlink -f "$SRC")")" == "$DIR" ]]; then mv "$SRC" "$DEST"; else cp "$SRC" "$DEST"; fi
+fi
 
 # Alias stable pour le lien partagé → dernière version.
 ln -sfn "$FILE" "$ALIAS"
@@ -61,5 +77,5 @@ out, version, url, file, size, sha, now, notes = sys.argv[1:9]
 json.dump({"android": {"version": version, "url": url, "file": file, "size": int(size), "sha256": sha, "publishedAt": now, **({"notes": notes} if notes else {})}}, open(out, "w"), indent=2, ensure_ascii=False)
 open(out, "a").write("\n")
 PY
-echo "Publié : version $VERSION, $((SIZE / 1024 / 1024)) Mo → $BASE_URL/downloads/$FILE (alias dispatch2go.apk)"
+echo "Publié : version $VERSION (APK $APK_REAL, config $CONFIG_VERSION), $((SIZE / 1024 / 1024)) Mo → $BASE_URL/downloads/$FILE (alias dispatch2go.apk)"
 cat "$DIR/version.json"
