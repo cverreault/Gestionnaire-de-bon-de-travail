@@ -32,7 +32,8 @@ const IMMINENT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 function isCompleted(status: string): boolean {
   return (
     status === WorkOrderStatus.COMPLETED_POSITIVE ||
-    status === WorkOrderStatus.COMPLETED_NEGATIVE
+    status === WorkOrderStatus.COMPLETED_NEGATIVE ||
+    status === WorkOrderStatus.CANCELLED
   );
 }
 

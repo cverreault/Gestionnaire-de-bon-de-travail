@@ -4,6 +4,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import {
   formatAddressLine,
+  isClosedStatus,
   navigationUrl,
   resolveAvailableTransitions,
   toTelUrl,
@@ -258,9 +259,9 @@ export default function WorkOrderDetailScreen() {
               {w.signedAt && <Text style={{ color: theme.textMuted, fontSize: font.xs }}>{new Date(w.signedAt).toLocaleString(lang, { dateStyle: 'short', timeStyle: 'short' })}</Text>}
             </View>
 
-            <TemplateFieldsCard workOrderId={id} templateId={w.taskType?.templateId} values={w.templateData} editable={!w.status.startsWith('COMPLETED')} />
+            <TemplateFieldsCard workOrderId={id} templateId={w.taskType?.templateId} values={w.templateData} editable={!isClosedStatus(w.status)} />
 
-            <PartsCard workOrderId={id} parts={w.parts} ops={ops} editable={!w.status.startsWith('COMPLETED')} />
+            <PartsCard workOrderId={id} parts={w.parts} ops={ops} editable={!isClosedStatus(w.status)} />
 
             <AttachmentsCard workOrderId={id} attachments={w.attachments} pendingIds={pendingIds} canUpload onChanged={refresh} />
             <SignaturePad

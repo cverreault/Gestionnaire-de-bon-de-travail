@@ -36,6 +36,8 @@ export enum WorkOrderStatus {
   IN_PROGRESS = 'IN_PROGRESS',
   COMPLETED_POSITIVE = 'COMPLETED_POSITIVE',
   COMPLETED_NEGATIVE = 'COMPLETED_NEGATIVE',
+  /** B54 — closed without work: excluded from stats, hidden by default. */
+  CANCELLED = 'CANCELLED',
 }
 
 export enum WorkOrderType {
@@ -577,6 +579,8 @@ export interface ProcessStatus {
   isTerminalNegative: boolean;
   /** B21 — pre-approval step for client-portal work requests. */
   isRequested?: boolean;
+  /** B54 — « Annulé » : closed without work, excluded from stats. */
+  isCancelled?: boolean;
 }
 
 export interface ProcessTransitionDef {
@@ -645,6 +649,8 @@ export interface WorkOrderFilters {
   priorityMin?: number;
   search?: string;
   excludeCompleted?: boolean;
+  /** B54 — cancelled work orders are hidden unless this is true (or status = CANCELLED). */
+  includeCancelled?: boolean;
   slaBreached?: boolean;
   page?: number;
   limit?: number;

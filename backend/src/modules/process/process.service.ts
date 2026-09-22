@@ -23,6 +23,7 @@ const SINGLETON_FLAGS = [
   'isStart',
   'isTerminalPositive',
   'isTerminalNegative',
+  'isCancelled',
 ] as const;
 
 @Injectable()
@@ -182,6 +183,8 @@ export class ProcessService {
               isStart: s.isStart,
               isTerminalPositive: s.isTerminalPositive,
               isTerminalNegative: s.isTerminalNegative,
+              isRequested: s.isRequested,
+              isCancelled: s.isCancelled,
             },
           });
           statusIdMap.set(s.id, newStatus.id);
@@ -331,6 +334,7 @@ export class ProcessService {
         isStart: dto.isStart ?? false,
         isTerminalPositive: dto.isTerminalPositive ?? false,
         isTerminalNegative: dto.isTerminalNegative ?? false,
+        isCancelled: dto.isCancelled ?? false,
       },
     });
 
@@ -368,6 +372,7 @@ export class ProcessService {
         ...(dto.isTerminalNegative !== undefined && {
           isTerminalNegative: dto.isTerminalNegative,
         }),
+        ...(dto.isCancelled !== undefined && { isCancelled: dto.isCancelled }),
       },
     });
 

@@ -143,7 +143,7 @@ export default function TechnicianWorkOrderDetailPage() {
 
   // ─── Status helpers ────────────────────────────────────────────────────────
 
-  const isCompleted = [WorkOrderStatus.COMPLETED_POSITIVE, WorkOrderStatus.COMPLETED_NEGATIVE].includes(wo.status);
+  const isCompleted = [WorkOrderStatus.COMPLETED_POSITIVE, WorkOrderStatus.COMPLETED_NEGATIVE, WorkOrderStatus.CANCELLED].includes(wo.status);
 
   // Technicians cannot consult a terminated work order — once it's done,
   // it disappears from their view (no list link, no deep-link access).
@@ -440,7 +440,7 @@ export default function TechnicianWorkOrderDetailPage() {
       {/* ── Parts used (B24) ─────────────────────────────────────────────── */}
       <WorkOrderPartsSection
         workOrderId={id!}
-        readOnly={wo.status === WorkOrderStatus.COMPLETED_POSITIVE || wo.status === WorkOrderStatus.COMPLETED_NEGATIVE}
+        readOnly={wo.status === WorkOrderStatus.COMPLETED_POSITIVE || wo.status === WorkOrderStatus.COMPLETED_NEGATIVE || wo.status === WorkOrderStatus.CANCELLED}
         cardStyle={sectionStyle}
         titleStyle={sectionTitleStyle}
       />

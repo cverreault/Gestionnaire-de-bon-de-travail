@@ -125,6 +125,7 @@ export default function PrintWorkOrder({ wo }: Props) {
     [WorkOrderStatus.IN_PROGRESS]: t('workOrders:print.statusInProgress', { defaultValue: 'En cours' }),
     [WorkOrderStatus.COMPLETED_POSITIVE]: t('workOrders:print.statusCompletedPositive', { defaultValue: 'Terminé (positif)' }),
     [WorkOrderStatus.COMPLETED_NEGATIVE]: t('workOrders:print.statusCompletedNegative', { defaultValue: 'Terminé (négatif)' }),
+    [WorkOrderStatus.CANCELLED]: t('workOrders:print.statusCancelled', { defaultValue: 'Annulé' }),
   };
 
   const TYPE_LABELS_PRINT: Record<WorkOrderType, string> = {
@@ -431,7 +432,9 @@ export default function PrintWorkOrder({ wo }: Props) {
                       ? t('workOrders:print.resultPositive', { defaultValue: 'Positif' })
                       : wo.status === WorkOrderStatus.COMPLETED_NEGATIVE
                         ? t('workOrders:print.resultNegative', { defaultValue: 'Négatif' })
-                        : t('workOrders:print.resultInProgress', { defaultValue: 'En cours' })}
+                        : wo.status === WorkOrderStatus.CANCELLED
+                          ? t('workOrders:print.resultCancelled', { defaultValue: 'Annulé' })
+                          : t('workOrders:print.resultInProgress', { defaultValue: 'En cours' })}
                   </span>
                 </div>
               </div>

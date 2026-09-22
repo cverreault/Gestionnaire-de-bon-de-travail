@@ -35,7 +35,7 @@ export default function PortalWorkOrdersPage() {
   });
 
   const isTerminal = (wo: PortalWorkOrder) =>
-    wo.status === 'COMPLETED_POSITIVE' || wo.status === 'COMPLETED_NEGATIVE';
+    wo.status === 'COMPLETED_POSITIVE' || wo.status === 'COMPLETED_NEGATIVE' || wo.status === 'CANCELLED';
 
   return (
     <div>

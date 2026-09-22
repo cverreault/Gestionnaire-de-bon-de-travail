@@ -35,6 +35,8 @@ enum WorkOrderStatus {
   IN_PROGRESS
   COMPLETED_POSITIVE
   COMPLETED_NEGATIVE
+  /// B54 — cancelled: closed without work, excluded from stats and hidden by default.
+  CANCELLED
 }
 
 enum WorkOrderType {
@@ -1413,6 +1415,8 @@ model ProcessStatus {
   /// B21 — pre-approval step for client-portal work requests. Work
   /// orders created via the portal start here instead of isInitial.
   isRequested        Boolean @default(false) @map("is_requested")
+  /// B54 — « Annulé » : terminal but neither success nor failure ; not counted in stats.
+  isCancelled        Boolean @default(false) @map("is_cancelled")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

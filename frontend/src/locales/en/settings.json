@@ -287,7 +287,9 @@
     "flagTerminalNegShort": "❌ Terminal−",
     "allRoles": "All",
     "editModalTitle": "✏️ Edit — {{name}}",
-    "defaultCheckboxShort": "Default process"
+    "defaultCheckboxShort": "Default process",
+    "flagCancelled": "Cancelled (excluded from stats)",
+    "flagCancelledShort": "🚫 Cancelled"
   },
   "addressTypeFields": {
     "title": "Custom fields",

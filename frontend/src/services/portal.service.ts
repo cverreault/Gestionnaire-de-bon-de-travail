@@ -16,6 +16,7 @@ export interface PortalStep {
   isTerminalPositive: boolean;
   isTerminalNegative: boolean;
   isRequested: boolean;
+  isCancelled?: boolean;
 }
 
 export interface PortalWorkOrder {

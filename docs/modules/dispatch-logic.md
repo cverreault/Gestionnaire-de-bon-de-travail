@@ -78,8 +78,10 @@
 
 Le processus est **configurable**. Trois exemples livrés en seed :
 
-### Processus « Standard BT » (défaut, 7 statuts)
-Le flow complet ci-dessus.
+### Processus « Standard BT » (défaut, 7 statuts + Demandé + Annulé)
+Le flow complet ci-dessus, plus deux statuts hors pipeline :
+- **Demandé** (code 50, `isRequested`) — demande du portail client en attente d'approbation (B21).
+- **Annulé** (code 700, `isCancelled`, B54) — fermé sans travail. Accessible depuis tout statut ouvert (Créé → En cours) par un admin ou un répartiteur, raison obligatoire (`negativeReason`) ; « Réouvrir » ramène à Créé. Un BT annulé **n'entre dans aucune statistique** (tableau de bord, KPI, rapports), quitte le calendrier et la carte dispatch, est masqué des listes par défaut (`includeCancelled=true` ou `status=CANCELLED` pour le voir) et devient lecture seule dans l'app. Le statut est ajouté à tout processus existant au démarrage (`ProcessSeedService.backfillCancelledStatus`).
 
 ### Processus « Simple » (5 statuts)
 Pour les organisations qui n'ont pas besoin de tracking En route / En cours :

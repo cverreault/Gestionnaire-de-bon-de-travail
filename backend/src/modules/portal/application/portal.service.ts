@@ -46,6 +46,7 @@ const PORTAL_WORK_ORDER_SELECT = {
       isTerminalPositive: true,
       isTerminalNegative: true,
       isRequested: true,
+      isCancelled: true,
     },
   },
   taskType: { select: { id: true, name: true, nameFr: true, nameEn: true } },

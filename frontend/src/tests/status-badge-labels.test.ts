@@ -23,6 +23,7 @@ const STATUS_CONFIG: Record<WorkOrderStatus, { label: string; bg: string; color:
   [WorkOrderStatus.IN_PROGRESS]:        { label: 'En cours',      bg: '#fde68a', color: '#78350f', border: '#fbbf24' },
   [WorkOrderStatus.COMPLETED_POSITIVE]: { label: 'Fin positive',  bg: '#d1fae5', color: '#065f46', border: '#6ee7b7' },
   [WorkOrderStatus.COMPLETED_NEGATIVE]: { label: 'Fin négative',  bg: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
+  [WorkOrderStatus.CANCELLED]:          { label: 'Annulé',        bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' },
 };
 
 const STATUS_LABELS: Record<WorkOrderStatus, string> = {
@@ -34,6 +35,7 @@ const STATUS_LABELS: Record<WorkOrderStatus, string> = {
   [WorkOrderStatus.IN_PROGRESS]:        'En cours',
   [WorkOrderStatus.COMPLETED_POSITIVE]: 'Complété (positif)',
   [WorkOrderStatus.COMPLETED_NEGATIVE]: 'Complété (négatif)',
+  [WorkOrderStatus.CANCELLED]:          'Annulé',
 };
 
 const STATUS_FR: Record<WorkOrderStatus, string> = {
@@ -45,6 +47,7 @@ const STATUS_FR: Record<WorkOrderStatus, string> = {
   [WorkOrderStatus.IN_PROGRESS]:        'En cours',
   [WorkOrderStatus.COMPLETED_POSITIVE]: 'Terminé (positif)',
   [WorkOrderStatus.COMPLETED_NEGATIVE]: 'Terminé (négatif)',
+  [WorkOrderStatus.CANCELLED]:          'Annulé',
 };
 
 function getStatusAccentColor(status: WorkOrderStatus): string {
@@ -52,6 +55,7 @@ function getStatusAccentColor(status: WorkOrderStatus): string {
     case WorkOrderStatus.IN_PROGRESS:        return '#f59e0b'; // orange (theme.colors.warning)
     case WorkOrderStatus.COMPLETED_POSITIVE: return '#10b981'; // vert
     case WorkOrderStatus.COMPLETED_NEGATIVE: return '#ef4444'; // rouge
+    case WorkOrderStatus.CANCELLED:          return '#64748b'; // gris
     case WorkOrderStatus.DISPATCHED:         return '#38bdf8'; // bleu clair (info)
     case WorkOrderStatus.EN_ROUTE:           return '#7c3aed'; // violet
     default:                                 return '#3b82f6'; // bleu (primary)
@@ -63,8 +67,8 @@ function getStatusAccentColor(status: WorkOrderStatus): string {
 describe('WorkOrderStatusBadge STATUS_CONFIG — completeness', () => {
   const ALL_STATUSES = Object.values(WorkOrderStatus);
 
-  it('has exactly 8 entries', () => {
-    expect(Object.keys(STATUS_CONFIG)).toHaveLength(8);
+  it('has exactly 9 entries', () => {
+    expect(Object.keys(STATUS_CONFIG)).toHaveLength(9);
   });
 
   it.each(ALL_STATUSES)('has an entry for status %s', (status) => {
@@ -94,8 +98,8 @@ describe('WorkOrderStatusBadge STATUS_CONFIG — completeness', () => {
 describe('WorkOrdersPage STATUS_LABELS — completeness', () => {
   const ALL_STATUSES = Object.values(WorkOrderStatus);
 
-  it('has exactly 8 entries', () => {
-    expect(Object.keys(STATUS_LABELS)).toHaveLength(8);
+  it('has exactly 9 entries', () => {
+    expect(Object.keys(STATUS_LABELS)).toHaveLength(9);
   });
 
   it.each(ALL_STATUSES)('has a label for status %s', (status) => {
@@ -113,8 +117,8 @@ describe('WorkOrdersPage STATUS_LABELS — completeness', () => {
 describe('PrintWorkOrder STATUS_FR — completeness', () => {
   const ALL_STATUSES = Object.values(WorkOrderStatus);
 
-  it('has exactly 8 entries', () => {
-    expect(Object.keys(STATUS_FR)).toHaveLength(8);
+  it('has exactly 9 entries', () => {
+    expect(Object.keys(STATUS_FR)).toHaveLength(9);
   });
 
   it.each(ALL_STATUSES)('has a French label for status %s', (status) => {

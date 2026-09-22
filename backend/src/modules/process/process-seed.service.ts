@@ -28,6 +28,7 @@ export class ProcessSeedService implements OnModuleInit {
       this.logger.log('Default process already exists — checking backfill...');
       await this.backfillWorkOrders(existing.id);
       await this.backfillRequestedStatus();
+      await this.backfillCancelledStatus();
       await this.repairDefaultProcesses();
       return;
     }
@@ -46,6 +47,7 @@ export class ProcessSeedService implements OnModuleInit {
     // 5. Backfill existing work orders
     await this.backfillWorkOrders(process.id);
     await this.backfillRequestedStatus();
+    await this.backfillCancelledStatus();
     await this.repairDefaultProcesses();
 
     // 6. Associate existing TaskTypes to default process
@@ -71,6 +73,7 @@ export class ProcessSeedService implements OnModuleInit {
       400: WorkOrderStatus.IN_PROGRESS,
       500: WorkOrderStatus.COMPLETED_POSITIVE,
       600: WorkOrderStatus.COMPLETED_NEGATIVE,
+      700: WorkOrderStatus.CANCELLED,
     };
 
     const legacyToStepId: Record<string, string> = {};
@@ -191,6 +194,85 @@ export class ProcessSeedService implements OnModuleInit {
       this.logger.log(
         `B21 — added « Demandé » status + approval transitions to ${patched} process definition(s).`,
       );
+    }
+  }
+
+  /**
+   * B54 — every process definition (default or custom) gets an « Annulé »
+   * status once: cancel from any open step (reason required, admin or
+   * dispatcher), reopen back to the initial step. Idempotent; runs at boot.
+   */
+  private async backfillCancelledStatus(): Promise<void> {
+    const definitions = await this.prisma.processDefinition.findMany({
+      include: { statuses: true },
+    });
+
+    let patched = 0;
+    for (const def of definitions) {
+      if (def.statuses.some((st) => st.isCancelled)) continue;
+      const initial = def.statuses.find((st) => st.isInitial);
+      if (!initial) {
+        this.logger.warn(`Process "${def.name}" (${def.id}) has no initial status — skipping « Annulé » backfill.`);
+        continue;
+      }
+      const code = def.statuses.some((st) => st.code === 700)
+        ? Math.max(...def.statuses.map((st) => st.code)) + 100
+        : 700;
+      const position = Math.max(...def.statuses.map((st) => st.position)) + 1;
+      const openStatuses = def.statuses.filter(
+        (st) => !st.isTerminalPositive && !st.isTerminalNegative && !st.isRequested && !st.isCancelled,
+      );
+
+      await this.prisma.$transaction(async (tx) => {
+        const cancelled = await tx.processStatus.create({
+          data: {
+            processDefinitionId: def.id,
+            tenantId: def.tenantId,
+            code,
+            name: 'Annulé',
+            nameFr: 'Annulé',
+            nameEn: 'Cancelled',
+            color: '#9ca3af',
+            position,
+            isCancelled: true,
+          },
+        });
+        for (const from of openStatuses) {
+          await tx.processTransition.create({
+            data: {
+              processDefinitionId: def.id,
+              tenantId: def.tenantId,
+              fromStatusId: from.id,
+              toStatusId: cancelled.id,
+              label: 'Annuler',
+              labelFr: 'Annuler',
+              labelEn: 'Cancel',
+              allowedRoles: [Role.ADMIN, Role.DISPATCHER],
+              requiredFields: ['negativeReason'],
+              sortOrder: 9,
+            },
+          });
+        }
+        await tx.processTransition.create({
+          data: {
+            processDefinitionId: def.id,
+            tenantId: def.tenantId,
+            fromStatusId: cancelled.id,
+            toStatusId: initial.id,
+            label: 'Réouvrir',
+            labelFr: 'Réouvrir',
+            labelEn: 'Reopen',
+            allowedRoles: [Role.ADMIN, Role.DISPATCHER],
+            requiredFields: [],
+            sortOrder: 0,
+          },
+        });
+      });
+      patched += 1;
+    }
+
+    if (patched > 0) {
+      this.logger.log(`B54 — added « Annulé » status + cancel/reopen transitions to ${patched} process definition(s).`);
     }
   }
 

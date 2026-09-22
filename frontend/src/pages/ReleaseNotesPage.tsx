@@ -59,6 +59,15 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.18.0',
+    name: 'Statut Annulé',
+    date: 'Septembre 2026',
+    entries: [
+      { type: 'new', text: "🚫 Statut « Annulé » dans tous les processus : un BT peut être annulé depuis n'importe quelle étape ouverte (admin ou répartiteur, raison obligatoire) puis réouvert. Un BT annulé n'entre dans aucune statistique, quitte le calendrier et la carte dispatch, est masqué des listes par défaut et devient lecture seule dans l'app" },
+      { type: 'improvement', text: "👁 Liste des BT : « Afficher les complétés » montre aussi les annulés ; le filtre Statut permet de ne voir que les annulés" },
+    ],
+  },
+  {
     version: '2.17.2',
     name: 'Tournées robustes',
     date: 'Septembre 2026',

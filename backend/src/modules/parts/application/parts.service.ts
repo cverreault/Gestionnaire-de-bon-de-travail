@@ -145,7 +145,7 @@ export class PartsService {
         partId: id,
         workOrder: {
           status: {
-            notIn: [WorkOrderStatus.COMPLETED_POSITIVE, WorkOrderStatus.COMPLETED_NEGATIVE],
+            notIn: [WorkOrderStatus.COMPLETED_POSITIVE, WorkOrderStatus.COMPLETED_NEGATIVE, WorkOrderStatus.CANCELLED],
           },
         },
       },

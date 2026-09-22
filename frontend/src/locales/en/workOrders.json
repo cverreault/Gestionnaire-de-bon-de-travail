@@ -52,7 +52,8 @@
     "EN_ROUTE": "En route",
     "IN_PROGRESS": "In progress",
     "COMPLETED_POSITIVE": "Completed (positive)",
-    "COMPLETED_NEGATIVE": "Completed (negative)"
+    "COMPLETED_NEGATIVE": "Completed (negative)",
+    "CANCELLED": "Cancelled"
   },
   "audit": {
     "systemActor": "System",
@@ -354,7 +355,9 @@
     "technician": "Technician",
     "date": "Date",
     "footer": "TaskMgr — Ref. {{ref}} — {{date}}",
-    "mandatedBy": "Mandated by"
+    "mandatedBy": "Mandated by",
+    "statusCancelled": "Cancelled",
+    "resultCancelled": "Cancelled"
   },
   "detailPage": {
     "back": "Back",

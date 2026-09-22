@@ -757,7 +757,7 @@ export default function WorkOrderDetailPage({ idOverride, onClose, embedded = fa
       {tab === 'parts' && (
       <WorkOrderPartsSection
         workOrderId={wo.id}
-        readOnly={wo.status === WorkOrderStatus.COMPLETED_POSITIVE || wo.status === WorkOrderStatus.COMPLETED_NEGATIVE}
+        readOnly={wo.status === WorkOrderStatus.COMPLETED_POSITIVE || wo.status === WorkOrderStatus.COMPLETED_NEGATIVE || wo.status === WorkOrderStatus.CANCELLED}
         cardStyle={cardStyle}
         titleStyle={{ fontSize: theme.font.sizeMd, marginBottom: '1rem', color: theme.colors.text }}
       />

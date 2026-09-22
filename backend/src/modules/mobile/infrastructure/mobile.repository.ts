@@ -66,7 +66,7 @@ export const SYNC_WORK_ORDER_SELECT = {
 
 export type SyncWorkOrderRow = Prisma.WorkOrderGetPayload<{ select: typeof SYNC_WORK_ORDER_SELECT }>;
 
-const COMPLETED: WorkOrderStatus[] = [WorkOrderStatus.COMPLETED_POSITIVE, WorkOrderStatus.COMPLETED_NEGATIVE];
+const COMPLETED: WorkOrderStatus[] = [WorkOrderStatus.COMPLETED_POSITIVE, WorkOrderStatus.COMPLETED_NEGATIVE, WorkOrderStatus.CANCELLED];
 
 @Injectable()
 export class MobileRepository {
@@ -112,7 +112,7 @@ export class MobileRepository {
         statuses: {
           select: {
             id: true, code: true, name: true, nameFr: true, nameEn: true, color: true, position: true,
-            isInitial: true, isDispatch: true, isStart: true, isTerminalPositive: true, isTerminalNegative: true, isRequested: true,
+            isInitial: true, isDispatch: true, isStart: true, isTerminalPositive: true, isTerminalNegative: true, isRequested: true, isCancelled: true,
           },
           orderBy: { position: 'asc' },
         },

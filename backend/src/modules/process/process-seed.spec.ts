@@ -34,13 +34,14 @@ const LEGACY_TO_CODE: Record<WorkOrderStatus, number> = {
   [WorkOrderStatus.IN_PROGRESS]:        400,
   [WorkOrderStatus.COMPLETED_POSITIVE]: 500,
   [WorkOrderStatus.COMPLETED_NEGATIVE]: 600,
+  [WorkOrderStatus.CANCELLED]:          700,
 };
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe('Process Seed — status definitions', () => {
   it('defines exactly 8 statuses', () => {
-    expect(STATUS_DEFS).toHaveLength(8);
+    expect(STATUS_DEFS).toHaveLength(9);
   });
 
   it('has no duplicate status codes', () => {
@@ -49,9 +50,9 @@ describe('Process Seed — status definitions', () => {
     expect(unique.size).toBe(codes.length);
   });
 
-  it('has statuses sorted by position (-1 through 6)', () => {
+  it('has statuses sorted by position (-1 through 7)', () => {
     const positions = STATUS_DEFS.map((s) => s.position);
-    expect(positions).toEqual([-1, 0, 1, 2, 3, 4, 5, 6]);
+    expect(positions).toEqual([-1, 0, 1, 2, 3, 4, 5, 6, 7]);
   });
 
   it('has exactly one isInitial status (code 0)', () => {
@@ -96,7 +97,7 @@ describe('Process Seed — transition definitions', () => {
   const codeSet = new Set(STATUS_DEFS.map((s) => s.code));
 
   it('defines exactly 12 transitions', () => {
-    expect(TRANSITION_DEFS).toHaveLength(12);
+    expect(TRANSITION_DEFS).toHaveLength(18);
   });
 
   it('all fromCode values reference an existing status code', () => {
@@ -162,8 +163,8 @@ describe('Process Seed — backfill mapping', () => {
     }
   });
 
-  it('LEGACY_TO_CODE covers all 8 WorkOrderStatus values', () => {
-    expect(Object.keys(LEGACY_TO_CODE)).toHaveLength(8);
+  it('LEGACY_TO_CODE covers all 9 WorkOrderStatus values', () => {
+    expect(Object.keys(LEGACY_TO_CODE)).toHaveLength(9);
   });
 });
 
@@ -182,10 +183,14 @@ describe('Process Seed — idempotence mock', () => {
             id: 'existing-proc',
             tenantId: 't-1',
             name: 'Standard BT',
-            statuses: [{ id: 's-50', code: 50, position: -1, isInitial: false, isTerminalNegative: false, isRequested: true }],
+            statuses: [
+              { id: 's-50', code: 50, position: -1, isInitial: false, isTerminalNegative: false, isRequested: true },
+              // backfillCancelledStatus (B54) skips definitions that already carry « Annulé ».
+              { id: 's-700', code: 700, position: 7, isInitial: false, isTerminalNegative: false, isCancelled: true },
+            ],
             // repairDefaultProcesses (B43) skips definitions that already
-            // carry the 12 canonical transitions.
-            transitions: new Array(12).fill({ fromStatusId: 'x', toStatusId: 'y' }),
+            // carry the 18 canonical transitions.
+            transitions: new Array(18).fill({ fromStatusId: 'x', toStatusId: 'y' }),
           },
         ]),
       },
@@ -220,6 +225,7 @@ describe('Process Seed — repair of tenants bootstrapped without transitions (B
         { id: 's-200', code: 200, name: 'En progrès', position: 3, isInitial: false, isDispatch: false, isStart: true },
         { id: 's-900', code: 900, name: 'Complété (+)', position: 4, isInitial: false, isDispatch: false, isTerminalPositive: true },
         { id: 's-50', code: 50, name: 'Demandé', position: 0, isInitial: false, isDispatch: false, isRequested: true },
+        { id: 's-700', code: 700, name: 'Annulé', position: 5, isInitial: false, isDispatch: false, isCancelled: true },
       ],
       transitions: [{ id: 'tr-1', fromStatusId: 's-50', toStatusId: 's-0' }],
     };
@@ -281,14 +287,14 @@ describe('Process Seed — repair of tenants bootstrapped without transitions (B
 
     expect(tx.processStatus.delete).toHaveBeenCalledWith({ where: { id: 's-900' } });
 
-    // 12 canonical transitions minus the one (50 → 0) that already existed.
-    expect(tx.processTransition.create).toHaveBeenCalledTimes(11);
+    // 18 canonical transitions minus the one (50 → 0) that already existed.
+    expect(tx.processTransition.create).toHaveBeenCalledTimes(17);
     const pairs = tx.processTransition.create.mock.calls.map(
       (c: [{ data: { fromStatusId: string; toStatusId: string } }]) =>
         `${c[0].data.fromStatusId}→${c[0].data.toStatusId}`,
     );
     expect(pairs).not.toContain('s-50→s-0');
-    expect(pairs).toEqual(expect.arrayContaining(['s-100→s-200', 's-200→s-300', 's-300→s-400', 's-400→s-500']));
+    expect(pairs).toEqual(expect.arrayContaining(['s-100→s-200', 's-200→s-300', 's-300→s-400', 's-400→s-500', 's-0→s-700', 's-700→s-0']));
   });
 
   it('leaves a definition untouched when work orders sit on the mis-seeded code 200', async () => {
@@ -301,11 +307,63 @@ describe('Process Seed — repair of tenants bootstrapped without transitions (B
 
   it('is a no-op for a definition that already carries the canonical transitions', async () => {
     const def = brokenDefinition();
-    def.transitions = new Array(12).fill({ fromStatusId: 'x', toStatusId: 'y' });
+    def.transitions = new Array(18).fill({ fromStatusId: 'x', toStatusId: 'y' });
     const { prisma, tx } = makePrisma(def);
     await new ProcessSeedService(prisma as any).seedAndBackfill();
 
     expect(tx.processStatus.create).not.toHaveBeenCalled();
     expect(tx.processTransition.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('Process Seed — « Annulé » backfill (B54)', () => {
+  it('adds a cancelled status, one cancel transition per open step and a reopen transition', async () => {
+    const def = {
+      id: 'proc-custom',
+      tenantId: 't-1',
+      name: 'Custom',
+      statuses: [
+        { id: 's-0', code: 0, name: 'Créé', position: 0, isInitial: true },
+        { id: 's-100', code: 100, name: 'Assigné', position: 1 },
+        { id: 's-500', code: 500, name: 'Fini', position: 2, isTerminalPositive: true },
+        { id: 's-50', code: 50, name: 'Demandé', position: -1, isRequested: true },
+      ],
+      transitions: new Array(18).fill({ fromStatusId: 'x', toStatusId: 'y' }),
+    };
+    const tx = {
+      processStatus: {
+        create: jest.fn().mockImplementation(({ data }: { data: { code: number } }) => Promise.resolve({ id: `s-${data.code}`, ...data })),
+        update: jest.fn(),
+        delete: jest.fn(),
+      },
+      processTransition: { create: jest.fn().mockResolvedValue({}) },
+      workOrder: { count: jest.fn().mockResolvedValue(0) },
+    };
+    const prisma = {
+      processDefinition: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'existing-proc' }),
+        create: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([def]),
+      },
+      processStatus: { create: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
+      processTransition: { create: jest.fn() },
+      workOrder: { updateMany: jest.fn().mockResolvedValue({ count: 0 }), count: jest.fn().mockResolvedValue(0) },
+      taskType: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      $transaction: jest.fn().mockImplementation((fn: (t: typeof tx) => Promise<unknown>) => fn(tx)),
+    };
+    await new ProcessSeedService(prisma as any).seedAndBackfill();
+
+    const created = tx.processStatus.create.mock.calls.map((c: [{ data: Record<string, unknown> }]) => c[0].data);
+    expect(created).toHaveLength(1);
+    expect(created[0]).toMatchObject({ code: 700, name: 'Annulé', isCancelled: true, tenantId: 't-1', position: 3 });
+
+    const pairs = tx.processTransition.create.mock.calls.map(
+      (c: [{ data: { fromStatusId: string; toStatusId: string; requiredFields: string[] } }]) =>
+        `${c[0].data.fromStatusId}→${c[0].data.toStatusId}`,
+    );
+    // Open steps only (not the requested nor the terminal one), then reopen.
+    expect(pairs.sort()).toEqual(['s-0→s-700', 's-100→s-700', 's-700→s-0']);
+    const cancel = tx.processTransition.create.mock.calls.find((c: [{ data: { toStatusId: string } }]) => c[0].data.toStatusId === 's-700');
+    expect(cancel[0].data.requiredFields).toEqual(['negativeReason']);
   });
 });

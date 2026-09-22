@@ -58,6 +58,7 @@ export class SlaCheckService {
           notIn: [
             WorkOrderStatus.COMPLETED_POSITIVE,
             WorkOrderStatus.COMPLETED_NEGATIVE,
+            WorkOrderStatus.CANCELLED,
           ],
         },
       },

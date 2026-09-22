@@ -42,7 +42,7 @@ function makeTx() {
 }
 
 describe('TenantBootstrapService — minimal seed (B7.6)', () => {
-  it('seeds exactly one default process with the 8 canonical statuses and 12 transitions', async () => {
+  it('seeds exactly one default process with the 9 canonical statuses and 18 transitions', async () => {
     const tx = makeTx();
     await new TenantBootstrapService().seed(
       tx as unknown as never,
@@ -57,12 +57,12 @@ describe('TenantBootstrapService — minimal seed (B7.6)', () => {
       isActive: true,
     });
 
-    expect(tx.processStatus.create).toHaveBeenCalledTimes(8);
+    expect(tx.processStatus.create).toHaveBeenCalledTimes(9);
     const codes = tx.processStatus.create.mock.calls.map(
       (c: [{ data: { code: number; tenantId: string } }]) => c[0].data.code,
     );
     expect(codes.sort((a: number, b: number) => a - b)).toEqual([
-      0, 50, 100, 200, 300, 400, 500, 600,
+      0, 50, 100, 200, 300, 400, 500, 600, 700,
     ]);
     for (const call of tx.processStatus.create.mock.calls) {
       expect(call[0].data.tenantId).toBe('tenant-x');
@@ -70,7 +70,7 @@ describe('TenantBootstrapService — minimal seed (B7.6)', () => {
 
     // A process without transitions is unusable : the technician must be
     // able to go Dispatché → En route → En cours → Complété.
-    expect(tx.processTransition.create).toHaveBeenCalledTimes(12);
+    expect(tx.processTransition.create).toHaveBeenCalledTimes(18);
     const pairs = tx.processTransition.create.mock.calls.map(
       (c: [{ data: { fromStatusId: string; toStatusId: string; tenantId: string; allowedRoles: string[] } }]) =>
         `${c[0].data.fromStatusId}→${c[0].data.toStatusId}`,
