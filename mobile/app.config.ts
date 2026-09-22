@@ -7,11 +7,20 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
  */
 const IS_DEV = process.env.EAS_BUILD_PROFILE === 'development';
 
+const VERSION = '0.7.0';
+
+/**
+ * versionCode Android strictement croissant, dérivé de la version (0.7.0 → 700).
+ * Sans lui, Expo met 1 à chaque build : Android accepte alors de « mettre à jour »
+ * vers un APK identique ou plus ancien sans rien dire.
+ */
+const ANDROID_VERSION_CODE = VERSION.split('.').reduce((acc, part) => acc * 100 + Number(part), 0);
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: IS_DEV ? 'Dispatch2Go (dev)' : 'Dispatch2Go',
   slug: 'dispatch2go',
-  version: '0.7.0',
+  version: VERSION,
   orientation: 'portrait',
   scheme: 'dispatch2go',
   icon: './assets/images/icon.png',
@@ -25,6 +34,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   android: {
     package: IS_DEV ? 'com.dispatch2go.app.dev' : 'com.dispatch2go.app',
+    versionCode: ANDROID_VERSION_CODE,
     // Mise à jour d'un APK hors store depuis l'app (src/update) ; sans effet sur un build Play.
     permissions: ['android.permission.REQUEST_INSTALL_PACKAGES'],
     adaptiveIcon: {
