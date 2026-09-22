@@ -32,6 +32,8 @@ import { WorkOrderFilterDto } from './dto/work-order-filter.dto';
 import { CreateNoteDto } from './dto/create-note.dto';
 import { SignaturesDto } from './dto/signatures.dto';
 import { AssignAndDispatchDto } from './dto/assign-and-dispatch.dto';
+import { BatchWorkOrdersDto } from './dto/batch-work-orders.dto';
+import { BatchService } from './application/batch.service';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Idempotent } from '../../common/decorators/idempotent.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -49,6 +51,7 @@ export class WorkOrdersController {
   constructor(
     private readonly workOrdersService: WorkOrdersService,
     private readonly travel: TravelService,
+    private readonly batchService: BatchService,
   ) {}
 
   // ── List ────────────────────────────────────────────────────────────────────
@@ -256,6 +259,20 @@ export class WorkOrdersController {
 
   // ── Assign & Dispatch ────────────────────────────────────────────────────────
   // IMPORTANT : déclaré AVANT :id/transition pour éviter les conflits de routing
+
+  @Post('batch')
+  @Roles(Role.ADMIN, Role.DISPATCHER)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'B55 — action en lot sur une sélection de BT',
+    description:
+      'ASSIGN (technicianId), DISPATCH (technicianId, scheduledDate?, note?), UNASSIGN, ' +
+      'CANCEL (reason) ou SCHEDULE (scheduledDate / plage horaire). Chaque BT suit le même chemin ' +
+      "que l'action unitaire ; la réponse liste les réussites et les échecs avec leur motif.",
+  })
+  batch(@Body() dto: BatchWorkOrdersDto, @CurrentUser() currentUser: JwtUser) {
+    return this.batchService.run(dto, currentUser);
+  }
 
   @Post(':id/assign-and-dispatch')
   @Roles(Role.ADMIN, Role.DISPATCHER)

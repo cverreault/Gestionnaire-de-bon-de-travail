@@ -477,5 +477,26 @@
     "originGps": "Position GPS du technicien",
     "mode": "Trajet",
     "compute": "Calculer"
+  },
+  "batch": {
+    "selectAll": "Sélectionner la page",
+    "selected": "{{count}} sélectionné(s)",
+    "assign": "Assigner",
+    "dispatch": "Répartir",
+    "unassign": "Désassigner",
+    "schedule": "Planifier",
+    "cancel": "Annuler les BT",
+    "clear": "Tout désélectionner",
+    "pickTechnician": "— Technicien —",
+    "startTime": "Début",
+    "endTime": "Fin",
+    "notePlaceholder": "Note de dispatch (optionnel)",
+    "reasonPlaceholder": "Raison de l'annulation (obligatoire)",
+    "unassignHint": "Les BT reviennent à l’étape initiale, sans technicien.",
+    "running": "En cours…",
+    "apply": "Appliquer à {{count}} BT",
+    "cancelConfirm": "Annuler {{count}} bon(s) de travail ?",
+    "allDone": "{{count}} BT traité(s)",
+    "partial": "{{ok}} réussi(s), {{failed}} échec(s) — {{details}}"
   }
 }
