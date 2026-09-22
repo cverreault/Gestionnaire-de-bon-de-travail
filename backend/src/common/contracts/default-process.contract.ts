@@ -22,6 +22,8 @@ export interface DefaultProcessStatusDef {
   isTerminalPositive?: boolean;
   isTerminalNegative?: boolean;
   isRequested?: boolean;
+  /** B54 — « Annulé » : fermé sans travail, exclu des statistiques. */
+  isCancelled?: boolean;
 }
 
 export interface DefaultProcessTransitionDef {
@@ -43,6 +45,7 @@ export const DEFAULT_PROCESS_STATUSES: readonly DefaultProcessStatusDef[] = [
   { code: 400, name: 'En cours',           color: '#f97316', position: 4, isStart: true },
   { code: 500, name: 'Complété (positif)', color: '#22c55e', position: 5, isTerminalPositive: true },
   { code: 600, name: 'Complété (négatif)', color: '#ef4444', position: 6, isTerminalNegative: true },
+  { code: 700, name: 'Annulé',             color: '#9ca3af', position: 7, isCancelled: true },
 ];
 
 export const DEFAULT_PROCESS_TRANSITIONS: readonly DefaultProcessTransitionDef[] = [
@@ -58,6 +61,13 @@ export const DEFAULT_PROCESS_TRANSITIONS: readonly DefaultProcessTransitionDef[]
   { fromCode: 200, toCode: 100, label: 'Annuler dispatch',     roles: [Role.ADMIN, Role.DISPATCHER], required: [], sort: 1 },
   { fromCode: 500, toCode: 0,   label: 'Réouvrir',             roles: [Role.ADMIN], required: ['reopenReason'], sort: 0 },
   { fromCode: 600, toCode: 0,   label: 'Réouvrir',             roles: [Role.ADMIN, Role.DISPATCHER], required: [], sort: 0 },
+  // B54 — cancel from any open step (reason required), reopen from cancelled.
+  { fromCode: 0,   toCode: 700, label: 'Annuler',              roles: [Role.ADMIN, Role.DISPATCHER], required: ['negativeReason'], sort: 9 },
+  { fromCode: 100, toCode: 700, label: 'Annuler',              roles: [Role.ADMIN, Role.DISPATCHER], required: ['negativeReason'], sort: 9 },
+  { fromCode: 200, toCode: 700, label: 'Annuler',              roles: [Role.ADMIN, Role.DISPATCHER], required: ['negativeReason'], sort: 9 },
+  { fromCode: 300, toCode: 700, label: 'Annuler',              roles: [Role.ADMIN, Role.DISPATCHER], required: ['negativeReason'], sort: 9 },
+  { fromCode: 400, toCode: 700, label: 'Annuler',              roles: [Role.ADMIN, Role.DISPATCHER], required: ['negativeReason'], sort: 9 },
+  { fromCode: 700, toCode: 0,   label: 'Réouvrir',             roles: [Role.ADMIN, Role.DISPATCHER], required: [], sort: 0 },
 ];
 
 export function toStatusCreateData(def: DefaultProcessStatusDef) {
@@ -72,6 +82,7 @@ export function toStatusCreateData(def: DefaultProcessStatusDef) {
     isTerminalPositive: def.isTerminalPositive ?? false,
     isTerminalNegative: def.isTerminalNegative ?? false,
     isRequested: def.isRequested ?? false,
+    isCancelled: def.isCancelled ?? false,
   };
 }
 

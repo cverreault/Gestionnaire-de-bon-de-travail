@@ -35,6 +35,7 @@ export interface CreateProcessStatusPayload {
   isStart?: boolean;
   isTerminalPositive?: boolean;
   isTerminalNegative?: boolean;
+  isCancelled?: boolean;
 }
 
 export type UpdateProcessStatusPayload = Partial<Omit<CreateProcessStatusPayload, 'code'>>;

@@ -47,6 +47,7 @@ function makeStatus(overrides: Partial<CachedStatus> & { id: string; code: numbe
     isTerminalPositive: false,
     isTerminalNegative: false,
     isRequested: false,
+    isCancelled: false,
     ...overrides,
   };
 }
@@ -58,6 +59,7 @@ const STATUS_EN_ROUTE   = makeStatus({ id: 's-300', code: 300, name: 'En route' 
 const STATUS_IN_PROGRESS = makeStatus({ id: 's-400', code: 400, name: 'En cours', isStart: true });
 const STATUS_DONE_POS   = makeStatus({ id: 's-500', code: 500, name: 'Complété+', isTerminalPositive: true });
 const STATUS_DONE_NEG   = makeStatus({ id: 's-600', code: 600, name: 'Complété-', isTerminalNegative: true });
+const STATUS_CANCELLED  = makeStatus({ id: 's-700', code: 700, name: 'Annulé', isCancelled: true });
 
 const ALL_STATUSES = [STATUS_CREATED, STATUS_ASSIGNED, STATUS_DISPATCHED, STATUS_EN_ROUTE, STATUS_IN_PROGRESS, STATUS_DONE_POS, STATUS_DONE_NEG];
 
@@ -575,6 +577,8 @@ describe('ProcessEngineService.mapToLegacyStatus', () => {
 
   it('isInitial → CREATED', () => {
     expect(svc.mapToLegacyStatus(STATUS_CREATED)).toBe(WorkOrderStatus.CREATED);
+    // B54
+    expect(svc.mapToLegacyStatus(STATUS_CANCELLED)).toBe(WorkOrderStatus.CANCELLED);
   });
 
   it('isDispatch → DISPATCHED', () => {

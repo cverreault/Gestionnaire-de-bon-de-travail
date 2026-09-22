@@ -24,7 +24,7 @@ interface Props {
 
 const FIELD_META: Record<string, { label: string; type: 'textarea' | 'select-technician' }> = {
   assignedToId:    { label: 'Technicien assigné',        type: 'select-technician' },
-  negativeReason:  { label: 'Raison de fin négative',    type: 'textarea' },
+  negativeReason:  { label: 'Raison (échec ou annulation)', type: 'textarea' },
   completionNotes: { label: 'Notes de complétion',       type: 'textarea' },
   reopenReason:    { label: 'Raison de la ré-ouverture', type: 'textarea' },
 };

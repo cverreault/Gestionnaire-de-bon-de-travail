@@ -93,6 +93,7 @@ Pour faciliter la résolution cross-process, les codes suivent une convention :
 | 300+ | États intermédiaires | — |
 | 4xx | Terminal positif | `isTerminalPositive=true` |
 | 5xx | Terminal négatif | `isTerminalNegative=true` |
+| 700 | Annulé (B54) — fermé sans travail, exclu des statistiques, masqué par défaut | `isCancelled=true` |
 
 C'est une convention, pas une contrainte forte (les codes sont des entiers libres).
 

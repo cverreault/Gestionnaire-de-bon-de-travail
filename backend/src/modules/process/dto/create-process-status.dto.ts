@@ -106,4 +106,13 @@ export class CreateProcessStatusDto {
   @IsOptional()
   @IsBoolean()
   isTerminalNegative?: boolean;
+
+  @ApiPropertyOptional({
+    example: false,
+    description: 'B54 — statut « Annulé » : fermé sans travail, exclu des statistiques, masqué par défaut.',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isCancelled?: boolean;
 }

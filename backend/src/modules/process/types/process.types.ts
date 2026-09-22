@@ -15,6 +15,8 @@ export interface CachedStatus {
   isTerminalNegative: boolean;
   /** B21 — pre-approval step for client-portal work requests. */
   isRequested: boolean;
+  /** B54 — « Annulé » : closed without work, excluded from stats. */
+  isCancelled: boolean;
 }
 
 export interface CachedTransition {

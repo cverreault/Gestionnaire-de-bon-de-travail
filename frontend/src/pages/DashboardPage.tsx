@@ -24,6 +24,8 @@ const STATUS_META: Record<string, { label: string; color: string; icon: string }
   [WorkOrderStatus.IN_PROGRESS]: { label: 'En cours', color: '#f97316', icon: '⚙️' },
   [WorkOrderStatus.COMPLETED_POSITIVE]: { label: 'Fin positive', color: '#10b981', icon: '✅' },
   [WorkOrderStatus.COMPLETED_NEGATIVE]: { label: 'Fin négative', color: '#ef4444', icon: '❌' },
+  // B54 — never returned by the stats endpoint, kept for completeness of the map.
+  [WorkOrderStatus.CANCELLED]: { label: 'Annulés', color: '#9ca3af', icon: '🚫' },
 };
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────

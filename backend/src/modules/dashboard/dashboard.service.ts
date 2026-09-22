@@ -10,6 +10,9 @@ const COMPLETED_STATUSES: WorkOrderStatus[] = [
   WorkOrderStatus.COMPLETED_NEGATIVE,
 ];
 
+/** B54 — cancelled work orders are invisible to every statistic. */
+const NOT_CANCELLED = { not: WorkOrderStatus.CANCELLED } as const;
+
 const ACTIVE_STATUSES: WorkOrderStatus[] = [
   WorkOrderStatus.CREATED,
   WorkOrderStatus.ASSIGNED,
@@ -98,24 +101,25 @@ export class DashboardService {
       this.prisma.workOrder.groupBy({
         by: ['status'],
         _count: { id: true },
+        where: { status: NOT_CANCELLED },
         orderBy: { status: 'asc' },
       }),
 
       // Work orders created today
       this.prisma.workOrder.count({
-        where: { createdAt: { gte: todayStart, lte: todayEnd } },
+        where: { createdAt: { gte: todayStart, lte: todayEnd }, status: NOT_CANCELLED },
       }),
 
       // Work orders created this week
       this.prisma.workOrder.count({
-        where: { createdAt: { gte: weekStart, lte: weekEnd } },
+        where: { createdAt: { gte: weekStart, lte: weekEnd }, status: NOT_CANCELLED },
       }),
 
       // Overdue: scheduled date is in the past and still not completed
       this.prisma.workOrder.count({
         where: {
           scheduledDate: { lt: ref },
-          status: { notIn: COMPLETED_STATUSES },
+          status: { notIn: [...COMPLETED_STATUSES, WorkOrderStatus.CANCELLED] },
         },
       }),
 
@@ -137,6 +141,7 @@ export class DashboardService {
       // 10 most recently created work orders (lightweight)
       this.prisma.workOrder.findMany({
         take: 10,
+        where: { status: NOT_CANCELLED },
         orderBy: { createdAt: 'desc' },
         include: {
           assignedTo: {
@@ -252,7 +257,7 @@ export class DashboardService {
         where: {
           assignedToId: userId,
           scheduledDate: { gte: ref },
-          status: { notIn: COMPLETED_STATUSES },
+          status: { notIn: [...COMPLETED_STATUSES, WorkOrderStatus.CANCELLED] },
         },
         orderBy: [
           { scheduledDate: 'asc' },
@@ -272,7 +277,7 @@ export class DashboardService {
         where: {
           assignedToId: userId,
           scheduledDate: { lt: ref },
-          status: { notIn: COMPLETED_STATUSES },
+          status: { notIn: [...COMPLETED_STATUSES, WorkOrderStatus.CANCELLED] },
         },
       }),
     ]);

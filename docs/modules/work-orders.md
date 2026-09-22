@@ -25,7 +25,7 @@ Publie les domain events qui alimentent l'audit, les notifications, et tout futu
 ## Capabilities
 
 - CRUD complet (POST, PATCH, DELETE soft)
-- Recherche / filtrage / pagination (status, type, technicien, plage dates, priorité min, recherche textuelle, **breach SLA** depuis B4)
+- Recherche / filtrage / pagination (status, type, technicien, plage dates, priorité min, recherche textuelle, **breach SLA** depuis B4, `excludeCompleted`, `includeCancelled` — les BT **annulés** (B54) sont masqués sauf demande explicite)
 - Export CSV de la slice filtrée (cap 5000 lignes)
 - Duplication d'un BT existant (titre, type, client, template — sans technicien ni dates)
 - Génération automatique du numéro de référence (`PLB-20260514-0001`) selon le préfixe du type
@@ -141,7 +141,7 @@ Aucune dépendance sur les modules **consommateurs** (audit, notifications, sear
 
 | Service | Cron | Action |
 |---|---|---|
-| `SlaCheckService` (B4) | `*/15 * * * *` (toutes les 15 min) | Scan des BT avec `slaTargetAt < now AND slaBreachedAt IS NULL AND status NOT IN COMPLETED_*`. Set `slaBreachedAt`, émet `workOrders.workOrder.slaBreached`. Cap 100 / run. |
+| `SlaCheckService` (B4) | `*/15 * * * *` (toutes les 15 min) | Scan des BT avec `slaTargetAt < now AND slaBreachedAt IS NULL AND status NOT IN COMPLETED_*`. Set `slaBreachedAt`, émet `workOrders.workOrder.slaBreached`. Cap 100 / run. Les BT `CANCELLED` sont ignorés (B54). |
 
 ## Tests
 

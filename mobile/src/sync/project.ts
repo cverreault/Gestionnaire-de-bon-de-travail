@@ -10,6 +10,7 @@ export interface Me {
 /** Same rule as the server's ProcessEngine : flags first, then legacy codes. */
 export function statusFromStep(step: ProcessSnapshotStatus, fallback: WorkOrderStatus): WorkOrderStatus {
   if (step.isRequested) return 'REQUESTED';
+  if (step.isCancelled) return 'CANCELLED';
   if (step.isInitial) return 'CREATED';
   if (step.isDispatch) return 'DISPATCHED';
   if (step.isStart) return 'IN_PROGRESS';
@@ -41,7 +42,7 @@ export function projectWorkOrder(wo: SyncWorkOrder, ops: QueuedOp[], snapshot: P
       const step = statusById.get(p.targetStepId);
       out.currentStepId = p.targetStepId;
       if (step) {
-        out.currentStep = { id: step.id, code: step.code, name: step.name, nameFr: step.nameFr, nameEn: step.nameEn, color: step.color, isTerminalPositive: step.isTerminalPositive, isTerminalNegative: step.isTerminalNegative };
+        out.currentStep = { id: step.id, code: step.code, name: step.name, nameFr: step.nameFr, nameEn: step.nameEn, color: step.color, isTerminalPositive: step.isTerminalPositive, isTerminalNegative: step.isTerminalNegative, isCancelled: step.isCancelled };
         out.status = statusFromStep(step, out.status);
       }
       if (p.completionNotes) out.completionNotes = p.completionNotes;

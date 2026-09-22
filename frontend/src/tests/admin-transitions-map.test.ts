@@ -53,6 +53,10 @@ const ADMIN_TRANSITIONS: Record<string, AdminTransition[]> = {
   [WorkOrderStatus.COMPLETED_NEGATIVE]: [
     { label: '🔄 Ré-ouvrir', targetStatus: WorkOrderStatus.CREATED, color: '#6b7280' },
   ],
+  // B54
+  [WorkOrderStatus.CANCELLED]: [
+    { label: '🔄 Ré-ouvrir', targetStatus: WorkOrderStatus.CREATED, color: '#6b7280' },
+  ],
 };
 
 // ─── Completeness ─────────────────────────────────────────────────────────────
@@ -66,8 +70,8 @@ describe('ADMIN_TRANSITIONS — completeness', () => {
     }
   });
 
-  it('has exactly 8 entries (one per status)', () => {
-    expect(Object.keys(ADMIN_TRANSITIONS)).toHaveLength(8);
+  it('has exactly 9 entries (one per status)', () => {
+    expect(Object.keys(ADMIN_TRANSITIONS)).toHaveLength(9);
   });
 
   it('no entry has an empty transitions array', () => {

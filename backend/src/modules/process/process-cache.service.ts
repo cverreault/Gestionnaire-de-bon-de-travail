@@ -17,6 +17,7 @@ type RawStatus = {
   isTerminalPositive: boolean;
   isTerminalNegative: boolean;
   isRequested: boolean;
+  isCancelled?: boolean;
 };
 
 type RawTransition = {
@@ -206,6 +207,7 @@ export class ProcessCacheService {
         isTerminalPositive: s.isTerminalPositive,
         isTerminalNegative: s.isTerminalNegative,
         isRequested: s.isRequested,
+        isCancelled: s.isCancelled ?? false,
       };
       statuses.set(cs.id, cs);
       statusByCode.set(cs.code, cs);

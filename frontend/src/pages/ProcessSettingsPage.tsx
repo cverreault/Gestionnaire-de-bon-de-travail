@@ -597,6 +597,7 @@ function ProcessEditor({
   const [nsIsStart, setNsIsStart] = useState(false);
   const [nsIsTerminalPos, setNsIsTerminalPos] = useState(false);
   const [nsIsTerminalNeg, setNsIsTerminalNeg] = useState(false);
+  const [nsIsCancelled, setNsIsCancelled] = useState(false);
 
   async function handleAddStatus() {
     const fr = nsName.trim();
@@ -616,6 +617,7 @@ function ProcessEditor({
         isStart: nsIsStart,
         isTerminalPositive: nsIsTerminalPos,
         isTerminalNegative: nsIsTerminalNeg,
+        isCancelled: nsIsCancelled,
       },
     });
     setShowAddStatus(false);
@@ -900,6 +902,7 @@ function ProcessEditor({
                   { label: t('settings:process.flagStart', { defaultValue: 'Démarrage' }), val: nsIsStart, set: setNsIsStart },
                   { label: t('settings:process.flagTerminalPos', { defaultValue: 'Terminal positif' }), val: nsIsTerminalPos, set: setNsIsTerminalPos },
                   { label: t('settings:process.flagTerminalNeg', { defaultValue: 'Terminal négatif' }), val: nsIsTerminalNeg, set: setNsIsTerminalNeg },
+                  { label: t('settings:process.flagCancelled', { defaultValue: 'Annulé (hors statistiques)' }), val: nsIsCancelled, set: setNsIsCancelled },
                 ].map(({ label, val, set }) => (
                   <label
                     key={label}
@@ -1409,6 +1412,7 @@ function FlagsChips({ status }: { status: ProcessStatus }) {
   if (status.isStart) flags.push(t('settings:process.flagStartShort', { defaultValue: 'Start' }));
   if (status.isTerminalPositive) flags.push(t('settings:process.flagTerminalPosShort', { defaultValue: '✅ Terminal+' }));
   if (status.isTerminalNegative) flags.push(t('settings:process.flagTerminalNegShort', { defaultValue: '❌ Terminal−' }));
+  if (status.isCancelled) flags.push(t('settings:process.flagCancelledShort', { defaultValue: '🚫 Annulé' }));
 
   if (flags.length === 0) return <span style={{ color: theme.colors.textLight, fontSize: theme.font.sizeXs }}>—</span>;
 

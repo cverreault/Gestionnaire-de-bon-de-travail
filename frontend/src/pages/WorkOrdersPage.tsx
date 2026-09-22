@@ -28,9 +28,11 @@ import TagPicker from '../components/TagPicker';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
+// B54 — cancelled work orders are hidden together with the completed ones.
 const COMPLETED_STATUSES = new Set([
   WorkOrderStatus.COMPLETED_POSITIVE,
   WorkOrderStatus.COMPLETED_NEGATIVE,
+  WorkOrderStatus.CANCELLED,
 ]);
 
 const LS_HIDE_COMPLETED_KEY = 'wo-hide-completed';
@@ -117,6 +119,7 @@ const STATUS_LABELS: Record<WorkOrderStatus, string> = {
   [WorkOrderStatus.IN_PROGRESS]: 'En cours',
   [WorkOrderStatus.COMPLETED_POSITIVE]: 'Complété (positif)',
   [WorkOrderStatus.COMPLETED_NEGATIVE]: 'Complété (négatif)',
+  [WorkOrderStatus.CANCELLED]: 'Annulé',
 };
 
 // ─── Active filter counter ────────────────────────────────────────────────────
@@ -414,6 +417,8 @@ export default function WorkOrdersPage() {
     ...(priorityMin !== undefined && priorityMin > 0 ? { priorityMin } : {}),
     ...(tagIds.length > 0 ? { tagIds } : {}),
     ...(slaBreachedOnly ? { slaBreached: true } : {}),
+    // B54 — the server hides cancelled work orders unless asked ; « afficher les complétés » asks.
+    ...(!hideCompleted && mode !== 'dispatch' ? { includeCancelled: true } : {}),
     // Dispatch mode shows the whole (active) set on one board.
     ...(mode === 'dispatch' ? { excludeCompleted: true, page: 1, limit: 100 } : { page, limit: 20 }),
   };

@@ -47,6 +47,7 @@ function getStatusAccentColor(status: WorkOrderStatus): string {
     case WorkOrderStatus.IN_PROGRESS:        return theme.colors.warning;
     case WorkOrderStatus.COMPLETED_POSITIVE: return theme.colors.success;
     case WorkOrderStatus.COMPLETED_NEGATIVE: return theme.colors.danger;
+    case WorkOrderStatus.CANCELLED:          return theme.colors.textMuted;
     case WorkOrderStatus.DISPATCHED:         return theme.colors.info;
     case WorkOrderStatus.EN_ROUTE:           return '#7c3aed';
     default:                                 return theme.colors.primary;

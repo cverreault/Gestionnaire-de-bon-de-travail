@@ -12,6 +12,7 @@ const STATUS_CONFIG: Record<WorkOrderStatus, { label: string; bg: string; color:
   [WorkOrderStatus.IN_PROGRESS]:        { label: 'En cours',      bg: '#fde68a', color: '#78350f', border: '#fbbf24' },
   [WorkOrderStatus.COMPLETED_POSITIVE]: { label: 'Fin positive',  bg: 'var(--c-successLight)', color: 'var(--c-successBadgeText)', border: 'var(--c-successBadgeBorder)' },
   [WorkOrderStatus.COMPLETED_NEGATIVE]: { label: 'Fin négative',  bg: 'var(--c-dangerLight)', color: 'var(--c-dangerBadgeText)', border: 'var(--c-dangerBadgeBorder)' },
+  [WorkOrderStatus.CANCELLED]:          { label: 'Annulé',        bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' },
 };
 
 // ─── Props ────────────────────────────────────────────────────────────────────

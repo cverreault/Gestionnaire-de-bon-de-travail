@@ -193,10 +193,13 @@ export class WorkOrdersService {
 
     if (filters.status) {
       where.status = filters.status;
-    } else if (filters.excludeCompleted) {
-      where.status = {
-        notIn: [WorkOrderStatus.COMPLETED_POSITIVE, WorkOrderStatus.COMPLETED_NEGATIVE],
-      };
+    } else {
+      // B54 — cancelled work orders are hidden unless explicitly requested.
+      const hidden: WorkOrderStatus[] = filters.includeCancelled ? [] : [WorkOrderStatus.CANCELLED];
+      if (filters.excludeCompleted) {
+        hidden.push(WorkOrderStatus.COMPLETED_POSITIVE, WorkOrderStatus.COMPLETED_NEGATIVE);
+      }
+      if (hidden.length > 0) where.status = { notIn: hidden };
     }
     if (filters.type) where.type = filters.type;
     if (filters.clientId) where.clientId = filters.clientId;

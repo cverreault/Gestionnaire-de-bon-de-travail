@@ -15,6 +15,8 @@ export interface ProcessSnapshotStatus extends ProcessStepRef {
   isTerminalPositive: boolean;
   isTerminalNegative: boolean;
   isRequested: boolean;
+  /** B54 — optional so older snapshots still parse. */
+  isCancelled?: boolean;
 }
 
 export interface ProcessSnapshotTransition {

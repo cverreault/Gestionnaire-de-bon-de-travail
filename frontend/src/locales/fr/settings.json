@@ -287,7 +287,9 @@
     "flagTerminalNegShort": "❌ Terminal−",
     "allRoles": "Tous",
     "editModalTitle": "✏️ Modifier — {{name}}",
-    "defaultCheckboxShort": "Processus par défaut"
+    "defaultCheckboxShort": "Processus par défaut",
+    "flagCancelled": "Annulé (hors statistiques)",
+    "flagCancelledShort": "🚫 Annulé"
   },
   "addressTypeFields": {
     "title": "Champs personnalisés",

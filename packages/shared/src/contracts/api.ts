@@ -7,9 +7,13 @@ export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'DISPATCHER' | 'TECHNICIAN' | 'CLIE
 
 export type WorkOrderStatus =
   | 'REQUESTED' | 'CREATED' | 'ASSIGNED' | 'DISPATCHED' | 'EN_ROUTE' | 'IN_PROGRESS'
-  | 'COMPLETED_POSITIVE' | 'COMPLETED_NEGATIVE';
+  | 'COMPLETED_POSITIVE' | 'COMPLETED_NEGATIVE' | 'CANCELLED';
 
 export const ACTIVE_STATUSES: WorkOrderStatus[] = ['ASSIGNED', 'DISPATCHED', 'EN_ROUTE', 'IN_PROGRESS'];
+
+/** B54 — statuses that close a work order (nothing editable any more). */
+export const CLOSED_STATUSES: WorkOrderStatus[] = ['COMPLETED_POSITIVE', 'COMPLETED_NEGATIVE', 'CANCELLED'];
+export const isClosedStatus = (status: WorkOrderStatus): boolean => CLOSED_STATUSES.includes(status);
 
 export interface AuthUser {
   id: string;
@@ -75,6 +79,7 @@ export interface ProcessStepRef {
   color: string;
   isTerminalPositive?: boolean;
   isTerminalNegative?: boolean;
+  isCancelled?: boolean;
 }
 
 export interface NoteRef {

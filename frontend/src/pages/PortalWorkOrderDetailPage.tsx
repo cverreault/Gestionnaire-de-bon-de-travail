@@ -27,7 +27,7 @@ export default function PortalWorkOrderDetailPage() {
   if (isLoading) return <p style={{ color: theme.colors.textMuted }}>{t('common.loading')}</p>;
   if (error != null || !wo) return <p style={{ color: theme.colors.danger }}>{t('common.loadError')}</p>;
 
-  const isTerminal = wo.status === 'COMPLETED_POSITIVE' || wo.status === 'COMPLETED_NEGATIVE';
+  const isTerminal = wo.status === 'COMPLETED_POSITIVE' || wo.status === 'COMPLETED_NEGATIVE' || wo.status === 'CANCELLED';
   const step = wo.currentStep
     ? {
         name: (locale === 'en' ? wo.currentStep.nameEn : wo.currentStep.nameFr) || wo.currentStep.name,

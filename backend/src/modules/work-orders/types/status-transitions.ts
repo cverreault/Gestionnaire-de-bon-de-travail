@@ -21,17 +21,20 @@ export type TransitionMap = Record<WorkOrderStatus, WorkOrderStatus[]>;
 export const VALID_TRANSITIONS: TransitionMap = {
   // B21 — client-portal request: approve → CREATED, reject → COMPLETED_NEGATIVE
   [WorkOrderStatus.REQUESTED]: [WorkOrderStatus.CREATED, WorkOrderStatus.COMPLETED_NEGATIVE],
-  [WorkOrderStatus.CREATED]: [WorkOrderStatus.ASSIGNED],
-  [WorkOrderStatus.ASSIGNED]: [WorkOrderStatus.DISPATCHED, WorkOrderStatus.CREATED],
-  [WorkOrderStatus.DISPATCHED]: [WorkOrderStatus.EN_ROUTE],
-  [WorkOrderStatus.EN_ROUTE]: [WorkOrderStatus.IN_PROGRESS],
+  // B54 — any open status may be cancelled (admin / dispatcher, reason required).
+  [WorkOrderStatus.CREATED]: [WorkOrderStatus.ASSIGNED, WorkOrderStatus.CANCELLED],
+  [WorkOrderStatus.ASSIGNED]: [WorkOrderStatus.DISPATCHED, WorkOrderStatus.CREATED, WorkOrderStatus.CANCELLED],
+  [WorkOrderStatus.DISPATCHED]: [WorkOrderStatus.EN_ROUTE, WorkOrderStatus.CANCELLED],
+  [WorkOrderStatus.EN_ROUTE]: [WorkOrderStatus.IN_PROGRESS, WorkOrderStatus.CANCELLED],
   [WorkOrderStatus.IN_PROGRESS]: [
     WorkOrderStatus.COMPLETED_POSITIVE,
     WorkOrderStatus.COMPLETED_NEGATIVE,
+    WorkOrderStatus.CANCELLED,
   ],
   // COMPLETED_POSITIVE is no longer strictly terminal: admins may re-open with a reason.
   [WorkOrderStatus.COMPLETED_POSITIVE]: [WorkOrderStatus.CREATED],
   [WorkOrderStatus.COMPLETED_NEGATIVE]: [WorkOrderStatus.CREATED],
+  [WorkOrderStatus.CANCELLED]: [WorkOrderStatus.CREATED],
 };
 
 /**

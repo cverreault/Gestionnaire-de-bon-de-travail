@@ -36,6 +36,7 @@ const STATUS_COLORS: Record<WorkOrderStatus, string> = {
   [WorkOrderStatus.IN_PROGRESS]:        '#4CAF50',
   [WorkOrderStatus.COMPLETED_POSITIVE]: '#8BC34A',
   [WorkOrderStatus.COMPLETED_NEGATIVE]: '#F44336',
+  [WorkOrderStatus.CANCELLED]:          '#9E9E9E',
 };
 
 /** Default color for standalone appointments */
@@ -184,6 +185,8 @@ export class CalendarService {
 
     const woWhere: Prisma.WorkOrderWhereInput = {
       scheduledDate: { gte: start, lte: end },
+      // B54 — cancelled work orders leave the calendar.
+      status: { not: WorkOrderStatus.CANCELLED },
     };
     if (query.technicianId) {
       woWhere.assignedToId = query.technicianId;

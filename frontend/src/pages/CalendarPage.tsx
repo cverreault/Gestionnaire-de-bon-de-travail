@@ -64,6 +64,7 @@ const STATUS_COLOR: Record<string, string> = {
   IN_PROGRESS: '#f97316',
   COMPLETED_POSITIVE: '#10b981',
   COMPLETED_NEGATIVE: '#ef4444',
+  CANCELLED: '#9ca3af',
 };
 
 function eventColor(ev: CalendarEvent): string {

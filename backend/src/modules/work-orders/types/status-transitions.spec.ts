@@ -25,8 +25,8 @@ describe('VALID_TRANSITIONS — map completeness', () => {
     }
   });
 
-  it('contains exactly 8 status entries (including EN_ROUTE and REQUESTED)', () => {
-    expect(Object.keys(VALID_TRANSITIONS)).toHaveLength(8);
+  it('contains exactly 9 status entries (including EN_ROUTE, REQUESTED and CANCELLED)', () => {
+    expect(Object.keys(VALID_TRANSITIONS)).toHaveLength(9);
   });
 });
 
@@ -96,13 +96,21 @@ describe('EN_ROUTE — new status wire-up', () => {
     expect(isValidTransition(WorkOrderStatus.DISPATCHED, WorkOrderStatus.EN_ROUTE)).toBe(true);
   });
 
-  it('EN_ROUTE → IN_PROGRESS is the only allowed next step from EN_ROUTE', () => {
+  it('EN_ROUTE → IN_PROGRESS is the only forward step from EN_ROUTE (plus cancel, B54)', () => {
     const allowedFromEnRoute = VALID_TRANSITIONS[WorkOrderStatus.EN_ROUTE];
-    expect(allowedFromEnRoute).toEqual([WorkOrderStatus.IN_PROGRESS]);
+    expect(allowedFromEnRoute).toEqual([WorkOrderStatus.IN_PROGRESS, WorkOrderStatus.CANCELLED]);
   });
 
-  it('EN_ROUTE is not a terminal state — it has exactly one outgoing transition', () => {
-    expect(VALID_TRANSITIONS[WorkOrderStatus.EN_ROUTE]).toHaveLength(1);
+  it('EN_ROUTE is not a terminal state — forward step + cancel', () => {
+    expect(VALID_TRANSITIONS[WorkOrderStatus.EN_ROUTE]).toHaveLength(2);
+  });
+
+  it('B54 — every open status can be cancelled and cancelled reopens to CREATED', () => {
+    for (const from of [WorkOrderStatus.CREATED, WorkOrderStatus.ASSIGNED, WorkOrderStatus.DISPATCHED, WorkOrderStatus.EN_ROUTE, WorkOrderStatus.IN_PROGRESS]) {
+      expect(isValidTransition(from, WorkOrderStatus.CANCELLED)).toBe(true);
+    }
+    expect(isValidTransition(WorkOrderStatus.COMPLETED_POSITIVE, WorkOrderStatus.CANCELLED)).toBe(false);
+    expect(VALID_TRANSITIONS[WorkOrderStatus.CANCELLED]).toEqual([WorkOrderStatus.CREATED]);
   });
 });
 

@@ -324,7 +324,8 @@ export class StockService {
   private refuseWhenTerminal(status: WorkOrderStatus) {
     if (
       status === WorkOrderStatus.COMPLETED_POSITIVE ||
-      status === WorkOrderStatus.COMPLETED_NEGATIVE
+      status === WorkOrderStatus.COMPLETED_NEGATIVE ||
+      status === WorkOrderStatus.CANCELLED
     ) {
       throw new ConflictException('Bon de travail complété — pièces verrouillées');
     }

@@ -97,6 +97,15 @@ export class WorkOrderFilterDto {
   excludeCompleted?: boolean;
 
   @ApiPropertyOptional({
+    description: 'B54 — inclure les BT annulés (masqués par défaut) — ignoré si un filtre status est déjà défini',
+    default: false,
+  })
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  includeCancelled?: boolean;
+
+  @ApiPropertyOptional({
     description: 'Ne retourner que les BT en breach SLA (B4) — slaBreachedAt non null',
   })
   @IsOptional()
