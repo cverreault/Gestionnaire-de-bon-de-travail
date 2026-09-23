@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { runBatch, type BatchAction, type BatchResult } from '../services/work-orders-batch.service';
 import { theme, buttonStyles, formStyles } from '../theme';
 import { toast } from '../context/toast.store';
+import TagPicker from './TagPicker';
 
 interface TechnicianOption {
   id: string;
@@ -24,6 +25,8 @@ const ACTIONS: Array<{ action: BatchAction; icon: string; key: string; fallback:
   { action: 'DISPATCH', icon: '📡', key: 'batch.dispatch', fallback: 'Répartir' },
   { action: 'UNASSIGN', icon: '↩', key: 'batch.unassign', fallback: 'Désassigner' },
   { action: 'SCHEDULE', icon: '📅', key: 'batch.schedule', fallback: 'Planifier' },
+  { action: 'ADD_TAGS', icon: '🏷', key: 'batch.addTags', fallback: 'Ajouter des tags' },
+  { action: 'REMOVE_TAGS', icon: '🏷', key: 'batch.removeTags', fallback: 'Retirer des tags' },
   { action: 'CANCEL', icon: '🚫', key: 'batch.cancel', fallback: 'Annuler les BT', danger: true },
 ];
 
@@ -43,6 +46,7 @@ export default function BatchActionsBar({ selectedIds, technicians, onClear, onD
   const [endTime, setEndTime] = useState('');
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
+  const [tagIds, setTagIds] = useState<string[]>([]);
   const [running, setRunning] = useState(false);
 
   if (selectedIds.length === 0) return null;
@@ -65,6 +69,9 @@ export default function BatchActionsBar({ selectedIds, technicians, onClear, onD
         return !!date;
       case 'UNASSIGN':
         return true;
+      case 'ADD_TAGS':
+      case 'REMOVE_TAGS':
+        return tagIds.length > 0;
       default:
         return false;
     }
@@ -89,6 +96,7 @@ export default function BatchActionsBar({ selectedIds, technicians, onClear, onD
             }
           : {}),
         ...(panel === 'CANCEL' ? { reason: reason.trim() } : {}),
+        ...(panel === 'ADD_TAGS' || panel === 'REMOVE_TAGS' ? { tagIds } : {}),
       });
       void qc.invalidateQueries({ queryKey: ['work-orders'] });
       if (result.failed.length === 0) {
@@ -184,6 +192,9 @@ export default function BatchActionsBar({ selectedIds, technicians, onClear, onD
           )}
           {panel === 'CANCEL' && (
             <input type="text" value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('batch.reasonPlaceholder', { defaultValue: "Raison de l'annulation (obligatoire)" })} style={{ ...formStyles.input, minWidth: 300 }} />
+          )}
+          {(panel === 'ADD_TAGS' || panel === 'REMOVE_TAGS') && (
+            <TagPicker value={tagIds} onChange={setTagIds} variant="filter" includeInactive={panel === 'REMOVE_TAGS'} placeholder={t('batch.pickTags', { defaultValue: 'Choisir les tags' })} />
           )}
           {panel === 'UNASSIGN' && (
             <span style={{ fontSize: theme.font.sizeSm, color: theme.colors.textSecondary }}>

@@ -106,7 +106,12 @@
     "removePartConfirm": "Retirer cette pièce du BT ? Le stock sera recrédité.",
     "noMatch": "Aucune pièce trouvée",
     "scanHint": "Visez le code-barres de la pièce",
-    "eta": "{{km}} km · {{min}} min de route"
+    "eta": "{{km}} km · {{min}} min de route",
+    "recordVideo": "Filmer",
+    "videos": "Vidéos",
+    "videoTooLarge": "Vidéo trop lourde (max 100 Mo) — filmez plus court.",
+    "openingVideo": "Ouverture de la vidéo…",
+    "videoOpenFailed": "Impossible d'ouvrir la vidéo."
   },
   "status": {
     "REQUESTED": "Demandé",

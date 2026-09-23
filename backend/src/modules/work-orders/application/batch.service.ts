@@ -60,6 +60,10 @@ export class BatchService {
           throw new BadRequestException('Une date planifiée est obligatoire pour cette action.');
         }
         break;
+      case BatchAction.ADD_TAGS:
+      case BatchAction.REMOVE_TAGS:
+        if (!dto.tagIds?.length) throw new BadRequestException('Au moins un tag est requis pour cette action.');
+        break;
       default:
         break;
     }
@@ -93,9 +97,24 @@ export class BatchService {
           },
           currentUser,
         );
+      case BatchAction.ADD_TAGS:
+        return this.tags(id, dto.tagIds!, 'add', currentUser);
+      case BatchAction.REMOVE_TAGS:
+        return this.tags(id, dto.tagIds!, 'remove', currentUser);
       default:
         throw new BadRequestException(`Action inconnue : ${String(dto.action)}`);
     }
+  }
+
+  /** Merge / subtract on the current tag set, then the regular update (validates the ids, emits the events). */
+  private async tags(id: string, tagIds: string[], mode: 'add' | 'remove', currentUser: CurrentUserRef) {
+    const rows = await this.prisma.workOrderTag.findMany({ where: { workOrderId: id }, select: { tagId: true } });
+    const current = new Set(rows.map((r) => r.tagId));
+    for (const tagId of tagIds) {
+      if (mode === 'add') current.add(tagId);
+      else current.delete(tagId);
+    }
+    return this.workOrders.update(id, { tagIds: [...current] }, currentUser);
   }
 
   /** Initial step → assign step through the process ; any other open step → reassign. */

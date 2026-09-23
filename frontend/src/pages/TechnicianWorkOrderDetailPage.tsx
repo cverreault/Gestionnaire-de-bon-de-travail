@@ -473,7 +473,7 @@ export default function TechnicianWorkOrderDetailPage() {
                   textAlign: 'center',
                 }}
               >
-                {att.mimeType.startsWith('image/') ? '🖼️' : '📎'} {att.fileName}
+                {att.mimeType.startsWith('video/') ? '🎬' : att.mimeType.startsWith('image/') ? '🖼️' : '📎'} {att.fileName}
               </div>
             ))}
           </div>
@@ -482,7 +482,7 @@ export default function TechnicianWorkOrderDetailPage() {
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*,application/pdf"
+          accept="image/*,video/*,application/pdf"
           capture="environment"
           disabled={!isOnline}
           onChange={handleFileUpload}

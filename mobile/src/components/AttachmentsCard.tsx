@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { Alert, Linking, Modal, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Alert, Linking, Modal, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as IntentLauncher from 'expo-intent-launcher';
+import { WebView } from 'react-native-webview';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
@@ -10,12 +13,15 @@ import { useSyncStore } from '../sync/sync.store';
 import { persistForQueue } from '../sync/senders';
 import { useTranslation } from 'react-i18next';
 import type { AttachmentRef } from '@taskmgr/shared';
-import { ApiError } from '../api/client';
+import { ApiError, authHeaders } from '../api/client';
 import { attachmentContentSource, type LocalFile } from '../api/endpoints';
 import { font, radius, spacing, useTheme } from '../theme/tokens';
 
 const MAX_EDGE = 1600;
 const JPEG_QUALITY = 0.8;
+/** B56 — server limit for videos (the phone's camera rarely exceeds it under ~3 min). */
+const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
+const MAX_VIDEO_SECONDS = 180;
 
 /** Downscale to 1600 px / JPEG 0.8 before upload (roadmap B38.6): field photos are 3–8 MB otherwise. */
 async function prepareForUpload(asset: ImagePicker.ImagePickerAsset): Promise<LocalFile> {
@@ -28,6 +34,14 @@ async function prepareForUpload(asset: ImagePicker.ImagePickerAsset): Promise<Lo
   );
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   return { uri: out.uri, name: `photo-${stamp}.jpg`, type: 'image/jpeg' };
+}
+
+/** B56 — videos are queued as-is (no re-encoding on the phone) ; MOV on iOS, MP4 on Android. */
+async function prepareVideo(asset: ImagePicker.ImagePickerAsset): Promise<LocalFile & { ext: string }> {
+  const ext = asset.uri.toLowerCase().endsWith('.mov') ? 'mov' : asset.uri.toLowerCase().endsWith('.3gp') ? '3gp' : asset.uri.toLowerCase().endsWith('.webm') ? 'webm' : 'mp4';
+  const type = asset.mimeType ?? (ext === 'mov' ? 'video/quicktime' : ext === '3gp' ? 'video/3gpp' : ext === 'webm' ? 'video/webm' : 'video/mp4');
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  return { uri: asset.uri, name: `video-${stamp}.${ext}`, type, ext };
 }
 
 interface Props {
@@ -56,8 +70,17 @@ export default function AttachmentsCard({ workOrderId, attachments, pendingIds, 
     mutationFn: async (assets: ImagePicker.ImagePickerAsset[]) => {
       if (!user) return;
       for (const asset of assets) {
-        const file = await prepareForUpload(asset);
         const opId = Crypto.randomUUID();
+        if (asset.type === 'video') {
+          const info = await FileSystem.getInfoAsync(asset.uri);
+          const size = info.exists && 'size' in info ? info.size : asset.fileSize ?? 0;
+          if (size > MAX_VIDEO_BYTES) throw new ApiError(413, t('workOrder.videoTooLarge'));
+          const file = await prepareVideo(asset);
+          const uri = await persistForQueue(opId, file.uri, file.ext);
+          await enqueueOp(user.id, workOrderId, 'attachment', { uri, name: file.name, type: file.type }, opId);
+          continue;
+        }
+        const file = await prepareForUpload(asset);
         const uri = await persistForQueue(opId, file.uri, 'jpg');
         await enqueueOp(user.id, workOrderId, 'attachment', { uri, name: file.name, type: file.type }, opId);
       }
@@ -79,6 +102,20 @@ export default function AttachmentsCard({ workOrderId, attachments, pendingIds, 
     if (!res.canceled) upload.mutate(res.assets);
   }
 
+  async function recordVideo() {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert(t('workOrder.cameraDenied'), undefined, [{ text: t('common.cancel') }, { text: 'OK', onPress: () => void Linking.openSettings() }]);
+      return;
+    }
+    const res = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['videos'],
+      videoMaxDuration: MAX_VIDEO_SECONDS,
+      videoQuality: ImagePicker.UIImagePickerControllerQualityType.Medium,
+    });
+    if (!res.canceled) upload.mutate(res.assets);
+  }
+
   async function choosePhoto() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
@@ -90,7 +127,36 @@ export default function AttachmentsCard({ workOrderId, attachments, pendingIds, 
   }
 
   const images = attachments.filter((a) => a.mimeType.startsWith('image/'));
-  const others = attachments.filter((a) => !a.mimeType.startsWith('image/'));
+  const videos = attachments.filter((a) => a.mimeType.startsWith('video/'));
+  const others = attachments.filter((a) => !a.mimeType.startsWith('image/') && !a.mimeType.startsWith('video/'));
+  const [openingVideo, setOpeningVideo] = useState<string | null>(null);
+  const [iosVideo, setIosVideo] = useState<{ uri: string; name: string } | null>(null);
+
+  /** B56 — the proxy needs the bearer : download to the cache, then hand to the system player (Android) or an in-app player (iOS). */
+  async function openVideo(a: AttachmentRef) {
+    if (pendingIds.has(a.id) || openingVideo) return;
+    setOpeningVideo(a.id);
+    setError(null);
+    try {
+      const ext = a.fileName.split('.').pop()?.toLowerCase() || 'mp4';
+      const target = `${FileSystem.cacheDirectory ?? ''}video-${a.id}.${ext}`;
+      const info = await FileSystem.getInfoAsync(target);
+      if (!info.exists) {
+        const dl = await FileSystem.downloadAsync(attachmentContentSource(a.id).uri, target, { headers: authHeaders() });
+        if (dl.status !== 200) throw new Error(`HTTP ${dl.status}`);
+      }
+      if (Platform.OS === 'android') {
+        const contentUri = await FileSystem.getContentUriAsync(target);
+        await IntentLauncher.startActivityAsync('android.intent.action.VIEW', { data: contentUri, flags: 1, type: a.mimeType });
+      } else {
+        setIosVideo({ uri: target, name: a.fileName });
+      }
+    } catch {
+      setError(t('workOrder.videoOpenFailed'));
+    } finally {
+      setOpeningVideo(null);
+    }
+  }
   const btn = (label: string, onPress: () => void, primary = false) => (
     <Pressable
       disabled={upload.isPending}
@@ -119,6 +185,27 @@ export default function AttachmentsCard({ workOrderId, attachments, pendingIds, 
           ))}
         </ScrollView>
       )}
+      {videos.length > 0 && (
+        <View style={{ gap: spacing.xs }}>
+          <Text style={{ color: theme.textMuted, fontSize: font.xs, fontWeight: '700', textTransform: 'uppercase' }}>{t('workOrder.videos')}</Text>
+          {videos.map((a) => (
+            <Pressable
+              key={a.id}
+              onPress={() => void openVideo(a)}
+              disabled={pendingIds.has(a.id) || !!openingVideo}
+              style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, borderRadius: radius.md, backgroundColor: theme.surfaceAlt, opacity: pressed ? 0.7 : 1 })}
+            >
+              <Text style={{ fontSize: 22 }}>{pendingIds.has(a.id) ? '⏳' : openingVideo === a.id ? '⌛' : '🎬'}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: theme.text, fontSize: font.sm }} numberOfLines={1}>{a.fileName}</Text>
+                <Text style={{ color: theme.textMuted, fontSize: font.xs }}>
+                  {(a.fileSize / 1024 / 1024).toFixed(1)} Mo{openingVideo === a.id ? ` · ${t('workOrder.openingVideo')}` : ''}
+                </Text>
+              </View>
+            </Pressable>
+          ))}
+        </View>
+      )}
       {others.map((a) => (
         <Text key={a.id} style={{ color: theme.textSecondary, fontSize: font.sm }}>
           📎 {a.fileName} · {(a.fileSize / 1024).toFixed(0)} Ko
@@ -127,11 +214,23 @@ export default function AttachmentsCard({ workOrderId, attachments, pendingIds, 
       {canUpload && (
         <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs }}>
           {btn(upload.isPending ? t('workOrder.uploading') : `📷 ${t('workOrder.takePhoto')}`, () => void takePhoto(), true)}
+          {btn(`🎬 ${t('workOrder.recordVideo')}`, () => void recordVideo())}
           {btn(`🖼 ${t('workOrder.choosePhoto')}`, () => void choosePhoto())}
         </View>
       )}
       {error && <Text style={{ color: theme.danger, fontSize: font.sm }}>{error}</Text>}
       <PhotoViewer attachment={viewing} onClose={() => setViewing(null)} />
+      {iosVideo && (
+        <Modal visible animationType="slide" onRequestClose={() => setIosVideo(null)}>
+          <View style={{ flex: 1, backgroundColor: '#000' }}>
+            <WebView source={{ uri: iosVideo.uri }} allowsInlineMediaPlayback mediaPlaybackRequiresUserAction={false} allowingReadAccessToURL={FileSystem.cacheDirectory ?? undefined} style={{ flex: 1, backgroundColor: '#000' }} />
+            <Pressable onPress={() => setIosVideo(null)} style={{ position: 'absolute', top: 50, right: 20, width: 40, height: 40, borderRadius: radius.full, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ color: '#fff', fontSize: font.lg }}>✕</Text>
+            </Pressable>
+            <Text style={{ position: 'absolute', bottom: 40, alignSelf: 'center', color: '#fff', fontSize: font.sm }}>{iosVideo.name}</Text>
+          </View>
+        </Modal>
+      )}
     </View>
   );
 }

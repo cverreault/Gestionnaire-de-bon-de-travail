@@ -101,7 +101,7 @@
     "selectTemplate": "Select a template",
     "assignTechnician": "Assign a technician",
     "searchClient": "Search a client by name or email…",
-    "uploadPhoto": "Add a photo",
+    "uploadPhoto": "Add a photo or video",
     "viewAttachment": "View",
     "downloadAttachment": "Download",
     "deleteAttachment": "Delete"
@@ -418,7 +418,7 @@
       "parts": "Inventory",
       "signatures": "Signatures",
       "attachments": "Attachments",
-      "photos": "Photos"
+      "photos": "Photos & videos"
     }
   },
   "modes": {
@@ -497,6 +497,9 @@
     "apply": "Apply to {{count}} work orders",
     "cancelConfirm": "Cancel {{count}} work order(s)?",
     "allDone": "{{count}} work order(s) processed",
-    "partial": "{{ok}} succeeded, {{failed}} failed — {{details}}"
+    "partial": "{{ok}} succeeded, {{failed}} failed — {{details}}",
+    "addTags": "Add tags",
+    "removeTags": "Remove tags",
+    "pickTags": "Pick tags"
   }
 }

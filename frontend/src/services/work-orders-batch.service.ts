@@ -2,7 +2,7 @@ import api from './api';
 import type { ApiResponse } from '../types';
 
 /** B55 — one action applied to a selection of work orders. */
-export type BatchAction = 'ASSIGN' | 'DISPATCH' | 'UNASSIGN' | 'CANCEL' | 'SCHEDULE';
+export type BatchAction = 'ASSIGN' | 'DISPATCH' | 'UNASSIGN' | 'CANCEL' | 'SCHEDULE' | 'ADD_TAGS' | 'REMOVE_TAGS';
 
 export interface BatchWorkOrdersDto {
   ids: string[];
@@ -13,6 +13,7 @@ export interface BatchWorkOrdersDto {
   scheduledEndTime?: string;
   reason?: string;
   note?: string;
+  tagIds?: string[];
 }
 
 export interface BatchResult {

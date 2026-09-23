@@ -17,6 +17,15 @@ const riffWav = Buffer.concat([
 ]);
 
 describe('magicBytesMatch (B27)', () => {
+  it('B56 — accepts MP4/MOV (ftyp at 4) and WebM (EBML), rejects an HTML payload declared as video', () => {
+    const mp4 = Buffer.from([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x6d, 0x70, 0x34, 0x32]);
+    expect(magicBytesMatch(mp4, 'video/mp4')).toBe(true);
+    expect(magicBytesMatch(mp4, 'video/quicktime')).toBe(true);
+    expect(magicBytesMatch(Buffer.from([0x1a, 0x45, 0xdf, 0xa3, 0x00]), 'video/webm')).toBe(true);
+    expect(magicBytesMatch(Buffer.from('<html><script>'), 'video/mp4')).toBe(false);
+    expect(magicBytesMatch(Buffer.from('<html><script>'), 'video/webm')).toBe(false);
+  });
+
   it('accepts a real PNG / JPEG / PDF / OOXML declared as such', () => {
     expect(magicBytesMatch(png, 'image/png')).toBe(true);
     expect(magicBytesMatch(jpeg, 'image/jpeg')).toBe(true);

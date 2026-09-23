@@ -106,7 +106,12 @@
     "removePartConfirm": "Remove this part from the work order? Stock will be credited back.",
     "noMatch": "No part found",
     "scanHint": "Point at the part's barcode",
-    "eta": "{{km}} km · {{min}} min drive"
+    "eta": "{{km}} km · {{min}} min drive",
+    "recordVideo": "Record video",
+    "videos": "Videos",
+    "videoTooLarge": "Video too large (max 100 MB) — record a shorter one.",
+    "openingVideo": "Opening video…",
+    "videoOpenFailed": "Could not open the video."
   },
   "status": {
     "REQUESTED": "Requested",

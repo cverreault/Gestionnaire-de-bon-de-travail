@@ -13,6 +13,7 @@ function build(overrides: Record<string, jest.Mock> = {}) {
   const prisma = {
     workOrder: { findUnique: jest.fn().mockResolvedValue({ referenceNumber: 'BT-1', processDefinitionId: 'proc', status: 'CREATED' }) },
     processStatus: { findFirst: jest.fn().mockResolvedValue({ id: 's-700' }) },
+    workOrderTag: { findMany: jest.fn().mockResolvedValue([{ tagId: 't1' }, { tagId: 't2' }]) },
   };
   const workOrders = {
     getAvailableTransitions: jest.fn().mockResolvedValue({
@@ -76,6 +77,15 @@ describe('BatchService (B55)', () => {
     const { svc, workOrders } = build();
     await svc.run({ ids: ['a'], action: BatchAction.SCHEDULE, scheduledDate: '2026-10-01T00:00:00.000Z' }, admin);
     expect(workOrders.update).toHaveBeenCalledWith('a', { scheduledDate: '2026-10-01T00:00:00.000Z' }, admin);
+  });
+
+  it('ADD_TAGS merges with the current tags, REMOVE_TAGS subtracts (B55)', async () => {
+    const { svc, workOrders } = build();
+    await svc.run({ ids: ['a'], action: BatchAction.ADD_TAGS, tagIds: ['t2', 't3'] }, admin);
+    expect(workOrders.update).toHaveBeenLastCalledWith('a', { tagIds: ['t1', 't2', 't3'] }, admin);
+    await svc.run({ ids: ['a'], action: BatchAction.REMOVE_TAGS, tagIds: ['t1', 'zz'] }, admin);
+    expect(workOrders.update).toHaveBeenLastCalledWith('a', { tagIds: ['t2'] }, admin);
+    await expect(svc.run({ ids: ['a'], action: BatchAction.ADD_TAGS, tagIds: [] }, admin)).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('rejects a call missing the parameter its action needs', async () => {

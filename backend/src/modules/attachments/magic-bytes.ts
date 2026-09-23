@@ -18,6 +18,11 @@ const SIGNATURES: Record<string, Sig[]> = {
     { offset: 0, bytes: [0x47, 0x49, 0x46, 0x38, 0x39, 0x61] }, // GIF89a
   ],
   'image/webp': [{ offset: 0, bytes: [0x52, 0x49, 0x46, 0x46] }], // "RIFF" (WEBP checked below)
+  // B56 — ISO base media (MP4 / MOV / 3GP) : "ftyp" at offset 4 ; WebM/Matroska : EBML header.
+  'video/mp4': [{ offset: 4, bytes: [0x66, 0x74, 0x79, 0x70] }],
+  'video/quicktime': [{ offset: 4, bytes: [0x66, 0x74, 0x79, 0x70] }],
+  'video/3gpp': [{ offset: 4, bytes: [0x66, 0x74, 0x79, 0x70] }],
+  'video/webm': [{ offset: 0, bytes: [0x1a, 0x45, 0xdf, 0xa3] }],
   'application/pdf': [{ offset: 0, bytes: [0x25, 0x50, 0x44, 0x46] }], // %PDF
   // OLE Compound File (legacy .doc / .xls)
   'application/msword': [
