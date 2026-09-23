@@ -63,7 +63,7 @@ describe('TenantResolverMiddleware', () => {
 
     expect(prisma.tenant.findUnique).toHaveBeenCalledWith({
       where: { slug: 'myclient' },
-      select: { id: true, slug: true, name: true, isActive: true },
+      select: { id: true, slug: true, name: true, isActive: true, timezone: true },
     });
     expect((req as unknown as Record<string, { slug: string }>)[TENANT_REQUEST_KEY]).toEqual({
       id: 't-1',
@@ -90,7 +90,7 @@ describe('TenantResolverMiddleware', () => {
 
     expect(prisma.tenant.findUnique).toHaveBeenCalledWith({
       where: { slug: 'default' },
-      select: { id: true, slug: true, name: true, isActive: true },
+      select: { id: true, slug: true, name: true, isActive: true, timezone: true },
     });
     expect((req as unknown as Record<string, { slug: string }>)[TENANT_REQUEST_KEY].slug).toBe('default');
     expect(next).toHaveBeenCalled();

@@ -5,10 +5,13 @@ import {
   ForbiddenException,
   ConflictException,
   Logger,
+  Optional,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma, Role, WorkOrderStatus } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { RequestContextService } from '../../common/context/request-context.service';
+import { DEFAULT_TIMEZONE } from '../../common/contracts/tenant-context.contract';
 import { RemindersService } from '../reminders/application/reminders.service';
 import { ProcessEngineService } from '../process/process-engine.service';
 import { ProcessCacheService } from '../process/process-cache.service';
@@ -38,9 +41,8 @@ import { toCsv } from '../../common/utils/csv.util';
 /** B57 — statuses a technician can act on (between dispatch and completion). */
 const TECHNICIAN_OPEN_STATUSES: WorkOrderStatus[] = [WorkOrderStatus.DISPATCHED, WorkOrderStatus.EN_ROUTE, WorkOrderStatus.IN_PROGRESS];
 
-/** Midnight of the current day in the company time zone (TZ env, default America/Toronto). */
-export function startOfLocalDay(now = new Date()): Date {
-  const zone = process.env.TZ && process.env.TZ !== 'UTC' ? process.env.TZ : 'America/Toronto';
+/** Midnight of the current day in the given IANA zone (B59 : the tenant's `timezone`, default America/Toronto). */
+export function startOfLocalDay(now = new Date(), zone: string = DEFAULT_TIMEZONE): Date {
   const parts = new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).formatToParts(now);
   const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? 0);
   const localMidnightAsUtc = Date.UTC(get('year'), get('month') - 1, get('day'), 0, 0, 0);
@@ -52,15 +54,15 @@ export function startOfLocalDay(now = new Date()): Date {
 const BARE_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Lower bound of a date filter : local midnight for a bare date, the instant itself otherwise. */
-export function dateFilterStart(value: string): Date {
-  return BARE_DATE.test(value) ? startOfLocalDay(new Date(`${value}T12:00:00Z`)) : new Date(value);
+export function dateFilterStart(value: string, zone: string = DEFAULT_TIMEZONE): Date {
+  return BARE_DATE.test(value) ? startOfLocalDay(new Date(`${value}T12:00:00Z`), zone) : new Date(value);
 }
 
 /** Exclusive upper bound : next local midnight for a bare date, the instant + 1 ms otherwise. */
-export function dateFilterEndExclusive(value: string): Date {
+export function dateFilterEndExclusive(value: string, zone: string = DEFAULT_TIMEZONE): Date {
   if (BARE_DATE.test(value)) {
     const noon = new Date(`${value}T12:00:00Z`);
-    return startOfLocalDay(new Date(noon.getTime() + 24 * 60 * 60 * 1000));
+    return startOfLocalDay(new Date(noon.getTime() + 24 * 60 * 60 * 1000), zone);
   }
   return new Date(new Date(value).getTime() + 1);
 }
@@ -104,7 +106,14 @@ export class WorkOrdersService {
     private readonly processCache: ProcessCacheService,
     private readonly eventEmitter: EventEmitter2,
     private readonly reminders: RemindersService,
+    /** B59 — tenant time zone for local-day computations (absent in unit tests). */
+    @Optional() private readonly requestContext?: RequestContextService,
   ) {}
+
+  /** Company time zone of the current request (IANA), default America/Toronto. */
+  private zone(): string {
+    return this.requestContext?.current()?.timezone ?? DEFAULT_TIMEZONE;
+  }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -244,8 +253,8 @@ export class WorkOrdersService {
     if (filters.scheduledDateFrom || filters.scheduledDateTo) {
       // B58 — a bare YYYY-MM-DD covers the whole local day (dates are stored at local midnight).
       where.scheduledDate = {
-        ...(filters.scheduledDateFrom ? { gte: dateFilterStart(filters.scheduledDateFrom) } : {}),
-        ...(filters.scheduledDateTo ? { lt: dateFilterEndExclusive(filters.scheduledDateTo) } : {}),
+        ...(filters.scheduledDateFrom ? { gte: dateFilterStart(filters.scheduledDateFrom, this.zone()) } : {}),
+        ...(filters.scheduledDateTo ? { lt: dateFilterEndExclusive(filters.scheduledDateTo, this.zone()) } : {}),
       };
     }
 
@@ -627,7 +636,7 @@ export class WorkOrdersService {
       assignedToId: technicianId,
       OR: [
         { status: { in: TECHNICIAN_OPEN_STATUSES } },
-        { status: { in: [WorkOrderStatus.COMPLETED_POSITIVE, WorkOrderStatus.COMPLETED_NEGATIVE] }, actualEndTime: { gte: startOfLocalDay() } },
+        { status: { in: [WorkOrderStatus.COMPLETED_POSITIVE, WorkOrderStatus.COMPLETED_NEGATIVE] }, actualEndTime: { gte: startOfLocalDay(new Date(), this.zone()) } },
       ],
     };
   }
@@ -635,7 +644,7 @@ export class WorkOrdersService {
   private isVisibleToTechnician(wo: { status: WorkOrderStatus; actualEndTime: Date | null }): boolean {
     if (TECHNICIAN_OPEN_STATUSES.includes(wo.status)) return true;
     if (wo.status === WorkOrderStatus.COMPLETED_POSITIVE || wo.status === WorkOrderStatus.COMPLETED_NEGATIVE) {
-      return !!wo.actualEndTime && wo.actualEndTime >= startOfLocalDay();
+      return !!wo.actualEndTime && wo.actualEndTime >= startOfLocalDay(new Date(), this.zone());
     }
     return false;
   }

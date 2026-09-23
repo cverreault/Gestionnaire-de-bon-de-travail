@@ -2,9 +2,10 @@ import { dateFilterEndExclusive, dateFilterStart, startOfLocalDay } from './work
 
 /** B58 — the « jour » period must cover work orders stored at local midnight (04:00Z in Toronto). */
 describe('date filters (local day bounds)', () => {
-  const tz = process.env.TZ;
-  beforeAll(() => { process.env.TZ = 'America/Toronto'; });
-  afterAll(() => { if (tz) process.env.TZ = tz; else delete process.env.TZ; });
+  it('B59 — the tenant zone changes the bounds', () => {
+    expect(dateFilterStart('2026-09-23', 'America/Vancouver').toISOString()).toBe('2026-09-23T07:00:00.000Z');
+    expect(dateFilterEndExclusive('2026-09-23', 'Europe/Paris').toISOString()).toBe('2026-09-23T22:00:00.000Z');
+  });
 
   it('a bare date spans the whole local day', () => {
     expect(dateFilterStart('2026-09-23').toISOString()).toBe('2026-09-23T04:00:00.000Z');

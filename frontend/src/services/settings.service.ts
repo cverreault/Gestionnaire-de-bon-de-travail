@@ -36,12 +36,14 @@ export interface DeparturePoint {
 
 export interface TenantSettings {
   completedJobsEmail: string | null;
+  /** B59 — IANA time zone of the company. */
+  timezone: string;
   departurePoints: DeparturePoint[];
   emailConfigured: boolean;
 }
 
 export const getTenantSettings = () => api.get('/tenants/settings');
-export const updateTenantSettings = (data: Partial<Pick<TenantSettings, 'completedJobsEmail'>>) => api.patch('/tenants/settings', data);
+export const updateTenantSettings = (data: Partial<Pick<TenantSettings, 'completedJobsEmail' | 'timezone'>>) => api.patch('/tenants/settings', data);
 export const getDeparturePoints = () => api.get('/tenants/settings/departure-points');
 export const addDeparturePoint = (data: { label: string; address: string; lat: number; lng: number }) => api.post('/tenants/settings/departure-points', data);
 export const removeDeparturePoint = (id: string) => api.delete(`/tenants/settings/departure-points/${id}`);

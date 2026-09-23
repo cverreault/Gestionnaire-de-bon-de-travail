@@ -48,7 +48,11 @@ export interface TenantContext {
   slug: string;
   name: string;
   isActive: boolean;
+  /** B59 — IANA zone used for « local day » computations. */
+  timezone: string;
 }
+
+export const DEFAULT_TIMEZONE = 'America/Toronto';
 
 /**
  * Extracts the tenant slug from a Host header.

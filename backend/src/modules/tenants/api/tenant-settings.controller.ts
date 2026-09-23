@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Inject, NotFoundException, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, HttpCode, HttpStatus, Inject, NotFoundException, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { PrismaService } from '../../../common/prisma/prisma.service';
@@ -18,6 +18,16 @@ const POINT_SELECT = { id: true, label: true, address: true, lat: true, lng: tru
  *     (read by every staff role for the picker).
  * `emailConfigured` tells the UI whether SMTP is set up.
  */
+/** B59 — accepts only zones the runtime can format in. */
+function isValidTimeZone(zone: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en-CA', { timeZone: zone });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 @ApiTags('Tenants')
 @ApiBearerAuth('access-token')
 @Controller('tenants/settings')
@@ -29,7 +39,7 @@ export class TenantSettingsController {
 
   private async payload(tenantId: string) {
     const [row, points, smtpHost] = await Promise.all([
-      this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { completedJobsEmail: true } }),
+      this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { completedJobsEmail: true, timezone: true } }),
       this.prisma.departurePoint.findMany({ where: { tenantId }, orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }], select: POINT_SELECT }),
       this.configs.resolve('smtp.host', 'SMTP_HOST'),
     ]);
@@ -49,6 +59,11 @@ export class TenantSettingsController {
   async update(@CurrentTenant() tenant: TenantContext, @Body() dto: UpdateTenantSettingsDto) {
     if (dto.completedJobsEmail !== undefined) {
       await this.prisma.tenant.update({ where: { id: tenant.id }, data: { completedJobsEmail: dto.completedJobsEmail?.trim() || null } });
+    }
+    if (dto.timezone !== undefined) {
+      const zone = dto.timezone.trim();
+      if (!isValidTimeZone(zone)) throw new BadRequestException(`Fuseau horaire inconnu : ${zone}`);
+      await this.prisma.tenant.update({ where: { id: tenant.id }, data: { timezone: zone } });
     }
     return this.payload(tenant.id);
   }

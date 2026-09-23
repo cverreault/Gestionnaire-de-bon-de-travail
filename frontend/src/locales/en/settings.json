@@ -383,6 +383,9 @@
     "pickAddress": "Pick an address from the suggestions, type the coordinates or use “My position”.",
     "addPoint": "Add point",
     "addressPlaceholder": "Address (picked above or typed)",
-    "pointReady": "Position known: the point can be added."
+    "pointReady": "Position known: the point can be added.",
+    "timezone": "Company time zone",
+    "timezoneHint": "Used for day-based computations: Day filter, technicians' work orders completed today, reports.",
+    "timezoneError": "Time zone rejected by the server."
   }
 }

@@ -11,6 +11,7 @@ import {
   TENANT_IS_IMPLICIT_KEY,
   TENANT_REQUEST_KEY,
   TenantContext,
+  DEFAULT_TIMEZONE,
 } from '../contracts/tenant-context.contract';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -89,9 +90,9 @@ export class ApiKeyAuthGuard implements CanActivate {
     req: Request,
     apiKeyTenantId: string,
   ): Promise<void> {
-    type Row = { id: string; slug: string; name: string; is_active: boolean };
+    type Row = { id: string; slug: string; name: string; is_active: boolean; timezone: string | null };
     const rows = await this.prisma.$queryRawUnsafe<Row[]>(
-      `SELECT id, slug, name, is_active FROM tenants WHERE id = $1 LIMIT 1`,
+      `SELECT id, slug, name, is_active, timezone FROM tenants WHERE id = $1 LIMIT 1`,
       apiKeyTenantId,
     );
     const row = rows[0];
@@ -110,6 +111,7 @@ export class ApiKeyAuthGuard implements CanActivate {
       slug: row.slug,
       name: row.name,
       isActive: row.is_active,
+      timezone: row.timezone ?? DEFAULT_TIMEZONE,
     };
     (req as Request & { [TENANT_REQUEST_KEY]: TenantContext })[
       TENANT_REQUEST_KEY
