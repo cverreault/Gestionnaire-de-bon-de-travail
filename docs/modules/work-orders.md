@@ -32,7 +32,7 @@ Publie les domain events qui alimentent l'audit, les notifications, et tout futu
 - Moteur de processus configurable (states + transitions + permissions par rôle) — délégué à `ProcessEngineService`
 - **SLA tracking** (B4) — `slaTargetAt` calculé au create depuis `taskType.slaHours`, immuable
 - **Détection de breach SLA** (B4) — `SlaCheckService` cron 15 min met à jour `slaBreachedAt` et émet un domain event
-- Notes terrain + pièces jointes (relations dédiées) — images, documents et **vidéos** (B56 : mp4/mov/webm/3gp, 100 Mo max, magic bytes vérifiés, `client_max_body_size 120M` côté nginx ; l'app filme jusqu'à 3 min et met la vidéo en file hors ligne sans ré-encodage)
+- Notes terrain + pièces jointes (relations dédiées) — images, documents et **vidéos** (B56 : mp4/mov/webm/3gp, 100 Mo max, magic bytes vérifiés, `client_max_body_size 120M` côté nginx ; l'app filme jusqu'à 3 min et met la vidéo en file hors ligne sans ré-encodage ; **B64** : après l'upload, `VideoTranscodeService` ré-encode en arrière-plan avec ffmpeg — H.264 ≤ 1280 px, CRF 26, AAC 96 kb/s, faststart — et remplace l'objet et la ligne seulement si le fichier rétrécit d'au moins 15 % (un clip 1080p de 6 s passe de 6,5 Mo à 0,66 Mo) ; `ATTACHMENTS_VIDEO_TRANSCODE=0` désactive, `ATTACHMENTS_VIDEO_MAX_WIDTH` / `ATTACHMENTS_VIDEO_CRF` ajustent)
 - Templates de formulaires custom (sections + champs typés + RBAC granulaire par champ)
 - Field-level filtering au sortir du service (admin bypass)
 

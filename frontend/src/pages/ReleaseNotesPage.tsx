@@ -59,6 +59,14 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.20.2',
+    name: 'Vidéos compressées',
+    date: 'Septembre 2026',
+    entries: [
+      { type: 'improvement', text: "🎬 Les vidéos jointes aux BT sont compressées sur le serveur après l'envoi (H.264, 1280 px max, qualité préservée) : environ 5 à 10 fois plus petites, lecture plus rapide sur le web et dans l'app ; l'original est conservé tant que la version compressée n'est pas prête ou si elle ne fait pas gagner de place" },
+    ],
+  },
+  {
     version: '2.20.1',
     name: 'IP publique dans les connexions',
     date: 'Septembre 2026',

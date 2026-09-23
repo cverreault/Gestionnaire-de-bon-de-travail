@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AttachmentsController } from './attachments.controller';
 import { AttachmentsService } from './attachments.service';
+import { VideoTranscodeService } from './application/video-transcode.service';
 
 /**
  * AttachmentsModule
@@ -11,7 +12,7 @@ import { AttachmentsService } from './attachments.service';
  */
 @Module({
   controllers: [AttachmentsController],
-  providers: [AttachmentsService],
+  providers: [AttachmentsService, VideoTranscodeService],
   exports: [AttachmentsService],
 })
 export class AttachmentsModule {}
