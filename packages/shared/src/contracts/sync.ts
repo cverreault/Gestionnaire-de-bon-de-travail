@@ -172,4 +172,6 @@ export interface SyncPullResponse {
   templates?: Record<string, SyncTemplate>;
   partsStock: PartsStockRow[];
   partsCatalog: PartsCatalogRow[];
+  /** B65 — the dispatcher asked « où est-il ? » : send a fresh position now. */
+  locateRequested?: boolean;
 }

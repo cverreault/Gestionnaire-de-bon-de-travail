@@ -130,7 +130,7 @@ Service compose `valhalla` (réseau interne, `VALHALLA_URL`), tuiles construites
 
 ## Position des techniciens (B57)
 
-Chaque requête authentifiée de l'app porte `X-Client-Location` ; `JwtAuthGuard` émet `locations.clientFix.reported` (≤ 1/min/utilisateur) et `LocationsService.onClientFix` l'enregistre comme position (consentement GPS re-vérifié, silencieux sinon). `GET /dispatcher/technicians/:id/position` renvoie la dernière position, son âge et l'adresse la plus proche via `IGeocoder.reverse` (Nominatim) ; `POST /dispatcher/technicians/:id/locate` envoie un push `{ type: 'locate' }` auquel l'app répond par un envoi de position immédiat.
+Chaque requête authentifiée de l'app porte `X-Client-Location` ; `JwtAuthGuard` émet `locations.clientFix.reported` (≤ 1/min/utilisateur) et `LocationsService.onClientFix` l'enregistre comme position (consentement GPS re-vérifié, silencieux sinon). `GET /dispatcher/technicians/:id/position` renvoie la dernière position, son âge et l'adresse la plus proche via `IGeocoder.reverse` (Nominatim) ; `POST /dispatcher/technicians/:id/locate` marque `users.locate_requested_at` puis tente un push `{ type: 'locate' }` ; l'app répond par un envoi de position immédiat (push) ou à sa prochaine synchronisation (`locateRequested` dans `/me/sync`, B65 — pull toutes les 2 min app ouverte), et toute position reçue efface la demande.
 
 ## Open questions
 

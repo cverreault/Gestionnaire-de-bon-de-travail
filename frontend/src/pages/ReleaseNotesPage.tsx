@@ -59,6 +59,14 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.20.3',
+    name: '« Où est-il ? » sans notification push',
+    date: 'Septembre 2026',
+    entries: [
+      { type: 'fix', text: "📍 Carte dispatch : « Où est-il ? » fonctionne même sans notification push (non configurée tant que le projet Expo et Firebase ne sont pas créés) : la demande est enregistrée et l'app y répond à sa prochaine synchronisation, toutes les 2 minutes quand elle est ouverte, sinon au retour au premier plan ou à la synchronisation d'arrière-plan (15 min)" },
+    ],
+  },
+  {
     version: '2.20.2',
     name: 'Vidéos compressées',
     date: 'Septembre 2026',

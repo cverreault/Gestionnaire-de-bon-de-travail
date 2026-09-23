@@ -11,6 +11,8 @@ import { useSyncStore } from './sync.store';
 import { registerBackgroundSync, unregisterBackgroundSync } from './background-task';
 
 const PULL_MIN_INTERVAL_MS = 60_000;
+/** B65 — periodic pull while the app is open, so a « où est-il ? » request is answered within ~2 min. */
+const PULL_PERIOD_MS = 2 * 60_000;
 
 /**
  * Pull triggers (B38.4): session ready, app back to foreground, network back.
@@ -43,6 +45,7 @@ export function useSyncScheduler(dbReady: boolean): void {
     void registerBackgroundSync();
     pull(true);
     const app = AppState.addEventListener('change', (st) => st === 'active' && pull());
+    const timer = setInterval(() => { if (AppState.currentState === 'active') pull(); }, PULL_PERIOD_MS);
     const net = NetInfo.addEventListener((state) => {
       const online = !!state.isConnected && state.isInternetReachable !== false;
       setOnline(online);
@@ -51,6 +54,7 @@ export function useSyncScheduler(dbReady: boolean): void {
     return () => {
       app.remove();
       net();
+      clearInterval(timer);
     };
   }, [dbReady, accessToken, user?.id, user?.role, pullNow, setOnline]);
 }

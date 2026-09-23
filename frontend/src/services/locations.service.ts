@@ -41,9 +41,16 @@ export async function getTechnicianPosition(technicianId: string): Promise<Techn
   return (data.data ?? data) as TechnicianPosition;
 }
 
-export async function requestLocate(technicianId: string): Promise<{ sent: boolean; reason?: string }> {
-  const { data } = await api.post<{ data?: { sent: boolean; reason?: string } } & { sent: boolean; reason?: string }>(`/dispatcher/technicians/${technicianId}/locate`);
-  return (data.data ?? data) as { sent: boolean; reason?: string };
+export interface LocateResult {
+  sent: boolean;
+  reason?: string;
+  /** B65 — the request is flagged server-side ; the app answers at its next sync even without push. */
+  viaSync?: boolean;
+}
+
+export async function requestLocate(technicianId: string): Promise<LocateResult> {
+  const { data } = await api.post<{ data?: LocateResult } & LocateResult>(`/dispatcher/technicians/${technicianId}/locate`);
+  return (data.data ?? data) as LocateResult;
 }
 
 export async function getLatestPositions(): Promise<LatestPositionRow[]> {

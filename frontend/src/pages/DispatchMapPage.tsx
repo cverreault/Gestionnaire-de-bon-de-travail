@@ -107,10 +107,17 @@ export default function DispatchMapPage() {
     try {
       const before = await getTechnicianPosition(techId);
       const ask = await requestLocate(techId);
-      setLocate((p) => ({ ...p, [techId]: { status: ask.sent ? 'waiting' : 'done', info: before, message: ask.sent ? undefined : ask.reason === 'no_device' ? 'Aucun téléphone joignable : dernière position connue.' : 'Notification impossible : dernière position connue.' } }));
-      if (!ask.sent) return;
+      // B65 — with push the phone answers in seconds ; without, at its next sync (≤ 2 min app ouverte, ≤ 15 min en arrière-plan).
+      const hint = ask.sent
+        ? undefined
+        : ask.viaSync
+          ? 'Notification push non configurée : demande enregistrée, le téléphone répondra à sa prochaine synchronisation (≈ 2 min si l’app est ouverte).'
+          : 'Notification impossible : dernière position connue.';
+      setLocate((p) => ({ ...p, [techId]: { status: ask.sent || ask.viaSync ? 'waiting' : 'done', info: before, message: hint } }));
+      if (!ask.sent && !ask.viaSync) return;
       const since = before.position?.recordedAt ?? null;
-      for (let i = 0; i < 8; i += 1) {
+      const rounds = ask.sent ? 8 : 36;
+      for (let i = 0; i < rounds; i += 1) {
         await new Promise((r) => setTimeout(r, 5000));
         const now = await getTechnicianPosition(techId);
         if (now.position && now.position.recordedAt !== since) {
@@ -119,7 +126,7 @@ export default function DispatchMapPage() {
           return;
         }
       }
-      setLocate((p) => ({ ...p, [techId]: { status: 'done', info: before, message: 'Pas de réponse du téléphone : dernière position connue.' } }));
+      setLocate((p) => ({ ...p, [techId]: { status: 'done', info: before, message: 'Pas de réponse du téléphone pour l’instant : dernière position connue. La position arrivera à la prochaine synchronisation de l’app.' } }));
     } catch (err) {
       setLocate((p) => ({ ...p, [techId]: { status: 'error', message: err instanceof Error ? err.message : String(err) } }));
     }
@@ -467,7 +474,7 @@ export default function DispatchMapPage() {
                     <span style={{ fontSize: 11, color: theme.colors.textSecondary }}>
                       {locate[t.id]!.info!.position!.latitude.toFixed(5)}, {locate[t.id]!.info!.position!.longitude.toFixed(5)}
                       {locate[t.id]!.info!.position!.accuracy != null ? ` (±${Math.round(locate[t.id]!.info!.position!.accuracy!)} m)` : ''}
-                      {' · '}il y a {relativeTime(locate[t.id]!.info!.position!.recordedAt)}
+                      {' · '}{new Date(locate[t.id]!.info!.position!.recordedAt).toLocaleString()} (il y a {relativeTime(locate[t.id]!.info!.position!.recordedAt)})
                       {locate[t.id]!.info!.nearestAddress ? ` · près de ${locate[t.id]!.info!.nearestAddress!.label}` : ''}
                     </span>
                   )}

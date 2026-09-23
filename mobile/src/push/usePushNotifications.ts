@@ -7,21 +7,7 @@ import { useSession } from '../stores/session.store';
 import { useSyncStore } from '../sync/sync.store';
 import { usePushStore } from './push.store';
 import { pushTargetRoute } from './route';
-import * as Location from 'expo-location';
-import * as Crypto from 'expo-crypto';
-import { postLocationBatch } from '../api/endpoints';
-import { rememberFix } from '../gps/gps.store';
-
-/** B57 — the dispatcher asked « où es-tu ? » : answer with a fresh fix right away. */
-async function answerLocateRequest(): Promise<void> {
-  try {
-    const l = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-    rememberFix(l);
-    await postLocationBatch([{ latitude: l.coords.latitude, longitude: l.coords.longitude, accuracy: l.coords.accuracy ?? null, recordedAt: new Date(l.timestamp).toISOString(), source: 'MOBILE_FOREGROUND' }], Crypto.randomUUID());
-  } catch {
-    // no permission / no signal : the dispatcher keeps the last known position
-  }
-}
+import { answerLocateRequest } from '../gps/locate';
 
 // Foreground notifications : show the banner, and let the sync catch the change.
 Notifications.setNotificationHandler({

@@ -636,6 +636,8 @@ model User {
   lastSeenIp String?   @map("last_seen_ip")
   /// B63 — LAN address behind the public one, when known.
   lastSeenLanIp String? @map("last_seen_lan_ip")
+  /// B65 — dispatcher asked « où est-il ? » ; cleared by the next position fix. Answered by sync when push is unavailable.
+  locateRequestedAt DateTime? @map("locate_requested_at")
   loginEvents LoginEvent[]
 
   /// B21 — set only for role=CLIENT portal accounts: the Client record

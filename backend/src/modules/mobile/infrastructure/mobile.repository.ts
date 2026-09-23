@@ -107,6 +107,12 @@ export class MobileRepository {
     });
   }
 
+  /** B65 — true while the dispatcher waits for a fresh position of this technician. */
+  async locateRequested(technicianId: string): Promise<boolean> {
+    const u = await this.prisma.user.findUnique({ where: { id: technicianId }, select: { locateRequestedAt: true } });
+    return !!u?.locateRequestedAt;
+  }
+
   async processSnapshots(definitionIds: string[]) {
     if (definitionIds.length === 0) return [];
     return this.prisma.processDefinition.findMany({

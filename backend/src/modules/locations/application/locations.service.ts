@@ -94,6 +94,7 @@ export class LocationsService {
         }],
         skipDuplicates: true,
       });
+      this.clearLocateRequest(user.id);
     } catch {
       // not a technician / consent off / duplicate : nothing to record
     }
@@ -135,18 +136,20 @@ export class LocationsService {
   }
 
   /** Asks the phone for a fresh fix through a push ; the app answers with a batch upload. */
-  async requestLocate(technicianId: string): Promise<{ sent: boolean; reason?: string }> {
+  async requestLocate(technicianId: string): Promise<{ sent: boolean; reason?: string; viaSync: boolean }> {
     const tech = await this.prisma.user.findUnique({ where: { id: technicianId }, select: { id: true, role: true, isActive: true } });
     if (!tech || tech.role !== Role.TECHNICIAN || !tech.isActive) throw new NotFoundException('Technicien introuvable');
-    if (!this.push) return { sent: false, reason: 'push_unavailable' };
-    if (!(await this.push.hasActiveDevice(technicianId))) return { sent: false, reason: 'no_device' };
+    // B65 — always flag the request : the app answers at its next sync even without push.
+    await this.prisma.user.update({ where: { id: technicianId }, data: { locateRequestedAt: new Date() } });
+    if (!this.push) return { sent: false, reason: 'push_unavailable', viaSync: true };
+    if (!(await this.push.hasActiveDevice(technicianId))) return { sent: false, reason: 'no_device', viaSync: true };
     const sent = await this.push.sendToUser({
       userId: technicianId,
       title: 'Position demandée',
       body: 'La répartition demande votre position actuelle.',
       data: { type: 'locate', requestedAt: new Date().toISOString() },
     });
-    return { sent, ...(sent ? {} : { reason: 'push_failed' }) };
+    return { sent, viaSync: true, ...(sent ? {} : { reason: 'push_failed' }) };
   }
 
   /**
@@ -158,6 +161,11 @@ export class LocationsService {
    * ensures a stale tab or a tampered client can't keep producing
    * rows after opt-out.
    */
+  /** B65 — a fresh fix answers any pending « où est-il ? » request. */
+  private clearLocateRequest(userId: string): void {
+    void this.prisma.user.updateMany({ where: { id: userId, locateRequestedAt: { not: null } }, data: { locateRequestedAt: null } }).catch(() => undefined);
+  }
+
   async recordLocation(input: RecordLocationInput): Promise<void> {
     const user = await this.assertOptedInTechnician(input.userId);
 
@@ -169,6 +177,7 @@ export class LocationsService {
         accuracy: input.accuracy,
       },
     });
+    this.clearLocateRequest(user.id);
   }
 
   /**
@@ -206,6 +215,7 @@ export class LocationsService {
     if (rows.length > 0) {
       const r = await this.prisma.technicianLocation.createMany({ data: rows, skipDuplicates: true });
       accepted = r.count;
+      this.clearLocateRequest(user.id);
     }
     return { accepted, duplicates: rows.length - accepted, rejected };
   }
