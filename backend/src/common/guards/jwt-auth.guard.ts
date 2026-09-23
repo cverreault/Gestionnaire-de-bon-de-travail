@@ -16,6 +16,7 @@ import {
 } from '../contracts/tenant-context.contract';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { resolveClientIp } from '../contracts/client-ip.contract';
 import { CLIENT_FIX_REPORTED_EVENT, CLIENT_LOCATION_HEADER, parseClientLocation, type ClientFixReportedPayload } from '../contracts/client-location.contract';
 
 @Injectable()
@@ -49,14 +50,14 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   private static readonly presenceWrites = new Map<string, number>();
   private static readonly PRESENCE_INTERVAL_MS = 60_000;
 
-  private touchPresence(userId: string | undefined, ip: string | null): void {
+  private touchPresence(userId: string | undefined, ip: string | null, lanIp: string | null = null): void {
     if (!userId) return;
     const now = Date.now();
     const last = JwtAuthGuard.presenceWrites.get(userId) ?? 0;
     if (now - last < JwtAuthGuard.PRESENCE_INTERVAL_MS) return;
     JwtAuthGuard.presenceWrites.set(userId, now);
     void this.prisma.user
-      .updateMany({ where: { id: userId }, data: { lastSeenAt: new Date(now), lastSeenIp: ip } })
+      .updateMany({ where: { id: userId }, data: { lastSeenAt: new Date(now), lastSeenIp: ip, lastSeenLanIp: lanIp } })
       .catch(() => undefined);
   }
 
@@ -104,7 +105,8 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     if (ctx) {
       const req = ctx.switchToHttp().getRequest();
       // B51 — presence heartbeat (users.last_seen_at / last_seen_ip), throttled per user.
-      this.touchPresence((user as unknown as { id?: string }).id, (req as { ip?: string }).ip ?? null);
+      const clientIp = resolveClientIp(req as { ip?: string; headers?: Record<string, string | string[] | undefined> });
+      this.touchPresence((user as unknown as { id?: string }).id, clientIp.ip, clientIp.lanIp);
       this.reportClientFix((user as unknown as { id?: string }).id, (req as { headers: Record<string, string | string[] | undefined> }).headers[CLIENT_LOCATION_HEADER]);
       const requestTenant = req[TENANT_REQUEST_KEY] as TenantContext | undefined;
       const isImplicit = req[TENANT_IS_IMPLICIT_KEY] === true;

@@ -7,7 +7,7 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
  */
 const IS_DEV = process.env.EAS_BUILD_PROFILE === 'development';
 
-const VERSION = '0.10.1';
+const VERSION = '0.10.2';
 
 /**
  * versionCode Android strictement croissant, dérivé de la version (0.7.0 → 700).

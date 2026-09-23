@@ -98,6 +98,8 @@ export interface UserPresence {
   online: boolean;
   lastSeenAt: string | null;
   lastSeenIp: string | null;
+  /** B63 — LAN address behind the public one, when known. */
+  lastSeenLanIp?: string | null;
   sessionSince: string | null;
   activeSessions: number;
   mobileSessions: number;
@@ -109,6 +111,7 @@ export interface ActiveSession {
   lastRefreshAt: string;
   expiresAt: string;
   ip: string | null;
+  lanIp?: string | null;
   userAgent: string | null;
   deviceId: string | null;
 }
@@ -119,6 +122,7 @@ export interface LoginEvent {
   email: string;
   kind: 'LOGIN' | 'LOGIN_2FA' | 'FAILED' | 'LOGOUT';
   ip: string | null;
+  lanIp?: string | null;
   userAgent: string | null;
   deviceId: string | null;
   createdAt: string;

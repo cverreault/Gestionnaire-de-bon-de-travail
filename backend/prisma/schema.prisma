@@ -634,6 +634,8 @@ model User {
   /// B51 — presence : last authenticated request (throttled to once a minute) and its IP.
   lastSeenAt DateTime? @map("last_seen_at")
   lastSeenIp String?   @map("last_seen_ip")
+  /// B63 — LAN address behind the public one, when known.
+  lastSeenLanIp String? @map("last_seen_lan_ip")
   loginEvents LoginEvent[]
 
   /// B21 — set only for role=CLIENT portal accounts: the Client record
@@ -1909,6 +1911,8 @@ model LoginEvent {
   /// LOGIN | LOGIN_2FA | FAILED | LOGOUT
   kind      String
   ip        String?
+  /// B63 — private address seen by the proxy when `ip` is the client-reported public one.
+  lanIp     String?  @map("lan_ip")
   userAgent String?  @map("user_agent")
   deviceId  String?  @map("device_id")
   /// Refresh-token family opened by this login (links to the active session).

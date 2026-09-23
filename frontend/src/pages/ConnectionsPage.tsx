@@ -72,7 +72,7 @@ export default function ConnectionsPage() {
                     <span style={{ color: theme.colors.textMuted }}>
                       {p.sessionSince ? t('connections.since', { defaultValue: 'connecté depuis {{d}}', d: formatDuration(now - new Date(p.sessionSince).getTime(), i18n.language) }) : ''}
                       {p.lastSeenAt ? ` · ${t('connections.lastSeen', { defaultValue: 'vu il y a {{d}}', d: formatDuration(now - new Date(p.lastSeenAt).getTime(), i18n.language) })}` : ''}
-                      {p.lastSeenIp ? ` · IP ${p.lastSeenIp}` : ''}
+                      {p.lastSeenIp ? ` · IP ${p.lastSeenIp}${p.lastSeenLanIp ? ` (LAN ${p.lastSeenLanIp})` : ''}` : ''}
                       {p.activeSessions > 1 ? ` · ${t('connections.sessions', { defaultValue: '{{n}} sessions', n: p.activeSessions })}` : ''}
                       {p.mobileSessions > 0 ? ' · 📱' : ''}
                     </span>
@@ -117,7 +117,7 @@ export default function ConnectionsPage() {
                   <td style={{ ...tableStyles.cell, whiteSpace: 'nowrap' }}>{formatDateTime(e.createdAt)}</td>
                   <td style={{ ...tableStyles.cell }}>{e.user ? `${e.user.firstName} ${e.user.lastName}` : e.email}{e.user && <span style={{ color: theme.colors.textMuted, fontSize: 11 }}> · {e.email}</span>}</td>
                   <td style={{ ...tableStyles.cell, color: KIND_LABEL[e.kind]?.color, fontWeight: theme.font.weightMedium }}>{fr ? KIND_LABEL[e.kind]?.fr : KIND_LABEL[e.kind]?.en}</td>
-                  <td style={{ ...tableStyles.cell, fontFamily: 'monospace' }}>{e.ip ?? '—'}</td>
+                  <td style={{ ...tableStyles.cell, fontFamily: 'monospace' }}>{e.ip ?? '—'}{e.lanIp ? <span style={{ color: theme.colors.textMuted }}> (LAN {e.lanIp})</span> : null}</td>
                   <td style={{ ...tableStyles.cell }} title={e.userAgent ?? ''}>{describeAgent(e.userAgent, e.deviceId)}</td>
                 </tr>
               ))}

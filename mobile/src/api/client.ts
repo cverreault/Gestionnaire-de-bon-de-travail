@@ -93,6 +93,7 @@ export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T
       Accept: 'application/json',
       'Accept-Language': i18n.language?.startsWith('en') ? 'en' : 'fr',
       [DEVICE_ID_HEADER]: deviceId,
+      ...publicIpHeader(),
       ...headers,
     };
     const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
@@ -145,9 +146,27 @@ export async function withOutgoingLocation<T>(loc: ClientLocation | null, fn: ()
 }
 
 /** Headers every authenticated call carries (also used by the native file upload). */
+// ── B63 — public IP of the phone, looked up once per hour, sent in a header ──
+const PUBLIC_IP_TTL_MS = 60 * 60 * 1000;
+let publicIp: { ip: string; at: number } | null = null;
+let publicIpLookup: Promise<void> | null = null;
+function ensurePublicIp(): void {
+  if ((publicIp && Date.now() - publicIp.at < PUBLIC_IP_TTL_MS) || publicIpLookup) return;
+  publicIpLookup = fetch('https://api.ipify.org?format=json', { signal: AbortSignal.timeout(5000) })
+    .then((r) => r.json())
+    .then((j: { ip?: string }) => { if (j.ip) publicIp = { ip: j.ip, at: Date.now() }; })
+    .catch(() => undefined)
+    .finally(() => { publicIpLookup = null; });
+}
+function publicIpHeader(): Record<string, string> {
+  ensurePublicIp();
+  return publicIp && Date.now() - publicIp.at < PUBLIC_IP_TTL_MS ? { 'X-Client-Public-Ip': publicIp.ip } : {};
+}
+
 export function authHeaders(extra: Record<string, string> = {}): Record<string, string> {
   const { accessToken, deviceId } = useSession.getState();
   return {
+    ...publicIpHeader(),
     Accept: 'application/json',
     'Accept-Language': i18n.language?.startsWith('en') ? 'en' : 'fr',
     [DEVICE_ID_HEADER]: deviceId,
