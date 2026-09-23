@@ -40,11 +40,12 @@ export class SyncService {
     const definitionIds = [...new Set(page.map((r) => r.processDefinitionId).filter((x): x is string => !!x))];
     const templateIds = [...new Set(page.map((r) => r.taskType?.templateId).filter((x): x is string => !!x))];
     const since = cursor?.t ?? null;
-    const [snapshots, templates, partsStock, partsCatalog] = await Promise.all([
+    const [snapshots, templates, partsStock, partsCatalog, locateRequested] = await Promise.all([
       this.repo.processSnapshots(definitionIds),
       this.repo.templates(templateIds),
       this.repo.partsStock(technicianId, since),
       this.repo.partsCatalog(since),
+      this.repo.locateRequested(technicianId),
     ]);
 
     return {
@@ -58,6 +59,8 @@ export class SyncService {
       templates: Object.fromEntries(templates.map((tpl) => [tpl.id, tpl])),
       partsStock,
       partsCatalog,
+      // B65 — the app answers with a fresh fix (see mobile/src/gps/locate.ts).
+      locateRequested,
     };
   }
 }

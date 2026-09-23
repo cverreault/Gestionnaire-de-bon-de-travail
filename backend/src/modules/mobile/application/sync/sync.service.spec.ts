@@ -18,6 +18,7 @@ function make(rows: ReturnType<typeof row>[], visible = rows.map((r) => r.id)) {
     templates: jest.fn().mockResolvedValue([{ id: 'tpl-1', name: 'Standard', sections: [] }]),
     partsStock: jest.fn().mockResolvedValue([]),
     partsCatalog: jest.fn().mockResolvedValue([]),
+    locateRequested: jest.fn().mockResolvedValue(false),
   };
   return { svc: new SyncService(repo as never), repo };
 }

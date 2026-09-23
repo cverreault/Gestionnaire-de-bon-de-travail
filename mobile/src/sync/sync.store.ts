@@ -8,6 +8,7 @@ import { drain, retryOp } from './drain';
 import { countOps, deleteOp, enqueue, type OpKind, type OpPayload, type QueueCounts } from './queue';
 import { httpSender } from './senders';
 import * as Crypto from 'expo-crypto';
+import { answerLocateRequest } from '../gps/locate';
 import { logEvent } from '../diag/log';
 import { captureActionLocation } from './action-location';
 
@@ -37,8 +38,15 @@ let inFlight: Promise<void> | null = null;
 async function pullOnly(userId: string, set: (p: Partial<SyncState>) => void, get: () => SyncState, allowRefresh = true) {
   const switched = await ensureOwner(db, userId);
   const cursor = switched ? null : await getMeta(db, META.cursor);
-  const pages = await pullAll(db, (c, limit) => pullSync(c, limit, { allowRefresh }), cursor);
+  let locateRequested = false;
+  const pages = await pullAll(db, async (c, limit) => {
+    const page = await pullSync(c, limit, { allowRefresh });
+    if (page.locateRequested) locateRequested = true;
+    return page;
+  }, cursor);
   logEvent('pull', `ok ${pages} page(s)`, { fromCursor: !!cursor });
+  // B65 — « où est-il ? » without push : answer from the foreground pull only (no refresh in background, ADR-014).
+  if (locateRequested && allowRefresh) void answerLocateRequest();
   set({ lastSyncAt: await getMeta(db, META.lastSyncAt), version: get().version + 1 });
 }
 

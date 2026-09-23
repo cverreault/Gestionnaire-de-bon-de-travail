@@ -18,7 +18,7 @@ import { LocationsService } from './locations.service';
 
 function makePrisma() {
   return {
-    user: { findUnique: jest.fn() },
+    user: { findUnique: jest.fn(), updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
     technicianLocation: { create: jest.fn() },
     $queryRaw: jest.fn(),
   };
