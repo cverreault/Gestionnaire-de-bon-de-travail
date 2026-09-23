@@ -4,6 +4,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Logger,
+  Optional,
 } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import * as path from 'path';
@@ -11,6 +12,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { createDomainEvent } from '../../common/contracts/domain-event.interface';
 import { MinioService } from '../../common/storage/minio.service';
+import { VideoTranscodeService } from './application/video-transcode.service';
 import { Role } from '@prisma/client';
 
 /** Allowed MIME types grouped by category */
@@ -58,6 +60,8 @@ export class AttachmentsService {
     private readonly prisma: PrismaService,
     private readonly minio: MinioService,
     private readonly eventEmitter: EventEmitter2,
+    /** B64 — background compression of uploaded videos (absent in unit tests). */
+    @Optional() private readonly transcoder?: VideoTranscodeService,
   ) {}
 
   // ── Upload ─────────────────────────────────────────────────────────────────
@@ -139,6 +143,8 @@ export class AttachmentsService {
     ]);
 
     this.logger.log(`Attachment ${attachment.id} uploaded for WorkOrder ${workOrderId}`);
+    // B64 — compress videos in the background ; the original is served meanwhile.
+    if (isVideo) this.transcoder?.queue(attachment.id);
     // B45 — photos and files are actions of the history (audit listens to `attachments.**`).
     this.eventEmitter.emit(
       ATTACHMENT_UPLOADED_EVENT,

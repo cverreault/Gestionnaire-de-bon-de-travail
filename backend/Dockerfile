@@ -30,7 +30,7 @@ WORKDIR /app
 # postgresql-client pour pg_dump/psql utilisés par la feature backup/restore,
 # chromium + fonts pour puppeteer-core (génération PDF rapports B3).
 RUN apk add --no-cache \
-    wget curl openssl postgresql16-client \
+    wget curl openssl postgresql16-client ffmpeg \
     chromium nss freetype harfbuzz ca-certificates ttf-freefont font-noto
 
 ENV NODE_ENV=production \
