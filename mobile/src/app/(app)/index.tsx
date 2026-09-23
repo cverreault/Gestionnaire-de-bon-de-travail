@@ -18,7 +18,8 @@ function dayKey(iso: string | null | undefined): 'today' | 'upcoming' | 'unsched
   return d.toDateString() === now.toDateString() || d < now ? 'today' : 'upcoming';
 }
 
-const ACTIVE = new Set(['REQUESTED', 'CREATED', 'ASSIGNED', 'DISPATCHED', 'EN_ROUTE', 'IN_PROGRESS']);
+// B57 — the phone only shows work orders dispatched to the technician until they are closed.
+const ACTIVE = new Set(['DISPATCHED', 'EN_ROUTE', 'IN_PROGRESS']);
 
 /** « Mes BT » — read from the local database, refreshed by the delta pull (B38.4). */
 export default function WorkOrdersScreen() {
@@ -39,18 +40,12 @@ export default function WorkOrdersScreen() {
   const activeFilter = tagFilter.filter((id) => knownTags.some((tg) => tg.id === id));
   const matchesTags = (w: (typeof rows)[number]) => activeFilter.length === 0 || (w.tags ?? []).some((tg) => activeFilter.includes(tg.id));
   const items = rows.filter((w) => ACTIVE.has(w.status) && matchesTags(w));
-  // Completed work orders stay locally for 14 days (server visibility window) : shown on demand.
-  const completed = rows.filter((w) => !ACTIVE.has(w.status) && matchesTags(w)).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-  const [showCompleted, setShowCompleted] = useState(false);
 
-  type SectionKey = 'today' | 'upcoming' | 'unscheduled' | 'completed';
+  type SectionKey = 'today' | 'upcoming' | 'unscheduled';
   const sections = (['today', 'upcoming', 'unscheduled'] as const)
     .map((key: SectionKey) => ({ key, rows: items.filter((w) => dayKey(w.scheduledDate) === key) }))
     .filter((s) => s.rows.length > 0);
-  const flat = [
-    ...sections.flatMap((s) => [{ header: s.key } as const, ...s.rows]),
-    ...(completed.length > 0 ? [{ header: 'completed' as const }, ...(showCompleted ? completed : [])] : []),
-  ];
+  const flat = sections.flatMap((s) => [{ header: s.key } as const, ...s.rows]);
 
   const syncLine = !online
     ? t('sync.offline')
@@ -108,16 +103,6 @@ export default function WorkOrdersScreen() {
       }
       renderItem={({ item }) => {
         if ('header' in item) {
-          if (item.header === 'completed') {
-            return (
-              <Pressable onPress={() => setShowCompleted((v) => !v)} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.md, paddingVertical: spacing.xs }}>
-                <Text style={{ color: theme.textMuted, fontSize: font.xs, fontWeight: '700', textTransform: 'uppercase' }}>
-                  {t('workOrders.completed', { count: completed.length })}
-                </Text>
-                <Text style={{ color: theme.primary, fontSize: font.sm, fontWeight: '600' }}>{showCompleted ? t('workOrders.hideCompleted') : t('workOrders.showCompleted')}</Text>
-              </Pressable>
-            );
-          }
           return (
             <Text style={{ color: theme.textMuted, fontSize: font.xs, fontWeight: '700', textTransform: 'uppercase', marginTop: spacing.md }}>
               {t(`workOrders.${item.header}`)}

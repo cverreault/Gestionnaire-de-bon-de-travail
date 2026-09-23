@@ -1,4 +1,6 @@
 import {
+  Param,
+  ParseUUIDPipe,
   Body,
   Controller,
   Get,
@@ -87,5 +89,30 @@ export class LocationsController {
   async latestPositions() {
     const rows = await this.locations.latestPositions();
     return { rows };
+  }
+
+  @Get('dispatcher/technicians/:id/position')
+  @Roles(Role.ADMIN, Role.DISPATCHER)
+  @ApiOperation({
+    summary: 'B57 — où est ce technicien ? Dernière position, âge et adresse la plus proche',
+  })
+  technicianPosition(@Param('id', ParseUUIDPipe) id: string) {
+    return this.locations.technicianPosition(id);
+  }
+
+  @Post('dispatcher/technicians/:id/locate')
+  @Roles(Role.ADMIN, Role.DISPATCHER)
+  @HttpCode(HttpStatus.OK)
+  @Throttle(
+    process.env.THROTTLER_DISABLE === '1'
+      ? { short: { ttl: 1000, limit: 1_000_000 } }
+      : { short: { ttl: 60000, limit: 10 } },
+  )
+  @ApiOperation({
+    summary: 'B57 — demande une position fraîche au téléphone du technicien (push)',
+    description: "L'app répond par un envoi de position ; rappeler GET …/position quelques secondes plus tard.",
+  })
+  requestLocate(@Param('id', ParseUUIDPipe) id: string) {
+    return this.locations.requestLocate(id);
   }
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -19,6 +19,7 @@ import StatusBadge from '../../../components/StatusBadge';
 import { useRouteEstimate } from '../../../gps/useRouteEstimate';
 import TagChips from '../../../components/TagChips';
 import MileageCard from '../../../components/MileageCard';
+import { reportWorkOrderView } from '../../../api/endpoints';
 import { useSession } from '../../../stores/session.store';
 import { useSyncStore } from '../../../sync/sync.store';
 import { useLocalWorkOrder } from '../../../sync/useSync';
@@ -37,6 +38,12 @@ export default function WorkOrderDetailScreen() {
   const user = useSession((s) => s.user);
   const { pullNow, online, enqueueOp } = useSyncStore();
   const { wo: w, snapshot, ops, loaded } = useLocalWorkOrder(id);
+  // B57 — the history shows when the technician opened and left the work order.
+  useEffect(() => {
+    if (!id) return;
+    void reportWorkOrderView(id, 'opened');
+    return () => void reportWorkOrderView(id, 'closed');
+  }, [id]);
   const [pending, setPending] = useState<ProcessSnapshotTransition | null>(null);
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');

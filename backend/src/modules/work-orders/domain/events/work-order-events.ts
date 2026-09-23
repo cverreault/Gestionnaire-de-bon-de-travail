@@ -24,6 +24,9 @@ export const WO_EVENT_NAMES = {
   /// (in-app fan-out to ADMIN/DISPATCHER) and the alerts engine.
   REQUESTED:       'workOrders.workOrder.requested',
   /// B45 — every action lands in the history : note, signatures, field edits.
+  /// B57 — the technician opened / left the work order screen (mobile or web) ; audit only.
+  OPENED:          'workOrders.workOrder.opened',
+  CLOSED:          'workOrders.workOrder.closed',
   NOTE_ADDED:      'workOrders.workOrder.noteAdded',
   SIGNED:          'workOrders.workOrder.signed',
   UPDATED:         'workOrders.workOrder.updated',
@@ -179,6 +182,23 @@ export function workOrderCompleted(
   data: WorkOrderCompletedData,
 ): WorkOrderCompletedEvent {
   return makeEvent({ name: WO_EVENT_NAMES.COMPLETED, workOrderId, actorUserId, data });
+}
+
+// ── Viewed (B57) ───────────────────────────────────────────────────────────
+
+export interface WorkOrderViewedData {
+  /** Client timestamp of the open / close (the request may arrive later). */
+  at: string;
+  source: 'mobile' | 'web';
+}
+
+export function workOrderViewed(
+  action: 'opened' | 'closed',
+  workOrderId: string,
+  actorUserId: string | null,
+  data: WorkOrderViewedData,
+): IDomainEvent & { data: WorkOrderViewedData } {
+  return makeEvent({ name: action === 'opened' ? WO_EVENT_NAMES.OPENED : WO_EVENT_NAMES.CLOSED, workOrderId, actorUserId, data });
 }
 
 // ── SLA breached (B4) ──────────────────────────────────────────────────────

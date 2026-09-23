@@ -35,6 +35,8 @@ const ALLOWED_MIME_TYPES = new Set([
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 ]);
 
+/** B57 — statuses a technician may still attach files to. */
+const OPEN_FOR_TECHNICIAN = new Set<string>(['DISPATCHED', 'EN_ROUTE', 'IN_PROGRESS']);
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 /** B56 — field videos are heavier ; 100 MB ≈ 3 min of phone footage. */
 const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024;
@@ -68,11 +70,15 @@ export class AttachmentsService {
     // 1. Validate work order exists
     const workOrder = await this.prisma.workOrder.findUnique({
       where: { id: workOrderId },
-      select: { id: true, assignedToId: true },
+      select: { id: true, assignedToId: true, status: true },
     });
 
     if (!workOrder) {
       throw new NotFoundException(`Bon de travail #${workOrderId} introuvable`);
+    }
+    // B57 — closed work orders are read only for the technician.
+    if (currentUser.role === Role.TECHNICIAN && !OPEN_FOR_TECHNICIAN.has(workOrder.status)) {
+      throw new ForbiddenException('Ce bon de travail est fermé : consultation seulement.');
     }
 
     // 2. Technicians can only upload to their own work orders

@@ -66,17 +66,21 @@ export const SYNC_WORK_ORDER_SELECT = {
 
 export type SyncWorkOrderRow = Prisma.WorkOrderGetPayload<{ select: typeof SYNC_WORK_ORDER_SELECT }>;
 
-const COMPLETED: WorkOrderStatus[] = [WorkOrderStatus.COMPLETED_POSITIVE, WorkOrderStatus.COMPLETED_NEGATIVE, WorkOrderStatus.CANCELLED];
 
 @Injectable()
 export class MobileRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** ADR-016 §1 : assigned to me AND (not completed OR changed within the window). */
-  private visibleWhere(technicianId: string, completedSince: Date): Prisma.WorkOrderWhereInput {
+  /**
+   * ADR-016 §1, narrowed by B57 : the phone only carries the work orders
+   * dispatched to the technician that are still open (dispatched → in progress).
+   * Assigned-not-dispatched, cancelled and completed ones are never sent ;
+   * `completedSince` is kept for the contract but no longer widens the set.
+   */
+  private visibleWhere(technicianId: string, _completedSince: Date): Prisma.WorkOrderWhereInput {
     return {
       assignedToId: technicianId,
-      OR: [{ status: { notIn: COMPLETED } }, { updatedAt: { gt: completedSince } }],
+      status: { in: [WorkOrderStatus.DISPATCHED, WorkOrderStatus.EN_ROUTE, WorkOrderStatus.IN_PROGRESS] },
     };
   }
 

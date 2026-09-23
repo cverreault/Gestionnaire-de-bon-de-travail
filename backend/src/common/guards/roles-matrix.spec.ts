@@ -91,6 +91,7 @@ const WORK_ORDERS_MATRIX: MatrixRow[] = [
   { controller: WorkOrdersController, method: 'update',                  expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'PATCH /work-orders/:id — B21: staff only, service whitelists fields per role' },
   { controller: WorkOrdersController, method: 'assignAndDispatch',       expectedRoles: [Role.ADMIN, Role.DISPATCHER],      note: 'POST /:id/assign-and-dispatch' },
   { controller: WorkOrdersController, method: 'batch',                   expectedRoles: [Role.ADMIN, Role.DISPATCHER],      note: 'POST /work-orders/batch — B55' },
+  { controller: WorkOrdersController, method: 'reportView',              expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'POST /:id/view — B57, IDOR via findOne' },
   { controller: WorkOrdersController, method: 'transition',              expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'POST /:id/transition — B21: staff only, TECH transitions own BTs' },
   { controller: WorkOrdersController, method: 'findNotes',               expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'GET /:id/notes — B21: staff only, same IDOR rule as the BT' },
   { controller: WorkOrdersController, method: 'createNote',              expectedRoles: [Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN], note: 'POST /:id/notes — B21: staff only, assignee or admin' },
@@ -257,6 +258,8 @@ const BACKUP_MATRIX: MatrixRow[] = [
 const LOCATIONS_MATRIX: MatrixRow[] = [
   { controller: LocationsController, method: 'record',          expectedRoles: [Role.TECHNICIAN],            note: 'POST /me/location — opt-in via gps.enabled' },
   { controller: LocationsController, method: 'recordBatch',     expectedRoles: [Role.TECHNICIAN],            note: 'POST /me/locations/batch — B37.7, same consent gate' },
+  { controller: LocationsController, method: 'technicianPosition', expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'GET /dispatcher/technicians/:id/position — B57' },
+  { controller: LocationsController, method: 'requestLocate',   expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'POST /dispatcher/technicians/:id/locate — B57' },
   { controller: LocationsController, method: 'latestPositions', expectedRoles: [Role.ADMIN, Role.DISPATCHER], note: 'GET /dispatcher/technicians/positions' },
 ];
 

@@ -45,6 +45,19 @@ export function parseClientLocation(header: string | string[] | undefined): Clie
 }
 
 /** Serializes a location for the header (used by tests and the mobile contract mirror). */
+/**
+ * B57 — emitted (fire-and-forget) by the auth guard when an authenticated
+ * request carries `X-Client-Location`, at most once per user per minute.
+ * The locations module turns it into a technician position row, so the
+ * dispatcher map follows the phone even between GPS batches.
+ */
+export const CLIENT_FIX_REPORTED_EVENT = 'locations.clientFix.reported' as const;
+
+export interface ClientFixReportedPayload {
+  userId: string;
+  location: ClientLocation;
+}
+
 export function formatClientLocation(loc: ClientLocation): string {
   return [loc.lat, loc.lng, loc.accuracy ?? '', loc.recordedAt ?? ''].join(',').replace(/,+$/, '');
 }

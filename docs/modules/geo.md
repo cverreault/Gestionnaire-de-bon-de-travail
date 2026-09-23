@@ -128,6 +128,10 @@ Service compose `valhalla` (réseau interne, `VALHALLA_URL`), tuiles construites
 
 **Limites de service (B53).** La configuration de Valhalla (`/custom_files/valhalla.json`, générée au premier démarrage dans le volume) plafonne par défaut une matrice à 400 km par paire et un itinéraire à 20 points. `scripts/geo/valhalla-limits.sh` relève `auto.max_matrix_distance` à 1 500 km et `auto.max_locations` à 60, puis redémarre le conteneur ; à relancer après un rafraîchissement des cartes (volume recréé). Une paire refusée ou un point hors carte fait répondre `null` : `dispatch-map` renvoie alors `engine: 'haversine'` avec `reason: 'router_refused'` (moteur joignable) ou `'router_unavailable'` (panne, tuiles absentes). Une position de technicien à plus de 300 km de tous ses arrêts (fix périmé, émulateur Android par défaut en Californie) est ignorée : la tournée part de l'arrêt le plus proche et la réponse porte `startIgnored: true` + `startDistanceKm`.
 
+## Position des techniciens (B57)
+
+Chaque requête authentifiée de l'app porte `X-Client-Location` ; `JwtAuthGuard` émet `locations.clientFix.reported` (≤ 1/min/utilisateur) et `LocationsService.onClientFix` l'enregistre comme position (consentement GPS re-vérifié, silencieux sinon). `GET /dispatcher/technicians/:id/position` renvoie la dernière position, son âge et l'adresse la plus proche via `IGeocoder.reverse` (Nominatim) ; `POST /dispatcher/technicians/:id/locate` envoie un push `{ type: 'locate' }` auquel l'app répond par un envoi de position immédiat.
+
 ## Open questions
 
 - Adresses Québec n'a pas de limite publiée : surveiller les 429 dans les logs ; un cache court des suggestions côté backend serait la première mesure.

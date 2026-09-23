@@ -27,12 +27,14 @@ const TYPE_ICONS: Record<WorkOrderType, string> = {
   [WorkOrderType.OTHER]: '📋',
 };
 
+// B57 — a technician acts on dispatched → in-progress work orders only ; the
+// server also returns those completed today, shown below for consultation.
 const ACTIVE_STATUSES = [
   WorkOrderStatus.DISPATCHED,
   WorkOrderStatus.EN_ROUTE,
   WorkOrderStatus.IN_PROGRESS,
-  WorkOrderStatus.ASSIGNED,
 ];
+const DONE_STATUSES = [WorkOrderStatus.COMPLETED_POSITIVE, WorkOrderStatus.COMPLETED_NEGATIVE];
 
 const CLIENT_TYPE_COLORS: Record<ClientType, { bg: string; color: string }> = {
   [ClientType.RESIDENTIAL]: { bg: '#dbeafe', color: '#1e40af' },
@@ -86,6 +88,7 @@ export default function TechnicianWorkOrdersPage() {
   // Technicians only see active work orders. Completed BTs disappear from the
   // list entirely (no "Terminés" tab, no "Masquer" toggle).
   const displayed = allWOs.filter((wo) => ACTIVE_STATUSES.includes(wo.status));
+  const completedToday = allWOs.filter((wo) => DONE_STATUSES.includes(wo.status));
 
   return (
     <div style={{ background: theme.colors.background, minHeight: '100%' }}>
@@ -261,6 +264,28 @@ export default function TechnicianWorkOrdersPage() {
               </Link>
             );
           })}
+        </div>
+      )}
+
+      {/* B57 — completed today : consultation only */}
+      {completedToday.length > 0 && (
+        <div style={{ marginTop: '1.5rem' }}>
+          <h2 style={{ fontSize: theme.font.sizeMd, color: theme.colors.textSecondary, margin: '0 0 0.5rem' }}>
+            ✅ {t('list.completedToday', { defaultValue: 'Terminés aujourd’hui (consultation)' })} ({completedToday.length})
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {completedToday.map((wo) => (
+              <Link key={wo.id} to={`/mes-bons/${wo.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                <div style={{ ...cardStyles.card, padding: '0.75rem 1rem', borderLeft: `4px solid ${getStatusAccentColor(wo.status)}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', opacity: 0.85 }}>
+                  <div>
+                    <p style={{ margin: 0, fontWeight: theme.font.weightSemibold, fontSize: theme.font.sizeSm, color: theme.colors.text }}>{wo.title}</p>
+                    <p style={{ margin: 0, fontSize: theme.font.sizeXs, fontFamily: 'monospace', color: theme.colors.textLight }}>{wo.referenceNumber}</p>
+                  </div>
+                  <WorkOrderStatusBadge step={wo.currentStep} status={wo.status} size="sm" />
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
       )}
     </div>

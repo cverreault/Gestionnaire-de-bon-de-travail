@@ -39,6 +39,10 @@ describe('Mobile sync (integration)', () => {
       .post('/api/work-orders').set('Authorization', `Bearer ${adminToken}`)
       .send({ title, type: 'OTHER', clientAddress: '1 rue Test, Ville', assignedToId });
     expect([200, 201]).toContain(res.status);
+    // B57 — the phone only receives dispatched work orders.
+    await request(ctx.app.getHttpServer())
+      .post(`/api/work-orders/${res.body.id}/assign-and-dispatch`).set('Authorization', `Bearer ${adminToken}`)
+      .send({ technicianId: assignedToId }).expect(200);
     return res.body.id as string;
   }
 
@@ -93,7 +97,7 @@ describe('Mobile sync (integration)', () => {
     expect(fourth.body.visibleWorkOrderIds).toEqual([a]);
     expect(fourth.body.workOrders).toEqual([]);
 
-    // 5. completed work orders age out after 14 days
+    // 5. B57 — completed work orders leave the phone right away (no history on mobile)
     const oldDone = await createWo(adminToken, 'old done', tech.id);
     const freshDone = await createWo(adminToken, 'fresh done', tech.id);
     await ctx.prisma.$executeRawUnsafe(
@@ -101,9 +105,10 @@ describe('Mobile sync (integration)', () => {
     );
     await ctx.prisma.workOrder.update({ where: { id: freshDone }, data: { status: WorkOrderStatus.COMPLETED_POSITIVE } });
     const fifth = await pull(techToken).expect(200);
-    expect([...fifth.body.visibleWorkOrderIds].sort()).toEqual([a, freshDone].sort());
+    expect(fifth.body.visibleWorkOrderIds).toEqual([a]);
 
-    // 6. pagination
+    // 6. pagination (two dispatched work orders visible)
+    await createWo(adminToken, 'D', tech.id);
     const p1 = await pull(techToken, { limit: 1 }).expect(200);
     expect(p1.body.hasMore).toBe(true);
     expect(p1.body.workOrders).toHaveLength(1);

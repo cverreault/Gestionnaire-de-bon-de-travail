@@ -47,6 +47,7 @@ Publie les domain events qui alimentent l'audit, les notifications, et tout futu
 | `POST` | `/api/work-orders` | ADMIN, DISPATCHER | Création |
 | `POST` | `/api/work-orders/:id/duplicate` | ADMIN, DISPATCHER | Clone (CREATED, sans tech) |
 | `POST` | `/api/work-orders/:id/assign-and-dispatch` | ADMIN, DISPATCHER | Raccourci assigner + dispatcher |
+| `POST` | `/api/work-orders/:id/view` | tous (IDOR) | B57 — « fiche ouverte / fermée » dans l'historique |
 | `POST` | `/api/work-orders/batch` | ADMIN, DISPATCHER | B55 — action en lot (`ids` ≤ 100, `action` = ASSIGN / DISPATCH / UNASSIGN / CANCEL / SCHEDULE / ADD_TAGS / REMOVE_TAGS + paramètre) ; chaque BT suit le chemin unitaire, réponse `{ ok[], failed[{ id, referenceNumber, error }] }` |
 | `POST` | `/api/work-orders/:id/transition` | tous (RBAC processus) | Change le statut |
 | `PATCH` | `/api/work-orders/:id` | tous (whitelist tech) | Modification |
@@ -54,7 +55,8 @@ Publie les domain events qui alimentent l'audit, les notifications, et tout futu
 | `POST` | `/api/work-orders/:id/notes` | tous (IDOR) | Ajouter une note |
 
 RBAC objet :
-- TECHNICIAN ne peut lire que les BT où `assignedToId === currentUser.id` (filtre service-side dans `findAll`, IDOR check dans `findOne`)
+- TECHNICIAN ne peut lire que les BT où `assignedToId === currentUser.id` (filtre service-side dans `findAll`, IDOR check dans `findOne`) **et** (B57) dont le statut est DISPATCHED / EN_ROUTE / IN_PROGRESS, ou complété le jour même (fuseau `TZ`, défaut America/Toronto) ; un BT fermé est en lecture seule pour lui (`assertTechnicianCanMutate` sur PATCH, notes, signatures, pièces jointes). La sync mobile (`MobileRepository.visibleWhere`) n'envoie que les BT ouverts répartis : rien avant la répartition, rien après la fermeture.
+- `POST /work-orders/:id/view` `{ action: opened|closed, at?, source? }` (B57) : l'app et le web signalent l'ouverture et la fermeture de la fiche ; événements `workOrders.workOrder.opened` / `.closed` dans l'historique, avec la position du client.
 - TECHNICIAN ne peut transitionner que ses propres BT
 - TECHNICIAN ne peut PATCH que la whitelist : `completionNotes`, `negativeReason`, `templateData` (selon RBAC du template)
 - Toutes les autres tentatives sont filtrées au niveau service, jamais propagées en SQL

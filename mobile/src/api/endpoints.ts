@@ -152,6 +152,11 @@ export interface LocationFixDto {
   source: 'MOBILE_FOREGROUND' | 'MOBILE_BACKGROUND';
 }
 
+/** B57 — « ouvert / fermé » in the work-order history ; best effort (offline = lost). */
+export function reportWorkOrderView(id: string, action: 'opened' | 'closed', at = new Date()): Promise<void> {
+  return api<void>(`/work-orders/${id}/view`, { method: 'POST', body: { action, at: at.toISOString(), source: 'mobile' }, timeoutMs: 8_000 }).catch(() => undefined);
+}
+
 export function postLocationBatch(fixes: LocationFixDto[], idempotencyKey: string): Promise<{ accepted: number; duplicates: number; rejected: unknown[] }> {
   return api('/me/locations/batch', {
     method: 'POST',

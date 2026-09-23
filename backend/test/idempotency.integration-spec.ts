@@ -38,6 +38,10 @@ describe('Idempotency-Key (integration)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ title: 'Idempotency WO', type: 'OTHER', clientAddress: '1 rue Test, Ville', assignedToId: technicianId });
     expect([200, 201]).toContain(res.status);
+    // B57 — a technician may only act on a dispatched work order.
+    await request(ctx.app.getHttpServer())
+      .post(`/api/work-orders/${res.body.id}/assign-and-dispatch`).set('Authorization', `Bearer ${adminToken}`)
+      .send({ technicianId }).expect(200);
     return res.body.id as string;
   }
 

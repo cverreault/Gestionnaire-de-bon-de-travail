@@ -11,7 +11,7 @@ const T1 = new Date('2026-09-18T11:00:00.000Z');
 function make() {
   const prisma = {
     workOrder: {
-      findUnique: jest.fn().mockResolvedValue({ id: 'wo', assignedToId: 'tech', updatedAt: T0 }),
+      findUnique: jest.fn().mockResolvedValue({ id: 'wo', assignedToId: 'tech', updatedAt: T0, status: 'IN_PROGRESS' }),
       update: jest.fn().mockResolvedValue({ id: 'wo', signatureClient: 'x', signatureTechnician: null, signedAt: T1, updatedAt: T1 }),
     },
   };
