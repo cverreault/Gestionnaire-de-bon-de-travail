@@ -59,6 +59,14 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.19.1',
+    name: 'Filtre « jour »',
+    date: 'Septembre 2026',
+    entries: [
+      { type: 'fix', text: "📅 Liste des BT : le filtre Jour (et une date de fin saisie à la main) n'affichait pas les BT planifiés ce jour-là, parce que la borne était prise à minuit UTC alors que les dates sont enregistrées à minuit heure locale ; une date sans heure couvre maintenant toute la journée" },
+    ],
+  },
+  {
     version: '2.19.0',
     name: 'Suivi terrain : visibilité, position, ouverture des BT',
     date: 'Septembre 2026',

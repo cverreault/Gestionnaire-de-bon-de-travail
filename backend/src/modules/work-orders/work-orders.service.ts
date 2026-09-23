@@ -49,6 +49,22 @@ export function startOfLocalDay(now = new Date()): Date {
   return new Date(localMidnightAsUtc + offsetMs);
 }
 
+const BARE_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Lower bound of a date filter : local midnight for a bare date, the instant itself otherwise. */
+export function dateFilterStart(value: string): Date {
+  return BARE_DATE.test(value) ? startOfLocalDay(new Date(`${value}T12:00:00Z`)) : new Date(value);
+}
+
+/** Exclusive upper bound : next local midnight for a bare date, the instant + 1 ms otherwise. */
+export function dateFilterEndExclusive(value: string): Date {
+  if (BARE_DATE.test(value)) {
+    const noon = new Date(`${value}T12:00:00Z`);
+    return startOfLocalDay(new Date(noon.getTime() + 24 * 60 * 60 * 1000));
+  }
+  return new Date(new Date(value).getTime() + 1);
+}
+
 export interface CurrentUserRef {
   id: string;
   role: Role;
@@ -226,9 +242,10 @@ export class WorkOrdersService {
     if (filters.tagIds?.length) where.tags = { some: { tagId: { in: filters.tagIds } } };
 
     if (filters.scheduledDateFrom || filters.scheduledDateTo) {
+      // B58 — a bare YYYY-MM-DD covers the whole local day (dates are stored at local midnight).
       where.scheduledDate = {
-        ...(filters.scheduledDateFrom ? { gte: new Date(filters.scheduledDateFrom) } : {}),
-        ...(filters.scheduledDateTo ? { lte: new Date(filters.scheduledDateTo) } : {}),
+        ...(filters.scheduledDateFrom ? { gte: dateFilterStart(filters.scheduledDateFrom) } : {}),
+        ...(filters.scheduledDateTo ? { lt: dateFilterEndExclusive(filters.scheduledDateTo) } : {}),
       };
     }
 
