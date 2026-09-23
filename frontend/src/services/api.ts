@@ -11,10 +11,39 @@ const api = axios.create({
   },
 });
 
+// ── B63 — public IP of this browser, looked up once per hour, sent in a header ──
+// The server only uses it when it sees a private (LAN) address for this client.
+const PUBLIC_IP_KEY = 'publicIp';
+const PUBLIC_IP_TTL_MS = 60 * 60 * 1000;
+let publicIpLookup: Promise<void> | null = null;
+function cachedPublicIp(): string | null {
+  try {
+    const raw = sessionStorage.getItem(PUBLIC_IP_KEY);
+    if (!raw) return null;
+    const { ip, at } = JSON.parse(raw) as { ip: string; at: number };
+    return Date.now() - at < PUBLIC_IP_TTL_MS ? ip : null;
+  } catch {
+    return null;
+  }
+}
+function ensurePublicIp(): void {
+  if (cachedPublicIp() || publicIpLookup) return;
+  publicIpLookup = fetch('https://api.ipify.org?format=json', { signal: AbortSignal.timeout(5000) })
+    .then((r) => r.json())
+    .then((j: { ip?: string }) => {
+      if (j.ip) sessionStorage.setItem(PUBLIC_IP_KEY, JSON.stringify({ ip: j.ip, at: Date.now() }));
+    })
+    .catch(() => undefined)
+    .finally(() => { publicIpLookup = null; });
+}
+
 // ── Request interceptor — attach access token ─────────────────────────────────
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem('accessToken');
+    ensurePublicIp();
+    const publicIp = cachedPublicIp();
+    if (publicIp && config.headers) config.headers['X-Client-Public-Ip'] = publicIp;
     if (token && config.headers) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }

@@ -59,6 +59,14 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.20.1',
+    name: 'IP publique dans les connexions',
+    date: 'Septembre 2026',
+    entries: [
+      { type: 'improvement', text: "🌐 Connexions et présence : l'adresse IP enregistrée est l'IP publique de l'appareil ou de l'ordinateur ; quand l'accès vient du réseau interne, l'adresse LAN est affichée à côté (ex. 74.114.16.228 (LAN 172.16.45.136))" },
+    ],
+  },
+  {
     version: '2.20.0',
     name: 'Carte dispatch et app : navigation plus directe',
     date: 'Septembre 2026',

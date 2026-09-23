@@ -1,11 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../../common/prisma/prisma.service';
+import { resolveClientIp } from '../../../common/contracts/client-ip.contract';
 
 export type LoginEventKind = 'LOGIN' | 'LOGIN_2FA' | 'FAILED' | 'LOGOUT';
 
 export interface RequestMeta {
   ip: string | null;
+  /** B63 — private address behind the reported public one. */
+  lanIp: string | null;
   userAgent: string | null;
   deviceId: string | null;
 }
@@ -38,6 +41,7 @@ export class SessionsService {
           email: input.email.toLowerCase(),
           kind: input.kind,
           ip: input.ip,
+          lanIp: input.lanIp,
           userAgent: input.userAgent?.slice(0, 300) ?? null,
           deviceId: input.deviceId,
           family: input.family ?? null,
@@ -49,13 +53,13 @@ export class SessionsService {
   }
 
   /** Presence heartbeat from the JWT guard — cheap, throttled, never throws. */
-  touch(userId: string, ip: string | null): void {
+  touch(userId: string, ip: string | null, lanIp: string | null = null): void {
     const now = Date.now();
     const last = this.lastWrite.get(userId) ?? 0;
     if (now - last < PRESENCE_WRITE_INTERVAL_MS) return;
     this.lastWrite.set(userId, now);
     void this.prisma.user
-      .updateMany({ where: { id: userId }, data: { lastSeenAt: new Date(now), lastSeenIp: ip } })
+      .updateMany({ where: { id: userId }, data: { lastSeenAt: new Date(now), lastSeenIp: ip, lastSeenLanIp: lanIp } })
       .catch((err: unknown) => this.logger.debug(`presence not updated: ${err instanceof Error ? err.message : String(err)}`));
   }
 
@@ -63,7 +67,7 @@ export class SessionsService {
   async presence(tenantId: string) {
     const users = await this.prisma.user.findMany({
       where: { tenantId, role: { not: 'CLIENT' } },
-      select: { id: true, lastSeenAt: true, lastSeenIp: true },
+      select: { id: true, lastSeenAt: true, lastSeenIp: true, lastSeenLanIp: true },
     });
     const now = Date.now();
     // Live sessions : families with a token neither revoked nor expired ; session start = family's first token.
@@ -91,6 +95,7 @@ export class SessionsService {
         online,
         lastSeenAt: u.lastSeenAt,
         lastSeenIp: u.lastSeenIp,
+        lastSeenLanIp: u.lastSeenLanIp,
         sessionSince: s?.since ?? null,
         activeSessions: s?.count ?? 0,
         mobileSessions: s?.mobile ?? 0,
@@ -110,7 +115,7 @@ export class SessionsService {
     const families = [...byFamily.keys()];
     const [starts, logins] = await Promise.all([
       families.length ? this.prisma.refreshToken.groupBy({ by: ['family'], where: { family: { in: families } }, _min: { createdAt: true } }) : Promise.resolve([]),
-      families.length ? this.prisma.loginEvent.findMany({ where: { family: { in: families } }, select: { family: true, ip: true, userAgent: true, deviceId: true, createdAt: true } }) : Promise.resolve([]),
+      families.length ? this.prisma.loginEvent.findMany({ where: { family: { in: families } }, select: { family: true, ip: true, lanIp: true, userAgent: true, deviceId: true, createdAt: true } }) : Promise.resolve([]),
     ]);
     const startBy = new Map(starts.map((s) => [s.family, s._min.createdAt as Date]));
     const loginBy = new Map(logins.map((l) => [l.family as string, l]));
@@ -123,6 +128,7 @@ export class SessionsService {
         lastRefreshAt: t.createdAt,
         expiresAt: t.expiresAt,
         ip: l?.ip ?? t.ip,
+        lanIp: l?.lanIp ?? null,
         userAgent: l?.userAgent ?? t.userAgent,
         deviceId: t.deviceId ?? l?.deviceId ?? null,
       };
@@ -161,11 +167,13 @@ export class SessionsService {
 
 /** Client IP + agent + device from an Express request (trust proxy is on in main.ts). */
 export function requestMeta(req: { ip?: string; headers: Record<string, string | string[] | undefined> } | undefined): RequestMeta {
-  if (!req) return { ip: null, userAgent: null, deviceId: null };
+  if (!req) return { ip: null, lanIp: null, userAgent: null, deviceId: null };
   const ua = req.headers['user-agent'];
   const dev = req.headers['x-device-id'];
+  const { ip, lanIp } = resolveClientIp(req);
   return {
-    ip: req.ip ?? null,
+    ip,
+    lanIp,
     userAgent: (Array.isArray(ua) ? ua[0] : ua) ?? null,
     deviceId: (Array.isArray(dev) ? dev[0] : dev)?.toLowerCase() ?? null,
   };

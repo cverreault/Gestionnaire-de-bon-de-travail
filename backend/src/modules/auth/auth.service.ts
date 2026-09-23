@@ -95,7 +95,7 @@ export class AuthService {
 
   // ── Login ──────────────────────────────────────────────────────────────────
 
-  async login(dto: LoginDto, tenantId: string, tenantIsImplicit = false, meta: RequestMeta = { ip: null, userAgent: null, deviceId: null }): Promise<LoginResult> {
+  async login(dto: LoginDto, tenantId: string, tenantIsImplicit = false, meta: RequestMeta = { ip: null, lanIp: null, userAgent: null, deviceId: null }): Promise<LoginResult> {
     // Email is now per-tenant unique (B6.3) — same gmail address can
     // exist in two tenants. The sub-domain decides which one is
     // logging in.
@@ -173,7 +173,7 @@ export class AuthService {
     pendingToken: string,
     code: string,
     verifyTotp: (userId: string, code: string) => Promise<boolean>,
-    meta: RequestMeta = { ip: null, userAgent: null, deviceId: null },
+    meta: RequestMeta = { ip: null, lanIp: null, userAgent: null, deviceId: null },
   ): Promise<TokenPair & { user: SafeUser }> {
     let payload: { sub?: string; typ?: string; tenantId?: string };
     try {
@@ -288,7 +288,7 @@ export class AuthService {
 
   // ── Logout ─────────────────────────────────────────────────────────────────
 
-  async logout(refreshToken: string, meta: RequestMeta = { ip: null, userAgent: null, deviceId: null }): Promise<void> {
+  async logout(refreshToken: string, meta: RequestMeta = { ip: null, lanIp: null, userAgent: null, deviceId: null }): Promise<void> {
     if (!refreshToken) return;
     // B51 — best effort : who logged out, from where.
     try {

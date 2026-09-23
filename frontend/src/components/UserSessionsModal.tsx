@@ -91,7 +91,7 @@ export default function UserSessionsModal({ userId, userName, onClose }: Props) 
                   <li key={s.family} style={{ fontSize: theme.font.sizeSm, border: `1px solid ${theme.colors.border}`, borderRadius: theme.radius.md, padding: '0.4rem 0.75rem' }}>
                     <span style={{ fontWeight: theme.font.weightMedium }}>{s.deviceId ? '📱' : '💻'} {describeAgent(s.userAgent, s.deviceId)}</span>
                     <span style={{ color: theme.colors.textMuted }}> · {t('usersPage.sessions.startedSince', { defaultValue: 'ouverte depuis {{d}}', d: formatDuration(Date.now() - new Date(s.startedAt).getTime(), i18n.language) })} ({fmt(s.startedAt)})</span>
-                    {s.ip && <span style={{ color: theme.colors.textMuted, fontFamily: 'monospace' }}> · {s.ip}</span>}
+                    {s.ip && <span style={{ color: theme.colors.textMuted, fontFamily: 'monospace' }}> · {s.ip}{s.lanIp ? ` (LAN ${s.lanIp})` : ''}</span>}
                   </li>
                 ))}
               </ul>
@@ -108,7 +108,7 @@ export default function UserSessionsModal({ userId, userName, onClose }: Props) 
                 {logins.data.map((e) => (
                   <li key={e.id} style={{ color: e.kind === 'FAILED' ? theme.colors.danger : theme.colors.textSecondary }}>
                     {fmt(e.createdAt)} · {e.kind === 'FAILED' ? t('usersPage.sessions.failed', { defaultValue: 'échec' }) : e.kind === 'LOGOUT' ? t('usersPage.sessions.logout', { defaultValue: 'déconnexion' }) : t('usersPage.sessions.login', { defaultValue: 'connexion' })}
-                    {e.ip ? ` · ${e.ip}` : ''} · {describeAgent(e.userAgent, e.deviceId)}
+                    {e.ip ? ` · ${e.ip}${e.lanIp ? ` (LAN ${e.lanIp})` : ''}` : ''} · {describeAgent(e.userAgent, e.deviceId)}
                   </li>
                 ))}
               </ul>
