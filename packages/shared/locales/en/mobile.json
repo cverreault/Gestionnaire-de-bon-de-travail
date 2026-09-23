@@ -38,7 +38,8 @@
     "workOrders": "My WOs",
     "profile": "Profile",
     "sync": "Sync",
-    "stock": "Stock"
+    "stock": "Stock",
+    "signatures": "Signatures"
   },
   "workOrders": {
     "title": "My work orders",
@@ -248,5 +249,8 @@
     "computing": "Computing…",
     "result": "{{km}} km · {{min}} min ({{mode}})",
     "noPermission": "Allow location to compute mileage."
+  },
+  "signatures": {
+    "empty": "No open work order to sign."
   }
 }
