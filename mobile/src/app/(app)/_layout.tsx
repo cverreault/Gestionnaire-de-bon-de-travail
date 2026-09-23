@@ -31,6 +31,10 @@ export default function AppLayout() {
         options={{ href: null, title: '' }}
       />
       <Tabs.Screen
+        name="signatures"
+        options={{ title: t('tabs.signatures'), tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>✍️</Text> }}
+      />
+      <Tabs.Screen
         name="stock"
         options={{ title: t('tabs.stock'), tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>🧰</Text> }}
       />

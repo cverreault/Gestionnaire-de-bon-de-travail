@@ -38,7 +38,8 @@
     "workOrders": "Mes BT",
     "profile": "Profil",
     "sync": "Sync",
-    "stock": "Stock"
+    "stock": "Stock",
+    "signatures": "Signatures"
   },
   "workOrders": {
     "title": "Mes bons de travail",
@@ -248,5 +249,8 @@
     "computing": "Calcul…",
     "result": "{{km}} km · {{min}} min ({{mode}})",
     "noPermission": "Autorisez la localisation pour calculer le kilométrage."
+  },
+  "signatures": {
+    "empty": "Aucun bon de travail ouvert à signer."
   }
 }

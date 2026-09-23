@@ -59,6 +59,15 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.20.0',
+    name: 'Carte dispatch et app : navigation plus directe',
+    date: 'Septembre 2026',
+    entries: [
+      { type: 'improvement', text: "🗺 Carte dispatch : cliquer un technicien zoome sur lui ; case « seulement les BT de ce technicien » pour ne garder que ses BT sur la carte ; période « Personnalisé » avec date et heure de début et de fin" },
+      { type: 'improvement', text: "📱 App : les actions du BT (En route, Commencer, Terminer…) sont dans une barre fixe en haut de l'écran, toujours visible en défilant ; les signatures ont leur propre onglet « Signatures » en bas, qui liste les BT ouverts à signer" },
+    ],
+  },
+  {
     version: '2.19.2',
     name: "Fuseau horaire de l'entreprise",
     date: 'Septembre 2026',

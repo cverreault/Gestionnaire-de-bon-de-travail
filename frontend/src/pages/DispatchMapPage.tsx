@@ -12,18 +12,34 @@ import { getMapSnapshot, optimizeRoute, geocodeMissing, fallbackReasonLabel, typ
 
 // ─── Period filters ──────────────────────────────────────────────
 // Filter map WOs by their scheduledDate. « Tous » clears the filter.
-type Period = 'all' | 'today' | 'week' | 'month';
+type Period = 'all' | 'today' | 'week' | 'month' | 'custom';
 
 const PERIOD_LABELS: Record<Period, string> = {
   all: 'Tous',
   today: "Aujourd'hui",
   week: 'Cette semaine',
   month: 'Ce mois',
+  custom: 'Personnalisé',
 };
+
+/** datetime-local value (local time) → ISO instant ; null when empty / invalid. */
+function localInputToIso(v: string): string | null {
+  if (!v) return null;
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+/** Default custom range : today 00:00 → 23:59 as datetime-local strings. */
+function defaultCustomRange(): { from: string; to: string } {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const d = new Date();
+  const day = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  return { from: `${day}T00:00`, to: `${day}T23:59` };
+}
 
 /** Compute [from, to] for a period, in local time. Week starts Monday. */
 function periodRange(period: Period): { from: string; to: string } | null {
-  if (period === 'all') return null;
+  if (period === 'all' || period === 'custom') return null;
   const now = new Date();
   const start = new Date(now);
   const end = new Date(now);
@@ -61,15 +77,24 @@ export default function DispatchMapPage() {
   const { isDesktop } = useBreakpoint();
   const [period, setPeriod] = useState<Period>('all');
   const [includeUnscheduled, setIncludeUnscheduled] = useState(true);
+  // B60 — custom range with hours (datetime-local, local time).
+  const [custom, setCustom] = useState(defaultCustomRange);
+  // B60 — when a technician is selected, only his work orders stay on the map.
+  const [onlySelectedTech, setOnlySelectedTech] = useState(true);
 
   const filter = useMemo<SnapshotFilter | undefined>(() => {
+    if (period === 'custom') {
+      const from = localInputToIso(custom.from);
+      const to = localInputToIso(custom.to);
+      return from && to && from <= to ? { from, to, includeUnscheduled } : undefined;
+    }
     const range = periodRange(period);
     if (!range) return undefined;
     return { ...range, includeUnscheduled };
-  }, [period, includeUnscheduled]);
+  }, [period, includeUnscheduled, custom]);
 
   const { data: snap, isLoading, refetch } = useQuery({
-    queryKey: ['dispatch-map', 'snapshot', period, includeUnscheduled],
+    queryKey: ['dispatch-map', 'snapshot', period, includeUnscheduled, filter?.from ?? null, filter?.to ?? null],
     queryFn: () => getMapSnapshot(filter),
     refetchInterval: 30_000,
   });
@@ -137,6 +162,11 @@ export default function DispatchMapPage() {
   }, [selectedTechId]);
 
   const selectedTech = snap?.technicians.find((t) => t.id === selectedTechId);
+  // B60 — work orders drawn on the map : the filtered snapshot, narrowed to the selected technician on demand.
+  const shownWos = useMemo<MapWorkOrder[]>(
+    () => (snap?.workOrders ?? []).filter((w) => !(selectedTechId && onlySelectedTech) || w.assignedToId === selectedTechId),
+    [snap, selectedTechId, onlySelectedTech],
+  );
   const assignedWos = useMemo<MapWorkOrder[]>(
     () => (snap?.workOrders ?? []).filter((w) => w.assignedToId === selectedTechId),
     [snap, selectedTechId],
@@ -268,6 +298,21 @@ export default function DispatchMapPage() {
             {PERIOD_LABELS[p]}
           </button>
         ))}
+        {period === 'custom' && (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: theme.colors.textMuted }}>
+            du
+            <input type="datetime-local" value={custom.from} onChange={(e) => setCustom((c) => ({ ...c, from: e.target.value }))} style={{ fontSize: 12, padding: '3px 6px', border: `1px solid ${theme.colors.border}`, borderRadius: 6, background: theme.colors.surface, color: theme.colors.text }} />
+            au
+            <input type="datetime-local" value={custom.to} onChange={(e) => setCustom((c) => ({ ...c, to: e.target.value }))} style={{ fontSize: 12, padding: '3px 6px', border: `1px solid ${theme.colors.border}`, borderRadius: 6, background: theme.colors.surface, color: theme.colors.text }} />
+            {!filter && <span style={{ color: theme.colors.danger }}>plage invalide</span>}
+          </span>
+        )}
+        {selectedTechId && (
+          <label style={{ fontSize: 12, color: theme.colors.textMuted, cursor: 'pointer' }}>
+            <input type="checkbox" checked={onlySelectedTech} onChange={(e) => setOnlySelectedTech(e.target.checked)} />{' '}
+            seulement les BT de ce technicien
+          </label>
+        )}
         {period !== 'all' && (
           <label style={{ fontSize: 12, color: theme.colors.textMuted, cursor: 'pointer' }}>
             <input
@@ -279,7 +324,7 @@ export default function DispatchMapPage() {
           </label>
         )}
         <span style={{ fontSize: 12, color: theme.colors.textMuted, marginLeft: 'auto' }}>
-          {(snap?.workOrders ?? []).length} BT affiché(s)
+          {shownWos.length} BT affiché(s)
         </span>
       </div>
 
@@ -344,7 +389,7 @@ export default function DispatchMapPage() {
                 ) : null,
               )}
 
-              {(snap?.workOrders ?? [])
+              {shownWos
                 .filter((w): w is MapWorkOrder & { location: NonNullable<MapWorkOrder['location']> } => !!w.location)
                 .map((w) => {
                   const routePos = orderedRoute.indexOf(w.id);
@@ -547,6 +592,12 @@ function FitOnData({
   const map = useMap();
   useEffect(() => {
     if (!snap) return;
+    // B60 — a selected technician with a position and no route yet : zoom on him.
+    const selected = selectedTechId ? snap.technicians.find((x) => x.id === selectedTechId) : undefined;
+    if (selected?.position && routeCoords.length === 0) {
+      map.flyTo([selected.position.lat, selected.position.lng], Math.max(map.getZoom(), 15), { duration: 0.6 });
+      return;
+    }
     const points: [number, number][] = [];
     if (routeCoords.length > 0) {
       points.push(...routeCoords);

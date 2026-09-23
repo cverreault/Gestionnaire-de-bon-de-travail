@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import {
   formatAddressLine,
@@ -12,7 +12,6 @@ import {
   type ProcessSnapshotTransition,
 } from '@taskmgr/shared';
 import AttachmentsCard from '../../../components/AttachmentsCard';
-import SignaturePad from '../../../components/SignaturePad';
 import PartsCard from '../../../components/PartsCard';
 import TemplateFieldsCard from '../../../components/TemplateFieldsCard';
 import StatusBadge from '../../../components/StatusBadge';
@@ -33,6 +32,7 @@ import { font, radius, spacing, useTheme } from '../../../theme/tokens';
  */
 export default function WorkOrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const user = useSession((s) => s.user);
@@ -47,7 +47,6 @@ export default function WorkOrderDetailScreen() {
   const [pending, setPending] = useState<ProcessSnapshotTransition | null>(null);
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
-  const [signing, setSigning] = useState<'signatureClient' | 'signatureTechnician' | null>(null);
   // B47 — driving distance / ETA to the address (null offline or without the routing engine).
   const route = useRouteEstimate(w?.clientAddress_rel ? { lat: w.clientAddress_rel.latitude, lng: w.clientAddress_rel.longitude } : null);
   const blocked = ops.some((o) => o.status === 'CONFLICT' || (o.status === 'FAILED' && o.kind === 'transition'));
@@ -69,12 +68,6 @@ export default function WorkOrderDetailScreen() {
     });
     setPending(null);
     setReason('');
-  }
-
-  async function queueSignature(field: 'signatureClient' | 'signatureTechnician', png: string) {
-    setSigning(null);
-    if (!user) return;
-    await enqueueOp(user.id, id, 'signature', { [field]: png });
   }
 
   async function queueNote() {
@@ -99,8 +92,60 @@ export default function WorkOrderDetailScreen() {
   const label = (k: string) => <Text style={{ color: theme.textMuted, fontSize: font.xs, fontWeight: '700', textTransform: 'uppercase' }}>{t(k)}</Text>;
 
   return (
-    <>
+    <View style={{ flex: 1 }}>
       <Stack.Screen options={{ title: w?.referenceNumber ?? '' }} />
+      {/* B61 — persistent action bar : transitions stay reachable while scrolling the work order */}
+      {w && (
+        <View style={{ backgroundColor: theme.surface, borderBottomWidth: 1, borderBottomColor: theme.border, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, gap: spacing.xs }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            {label('workOrder.actions')}
+            {!online && <Text style={{ color: theme.textMuted, fontSize: font.xs }}>{t('sync.offline')}</Text>}
+            {ops.length > 0 && (
+              <Text style={{ color: blocked ? theme.danger : theme.textMuted, fontSize: font.xs }}>
+                {blocked ? t('queue.statusCONFLICT') : t('queue.pending', { count: ops.length })}
+              </Text>
+            )}
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
+            {transitions.length === 0 && <Text style={{ color: theme.textMuted }}>—</Text>}
+            {transitions.map((tr) => (
+              <Pressable
+                key={tr.id}
+                disabled={blocked}
+                onPress={() => start(tr)}
+                style={({ pressed }) => ({ backgroundColor: statusById.get(tr.toStatusId)?.color || theme.primary, opacity: pressed || blocked ? 0.6 : 1, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg, borderRadius: radius.full })}
+              >
+                <Text style={{ color: '#fff', fontWeight: '700', fontSize: font.sm }}>{transitionLabel(tr, locale)}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+          {pending && (
+            <View style={{ gap: spacing.sm, marginTop: spacing.xs }}>
+              <Text style={{ color: theme.textSecondary, fontSize: font.sm }}>
+                {pending.requiredFields.includes('negativeReason') ? t('workOrder.reasonLabel') : t('workOrder.completionNotesLabel')}
+              </Text>
+              <TextInput
+                value={reason}
+                onChangeText={setReason}
+                multiline
+                style={{ borderWidth: 1, borderColor: theme.border, borderRadius: radius.md, padding: spacing.md, minHeight: 64, color: theme.text, backgroundColor: theme.surfaceAlt }}
+              />
+              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                <Pressable onPress={() => { setPending(null); setReason(''); }} style={{ flex: 1, padding: spacing.md, borderRadius: radius.md, alignItems: 'center', borderWidth: 1, borderColor: theme.border }}>
+                  <Text style={{ color: theme.text }}>{t('common.cancel')}</Text>
+                </Pressable>
+                <Pressable
+                  disabled={!reason.trim()}
+                  onPress={() => void queueTransition(pending)}
+                  style={{ flex: 1, padding: spacing.md, borderRadius: radius.md, alignItems: 'center', backgroundColor: theme.primary, opacity: !reason.trim() ? 0.6 : 1 }}
+                >
+                  <Text style={{ color: theme.onPrimary, fontWeight: '700' }}>{t('workOrder.confirm')}</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
+        </View>
+      )}
       <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md, paddingBottom: 60 }}>
         {!loaded && <ActivityIndicator color={theme.primary} />}
         {loaded && !w && <Text style={{ color: theme.textMuted }}>{t('workOrders.empty')}</Text>}
@@ -174,52 +219,6 @@ export default function WorkOrderDetailScreen() {
             )}
 
             <View style={cardStyle}>
-              {label('workOrder.actions')}
-              {!online && <Text style={{ color: theme.textMuted, fontSize: font.xs }}>{t('sync.offline')}</Text>}
-              {ops.length > 0 && (
-                <Text style={{ color: blocked ? theme.danger : theme.textMuted, fontSize: font.xs }}>
-                  {blocked ? t('queue.statusCONFLICT') : t('queue.pending', { count: ops.length })}
-                </Text>
-              )}
-              {transitions.length === 0 && <Text style={{ color: theme.textMuted }}>—</Text>}
-              {transitions.map((tr) => (
-                <Pressable
-                  key={tr.id}
-                  disabled={blocked}
-                  onPress={() => start(tr)}
-                  style={({ pressed }) => ({ backgroundColor: statusById.get(tr.toStatusId)?.color || theme.primary, opacity: pressed || blocked ? 0.6 : 1, padding: spacing.md, borderRadius: radius.md, alignItems: 'center' })}
-                >
-                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: font.md }}>{transitionLabel(tr, locale)}</Text>
-                </Pressable>
-              ))}
-              {pending && (
-                <View style={{ gap: spacing.sm, marginTop: spacing.sm }}>
-                  <Text style={{ color: theme.textSecondary, fontSize: font.sm }}>
-                    {pending.requiredFields.includes('negativeReason') ? t('workOrder.reasonLabel') : t('workOrder.completionNotesLabel')}
-                  </Text>
-                  <TextInput
-                    value={reason}
-                    onChangeText={setReason}
-                    multiline
-                    style={{ borderWidth: 1, borderColor: theme.border, borderRadius: radius.md, padding: spacing.md, minHeight: 80, color: theme.text, backgroundColor: theme.surfaceAlt }}
-                  />
-                  <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                    <Pressable onPress={() => { setPending(null); setReason(''); }} style={{ flex: 1, padding: spacing.md, borderRadius: radius.md, alignItems: 'center', borderWidth: 1, borderColor: theme.border }}>
-                      <Text style={{ color: theme.text }}>{t('common.cancel')}</Text>
-                    </Pressable>
-                    <Pressable
-                      disabled={!reason.trim()}
-                      onPress={() => void queueTransition(pending)}
-                      style={{ flex: 1, padding: spacing.md, borderRadius: radius.md, alignItems: 'center', backgroundColor: theme.primary, opacity: !reason.trim() ? 0.6 : 1 }}
-                    >
-                      <Text style={{ color: theme.onPrimary, fontWeight: '700' }}>{t('workOrder.confirm')}</Text>
-                    </Pressable>
-                  </View>
-                </View>
-              )}
-            </View>
-
-            <View style={cardStyle}>
               {label('workOrder.notes')}
               {w.notes.length === 0 && <Text style={{ color: theme.textMuted }}>{t('workOrder.noNotes')}</Text>}
               {w.notes.map((n) => (
@@ -247,39 +246,27 @@ export default function WorkOrderDetailScreen() {
               </Pressable>
             </View>
 
-            <View style={cardStyle}>
-              {label('workOrder.signatures')}
-              {ops.some((o) => o.kind === 'signature') && <Text style={{ color: theme.textMuted, fontSize: font.xs }}>⏳ {t('workOrder.signatureQueued')}</Text>}
-              {(['signatureClient', 'signatureTechnician'] as const).map((field) => {
-                const signed = field === 'signatureClient' ? w.hasSignatureClient : w.hasSignatureTechnician;
-                return (
-                  <View key={field} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm }}>
-                    <Text style={{ color: theme.text, fontSize: font.sm }}>
-                      {t(field === 'signatureClient' ? 'workOrder.signClient' : 'workOrder.signTechnician')} · {signed ? '✅ ' + t('workOrder.signed') : t('workOrder.notSigned')}
-                    </Text>
-                    <Pressable onPress={() => setSigning(field)} style={{ paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: theme.primary }}>
-                      <Text style={{ color: theme.primary, fontWeight: '600', fontSize: font.sm }}>✍️ {t('workOrder.signTitle')}</Text>
-                    </Pressable>
-                  </View>
-                );
-              })}
-              {w.signedAt && <Text style={{ color: theme.textMuted, fontSize: font.xs }}>{new Date(w.signedAt).toLocaleString(lang, { dateStyle: 'short', timeStyle: 'short' })}</Text>}
-            </View>
+            <Pressable
+              onPress={() => router.push({ pathname: '/(app)/signatures', params: { workOrderId: id } } as never)}
+              style={({ pressed }) => ({ ...cardStyle, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', opacity: pressed ? 0.7 : 1 })}
+            >
+              <View style={{ gap: 2 }}>
+                {label('workOrder.signatures')}
+                <Text style={{ color: theme.textSecondary, fontSize: font.sm }}>
+                  {t('workOrder.signClient')} · {w.hasSignatureClient ? '✅' : '—'}   {t('workOrder.signTechnician')} · {w.hasSignatureTechnician ? '✅' : '—'}
+                </Text>
+              </View>
+              <Text style={{ color: theme.primary, fontWeight: '700' }}>✍️ ›</Text>
+            </Pressable>
 
             <TemplateFieldsCard workOrderId={id} templateId={w.taskType?.templateId} values={w.templateData} editable={!isClosedStatus(w.status)} />
 
             <PartsCard workOrderId={id} parts={w.parts} ops={ops} editable={!isClosedStatus(w.status)} />
 
             <AttachmentsCard workOrderId={id} attachments={w.attachments} pendingIds={pendingIds} canUpload onChanged={refresh} />
-            <SignaturePad
-              visible={signing !== null}
-              title={t(signing === 'signatureClient' ? 'workOrder.signClient' : 'workOrder.signTechnician')}
-              onCancel={() => setSigning(null)}
-              onSave={(png) => signing && void queueSignature(signing, png)}
-            />
           </>
         )}
       </ScrollView>
-    </>
+    </View>
   );
 }
