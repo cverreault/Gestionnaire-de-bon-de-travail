@@ -14,6 +14,8 @@ import {
   TenantContext,
 } from '../contracts/tenant-context.contract';
 import { PrismaService } from '../prisma/prisma.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { CLIENT_FIX_REPORTED_EVENT, CLIENT_LOCATION_HEADER, parseClientLocation, type ClientFixReportedPayload } from '../contracts/client-location.contract';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
@@ -21,8 +23,25 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     private reflector: Reflector,
     private context: RequestContextService,
     private prisma: PrismaService,
+    private events: EventEmitter2,
   ) {
     super();
+  }
+
+  private static readonly fixWrites = new Map<string, number>();
+  private static readonly FIX_INTERVAL_MS = 60_000;
+
+  /** B57 — every authenticated request carrying X-Client-Location feeds the technician position (≤ 1/min/user). */
+  private reportClientFix(userId: string | undefined, header: string | string[] | undefined): void {
+    if (!userId || !header) return;
+    const now = Date.now();
+    const last = JwtAuthGuard.fixWrites.get(userId) ?? 0;
+    if (now - last < JwtAuthGuard.FIX_INTERVAL_MS) return;
+    const location = parseClientLocation(header);
+    if (!location) return;
+    JwtAuthGuard.fixWrites.set(userId, now);
+    const payload: ClientFixReportedPayload = { userId, location };
+    this.events.emit(CLIENT_FIX_REPORTED_EVENT, payload);
   }
 
   /** Last write per user id, so presence costs one UPDATE a minute at most. */
@@ -85,6 +104,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       const req = ctx.switchToHttp().getRequest();
       // B51 — presence heartbeat (users.last_seen_at / last_seen_ip), throttled per user.
       this.touchPresence((user as unknown as { id?: string }).id, (req as { ip?: string }).ip ?? null);
+      this.reportClientFix((user as unknown as { id?: string }).id, (req as { headers: Record<string, string | string[] | undefined> }).headers[CLIENT_LOCATION_HEADER]);
       const requestTenant = req[TENANT_REQUEST_KEY] as TenantContext | undefined;
       const isImplicit = req[TENANT_IS_IMPLICIT_KEY] === true;
       const userWithTenant = user as unknown as { id: string; tenantId?: string };

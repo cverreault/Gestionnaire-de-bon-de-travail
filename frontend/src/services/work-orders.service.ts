@@ -134,6 +134,11 @@ const workOrdersService = {
   },
 
   /** GET /work-orders/:id/available-transitions — list available process engine transitions */
+  /** B57 — fire-and-forget « ouvert / fermé » in the history (web source). */
+  async reportView(id: string, action: 'opened' | 'closed'): Promise<void> {
+    await api.post(`/work-orders/${id}/view`, { action, at: new Date().toISOString(), source: 'web' }).catch(() => undefined);
+  },
+
   async getAvailableTransitions(id: string): Promise<AvailableTransitionsResponse> {
     const { data } = await api.get<ApiResponse<AvailableTransitionsResponse>>(
       `/work-orders/${id}/available-transitions`,

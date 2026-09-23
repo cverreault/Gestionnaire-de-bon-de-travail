@@ -233,6 +233,11 @@ function describeEvent(
             color: theme.colors.danger,
           };
     }
+    // B57 — the technician opened / left the work order screen
+    case 'workOrders.workOrder.opened':
+      return { icon: '👁', label: t('audit.events.opened', { defaultValue: 'Fiche ouverte' }), color: theme.colors.textMuted, detail: typeof d.source === 'string' ? (d.source === 'web' ? 'web' : 'app') : undefined };
+    case 'workOrders.workOrder.closed':
+      return { icon: '🚪', label: t('audit.events.closed', { defaultValue: 'Fiche fermée' }), color: theme.colors.textMuted, detail: typeof d.source === 'string' ? (d.source === 'web' ? 'web' : 'app') : undefined };
     // B45 — every action of the technician / dispatcher
     case 'workOrders.workOrder.noteAdded':
       return { icon: '📝', label: t('audit.events.noteAdded', { defaultValue: 'Note ajoutée' }), color: theme.colors.info, detail: typeof d.excerpt === 'string' ? d.excerpt : undefined };

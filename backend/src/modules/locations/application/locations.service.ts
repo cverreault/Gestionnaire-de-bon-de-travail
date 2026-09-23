@@ -4,6 +4,11 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Role, type LocationSource } from '@prisma/client';
+import { Inject, NotFoundException, Optional } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
+import { CLIENT_FIX_REPORTED_EVENT, type ClientFixReportedPayload } from '../../../common/contracts/client-location.contract';
+import { GEOCODER, type IGeocoder } from '../../../common/contracts/geocoder.contract';
+import { MOBILE_PUSH_SENDER, type IMobilePushSender } from '../../../common/contracts/mobile-push.contract';
 import { PrismaService } from '../../../common/prisma/prisma.service';
 import { RequestContextService } from '../../../common/context/request-context.service';
 import { isGpsEnabled } from '../../../common/contracts/gps-preferences.contract';
@@ -38,6 +43,21 @@ export interface LatestPosition {
   recordedAt: Date;
 }
 
+export interface TechnicianPosition {
+  technicianId: string;
+  name: string;
+  gpsEnabled: boolean;
+  position: {
+    latitude: number;
+    longitude: number;
+    accuracy: number | null;
+    recordedAt: Date;
+    ageSeconds: number;
+    source: LocationSource;
+  } | null;
+  nearestAddress: { label: string; street: string | null; city: string | null; postalCode: string | null } | null;
+}
+
 @Injectable()
 export class LocationsService {
   private readonly logger = new Logger(LocationsService.name);
@@ -45,7 +65,89 @@ export class LocationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly requestContext: RequestContextService,
+    /** B57 — nearest address for « où est le technicien » ; bound by the (global) geo module. */
+    @Optional() @Inject(GEOCODER) private readonly geocoder?: IGeocoder,
+    /** B57 — « demander la position » push ; bound by the (global) mobile module. */
+    @Optional() @Inject(MOBILE_PUSH_SENDER) private readonly push?: IMobilePushSender,
   ) {}
+
+  // ── B57 — position carried by every app request ────────────────────────────
+
+  /**
+   * The auth guard emits one fix per user per minute from `X-Client-Location`.
+   * Silently ignored when the user is not an opted-in technician : a request
+   * must never fail because of its location header.
+   */
+  @OnEvent(CLIENT_FIX_REPORTED_EVENT, { async: true, promisify: true })
+  async onClientFix(payload: ClientFixReportedPayload): Promise<void> {
+    try {
+      const user = await this.assertOptedInTechnician(payload.userId);
+      const recordedAt = payload.location.recordedAt ? new Date(payload.location.recordedAt) : new Date();
+      await this.prisma.technicianLocation.createMany({
+        data: [{
+          technicianId: user.id,
+          latitude: payload.location.lat,
+          longitude: payload.location.lng,
+          accuracy: payload.location.accuracy ?? null,
+          recordedAt,
+          source: 'MOBILE_FOREGROUND' as LocationSource,
+        }],
+        skipDuplicates: true,
+      });
+    } catch {
+      // not a technician / consent off / duplicate : nothing to record
+    }
+  }
+
+  // ── B57 — « où est le technicien ? » ───────────────────────────────────────
+
+  /** Latest fix of one technician with its age and the nearest civic address. */
+  async technicianPosition(technicianId: string): Promise<TechnicianPosition> {
+    const tech = await this.prisma.user.findUnique({
+      where: { id: technicianId },
+      select: { id: true, firstName: true, lastName: true, role: true, preferences: true, locationRequired: true },
+    });
+    if (!tech || tech.role !== Role.TECHNICIAN) throw new NotFoundException('Technicien introuvable');
+    const fix = await this.prisma.technicianLocation.findFirst({
+      where: { technicianId },
+      orderBy: { recordedAt: 'desc' },
+      select: { latitude: true, longitude: true, accuracy: true, recordedAt: true, source: true },
+    });
+    const base = {
+      technicianId: tech.id,
+      name: `${tech.firstName} ${tech.lastName}`,
+      gpsEnabled: tech.locationRequired || isGpsEnabled(tech.preferences),
+    };
+    if (!fix) return { ...base, position: null, nearestAddress: null };
+    const nearest = this.geocoder ? await this.geocoder.reverse(fix.latitude, fix.longitude) : null;
+    return {
+      ...base,
+      position: {
+        latitude: fix.latitude,
+        longitude: fix.longitude,
+        accuracy: fix.accuracy,
+        recordedAt: fix.recordedAt,
+        ageSeconds: Math.max(0, Math.round((Date.now() - fix.recordedAt.getTime()) / 1000)),
+        source: fix.source,
+      },
+      nearestAddress: nearest ? { label: nearest.label, street: nearest.street ?? null, city: nearest.city ?? null, postalCode: nearest.postalCode ?? null } : null,
+    };
+  }
+
+  /** Asks the phone for a fresh fix through a push ; the app answers with a batch upload. */
+  async requestLocate(technicianId: string): Promise<{ sent: boolean; reason?: string }> {
+    const tech = await this.prisma.user.findUnique({ where: { id: technicianId }, select: { id: true, role: true, isActive: true } });
+    if (!tech || tech.role !== Role.TECHNICIAN || !tech.isActive) throw new NotFoundException('Technicien introuvable');
+    if (!this.push) return { sent: false, reason: 'push_unavailable' };
+    if (!(await this.push.hasActiveDevice(technicianId))) return { sent: false, reason: 'no_device' };
+    const sent = await this.push.sendToUser({
+      userId: technicianId,
+      title: 'Position demandée',
+      body: 'La répartition demande votre position actuelle.',
+      data: { type: 'locate', requestedAt: new Date().toISOString() },
+    });
+    return { sent, ...(sent ? {} : { reason: 'push_failed' }) };
+  }
 
   /**
    * Record a position for the calling tech.

@@ -71,7 +71,9 @@
       "attachmentAdded": "Pièce jointe ajoutée",
       "attachmentRemoved": "Pièce jointe supprimée",
       "partAdded": "Pièce ajoutée",
-      "partRemoved": "Pièce retirée"
+      "partRemoved": "Pièce retirée",
+      "opened": "Fiche ouverte",
+      "closed": "Fiche fermée"
     },
     "location": "Position",
     "signatureClient": "client",
@@ -147,7 +149,8 @@
     "openInModal": "Ouvrir le bon de travail",
     "dragHint": "Glissez une ligne sur un technicien du panneau de gauche pour dispatcher. Cliquez la référence pour ouvrir le BT.",
     "filterTags": "Tags",
-    "tagsHint": "Au moins un des tags choisis"
+    "tagsHint": "Au moins un des tags choisis",
+    "completedToday": "Terminés aujourd’hui (consultation)"
   },
   "priorityLevels": {
     "0": "0 — Aucune",
@@ -298,7 +301,8 @@
     "awaitingDispatchBody": "Le répartiteur doit dispatcher ce bon de travail avant que vous puissiez intervenir.",
     "attachmentsOnlineOnly": "Les pièces jointes ne peuvent être ajoutées qu'en ligne",
     "uploading": "Envoi en cours...",
-    "fieldNotePlaceholder": "Note terrain..."
+    "fieldNotePlaceholder": "Note terrain...",
+    "readOnly": "Bon de travail terminé : consultation seulement."
   },
   "print": {
     "statusRequested": "Demandé",

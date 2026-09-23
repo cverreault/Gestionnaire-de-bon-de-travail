@@ -7,6 +7,7 @@ import 'leaflet/dist/leaflet.css';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import { theme, cardStyles, layoutStyles, buttonStyles } from '../theme';
 import { toast } from '../context/toast.store';
+import { getTechnicianPosition, requestLocate, type TechnicianPosition } from '../services/locations.service';
 import { getMapSnapshot, optimizeRoute, geocodeMissing, fallbackReasonLabel, type MapSnapshot, type MapWorkOrder, type OptimizedRoute, type SnapshotFilter } from '../services/dispatch-map.service';
 
 // ─── Period filters ──────────────────────────────────────────────
@@ -74,6 +75,30 @@ export default function DispatchMapPage() {
   });
 
   const [selectedTechId, setSelectedTechId] = useState<string | null>(null);
+  // B57 — « où est-il ? » : push to the phone, then poll the latest fix for ~40 s.
+  const [locate, setLocate] = useState<Record<string, { status: 'asking' | 'waiting' | 'done' | 'error'; info?: TechnicianPosition; message?: string }>>({});
+  async function handleLocate(techId: string) {
+    setLocate((p) => ({ ...p, [techId]: { status: 'asking' } }));
+    try {
+      const before = await getTechnicianPosition(techId);
+      const ask = await requestLocate(techId);
+      setLocate((p) => ({ ...p, [techId]: { status: ask.sent ? 'waiting' : 'done', info: before, message: ask.sent ? undefined : ask.reason === 'no_device' ? 'Aucun téléphone joignable : dernière position connue.' : 'Notification impossible : dernière position connue.' } }));
+      if (!ask.sent) return;
+      const since = before.position?.recordedAt ?? null;
+      for (let i = 0; i < 8; i += 1) {
+        await new Promise((r) => setTimeout(r, 5000));
+        const now = await getTechnicianPosition(techId);
+        if (now.position && now.position.recordedAt !== since) {
+          setLocate((p) => ({ ...p, [techId]: { status: 'done', info: now } }));
+          void refetch();
+          return;
+        }
+      }
+      setLocate((p) => ({ ...p, [techId]: { status: 'done', info: before, message: 'Pas de réponse du téléphone : dernière position connue.' } }));
+    } catch (err) {
+      setLocate((p) => ({ ...p, [techId]: { status: 'error', message: err instanceof Error ? err.message : String(err) } }));
+    }
+  }
   const [orderedRoute, setOrderedRoute] = useState<string[]>([]);
   const [routeDistance, setRouteDistance] = useState<number | null>(null);
   // B47 — full tour (driving times, legs, road shape) when Valhalla answered.
@@ -384,6 +409,25 @@ export default function DispatchMapPage() {
                       : '⚠️ Pas de position — le technicien doit activer le suivi GPS dans son Profil'}
                   </div>
                 </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '-2px 0 6px 2px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); void handleLocate(t.id); }}
+                    disabled={locate[t.id]?.status === 'asking' || locate[t.id]?.status === 'waiting'}
+                    style={{ ...buttonStyles.secondary, padding: '2px 8px', fontSize: 11 }}
+                  >
+                    {locate[t.id]?.status === 'asking' ? '⏳ Demande…' : locate[t.id]?.status === 'waiting' ? '📡 En attente du téléphone…' : '📍 Où est-il ?'}
+                  </button>
+                  {locate[t.id]?.info?.position && (
+                    <span style={{ fontSize: 11, color: theme.colors.textSecondary }}>
+                      {locate[t.id]!.info!.position!.latitude.toFixed(5)}, {locate[t.id]!.info!.position!.longitude.toFixed(5)}
+                      {locate[t.id]!.info!.position!.accuracy != null ? ` (±${Math.round(locate[t.id]!.info!.position!.accuracy!)} m)` : ''}
+                      {' · '}il y a {relativeTime(locate[t.id]!.info!.position!.recordedAt)}
+                      {locate[t.id]!.info!.nearestAddress ? ` · près de ${locate[t.id]!.info!.nearestAddress!.label}` : ''}
+                    </span>
+                  )}
+                  {locate[t.id]?.message && <span style={{ fontSize: 11, color: theme.colors.warning }}>{locate[t.id]!.message}</span>}
+                </div>
               </li>
             ))}
           </ul>

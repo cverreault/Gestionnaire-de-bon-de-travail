@@ -5,6 +5,7 @@ import type {
   IGeocoder,
   PropertyFacts,
   PropertyLookupInput,
+  ReverseGeocodeResult,
 } from '../../../common/contracts/geocoder.contract';
 import { PropertyService } from './property.service';
 import { AdressesQuebecClient, type AqCandidate } from '../infrastructure/adresses-quebec.client';
@@ -107,6 +108,12 @@ export class AddressLookupService implements IGeocoder {
     const best = candidates[0];
     if (!best || best.score < AddressLookupService.MIN_AQ_SCORE) return null;
     return toResolved(best);
+  }
+
+  /** B57 — nearest address to a point (Nominatim ; Adresses Québec has no reverse API). */
+  async reverse(latitude: number, longitude: number): Promise<ReverseGeocodeResult | null> {
+    const hit = await this.nominatim.reverse(latitude, longitude);
+    return hit ? { ...hit, source: 'nominatim' } : null;
   }
 
   async geocode(input: GeocodeInput): Promise<GeocodeResult | null> {

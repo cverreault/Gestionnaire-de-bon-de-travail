@@ -63,9 +63,21 @@ export interface PropertyLookupInput {
   city?: string | null;
 }
 
+/** B57 — nearest civic address for a point (reverse geocoding). */
+export interface ReverseGeocodeResult {
+  /** Human label, e.g. « 46 Municipal Drive, Pictou ». */
+  label: string;
+  street?: string | null;
+  city?: string | null;
+  postalCode?: string | null;
+  source: string;
+}
+
 export interface IGeocoder {
   /** Never throws — returns null when nothing trustworthy was found. */
   geocode(input: GeocodeInput): Promise<GeocodeResult | null>;
+  /** B57 — nearest address to a point. Never throws ; null when unknown. */
+  reverse(latitude: number, longitude: number): Promise<ReverseGeocodeResult | null>;
   /** Assessment-roll unit for an address (coordinates preferred). Never throws. */
   findProperty(input: PropertyLookupInput): Promise<PropertyFacts | null>;
 }

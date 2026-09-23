@@ -33,8 +33,8 @@ export type { MobileDeviceRegisteredPayload, MobileDeviceRevokedPayload } from '
 export { USER_SESSIONS_REVOKED_EVENT } from './user-events.contract';
 export { ROUTER } from './router.contract';
 export type { IRouter, LatLng, RouteResult, RouteLeg, RouteManeuver, MatrixResult, RouterStatus } from './router.contract';
-export { CLIENT_LOCATION_HEADER, parseClientLocation, formatClientLocation } from './client-location.contract';
-export type { ClientLocation } from './client-location.contract';
+export { CLIENT_LOCATION_HEADER, CLIENT_FIX_REPORTED_EVENT, parseClientLocation, formatClientLocation } from './client-location.contract';
+export type { ClientLocation, ClientFixReportedPayload } from './client-location.contract';
 export type { UserSessionsRevokedPayload, UserSessionsRevokedResult } from './user-events.contract';
 export {
   IDEMPOTENCY_KEY_HEADER,

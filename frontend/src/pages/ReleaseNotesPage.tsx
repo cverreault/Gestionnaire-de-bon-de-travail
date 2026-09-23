@@ -59,6 +59,18 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.19.0',
+    name: 'Suivi terrain : visibilité, position, ouverture des BT',
+    date: 'Septembre 2026',
+    entries: [
+      { type: 'improvement', text: "📱 App : le technicien ne voit que les BT qui lui sont répartis (avec ou sans date) jusqu'à leur fermeture ; les BT assignés non répartis, annulés ou terminés n'apparaissent plus, et il n'y a plus d'historique sur le téléphone" },
+      { type: 'improvement', text: "🖥 Web technicien : ses BT répartis, plus ceux terminés le jour même en consultation seulement (aucune modification possible, l'API le garantit)" },
+      { type: 'new', text: "👁 Historique du BT : « Fiche ouverte » et « Fiche fermée » avec l'heure et la position à chaque fois que le technicien ouvre ou quitte le BT (app ou web)" },
+      { type: 'new', text: "📍 Chaque requête de l'app porte la position du téléphone ; la répartition la suit même entre deux envois GPS" },
+      { type: 'new', text: "🗺 Carte dispatch : bouton « Où est-il ? » par technicien : envoie une demande au téléphone, affiche la position GPS, sa précision, son âge et l'adresse la plus proche" },
+    ],
+  },
+  {
     version: '2.18.0',
     name: 'Statut Annulé',
     date: 'Septembre 2026',

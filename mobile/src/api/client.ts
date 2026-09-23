@@ -1,3 +1,4 @@
+import { currentFixForHeader } from '../gps/gps.store';
 import { useSession } from '../stores/session.store';
 import { CLIENT_LOCATION_HEADER, DEVICE_ID_HEADER, IDEMPOTENCY_KEY_HEADER, formatClientLocation, type ClientLocation } from '@taskmgr/shared';
 import i18n from '../i18n';
@@ -98,7 +99,9 @@ export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T
     if (body !== undefined && !isForm) h['Content-Type'] = 'application/json';
     if (!anonymous && accessToken) h.Authorization = `Bearer ${accessToken}`;
     if (idempotencyKey) h[IDEMPOTENCY_KEY_HEADER] = idempotencyKey;
-    if (outgoingLocation) h[CLIENT_LOCATION_HEADER] = formatClientLocation(outgoingLocation);
+    // B57 — every request carries the phone position (queued ops keep their own capture).
+    const fix = outgoingLocation ?? (anonymous ? null : await currentFixForHeader());
+    if (fix) h[CLIENT_LOCATION_HEADER] = formatClientLocation(fix);
     return fetch(url.toString(), {
       method,
       headers: h,

@@ -33,6 +33,7 @@ import { CreateNoteDto } from './dto/create-note.dto';
 import { SignaturesDto } from './dto/signatures.dto';
 import { AssignAndDispatchDto } from './dto/assign-and-dispatch.dto';
 import { BatchWorkOrdersDto } from './dto/batch-work-orders.dto';
+import { ViewWorkOrderDto } from './dto/view-work-order.dto';
 import { BatchService } from './application/batch.service';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Idempotent } from '../../common/decorators/idempotent.decorator';
@@ -272,6 +273,21 @@ export class WorkOrdersController {
   })
   batch(@Body() dto: BatchWorkOrdersDto, @CurrentUser() currentUser: JwtUser) {
     return this.batchService.run(dto, currentUser);
+  }
+
+  @Post(':id/view')
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'B57 — signale l\'ouverture / la fermeture de la fiche du BT',
+    description: 'Fire-and-forget depuis l\'app : inscrit « ouvert » / « fermé » dans l\'historique du BT avec la position du client.',
+  })
+  async reportView(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ViewWorkOrderDto,
+    @CurrentUser() currentUser: JwtUser,
+  ): Promise<void> {
+    await this.workOrdersService.reportView(id, dto, currentUser);
   }
 
   @Post(':id/assign-and-dispatch')

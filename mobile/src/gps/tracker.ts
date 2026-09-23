@@ -4,7 +4,7 @@ import { ApiError } from '../api/client';
 import { postLocationBatch } from '../api/endpoints';
 import { db } from '../db/client';
 import { bufferFixes, countFixes, deleteFixes, nextBatch } from './fixes.repo';
-import { useGpsStore } from './gps.store';
+import { rememberFix, useGpsStore } from './gps.store';
 import { logEvent } from '../diag/log';
 import { LOCATION_TASK } from './location-task';
 import type { TrackingDecision } from './rules';
@@ -36,10 +36,10 @@ export async function applyTracking(mode: TrackingDecision): Promise<void> {
     foregroundSub = await Location.watchPositionAsync(
       { accuracy: Location.Accuracy.Balanced, timeInterval: 30_000, distanceInterval: 50 },
       (l) =>
-        void bufferFixes(db, [{
+        (rememberFix(l), void bufferFixes(db, [{
           id: Crypto.randomUUID(), latitude: l.coords.latitude, longitude: l.coords.longitude,
           accuracy: l.coords.accuracy ?? null, recordedAt: new Date(l.timestamp).toISOString(), source: 'MOBILE_FOREGROUND',
-        }]).then(() => void refreshCount()),
+        }]).then(() => void refreshCount())),
     );
   }
   current = mode;

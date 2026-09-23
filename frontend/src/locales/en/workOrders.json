@@ -71,7 +71,9 @@
       "attachmentAdded": "Attachment added",
       "attachmentRemoved": "Attachment removed",
       "partAdded": "Part added",
-      "partRemoved": "Part removed"
+      "partRemoved": "Part removed",
+      "opened": "Work order opened",
+      "closed": "Work order closed"
     },
     "location": "Location",
     "signatureClient": "client",
@@ -147,7 +149,8 @@
     "openInModal": "Open the work order",
     "dragHint": "Drag a row onto a technician in the left panel to dispatch. Click the reference to open the work order.",
     "filterTags": "Tags",
-    "tagsHint": "Any of the selected tags"
+    "tagsHint": "Any of the selected tags",
+    "completedToday": "Completed today (read only)"
   },
   "priorityLevels": {
     "0": "0 — None",
@@ -298,7 +301,8 @@
     "awaitingDispatchBody": "The dispatcher must dispatch this work order before you can act on it.",
     "attachmentsOnlineOnly": "Attachments can only be added while online",
     "uploading": "Uploading...",
-    "fieldNotePlaceholder": "Field note..."
+    "fieldNotePlaceholder": "Field note...",
+    "readOnly": "Work order completed: read only."
   },
   "print": {
     "statusRequested": "Requested",

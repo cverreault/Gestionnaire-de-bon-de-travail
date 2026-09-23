@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import workOrdersService from '../services/work-orders.service';
 import {
   useWorkOrder,
   useAddNote,
@@ -84,6 +85,12 @@ export default function TechnicianWorkOrderDetailPage() {
   const { t } = useTranslation('workOrders');
   const { t: tCommon } = useTranslation('common');
   const { id } = useParams<{ id: string }>();
+  // B57 — « ouvert / fermé » in the work-order history (web source).
+  useEffect(() => {
+    if (!id) return;
+    void workOrdersService.reportView(id, 'opened');
+    return () => void workOrdersService.reportView(id, 'closed');
+  }, [id]);
   const navigate = useNavigate();
   const isOnline = useOnlineStatus();
   const { data: queryWO, isLoading, error, fetchStatus } = useWorkOrder(id!);
@@ -145,20 +152,13 @@ export default function TechnicianWorkOrderDetailPage() {
 
   const isCompleted = [WorkOrderStatus.COMPLETED_POSITIVE, WorkOrderStatus.COMPLETED_NEGATIVE, WorkOrderStatus.CANCELLED].includes(wo.status);
 
-  // Technicians cannot consult a terminated work order — once it's done,
-  // it disappears from their view (no list link, no deep-link access).
-  if (isCompleted) {
-    return (
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <p style={{ color: theme.colors.textMuted, fontSize: theme.font.sizeMd }}>
-          ✅ {t('messages.completed')}
-        </p>
-        <button onClick={() => navigate('/mes-bons')} style={{ ...buttonStyles.primary, marginTop: '1rem' }}>
-          ← {t('myTitle')}
-        </button>
-      </div>
-    );
-  }
+  // B57 — a work order completed today stays readable (server-side window) but
+  // every edit control below is disabled ; the API refuses changes anyway.
+  const readOnlyBanner = isCompleted ? (
+    <div style={{ padding: '0.6rem 0.9rem', marginBottom: '0.75rem', borderRadius: theme.radius.md, background: theme.colors.surfaceAlt, border: theme.borders.light, fontSize: theme.font.sizeSm, color: theme.colors.textSecondary }}>
+      🔒 {t('techDetail.readOnly', { defaultValue: 'Bon de travail terminé : consultation seulement.' })}
+    </div>
+  ) : null;
   const canEnRoute  = wo.status === WorkOrderStatus.DISPATCHED;
   const canStart    = wo.status === WorkOrderStatus.EN_ROUTE;
   const inProgress  = wo.status === WorkOrderStatus.IN_PROGRESS;
@@ -249,6 +249,7 @@ export default function TechnicianWorkOrderDetailPage() {
 
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+      {readOnlyBanner}
       {/* Offline badge */}
       {!isOnline && (
         <div style={{
@@ -484,13 +485,13 @@ export default function TechnicianWorkOrderDetailPage() {
           type="file"
           accept="image/*,video/*,application/pdf"
           capture="environment"
-          disabled={!isOnline}
+          disabled={!isOnline || isCompleted}
           onChange={handleFileUpload}
           style={{ display: 'none' }}
           id="tech-file-upload"
         />
         <label
-          htmlFor={isOnline ? 'tech-file-upload' : undefined}
+          htmlFor={isOnline && !isCompleted ? 'tech-file-upload' : undefined}
           style={{
             display: 'block',
             padding: '0.875rem',
@@ -547,7 +548,7 @@ export default function TechnicianWorkOrderDetailPage() {
           />
           <button
             onClick={handleAddNote}
-            disabled={addNote.isPending || !noteContent.trim()}
+            disabled={addNote.isPending || !noteContent.trim() || isCompleted}
             style={{
               ...buttonStyles.primary,
               padding: '0 1rem',

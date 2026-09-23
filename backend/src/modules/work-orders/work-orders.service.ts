@@ -30,10 +30,25 @@ import {
   workOrderNoteAdded,
   workOrderSigned,
   workOrderUpdated,
+  workOrderViewed,
 } from './domain/events/work-order-events';
 import { toCsv } from '../../common/utils/csv.util';
 
 /** Shape of the authenticated user passed from the controller */
+/** B57 — statuses a technician can act on (between dispatch and completion). */
+const TECHNICIAN_OPEN_STATUSES: WorkOrderStatus[] = [WorkOrderStatus.DISPATCHED, WorkOrderStatus.EN_ROUTE, WorkOrderStatus.IN_PROGRESS];
+
+/** Midnight of the current day in the company time zone (TZ env, default America/Toronto). */
+export function startOfLocalDay(now = new Date()): Date {
+  const zone = process.env.TZ && process.env.TZ !== 'UTC' ? process.env.TZ : 'America/Toronto';
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).formatToParts(now);
+  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? 0);
+  const localMidnightAsUtc = Date.UTC(get('year'), get('month') - 1, get('day'), 0, 0, 0);
+  const localNowAsUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour') % 24, get('minute'), get('second'));
+  const offsetMs = now.getTime() - localNowAsUtc;
+  return new Date(localMidnightAsUtc + offsetMs);
+}
+
 export interface CurrentUserRef {
   id: string;
   role: Role;
@@ -186,7 +201,9 @@ export class WorkOrdersService {
     const where: Prisma.WorkOrderWhereInput = {};
 
     if (currentUser.role === Role.TECHNICIAN) {
-      where.assignedToId = currentUser.id;
+      // B57 — a technician sees the work orders dispatched to him (with or without a
+      // date) until they are closed, plus those he completed today (read only).
+      Object.assign(where, this.technicianVisibleWhere(currentUser.id));
     } else if (filters.assignedToId) {
       where.assignedToId = filters.assignedToId;
     }
@@ -315,6 +332,10 @@ export class WorkOrdersService {
       throw new ForbiddenException(
         'Vous ne pouvez consulter que vos propres bons de travail',
       );
+    }
+    // B57 — not dispatched yet, cancelled, or completed before today : invisible to the technician.
+    if (currentUser?.role === Role.TECHNICIAN && !this.isVisibleToTechnician(workOrder)) {
+      throw new ForbiddenException('Ce bon de travail n\'est pas (ou plus) visible pour vous');
     }
 
     return applyTemplateRbac(workOrder, currentUser?.role);
@@ -580,6 +601,46 @@ export class WorkOrdersService {
     return client.principalClientId ?? (client.clientType === 'PRINCIPAL' ? clientId : null);
   }
 
+
+  // ── B57 — technician visibility window ─────────────────────────────────────
+
+  /** Dispatched → in progress : always ; completed : only the same (local) day. */
+  private technicianVisibleWhere(technicianId: string): Prisma.WorkOrderWhereInput {
+    return {
+      assignedToId: technicianId,
+      OR: [
+        { status: { in: TECHNICIAN_OPEN_STATUSES } },
+        { status: { in: [WorkOrderStatus.COMPLETED_POSITIVE, WorkOrderStatus.COMPLETED_NEGATIVE] }, actualEndTime: { gte: startOfLocalDay() } },
+      ],
+    };
+  }
+
+  private isVisibleToTechnician(wo: { status: WorkOrderStatus; actualEndTime: Date | null }): boolean {
+    if (TECHNICIAN_OPEN_STATUSES.includes(wo.status)) return true;
+    if (wo.status === WorkOrderStatus.COMPLETED_POSITIVE || wo.status === WorkOrderStatus.COMPLETED_NEGATIVE) {
+      return !!wo.actualEndTime && wo.actualEndTime >= startOfLocalDay();
+    }
+    return false;
+  }
+
+  /** A technician can read a closed work order (same day) but never change it. */
+  private assertTechnicianCanMutate(currentUser: CurrentUserRef, status: WorkOrderStatus): void {
+    if (currentUser.role !== Role.TECHNICIAN) return;
+    if (!TECHNICIAN_OPEN_STATUSES.includes(status)) {
+      throw new ForbiddenException('Ce bon de travail est fermé : consultation seulement.');
+    }
+  }
+
+  /** B57 — « ouvert » / « fermé » in the history (audit picks the client position from the request). */
+  async reportView(id: string, dto: { action: 'opened' | 'closed'; at?: string; source?: 'mobile' | 'web' }, currentUser: CurrentUserRef): Promise<void> {
+    await this.findOne(id, currentUser);
+    const at = dto.at && !Number.isNaN(Date.parse(dto.at)) ? new Date(dto.at).toISOString() : new Date().toISOString();
+    this.eventEmitter.emit(
+      dto.action === 'opened' ? WO_EVENT_NAMES.OPENED : WO_EVENT_NAMES.CLOSED,
+      workOrderViewed(dto.action, id, currentUser.id, { at, source: dto.source ?? 'mobile' }),
+    );
+  }
+
   async update(id: string, dto: UpdateWorkOrderDto, currentUser: CurrentUserRef) {
     // Ensure the work order exists — pass currentUser to enforce the IDOR check for technicians
     const existingWo = await this.findOne(id, currentUser);
@@ -598,6 +659,8 @@ export class WorkOrdersService {
       delete (dto as { expectedUpdatedAt?: string }).expectedUpdatedAt;
     }
 
+    // B57 — closed work orders are read only for the technician.
+    this.assertTechnicianCanMutate(currentUser, existingWo.status as WorkOrderStatus);
     // Technicians may only update completionNotes / negativeReason / templateData
     // (templateData entries are then validated field-by-field against the template's
     // editRoles below — a tech can submit values only for fields they may edit).
@@ -1189,7 +1252,7 @@ export class WorkOrdersService {
   ) {
     const workOrder = await this.prisma.workOrder.findUnique({
       where: { id: workOrderId },
-      select: { id: true, assignedToId: true, updatedAt: true },
+      select: { id: true, assignedToId: true, updatedAt: true, status: true },
     });
     if (!workOrder) {
       throw new NotFoundException(`Bon de travail #${workOrderId} introuvable`);
@@ -1202,6 +1265,7 @@ export class WorkOrdersService {
         'Seul le technicien assigné peut enregistrer les signatures',
       );
     }
+    this.assertTechnicianCanMutate(currentUser, workOrder.status);
     // ADR-016 §4 — same optimistic lock as transition ; the mobile queue
     // pulls then retries (signatures are additive).
     if (dto.expectedUpdatedAt && workOrder.updatedAt.toISOString() !== dto.expectedUpdatedAt) {
@@ -1257,7 +1321,7 @@ export class WorkOrdersService {
   ) {
     const workOrder = await this.prisma.workOrder.findUnique({
       where: { id: workOrderId },
-      select: { id: true, assignedToId: true },
+      select: { id: true, assignedToId: true, status: true },
     });
 
     if (!workOrder) {
@@ -1273,6 +1337,7 @@ export class WorkOrdersService {
         'Seul le technicien assigné ou un administrateur peut ajouter des notes',
       );
     }
+    this.assertTechnicianCanMutate(currentUser, workOrder.status);
 
     // ADR-016 §2 — a child mutation bumps the aggregate's updatedAt so the
     // mobile delta pull sees the change ; the app feeds workOrderUpdatedAt
