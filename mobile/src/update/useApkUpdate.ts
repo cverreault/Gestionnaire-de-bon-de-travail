@@ -9,7 +9,8 @@ import { useSyncStore } from '../sync/sync.store';
 import { useApkUpdate } from './apk-update.store';
 import { isNewerVersion, type ApkManifest } from './version';
 
-const CHECK_MIN_INTERVAL_MS = 6 * 60 * 60 * 1000;
+/** B62 — re-check on every foreground after 15 min (6 h made a fresh publish invisible until a cold start). */
+const CHECK_MIN_INTERVAL_MS = 15 * 60 * 1000;
 
 /** Sideloaded Android builds only : store builds are updated by Google Play (self-update is against its policy). */
 export function apkSelfUpdateEnabled(): boolean {
@@ -74,6 +75,11 @@ export function useApkUpdateChecker(): void {
     void checkForApkUpdate(first.current);
     first.current = false;
     const sub = AppState.addEventListener('change', (st) => st === 'active' && void checkForApkUpdate());
-    return () => sub.remove();
+    // B62 — also poll while the app stays open all day on the truck's dashboard.
+    const timer = setInterval(() => void checkForApkUpdate(), CHECK_MIN_INTERVAL_MS);
+    return () => {
+      sub.remove();
+      clearInterval(timer);
+    };
   }, [workspace, online]);
 }

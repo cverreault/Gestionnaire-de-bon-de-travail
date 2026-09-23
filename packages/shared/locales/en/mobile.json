@@ -204,7 +204,11 @@
     "available": "Update {{version}} available",
     "install": "Download and install",
     "downloading": "Downloading… {{pct}}%",
-    "failed": "Update failed"
+    "failed": "Update failed",
+    "check": "Check for updates",
+    "checking": "Checking…",
+    "upToDate": "App is up to date",
+    "goInstall": "open the My work orders tab to install it"
   },
   "diag": {
     "title": "Diagnostics",

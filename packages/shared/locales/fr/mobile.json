@@ -204,7 +204,11 @@
     "available": "Mise à jour {{version}} disponible",
     "install": "Télécharger et installer",
     "downloading": "Téléchargement… {{pct}} %",
-    "failed": "Mise à jour impossible"
+    "failed": "Mise à jour impossible",
+    "check": "Vérifier les mises à jour",
+    "checking": "Vérification…",
+    "upToDate": "Application à jour",
+    "goInstall": "ouvrez l'onglet Mes BT pour l'installer"
   },
   "diag": {
     "title": "Diagnostic",

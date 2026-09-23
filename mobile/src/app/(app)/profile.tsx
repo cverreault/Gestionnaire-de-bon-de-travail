@@ -10,11 +10,26 @@ import { useGpsStore } from '../../gps/gps.store';
 import { usePushStore } from '../../push/push.store';
 import { sendReport } from '../../diag/report';
 import { refreshPermissions } from '../../gps/useGpsController';
+import { apkSelfUpdateEnabled, checkForApkUpdate } from '../../update/useApkUpdate';
+import { useApkUpdate } from '../../update/apk-update.store';
 import { useSession } from '../../stores/session.store';
 import { font, radius, spacing, useTheme } from '../../theme/tokens';
 
 export default function ProfileScreen() {
   const { t, i18n } = useTranslation();
+  // B62 — manual update check (the automatic one runs every 15 min / on foreground).
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateResult, setUpdateResult] = useState<'upToDate' | null>(null);
+  const updateAvailable = useApkUpdate((s) => s.available);
+  async function manualCheck() {
+    setCheckingUpdate(true);
+    setUpdateResult(null);
+    await checkForApkUpdate(true);
+    const st = useApkUpdate.getState();
+    setCheckingUpdate(false);
+    if (st.error) Alert.alert(t('update.failed'), st.error);
+    else if (!st.available) setUpdateResult('upToDate');
+  }
   const theme = useTheme();
   const router = useRouter();
   const qc = useQueryClient();
@@ -107,6 +122,18 @@ export default function ProfileScreen() {
         {row('profile.workspace', workspace ? `${workspace.name || ''} ${workspace.baseUrl}`.trim() : null)}
         {row('profile.device', deviceId)}
         {row('profile.version', `${Application.nativeApplicationVersion ?? '0.0.0'} (${Application.nativeBuildVersion ?? '-'})`)}
+        {apkSelfUpdateEnabled() && (
+          <Pressable
+            onPress={() => void manualCheck()}
+            disabled={checkingUpdate}
+            style={({ pressed }) => ({ alignSelf: 'flex-start', paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: theme.primary, opacity: pressed || checkingUpdate ? 0.6 : 1 })}
+          >
+            <Text style={{ color: theme.primary, fontWeight: '600', fontSize: font.sm }}>
+              {checkingUpdate ? t('update.checking') : updateResult === 'upToDate' ? `✅ ${t('update.upToDate')}` : `🔄 ${t('update.check')}`}
+            </Text>
+          </Pressable>
+        )}
+        {updateAvailable && <Text style={{ color: theme.primary, fontSize: font.sm }}>{t('update.available', { version: updateAvailable.version })} — {t('update.goInstall')}</Text>}
         {user?.role === 'TECHNICIAN' && row('push.title', pushLine)}
       </View>
       {user?.role === 'TECHNICIAN' && (
