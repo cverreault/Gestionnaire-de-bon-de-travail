@@ -41,7 +41,9 @@ import { CLIENT_LOCATION_HEADER, parseClientLocation } from '../contracts/client
 export class TenantResolverMiddleware implements NestMiddleware {
   private readonly logger = new Logger(TenantResolverMiddleware.name);
 
-  private cache = new Map<string, TenantContext>();
+  /** B59 — short TTL so a changed setting (time zone) is picked up without restart. */
+  private cache = new Map<string, { tenant: TenantContext; at: number }>();
+  private static readonly CACHE_TTL_MS = 60_000;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -52,11 +54,12 @@ export class TenantResolverMiddleware implements NestMiddleware {
     const slug = extractTenantSlug(req.headers.host);
     const lookupSlug = slug ?? 'default';
 
-    let tenant = this.cache.get(lookupSlug);
+    const cached = this.cache.get(lookupSlug);
+    let tenant = cached && Date.now() - cached.at < TenantResolverMiddleware.CACHE_TTL_MS ? cached.tenant : undefined;
     if (!tenant) {
       const row = await this.prisma.tenant.findUnique({
         where: { slug: lookupSlug },
-        select: { id: true, slug: true, name: true, isActive: true },
+        select: { id: true, slug: true, name: true, isActive: true, timezone: true },
       });
 
       if (!row) {
@@ -75,7 +78,7 @@ export class TenantResolverMiddleware implements NestMiddleware {
         throw new NotFoundException('Tenant DEFAULT introuvable');
       }
       tenant = row;
-      this.cache.set(lookupSlug, tenant);
+      this.cache.set(lookupSlug, { tenant, at: Date.now() });
     }
 
     if (!tenant.isActive) {
@@ -105,7 +108,7 @@ export class TenantResolverMiddleware implements NestMiddleware {
     const deviceId = extractDeviceId(req.headers[DEVICE_ID_HEADER]);
     // B45 — position of the client at the time of the action, for the audit trail.
     const clientLocation = parseClientLocation(req.headers[CLIENT_LOCATION_HEADER]);
-    this.context.run({ tenantId: tenant.id, userId: null, deviceId, clientLocation }, () => next());
+    this.context.run({ tenantId: tenant.id, userId: null, deviceId, clientLocation, timezone: tenant.timezone }, () => next());
   }
 
   /** Test-only — wipe the slug→tenant cache. */
@@ -115,7 +118,7 @@ export class TenantResolverMiddleware implements NestMiddleware {
 
   /** Test-only — pre-warm the cache (mostly for spec isolation). */
   primeCache(slug: string, tenant: TenantContext): void {
-    this.cache.set(slug, tenant);
+    this.cache.set(slug, { tenant, at: Date.now() });
   }
 
   /** Stable export for handlers that need it. */

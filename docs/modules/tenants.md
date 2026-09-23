@@ -145,3 +145,7 @@ See [ADR-009](../adrs/ADR-009-multi-tenancy.md#open-questions) for the full back
 - B6.1 → B6.13 commits — see ADR-009 references
 - [`docs/adrs/ADR-009-multi-tenancy.md`](../adrs/ADR-009-multi-tenancy.md)
 - [`docs/sprints/2026-06-sprint-1-summary.md`](../sprints/2026-06-sprint-1-summary.md) — B6 section
+
+## Fuseau horaire (B59)
+
+`tenants.timezone` (IANA, défaut `America/Toronto`), modifiable dans Paramètres → Entreprise (`PATCH /tenants/settings { timezone }`, validé par `Intl.DateTimeFormat`). Le `TenantResolverMiddleware` le met dans le `RequestContext` (cache 60 s) ; les calculs « à la journée » (`startOfLocalDay`, filtre par date des BT, BT terminés aujourd'hui visibles par le technicien) l'utilisent.

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import AddressAutocomplete from './AddressAutocomplete';
 import CoordinatesInput from './CoordinatesInput';
@@ -16,12 +16,23 @@ export default function CompanySettingsSection() {
   const addPoint = useAddDeparturePoint();
   const removePoint = useRemoveDeparturePoint();
   const [email, setEmail] = useState('');
+  const [timezone, setTimezone] = useState('America/Toronto');
+  // B59 — every zone the browser knows, Canada first.
+  const zones = useMemo(() => {
+    const intl = Intl as unknown as { supportedValuesOf?: (key: string) => string[] };
+    const all: string[] = typeof intl.supportedValuesOf === 'function' ? intl.supportedValuesOf('timeZone') : ['America/Toronto'];
+    const canada = ['America/St_Johns', 'America/Halifax', 'America/Toronto', 'America/Winnipeg', 'America/Regina', 'America/Edmonton', 'America/Vancouver'];
+    return [...canada.filter((z) => all.includes(z)), ...all.filter((z) => !canada.includes(z))];
+  }, []);
   const [msg, setMsg] = useState<string | null>(null);
   const [label, setLabel] = useState('');
   const [picked, setPicked] = useState<{ address: string; lat: number; lng: number } | null>(null);
 
   useEffect(() => {
-    if (data) setEmail(data.completedJobsEmail ?? '');
+    if (data) {
+      setEmail(data.completedJobsEmail ?? '');
+      setTimezone(data.timezone ?? 'America/Toronto');
+    }
   }, [data]);
 
   function saveEmail() {
@@ -31,6 +42,18 @@ export default function CompanySettingsSection() {
       {
         onSuccess: () => setMsg(t('company.saved', { defaultValue: 'Réglages enregistrés.' })),
         onError: () => setMsg(t('company.error', { defaultValue: "Impossible d'enregistrer. Vérifiez le courriel." })),
+      },
+    );
+  }
+
+  function saveTimezone(zone: string) {
+    setTimezone(zone);
+    setMsg(null);
+    update.mutate(
+      { timezone: zone },
+      {
+        onSuccess: () => setMsg(t('company.saved', { defaultValue: 'Réglages enregistrés.' })),
+        onError: () => setMsg(t('company.timezoneError', { defaultValue: 'Fuseau horaire refusé par le serveur.' })),
       },
     );
   }
@@ -58,6 +81,15 @@ export default function CompanySettingsSection() {
         )}
 
         <div>
+          <label htmlFor="company-timezone" style={{ ...formStyles.label }}>{t('company.timezone', { defaultValue: "Fuseau horaire de l'entreprise" })}</label>
+          <select id="company-timezone" style={{ ...formStyles.select, maxWidth: 360 }} value={timezone} onChange={(e) => saveTimezone(e.target.value)} disabled={isLoading || update.isPending}>
+            {zones.map((z) => (
+              <option key={z} value={z}>{z}</option>
+            ))}
+          </select>
+          <p style={{ fontSize: theme.font.sizeXs, color: theme.colors.textMuted, margin: '0.25rem 0 1rem' }}>
+            {t('company.timezoneHint', { defaultValue: "Sert aux calculs « à la journée » : filtre Jour, BT terminés aujourd'hui pour les techniciens, rapports." })}
+          </p>
           <label htmlFor="company-email" style={{ ...formStyles.label }}>{t('company.completedJobsEmail', { defaultValue: 'Courriel qui reçoit chaque travail complété' })}</label>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
             <input id="company-email" type="email" style={{ ...formStyles.input, maxWidth: 360 }} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="travaux@entreprise.com" disabled={isLoading} />

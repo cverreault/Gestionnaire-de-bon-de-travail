@@ -383,6 +383,9 @@
     "pickAddress": "Choisissez une adresse dans les suggestions, saisissez les coordonnées ou utilisez « Ma position ».",
     "addPoint": "Ajouter le point",
     "addressPlaceholder": "Adresse (choisie ci-dessus ou saisie)",
-    "pointReady": "Position connue : le point peut être ajouté."
+    "pointReady": "Position connue : le point peut être ajouté.",
+    "timezone": "Fuseau horaire de l'entreprise",
+    "timezoneHint": "Sert aux calculs « à la journée » : filtre Jour, BT terminés aujourd'hui pour les techniciens, rapports.",
+    "timezoneError": "Fuseau horaire refusé par le serveur."
   }
 }

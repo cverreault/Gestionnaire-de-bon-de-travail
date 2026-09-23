@@ -59,6 +59,14 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.19.2',
+    name: "Fuseau horaire de l'entreprise",
+    date: 'Septembre 2026',
+    entries: [
+      { type: 'new', text: "🕒 Paramètres → Entreprise : choix du fuseau horaire (défaut America/Toronto). Il sert à tout ce qui se calcule « à la journée » : filtre Jour, BT terminés aujourd'hui visibles par le technicien" },
+    ],
+  },
+  {
     version: '2.19.1',
     name: 'Filtre « jour »',
     date: 'Septembre 2026',

@@ -26,6 +26,8 @@ export interface RequestContext {
   deviceId?: string | null;
   /** `X-Client-Location` (B45) : where the client was when it performed the action ; null when absent. */
   clientLocation?: ClientLocation | null;
+  /** B59 — company time zone (IANA) resolved with the tenant. */
+  timezone?: string;
 }
 
 @Injectable()

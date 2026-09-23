@@ -9,6 +9,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { RequestContextService } from '../context/request-context.service';
 import {
+  DEFAULT_TIMEZONE,
   TENANT_IS_IMPLICIT_KEY,
   TENANT_REQUEST_KEY,
   TenantContext,
@@ -162,9 +163,9 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     req: { [TENANT_REQUEST_KEY]?: TenantContext },
     jwtTenantId: string,
   ): Promise<void> {
-    type Row = { id: string; slug: string; name: string; is_active: boolean };
+    type Row = { id: string; slug: string; name: string; is_active: boolean; timezone: string | null };
     const rows = await this.prisma.$queryRawUnsafe<Row[]>(
-      `SELECT id, slug, name, is_active FROM tenants WHERE id = $1 LIMIT 1`,
+      `SELECT id, slug, name, is_active, timezone FROM tenants WHERE id = $1 LIMIT 1`,
       jwtTenantId,
     );
     const row = rows[0];
@@ -174,6 +175,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       slug: row?.slug ?? '',
       name: row?.name ?? '',
       isActive: row?.is_active ?? true,
+      timezone: row?.timezone ?? DEFAULT_TIMEZONE,
     };
     const current = this.context.current();
     if (current) {

@@ -144,6 +144,8 @@ model Tenant {
   ownerEmail String? @map("owner_email")
   // B48 — réglages d'entreprise : courriel des travaux complétés
   completedJobsEmail String? @map("completed_jobs_email")
+  /// B59 — IANA time zone of the company : local day bounds (filters, « terminé aujourd'hui »).
+  timezone           String  @default("America/Toronto")
   departurePoints    DeparturePoint[]
   loginEvents        LoginEvent[]
 
