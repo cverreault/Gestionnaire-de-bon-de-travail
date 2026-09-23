@@ -55,6 +55,9 @@ describe('Audit location (integration)', () => {
     const woId = created.body.id as string;
     const createdRow = await waitForAudit(woId, 'workOrders.workOrder.created');
     expect(createdRow.location).toBeNull();
+    // B57 — a technician may only act on a dispatched work order.
+    await api().post(`/api/work-orders/${woId}/assign-and-dispatch`).set('Authorization', `Bearer ${adminToken}`)
+      .send({ technicianId: tech.id }).expect(200);
 
     // Note with position
     const note = await api().post(`/api/work-orders/${woId}/notes`).set('Authorization', `Bearer ${techToken}`)

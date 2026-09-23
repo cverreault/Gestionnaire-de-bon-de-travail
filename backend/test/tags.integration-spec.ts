@@ -189,8 +189,11 @@ describe('Tags (integration)', () => {
     const adminToken = await login(admin.email, admin.password);
     const techToken = await login(tech.email, tech.password);
     const lumii = await createTag(adminToken, 'Lumii');
-    await api().post('/api/work-orders').set('Authorization', `Bearer ${adminToken}`)
+    const mine = await api().post('/api/work-orders').set('Authorization', `Bearer ${adminToken}`)
       .send({ title: 'Mine', type: 'OTHER', clientAddress: '1 rue Test', assignedToId: tech.id, tagIds: [lumii.id] }).expect(201);
+    // B57 — the phone only receives dispatched work orders.
+    await api().post(`/api/work-orders/${mine.body.id}/assign-and-dispatch`).set('Authorization', `Bearer ${adminToken}`)
+      .send({ technicianId: tech.id }).expect(200);
 
     const pull = await api().get('/api/me/sync').set('Authorization', `Bearer ${techToken}`).expect(200);
     expect(pull.body.workOrders).toHaveLength(1);
