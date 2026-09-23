@@ -65,7 +65,8 @@ const VERSIONS: ReleaseVersion[] = [
     entries: [
       { type: 'new', text: "🚫 Statut « Annulé » dans tous les processus : un BT peut être annulé depuis n'importe quelle étape ouverte (admin ou répartiteur, raison obligatoire) puis réouvert. Un BT annulé n'entre dans aucune statistique, quitte le calendrier et la carte dispatch, est masqué des listes par défaut et devient lecture seule dans l'app" },
       { type: 'improvement', text: "👁 Liste des BT : « Afficher les complétés » montre aussi les annulés ; le filtre Statut permet de ne voir que les annulés" },
-      { type: 'new', text: "☑️ Actions en lot : cochez plusieurs BT dans la liste puis assignez, répartissez, désassignez, planifiez une date ou annulez d'un coup ; chaque BT suit le processus normal et les échecs sont listés avec leur motif" },
+      { type: 'new', text: "☑️ Actions en lot : cochez plusieurs BT dans la liste puis assignez, répartissez, désassignez, planifiez une date, ajoutez ou retirez des tags, ou annulez d'un coup ; chaque BT suit le processus normal et les échecs sont listés avec leur motif" },
+      { type: 'new', text: "🎬 Vidéos sur les bons de travail : bouton « Filmer » dans l'app (jusqu'à 3 min, 100 Mo), envoi de vidéos depuis le web, lecture dans l'onglet Photos et vidéos et depuis l'app" },
     ],
   },
   {

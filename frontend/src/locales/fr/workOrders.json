@@ -101,7 +101,7 @@
     "selectTemplate": "Choisir un modèle",
     "assignTechnician": "Assigner un technicien",
     "searchClient": "Rechercher un client par nom, prénom ou email…",
-    "uploadPhoto": "Ajouter une photo",
+    "uploadPhoto": "Ajouter une photo ou une vidéo",
     "viewAttachment": "Voir",
     "downloadAttachment": "Télécharger",
     "deleteAttachment": "Supprimer"
@@ -418,7 +418,7 @@
       "parts": "Inventaire",
       "signatures": "Signatures",
       "attachments": "Pièces jointes",
-      "photos": "Photos"
+      "photos": "Photos et vidéos"
     }
   },
   "modes": {
@@ -497,6 +497,9 @@
     "apply": "Appliquer à {{count}} BT",
     "cancelConfirm": "Annuler {{count}} bon(s) de travail ?",
     "allDone": "{{count}} BT traité(s)",
-    "partial": "{{ok}} réussi(s), {{failed}} échec(s) — {{details}}"
+    "partial": "{{ok}} réussi(s), {{failed}} échec(s) — {{details}}",
+    "addTags": "Ajouter des tags",
+    "removeTags": "Retirer des tags",
+    "pickTags": "Choisir les tags"
   }
 }

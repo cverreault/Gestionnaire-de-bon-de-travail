@@ -24,6 +24,10 @@ export enum BatchAction {
   CANCEL = 'CANCEL',
   /** Set the scheduled date (and optionally the time window). */
   SCHEDULE = 'SCHEDULE',
+  /** Add the given tags (existing ones kept). */
+  ADD_TAGS = 'ADD_TAGS',
+  /** Remove the given tags (others kept). */
+  REMOVE_TAGS = 'REMOVE_TAGS',
 }
 
 export class BatchWorkOrdersDto {
@@ -63,6 +67,13 @@ export class BatchWorkOrdersDto {
   @IsString({ message: i18nValidationMessage('validation.IS_STRING') })
   @MaxLength(1000, { message: i18nValidationMessage('validation.MAX_LENGTH') })
   reason?: string;
+
+  @ApiPropertyOptional({ description: 'Tags — ADD_TAGS et REMOVE_TAGS (1 à 20)', type: [String] })
+  @IsOptional()
+  @IsArray({ message: i18nValidationMessage('validation.IS_ARRAY') })
+  @ArrayMaxSize(20, { message: i18nValidationMessage('validation.ARRAY_MAX_SIZE') })
+  @IsUUID('4', { each: true, message: i18nValidationMessage('validation.IS_UUID') })
+  tagIds?: string[];
 
   @ApiPropertyOptional({ description: 'Note de dispatch — DISPATCH' })
   @IsOptional()

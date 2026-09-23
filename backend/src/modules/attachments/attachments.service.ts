@@ -22,6 +22,11 @@ const ALLOWED_MIME_TYPES = new Set([
   'image/png',
   'image/gif',
   'image/webp',
+  // Videos (B56)
+  'video/mp4',
+  'video/quicktime',
+  'video/webm',
+  'video/3gpp',
   // Documents
   'application/pdf',
   'application/msword',
@@ -31,6 +36,8 @@ const ALLOWED_MIME_TYPES = new Set([
 ]);
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+/** B56 — field videos are heavier ; 100 MB ≈ 3 min of phone footage. */
+const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024;
 
 export interface CurrentUserRef {
   id: string;
@@ -82,7 +89,7 @@ export class AttachmentsService {
     if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
       throw new BadRequestException(
         `Type de fichier non autorisé : ${file.mimetype}. ` +
-          `Types acceptés : images (jpg/png/gif/webp), documents (pdf/doc/docx/xls/xlsx)`,
+          `Types acceptés : images (jpg/png/gif/webp), vidéos (mp4/mov/webm/3gp), documents (pdf/doc/docx/xls/xlsx)`,
       );
     }
 
@@ -96,8 +103,11 @@ export class AttachmentsService {
     }
 
     // 4. Validate file size (Multer limit handles this too, but double-check here)
-    if (file.size > MAX_FILE_SIZE_BYTES) {
-      throw new BadRequestException('La taille du fichier dépasse la limite de 10 Mo');
+    const isVideo = file.mimetype.startsWith('video/');
+    if (file.size > (isVideo ? MAX_VIDEO_SIZE_BYTES : MAX_FILE_SIZE_BYTES)) {
+      throw new BadRequestException(
+        isVideo ? 'La taille de la vidéo dépasse la limite de 100 Mo' : 'La taille du fichier dépasse la limite de 10 Mo',
+      );
     }
 
     // 5. Build MinIO storage key: work-orders/{workOrderId}/{uuid}.{ext}

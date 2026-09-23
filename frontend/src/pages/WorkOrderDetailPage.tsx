@@ -11,6 +11,7 @@ import { formatStreet } from '../utils/addressFormat';
 import TemplateFormRenderer from '../components/TemplateFormRenderer';
 import TemplateValuesView from '../components/TemplateValuesView';
 import AuthImage from '../components/AuthImage';
+import AuthVideo from '../components/AuthVideo';
 import { downloadAttachment, viewAttachment } from '../utils/attachmentActions';
 import { useQueryClient } from '@tanstack/react-query';
 import WorkOrderStatusBadge from '../components/WorkOrderStatusBadge';
@@ -93,7 +94,7 @@ export default function WorkOrderDetailPage({ idOverride, onClose, embedded = fa
       <button title={t('actions.deleteAttachment', { defaultValue: 'Supprimer' })} style={{ ...attachmentActionStyle, color: theme.colors.danger }} disabled={busyAttachment === att.id} onClick={() => void removeAttachment(att)}>🗑</button>
     </span>
   );
-  const [photoPreview, setPhotoPreview] = useState<{ id: string; name: string } | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<{ id: string; name: string; video?: boolean } | null>(null);
   const addNote = useAddNote(id!);
   const uploadAttachment = useUploadAttachment(id!);
   const currentUser = useAuthStore((s) => s.user);
@@ -397,7 +398,9 @@ export default function WorkOrderDetailPage({ idOverride, onClose, embedded = fa
   const valueStyle: React.CSSProperties = { color: theme.colors.text };
 
   // Top tabs of the read view : details, history, parts, signatures, attachments, photos.
-  const isImage = (mime: string) => mime.startsWith('image/');
+  // B56 — videos live in the photos tab next to the pictures.
+  const isVideo = (mime: string) => mime.startsWith('video/');
+  const isImage = (mime: string) => mime.startsWith('image/') || isVideo(mime);
   const photos = (wo?.attachments ?? []).filter((a) => isImage(a.mimeType));
   const files = (wo?.attachments ?? []).filter((a) => !isImage(a.mimeType));
   const tabs: Array<{ key: DetailTab; label: string; count?: number; hidden?: boolean }> = [
@@ -846,12 +849,21 @@ export default function WorkOrderDetailPage({ idOverride, onClose, embedded = fa
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
             {photos.map((att) => (
               <div key={att.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {isVideo(att.mimeType) ? (
+                  <AuthVideo
+                    src={`/attachments/${att.id}/content`}
+                    preview
+                    onClick={() => setPhotoPreview({ id: att.id, name: att.fileName, video: true })}
+                    style={{ width: '100%', height: 140, borderRadius: theme.radius.md, border: theme.borders.light, cursor: 'zoom-in' }}
+                  />
+                ) : (
                 <AuthImage
                   src={`/attachments/${att.id}/content`}
                   alt={att.fileName}
                   onClick={() => setPhotoPreview({ id: att.id, name: att.fileName })}
                   style={{ width: '100%', height: 140, objectFit: 'cover', borderRadius: theme.radius.md, border: theme.borders.light, cursor: 'zoom-in' }}
                 />
+                )}
                 <span style={{ fontSize: theme.font.sizeXs, color: theme.colors.textLight, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={att.fileName}>{att.fileName}</span>
                 {attachmentActions(att)}
               </div>
@@ -859,14 +871,18 @@ export default function WorkOrderDetailPage({ idOverride, onClose, embedded = fa
           </div>
         )}
         <div>
-          <input type="file" accept="image/*" onChange={handleFileUpload} style={{ display: 'none' }} id="photo-upload" />
+          <input type="file" accept="image/*,video/*" onChange={handleFileUpload} style={{ display: 'none' }} id="photo-upload" />
           <label htmlFor="photo-upload" style={{ ...buttonStyles.secondary, display: 'inline-flex', cursor: 'pointer' }}>
             {uploadAttachment.isPending ? tCommon('actions.uploading', { defaultValue: 'Envoi...' }) : `+ ${t('actions.uploadPhoto', { defaultValue: 'Ajouter une photo' })}`}
           </label>
         </div>
         {photoPreview && (
           <div onClick={() => setPhotoPreview(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-out', flexDirection: 'column', gap: '0.75rem' }}>
+            {photoPreview.video ? (
+              <AuthVideo src={`/attachments/${photoPreview.id}/content`} style={{ maxWidth: '92vw', maxHeight: '85vh', borderRadius: theme.radius.md }} />
+            ) : (
             <AuthImage src={`/attachments/${photoPreview.id}/content`} alt={photoPreview.name} style={{ maxWidth: '92vw', maxHeight: '85vh', objectFit: 'contain', borderRadius: theme.radius.md }} />
+            )}
             <span style={{ color: '#fff', fontSize: theme.font.sizeSm }}>{photoPreview.name}</span>
           </div>
         )}

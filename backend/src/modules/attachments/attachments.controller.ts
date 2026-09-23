@@ -32,13 +32,18 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { Idempotent } from '../../common/decorators/idempotent.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+// B56 — videos up to 100 MB (the service enforces 10 MB for everything else).
+const MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024;
 
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',
   'image/png',
   'image/gif',
   'image/webp',
+  'video/mp4',
+  'video/quicktime',
+  'video/webm',
+  'video/3gpp',
   'application/pdf',
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -84,7 +89,7 @@ export class AttachmentsController {
   )
   @ApiConsumes('multipart/form-data')
   @ApiBody({
-    description: 'Fichier à uploader (max 10 Mo)',
+    description: 'Fichier à uploader (max 10 Mo, vidéos 100 Mo)',
     schema: {
       type: 'object',
       properties: {
@@ -97,8 +102,8 @@ export class AttachmentsController {
     summary: 'Uploader une pièce jointe',
     description:
       'Upload un fichier vers MinIO et enregistre les métadonnées. ' +
-      'Types acceptés : images (jpg/png/gif/webp), documents (pdf/doc/docx/xls/xlsx). ' +
-      'Taille max : 10 Mo.',
+      'Types acceptés : images (jpg/png/gif/webp), vidéos (mp4/mov/webm/3gp, B56), documents (pdf/doc/docx/xls/xlsx). ' +
+      'Taille max : 10 Mo (vidéos : 100 Mo).',
   })
   @ApiParam({ name: 'workOrderId', description: 'UUID du bon de travail' })
   @ApiResponse({ status: 201, description: 'Fichier uploadé avec succès' })
