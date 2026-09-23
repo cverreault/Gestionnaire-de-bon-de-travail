@@ -78,3 +78,15 @@ ssh cverreault@imp '/home/cverreault/projet/taskmgr/scripts/mobile/publish-apk.s
 `publish-apk.sh` renomme l'APK en `downloads/dispatch2go-<version>.apk`, pointe l'alias `dispatch2go.apk` (lien partagé) sur cette version, supprime les versions précédentes (`KEEP_OLD=1` pour les garder) et écrit `downloads/version.json` (version **lue dans l'APK** par `scripts/mobile/apk-version.py` — un écart avec `mobile/app.config.ts` signale un clone en retard sur le Mac : `git pull` puis rebuild —, fichier, taille, sha256, date, notes ; la page `downloads/` l'affiche). Les apps Android installées hors store le consultent au démarrage, au retour au premier plan (≤ toutes les 6 h) et au retour du réseau ; si la version est plus récente, une bannière « Mise à jour disponible » télécharge l'APK et ouvre l'installateur Android — l'utilisateur confirme d'un tap, Android n'autorise pas l'installation silencieuse. Les builds `production` (`extra.distribution = store`) ignorent ce mécanisme : Google Play met à jour lui-même. iOS : uniquement TestFlight / App Store.
 
 Ne pas oublier de **monter `version` dans `app.config.ts`** avant chaque build de test, sinon les appareils ne verront pas de mise à jour.
+
+## 10. Activer le push sur l'APK hors store (B66)
+
+Le push passe par Expo Push Service ; il faut un projet Expo (identifiant public) et, pour Android, un projet Firebase. Une fois faits, ça marche pour tous les builds (local, preview, production) sans rien côté serveur Dispatch2Go, sauf le réglage `mobile.push.enabled` (super-admin, actif par défaut).
+
+1. **Projet Expo** — sur le Mac : `npm i -g eas-cli`, `eas login` (compte Expo gratuit), puis dans `mobile/` : `eas init`. Copier le `projectId` affiché dans `mobile/eas-project.json` : `{ "projectId": "…" }` (commité : ce n'est pas un secret).
+2. **Firebase (Android)** — console.firebase.google.com → nouveau projet → ajouter une app Android avec le package `com.dispatch2go.app` → télécharger `google-services.json` dans `mobile/` (gitignoré). Dans Paramètres du projet → Comptes de service → générer une clé privée (JSON).
+3. **Donner la clé FCM à Expo** — `eas credentials -p android` → *Push Notifications: FCM V1 service account key* → *Upload* → choisir le JSON de l'étape 2. C'est ce qui permet à Expo d'atteindre les téléphones Android.
+4. **Rebuild** — `npx expo prebuild --platform android --clean && cd android && ./gradlew assembleRelease`, publier avec `publish-apk.sh`. Sur le téléphone, le profil affiche le statut du push ; la table `devices` a alors un `push_token`.
+5. **iOS (plus tard)** — compte Apple Developer, `eas credentials -p ios` génère la clé APNs ; build via EAS ou Xcode.
+
+Vérification côté serveur : `POST /dispatcher/technicians/:id/locate` répond `{ sent: true }` et la position arrive en quelques secondes ; `mobile.expo-access-token` (super-admin) n'est nécessaire que si le projet Expo active la *push security*.
