@@ -27,7 +27,7 @@ const GOOGLE_SERVICES = process.env.GOOGLE_SERVICES_JSON ?? join(__dirname, 'goo
  */
 const IS_DEV = process.env.EAS_BUILD_PROFILE === 'development';
 
-const VERSION = '0.11.0';
+const VERSION = '0.11.1';
 
 /**
  * versionCode Android strictement croissant, dérivé de la version (0.7.0 → 700).
@@ -69,6 +69,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   plugins: [
     './plugins/with-ios-scene-lifecycle',
     './plugins/with-android-abis',
+    // B69 — compression vidéo sur l'appareil (encodeurs matériels) avant l'envoi.
+    'react-native-compressor',
     'expo-router',
     'expo-secure-store',
     'expo-localization',

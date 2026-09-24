@@ -6,6 +6,7 @@ import { WebView } from 'react-native-webview';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import { Video as VideoCompressor } from 'react-native-compressor';
 import { useMutation } from '@tanstack/react-query';
 import * as Crypto from 'expo-crypto';
 import { useSession } from '../stores/session.store';
@@ -36,12 +37,29 @@ async function prepareForUpload(asset: ImagePicker.ImagePickerAsset): Promise<Lo
   return { uri: out.uri, name: `photo-${stamp}.jpg`, type: 'image/jpeg' };
 }
 
-/** B56 — videos are queued as-is (no re-encoding on the phone) ; MOV on iOS, MP4 on Android. */
-async function prepareVideo(asset: ImagePicker.ImagePickerAsset): Promise<LocalFile & { ext: string }> {
-  const ext = asset.uri.toLowerCase().endsWith('.mov') ? 'mov' : asset.uri.toLowerCase().endsWith('.3gp') ? '3gp' : asset.uri.toLowerCase().endsWith('.webm') ? 'webm' : 'mp4';
-  const type = asset.mimeType ?? (ext === 'mov' ? 'video/quicktime' : ext === '3gp' ? 'video/3gpp' : ext === 'webm' ? 'video/webm' : 'video/mp4');
+/** B69 — H.264 ≤ 1280 px, ~2.5 Mbit/s : a 30 s 1080p clip goes from ~130 MB to ~10 MB before leaving the phone. */
+const VIDEO_MAX_EDGE = 1280;
+const VIDEO_BITRATE = 2_500_000;
+
+/**
+ * B56/B69 — videos are compressed on the device (hardware encoders, works
+ * offline) then queued ; the original stays in the phone's gallery. When the
+ * compressor fails, the original is queued as is (the server compresses too).
+ */
+async function prepareVideo(asset: ImagePicker.ImagePickerAsset, onProgress?: (pct: number) => void): Promise<LocalFile & { ext: string }> {
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  return { uri: asset.uri, name: `video-${stamp}.${ext}`, type, ext };
+  try {
+    const out = await VideoCompressor.compress(
+      asset.uri,
+      { compressionMethod: 'manual', maxSize: VIDEO_MAX_EDGE, bitrate: VIDEO_BITRATE, progressDivider: 5 },
+      (p) => onProgress?.(Math.round(p * 100)),
+    );
+    return { uri: out, name: `video-${stamp}.mp4`, type: 'video/mp4', ext: 'mp4' };
+  } catch {
+    const ext = asset.uri.toLowerCase().endsWith('.mov') ? 'mov' : asset.uri.toLowerCase().endsWith('.3gp') ? '3gp' : asset.uri.toLowerCase().endsWith('.webm') ? 'webm' : 'mp4';
+    const type = asset.mimeType ?? (ext === 'mov' ? 'video/quicktime' : ext === '3gp' ? 'video/3gpp' : ext === 'webm' ? 'video/webm' : 'video/mp4');
+    return { uri: asset.uri, name: `video-${stamp}.${ext}`, type, ext };
+  }
 }
 
 interface Props {
@@ -63,6 +81,8 @@ export default function AttachmentsCard({ workOrderId, attachments, pendingIds, 
   const enqueueOp = useSyncStore((s) => s.enqueueOp);
   const [error, setError] = useState<string | null>(null);
   const [viewing, setViewing] = useState<AttachmentRef | null>(null);
+  // B69 — on-device compression progress (null when idle).
+  const [compressing, setCompressing] = useState<number | null>(null);
   // B68 — caption asked right after the capture ; local overrides until the next pull.
   const [naming, setNaming] = useState<{ assets: ImagePicker.ImagePickerAsset[]; title: string } | null>(null);
   const [titles, setTitles] = useState<Record<string, string | null>>({});
@@ -88,10 +108,17 @@ export default function AttachmentsCard({ workOrderId, attachments, pendingIds, 
         // Several files under one name : « Nom (1) », « Nom (2) »…
         const named = caption ? (assets.length > 1 ? `${caption} (${i + 1})` : caption) : undefined;
         if (asset.type === 'video') {
-          const info = await FileSystem.getInfoAsync(asset.uri);
+          setCompressing(0);
+          let file: LocalFile & { ext: string };
+          try {
+            file = await prepareVideo(asset, setCompressing);
+          } finally {
+            setCompressing(null);
+          }
+          // Size check AFTER compression : the raw camera file is not what gets sent.
+          const info = await FileSystem.getInfoAsync(file.uri);
           const size = info.exists && 'size' in info ? info.size : asset.fileSize ?? 0;
           if (size > MAX_VIDEO_BYTES) throw new ApiError(413, t('workOrder.videoTooLarge'));
-          const file = await prepareVideo(asset);
           const uri = await persistForQueue(opId, file.uri, file.ext);
           await enqueueOp(user.id, workOrderId, 'attachment', { uri, name: file.name, type: file.type, ...(named ? { title: named } : {}) }, opId);
           continue;
@@ -229,7 +256,7 @@ export default function AttachmentsCard({ workOrderId, attachments, pendingIds, 
       ))}
       {canUpload && (
         <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs }}>
-          {btn(upload.isPending ? t('workOrder.uploading') : `📷 ${t('workOrder.takePhoto')}`, () => void takePhoto(), true)}
+          {btn(compressing !== null ? t('workOrder.compressing', { pct: compressing }) : upload.isPending ? t('workOrder.uploading') : `📷 ${t('workOrder.takePhoto')}`, () => void takePhoto(), true)}
           {btn(`🎬 ${t('workOrder.recordVideo')}`, () => void recordVideo())}
           {btn(`🖼 ${t('workOrder.choosePhoto')}`, () => void choosePhoto())}
         </View>
