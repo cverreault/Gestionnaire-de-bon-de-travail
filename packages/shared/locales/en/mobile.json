@@ -110,14 +110,15 @@
     "eta": "{{km}} km · {{min}} min drive",
     "recordVideo": "Record video",
     "videos": "Videos",
-    "videoTooLarge": "Video too large (max 100 MB) — record a shorter one.",
+    "videoTooLarge": "Video still too large after compression (max 100 MB) — record a shorter one.",
     "openingVideo": "Opening video…",
     "videoOpenFailed": "Could not open the video.",
     "nameMedia_one": "Photo name",
     "nameMedia_other": "Name for the {{count}} photos",
     "namePlaceholder": "e.g. fibre panel rack 2 (optional)",
     "skipName": "No name",
-    "renameFailed": "Could not rename (offline?)"
+    "renameFailed": "Could not rename (offline?)",
+    "compressing": "Compressing… {{pct}} %"
   },
   "status": {
     "REQUESTED": "Requested",

@@ -110,14 +110,15 @@
     "eta": "{{km}} km · {{min}} min de route",
     "recordVideo": "Filmer",
     "videos": "Vidéos",
-    "videoTooLarge": "Vidéo trop lourde (max 100 Mo) — filmez plus court.",
+    "videoTooLarge": "Vidéo trop lourde même compressée (max 100 Mo) — filmez plus court.",
     "openingVideo": "Ouverture de la vidéo…",
     "videoOpenFailed": "Impossible d'ouvrir la vidéo.",
     "nameMedia_one": "Nom de la photo",
     "nameMedia_other": "Nom des {{count}} photos",
     "namePlaceholder": "Ex. : panneau fibre rack 2 (optionnel)",
     "skipName": "Sans nom",
-    "renameFailed": "Renommage impossible (hors ligne ?)"
+    "renameFailed": "Renommage impossible (hors ligne ?)",
+    "compressing": "Compression… {{pct}} %"
   },
   "status": {
     "REQUESTED": "Demandé",
