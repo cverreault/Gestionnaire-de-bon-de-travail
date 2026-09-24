@@ -51,6 +51,8 @@ export interface CurrentUserRef {
 /** B45 — domain events (aggregateId = workOrderId) ; consumed by `audit`. */
 export const ATTACHMENT_UPLOADED_EVENT = 'attachments.attachment.uploaded' as const;
 export const ATTACHMENT_REMOVED_EVENT = 'attachments.attachment.removed' as const;
+/** B68 — caption changed. */
+export const ATTACHMENT_RENAMED_EVENT = 'attachments.attachment.renamed' as const;
 
 @Injectable()
 export class AttachmentsService {
@@ -70,7 +72,9 @@ export class AttachmentsService {
     workOrderId: string,
     file: Express.Multer.File,
     currentUser: CurrentUserRef,
+    title?: string,
   ) {
+    const caption = title?.trim().slice(0, 120) || null;
     // 1. Validate work order exists
     const workOrder = await this.prisma.workOrder.findUnique({
       where: { id: workOrderId },
@@ -136,6 +140,7 @@ export class AttachmentsService {
           fileSize: file.size,
           mimeType: file.mimetype,
           storageKey: objectKey,
+          title: caption,
           workOrderId,
         },
       }),
@@ -148,7 +153,7 @@ export class AttachmentsService {
     // B45 — photos and files are actions of the history (audit listens to `attachments.**`).
     this.eventEmitter.emit(
       ATTACHMENT_UPLOADED_EVENT,
-      createDomainEvent({ name: ATTACHMENT_UPLOADED_EVENT, aggregateId: workOrderId, actorUserId: currentUser.id, data: { attachmentId: attachment.id, fileName: file.originalname, mimeType: file.mimetype, fileSize: file.size } }),
+      createDomainEvent({ name: ATTACHMENT_UPLOADED_EVENT, aggregateId: workOrderId, actorUserId: currentUser.id, data: { attachmentId: attachment.id, fileName: file.originalname, title: caption, mimeType: file.mimetype, fileSize: file.size } }),
     );
     return { ...attachment, workOrderUpdatedAt: touched.updatedAt };
   }
@@ -249,6 +254,36 @@ export class AttachmentsService {
       mimeType: attachment.mimeType,
       fileSize: attachment.fileSize,
     };
+  }
+
+  // ── Rename (B68) ───────────────────────────────────────────────────────────
+
+  async rename(attachmentId: string, title: string | null, currentUser: CurrentUserRef) {
+    const attachment = await this.prisma.attachment.findUnique({
+      where: { id: attachmentId },
+      include: { workOrder: { select: { assignedToId: true, status: true } } },
+    });
+    if (!attachment) {
+      throw new NotFoundException(`Pièce jointe #${attachmentId} introuvable`);
+    }
+    if (currentUser.role === Role.TECHNICIAN) {
+      if (attachment.workOrder.assignedToId !== currentUser.id) {
+        throw new ForbiddenException('Vous ne pouvez renommer que les pièces jointes de vos propres bons de travail');
+      }
+      if (!OPEN_FOR_TECHNICIAN.has(attachment.workOrder.status)) {
+        throw new ForbiddenException('Ce bon de travail est fermé : consultation seulement.');
+      }
+    }
+    const caption = title?.trim().slice(0, 120) || null;
+    const [updated, touched] = await this.prisma.$transaction([
+      this.prisma.attachment.update({ where: { id: attachmentId }, data: { title: caption } }),
+      this.prisma.workOrder.update({ where: { id: attachment.workOrderId }, data: { updatedAt: new Date() }, select: { updatedAt: true } }),
+    ]);
+    this.eventEmitter.emit(
+      ATTACHMENT_RENAMED_EVENT,
+      createDomainEvent({ name: ATTACHMENT_RENAMED_EVENT, aggregateId: attachment.workOrderId, actorUserId: currentUser.id, data: { attachmentId, fileName: attachment.fileName, from: attachment.title, title: caption, mimeType: attachment.mimeType } }),
+    );
+    return { ...updated, workOrderUpdatedAt: touched.updatedAt };
   }
 
   // ── Delete ─────────────────────────────────────────────────────────────────

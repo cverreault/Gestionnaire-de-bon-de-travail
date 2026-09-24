@@ -19,6 +19,8 @@ export interface AttachmentPayload {
   uri: string;
   name: string;
   type: string;
+  /** B68 — caption given by the technician (multipart field `title`). */
+  title?: string;
 }
 export interface SignaturePayload {
   /** PNG data-URL ; null clears (ADR-016 §6 : signatures stay inline on the work order). */

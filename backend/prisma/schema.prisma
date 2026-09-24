@@ -1343,6 +1343,8 @@ model Attachment {
   fileSize    Int       @map("file_size")
   mimeType    String    @map("mime_type")
   storageKey  String    @map("storage_key")
+  /// B68 — user-given name (photo caption), editable ; the original file name stays in fileName.
+  title       String?
   workOrderId String    @map("work_order_id")
   workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
   uploadedAt  DateTime  @default(now()) @map("uploaded_at")
