@@ -12,6 +12,7 @@ import { Prisma, Role, WorkOrderStatus } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { RequestContextService } from '../../common/context/request-context.service';
 import { DEFAULT_TIMEZONE } from '../../common/contracts/tenant-context.contract';
+import { startOfLocalDay } from '../../common/utils/local-day';
 import { RemindersService } from '../reminders/application/reminders.service';
 import { ProcessEngineService } from '../process/process-engine.service';
 import { ProcessCacheService } from '../process/process-cache.service';
@@ -41,15 +42,7 @@ import { toCsv } from '../../common/utils/csv.util';
 /** B57 — statuses a technician can act on (between dispatch and completion). */
 const TECHNICIAN_OPEN_STATUSES: WorkOrderStatus[] = [WorkOrderStatus.DISPATCHED, WorkOrderStatus.EN_ROUTE, WorkOrderStatus.IN_PROGRESS];
 
-/** Midnight of the current day in the given IANA zone (B59 : the tenant's `timezone`, default America/Toronto). */
-export function startOfLocalDay(now = new Date(), zone: string = DEFAULT_TIMEZONE): Date {
-  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).formatToParts(now);
-  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? 0);
-  const localMidnightAsUtc = Date.UTC(get('year'), get('month') - 1, get('day'), 0, 0, 0);
-  const localNowAsUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour') % 24, get('minute'), get('second'));
-  const offsetMs = now.getTime() - localNowAsUtc;
-  return new Date(localMidnightAsUtc + offsetMs);
-}
+export { startOfLocalDay } from '../../common/utils/local-day';
 
 const BARE_DATE = /^\d{4}-\d{2}-\d{2}$/;
 

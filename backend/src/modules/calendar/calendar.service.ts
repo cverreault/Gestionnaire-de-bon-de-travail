@@ -3,9 +3,13 @@ import {
   NotFoundException,
   BadRequestException,
   Logger,
+  Optional,
 } from '@nestjs/common';
 import { Prisma, WorkOrderStatus } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { RequestContextService } from '../../common/context/request-context.service';
+import { DEFAULT_TIMEZONE } from '../../common/contracts/tenant-context.contract';
+import { endOfLocalDay, startOfLocalDay } from '../../common/utils/local-day';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { CalendarQueryDto, CalendarView } from './dto/calendar-query.dto';
@@ -24,6 +28,8 @@ export interface CalendarEvent {
   workOrderId?: string | null;
   status?: WorkOrderStatus;
   color?: string;
+  /** B67 — work order with a date but no time window : shown in the all-day row. */
+  allDay?: boolean;
 }
 
 /** WorkOrderStatus → hex color for calendar display */
@@ -48,7 +54,15 @@ const APPOINTMENT_COLOR = '#7B68EE';
 export class CalendarService {
   private readonly logger = new Logger(CalendarService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    /** B67 — tenant time zone for all-day bounds (absent in unit tests). */
+    @Optional() private readonly requestContext?: RequestContextService,
+  ) {}
+
+  private zone(): string {
+    return this.requestContext?.current()?.timezone ?? DEFAULT_TIMEZONE;
+  }
 
   // ── Date-range helpers ─────────────────────────────────────────────────────
 
@@ -214,15 +228,18 @@ export class CalendarService {
       // If specific times are set, use them; otherwise treat as all-day event
       let startTime: Date;
       let endTime: Date;
+      let allDay = false;
 
       if (wo.scheduledStartTime && wo.scheduledEndTime) {
         startTime = wo.scheduledStartTime;
         endTime = wo.scheduledEndTime;
       } else {
-        // All-day fallback: span the entire scheduled day
+        // B67 — all-day fallback in the COMPANY time zone (the container runs in UTC :
+        // a local-midnight scheduledDate used to land on the previous evening).
         const d = wo.scheduledDate!;
-        startTime = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
-        endTime = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+        startTime = startOfLocalDay(d, this.zone());
+        endTime = endOfLocalDay(d, this.zone());
+        allDay = true;
       }
 
       return {
@@ -239,6 +256,7 @@ export class CalendarService {
         workOrderId: wo.id,
         status: wo.status,
         color: STATUS_COLORS[wo.status],
+        allDay,
       };
     });
 

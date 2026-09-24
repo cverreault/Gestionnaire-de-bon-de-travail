@@ -45,6 +45,10 @@ const TIMELINE_END   = 19;  // 19:00
 const HOUR_HEIGHT    = 60;  // px per hour
 const TOTAL_HEIGHT   = (TIMELINE_END - TIMELINE_START) * HOUR_HEIGHT; // 720px
 
+/** B67 — all-day row : one chip line per event, capped. */
+const ALL_DAY_CHIP_HEIGHT = 22;
+const ALL_DAY_MAX_ROWS = 3;
+
 const TIMELINE_HOURS = Array.from(
   { length: TIMELINE_END - TIMELINE_START + 1 },
   (_, i) => i + TIMELINE_START,
@@ -158,6 +162,7 @@ function TimelineDay({
   onEmptyClick,
   onEventDrop,
   onHover,
+  allDayRows = 0,
 }: {
   day: Date;
   events: CalendarEvent[];
@@ -169,12 +174,17 @@ function TimelineDay({
   onEmptyClick?: (day: Date, offsetY: number) => void;
   onEventDrop?: (event: CalendarEvent, day: Date, offsetY: number) => void;
   onHover?: (info: { x: number; y: number; day: Date; hours: number; mins: number } | null) => void;
+  /** B67 — height (in chip rows) of the all-day band, shared by every column of the view. */
+  allDayRows?: number;
 }) {
   const { t } = useTranslation('common');
   const [isDragOver, setIsDragOver] = useState(false);
 
+  // B67 — all-day work orders live in a band above the hour grid.
+  const allDayEvents = events.filter((ev) => ev.allDay);
   const positioned = assignColumns(
     events.filter((ev) => {
+      if (ev.allDay) return false;
       const start = new Date(ev.startTime);
       return getHours(start) >= TIMELINE_START && getHours(start) < TIMELINE_END;
     }),
@@ -239,6 +249,31 @@ function TimelineDay({
             {format(day, 'EEE', { locale: currentDateFnsLocale() })}
           </div>
           <div>{format(day, 'd MMM', { locale: currentDateFnsLocale() })}</div>
+        </div>
+      )}
+      {/* B67 — all-day band */}
+      {(allDayRows ?? 0) > 0 && (
+        <div style={{ height: (allDayRows ?? 0) * ALL_DAY_CHIP_HEIGHT + 6 + 'px', borderBottom: theme.borders.default, padding: '3px 2px', boxSizing: 'border-box', overflow: 'hidden', background: theme.colors.surfaceAlt }}>
+          {allDayEvents.slice(0, ALL_DAY_MAX_ROWS).map((ev, i) => {
+            const more = i === ALL_DAY_MAX_ROWS - 1 && allDayEvents.length > ALL_DAY_MAX_ROWS ? allDayEvents.length - ALL_DAY_MAX_ROWS + 1 : 0;
+            const isDraggable = isAdmin && ev.type === 'work_order';
+            return (
+              <div
+                key={ev.id}
+                draggable={isDraggable}
+                onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
+                onDragStart={(e) => {
+                  e.stopPropagation();
+                  e.dataTransfer.setData('application/calendar-event', JSON.stringify(ev));
+                  e.dataTransfer.effectAllowed = 'move';
+                }}
+                title={`${t('common:calendarPage.allDay', { defaultValue: 'Toute la journée' })} — ${ev.title}${ev.technicianName ? ` · ${ev.technicianName}` : ''}`}
+                style={{ height: ALL_DAY_CHIP_HEIGHT - 3 + 'px', marginBottom: '3px', background: eventColor(ev) + 'e6', borderLeft: `3px solid ${eventColor(ev)}`, borderRadius: '3px', padding: '0 4px', color: '#fff', fontSize: '0.66rem', fontWeight: theme.font.weightSemibold, lineHeight: ALL_DAY_CHIP_HEIGHT - 3 + 'px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: isDraggable ? 'grab' : 'pointer', userSelect: 'none' }}
+              >
+                {more > 0 ? `+${more} ${t('common:calendarPage.moreAllDay', { defaultValue: 'autres' })}` : `☀ ${ev.title}`}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -426,6 +461,8 @@ function TimelineView({
 
   const eventsForDay = (day: Date) =>
     events.filter((ev) => isSameDay(new Date(ev.startTime), day));
+  // B67 — the all-day band has the same height in every column : the busiest day decides (capped).
+  const allDayRows = Math.min(ALL_DAY_MAX_ROWS, Math.max(0, ...days.map((d) => eventsForDay(d).filter((ev) => ev.allDay).length)));
 
   return (
     <div style={{ ...cardStyles.card }}>
@@ -434,6 +471,9 @@ function TimelineView({
         <div style={{ width: '48px', flexShrink: 0 }}>
           {/* Spacer for header row */}
           <div style={{ height: '49px', borderBottom: theme.borders.default }} />
+          {allDayRows > 0 && (
+            <div style={{ height: allDayRows * ALL_DAY_CHIP_HEIGHT + 6 + 'px', borderBottom: theme.borders.default, fontSize: '0.6rem', color: theme.colors.textLight, textAlign: 'right', paddingRight: '6px', boxSizing: 'border-box', paddingTop: '4px' }}>☀</div>
+          )}
           {/* Hour labels */}
           <div style={{ position: 'relative', height: TOTAL_HEIGHT + 'px' }}>
             {TIMELINE_HOURS.map((h) => (
@@ -467,6 +507,7 @@ function TimelineView({
             onEmptyClick={onEmptyClick}
             onEventDrop={onEventDrop}
             onHover={onHover}
+            allDayRows={allDayRows}
           />
         ))}
       </div>
@@ -636,7 +677,7 @@ function MonthView({
                     cursor: 'pointer',
                   }}
                 >
-                  {ev.title}
+                  {ev.allDay ? '☀ ' : ''}{ev.title}
                 </div>
               ))}
               {dayEvents.length > 2 && (
@@ -695,9 +736,9 @@ function EventDetailPanel({
                     {ev.title}
                   </p>
                   <p style={{ margin: 0, fontSize: '0.75rem', color: theme.colors.textSecondary }}>
-                    {format(new Date(ev.startTime), 'HH:mm')}
-                    {' – '}
-                    {format(new Date(ev.endTime), 'HH:mm')}
+                    {ev.allDay
+                      ? `☀ ${t('common:calendarPage.allDay', { defaultValue: 'Toute la journée' })}`
+                      : `${format(new Date(ev.startTime), 'HH:mm')} – ${format(new Date(ev.endTime), 'HH:mm')}`}
                   </p>
                   {ev.technicianName && (
                     <p style={{ margin: '0.2rem 0 0', fontSize: '0.72rem', color: theme.colors.textLight }}>
@@ -757,10 +798,9 @@ function EventModal({ event, onClose }: { event: CalendarEvent; onClose: () => v
           <div>
             🕐{' '}
             <strong>
-              {format(new Date(event.startTime), 'EEEE d MMMM, HH:mm', { locale: currentDateFnsLocale() })}
+              {format(new Date(event.startTime), event.allDay ? 'EEEE d MMMM' : 'EEEE d MMMM, HH:mm', { locale: currentDateFnsLocale() })}
             </strong>
-            {' – '}
-            {format(new Date(event.endTime), 'HH:mm')}
+            {event.allDay ? ` — ${t('common:calendarPage.allDay', { defaultValue: 'Toute la journée' })}` : ` – ${format(new Date(event.endTime), 'HH:mm')}`}
           </div>
 
           {event.technicianName && (
@@ -994,8 +1034,10 @@ export default function CalendarPage() {
       const newDateStr   = format(newDay, 'yyyy-MM-dd');
       const startTimeStr = fmtTime(hours, mins);
 
-      // Preserve original duration
-      const durationMin = differenceInMinutes(
+      // Preserve original duration ; an all-day work order dropped on the grid gets one hour (B67).
+      const durationMin = event.allDay
+        ? 60
+        : differenceInMinutes(
         new Date(event.endTime),
         new Date(event.startTime),
       );
