@@ -37,9 +37,9 @@ async function prepareForUpload(asset: ImagePicker.ImagePickerAsset): Promise<Lo
   return { uri: out.uri, name: `photo-${stamp}.jpg`, type: 'image/jpeg' };
 }
 
-/** B69 — H.264 ≤ 1280 px, ~2.5 Mbit/s : a 30 s 1080p clip goes from ~130 MB to ~10 MB before leaving the phone. */
-const VIDEO_MAX_EDGE = 1280;
-const VIDEO_BITRATE = 2_500_000;
+/** B69 — H.264 ≤ 1920 px (1080p kept), ~5 Mbit/s : a 30 s 1080p clip goes from ~130 MB to ~19 MB before leaving the phone. */
+const VIDEO_MAX_EDGE = 1920;
+const VIDEO_BITRATE = 5_000_000;
 
 /**
  * B56/B69 — videos are compressed on the device (hardware encoders, works

@@ -27,7 +27,7 @@ const GOOGLE_SERVICES = process.env.GOOGLE_SERVICES_JSON ?? join(__dirname, 'goo
  */
 const IS_DEV = process.env.EAS_BUILD_PROFILE === 'development';
 
-const VERSION = '0.11.1';
+const VERSION = '0.11.2';
 
 /**
  * versionCode Android strictement croissant, dérivé de la version (0.7.0 → 700).
