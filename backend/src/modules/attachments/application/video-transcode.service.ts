@@ -13,13 +13,13 @@ import { MinioService } from '../../../common/storage/minio.service';
  *
  * Phones record 1080p/4K at 10–40 Mbit/s : a 2-minute clip weighs 30–100 MB.
  * After the upload succeeded, the original is re-encoded in the background
- * with ffmpeg (H.264, ≤ 1280 px wide, CRF 26, AAC 96 kb/s, faststart) — the
+ * with ffmpeg (H.264, ≤ 1920 px wide, CRF 23, AAC 96 kb/s, faststart) — the
  * visual quality stays good for field footage and the file shrinks 5–10×.
  * The compressed copy replaces the object and the row only when it is really
  * smaller ; any failure leaves the original untouched. One job at a time.
  *
  * Env : ATTACHMENTS_VIDEO_TRANSCODE=0 disables ; ATTACHMENTS_VIDEO_MAX_WIDTH
- * (default 1280) ; ATTACHMENTS_VIDEO_CRF (default 26, lower = better).
+ * (default 1920) ; ATTACHMENTS_VIDEO_CRF (default 23, lower = better).
  */
 @Injectable()
 export class VideoTranscodeService {
@@ -71,8 +71,8 @@ export class VideoTranscodeService {
     const output = path.join(dir, 'out.mp4');
     try {
       await pipeline(await this.minio.getObjectStream(row.storageKey), createWriteStream(input));
-      const maxWidth = Number(process.env.ATTACHMENTS_VIDEO_MAX_WIDTH) || 1280;
-      const crf = Number(process.env.ATTACHMENTS_VIDEO_CRF) || 26;
+      const maxWidth = Number(process.env.ATTACHMENTS_VIDEO_MAX_WIDTH) || 1920;
+      const crf = Number(process.env.ATTACHMENTS_VIDEO_CRF) || 23;
       const ok = await this.runFfmpeg(VideoTranscodeService.ffmpegArgs(input, output, { maxWidth, crf }));
       if (!ok) return 'kept';
       const outSize = (await stat(output)).size;

@@ -63,7 +63,7 @@ const VERSIONS: ReleaseVersion[] = [
     name: 'Vidéos compressées sur le téléphone',
     date: 'Septembre 2026',
     entries: [
-      { type: 'improvement', text: "🎬 App : la vidéo est compressée sur le téléphone avant l'envoi (H.264, 1280 px, ~2,5 Mbit/s) : 30 s en 1080p passent d'environ 130 Mo à 10 Mo, la limite de 100 Mo s'applique au fichier compressé et le transfert coûte 10 fois moins ; progression affichée pendant la compression" },
+      { type: 'improvement', text: "🎬 App : la vidéo est compressée sur le téléphone avant l'envoi (H.264, 1280 px, ~2,5 Mbit/s) : la résolution 1080p est conservée à ~5 Mbit/s : 30 s passent d'environ 130 Mo à 19 Mo, la limite de 100 Mo s'applique au fichier compressé ; progression affichée pendant la compression" },
     ],
   },
   {
