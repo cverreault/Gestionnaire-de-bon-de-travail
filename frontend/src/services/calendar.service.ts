@@ -4,6 +4,8 @@ import type { Appointment, ApiResponse } from '../types';
 export interface CalendarEvent {
   id: string;
   type: 'appointment' | 'work_order';
+  /** B67 — date without a time window : all-day row. */
+  allDay?: boolean;
   title: string;
   description?: string | null;
   startTime: string;

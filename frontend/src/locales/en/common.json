@@ -288,7 +288,9 @@
     "viewWorkOrder": "View WO",
     "selectDayHint": "Select a day to view events",
     "statusLabel": "Status:",
-    "viewWorkOrderFull": "View work order"
+    "viewWorkOrderFull": "View work order",
+    "allDay": "All day",
+    "moreAllDay": "more"
   },
   "tags": {
     "pick": "Tags",

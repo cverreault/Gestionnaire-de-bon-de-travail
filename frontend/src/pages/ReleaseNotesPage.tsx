@@ -59,6 +59,14 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.20.4',
+    name: 'Calendrier : BT sans heure',
+    date: 'Septembre 2026',
+    entries: [
+      { type: 'fix', text: "📅 Calendrier : les BT planifiés sans heure apparaissent maintenant dans une bande « Toute la journée » en haut de chaque jour (vues Jour, 3 jours, Semaine), marqués ☀ dans le mois et le détail ; ils tombaient auparavant la veille au soir, hors de la grille 7 h–19 h. Glisser un BT de la bande sur la grille lui donne une heure" },
+    ],
+  },
+  {
     version: '2.20.3',
     name: '« Où est-il ? » sans notification push',
     date: 'Septembre 2026',

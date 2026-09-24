@@ -288,7 +288,9 @@
     "viewWorkOrder": "Voir le BT",
     "selectDayHint": "Sélectionnez un jour pour voir les événements",
     "statusLabel": "Statut :",
-    "viewWorkOrderFull": "Voir le bon de travail"
+    "viewWorkOrderFull": "Voir le bon de travail",
+    "allDay": "Toute la journée",
+    "moreAllDay": "autres"
   },
   "tags": {
     "pick": "Tags",
