@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Linking, Modal, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Alert, Linking, Modal, Platform, Pressable, ScrollView, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as IntentLauncher from 'expo-intent-launcher';
 import { WebView } from 'react-native-webview';
@@ -14,7 +14,7 @@ import { persistForQueue } from '../sync/senders';
 import { useTranslation } from 'react-i18next';
 import type { AttachmentRef } from '@taskmgr/shared';
 import { ApiError, authHeaders } from '../api/client';
-import { attachmentContentSource, type LocalFile } from '../api/endpoints';
+import { attachmentContentSource, renameAttachment, type LocalFile } from '../api/endpoints';
 import { font, radius, spacing, useTheme } from '../theme/tokens';
 
 const MAX_EDGE = 1600;
@@ -63,26 +63,42 @@ export default function AttachmentsCard({ workOrderId, attachments, pendingIds, 
   const enqueueOp = useSyncStore((s) => s.enqueueOp);
   const [error, setError] = useState<string | null>(null);
   const [viewing, setViewing] = useState<AttachmentRef | null>(null);
+  // B68 — caption asked right after the capture ; local overrides until the next pull.
+  const [naming, setNaming] = useState<{ assets: ImagePicker.ImagePickerAsset[]; title: string } | null>(null);
+  const [titles, setTitles] = useState<Record<string, string | null>>({});
+  const labelOf = (a: AttachmentRef) => (a.id in titles ? titles[a.id] : a.title)?.trim() || a.fileName;
+  async function rename(a: AttachmentRef, title: string) {
+    try {
+      const updated = await renameAttachment(a.id, title);
+      setTitles((p) => ({ ...p, [a.id]: updated.title ?? null }));
+      onChanged();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('workOrder.renameFailed'));
+    }
+  }
 
   // Offline-first (B38.5): the compressed copy is persisted in the sandbox and
   // queued ; the drain uploads it with op.id as Idempotency-Key.
   const upload = useMutation({
-    mutationFn: async (assets: ImagePicker.ImagePickerAsset[]) => {
+    mutationFn: async ({ assets, title }: { assets: ImagePicker.ImagePickerAsset[]; title?: string }) => {
       if (!user) return;
-      for (const asset of assets) {
+      const caption = title?.trim() || undefined;
+      for (const [i, asset] of assets.entries()) {
         const opId = Crypto.randomUUID();
+        // Several files under one name : « Nom (1) », « Nom (2) »…
+        const named = caption ? (assets.length > 1 ? `${caption} (${i + 1})` : caption) : undefined;
         if (asset.type === 'video') {
           const info = await FileSystem.getInfoAsync(asset.uri);
           const size = info.exists && 'size' in info ? info.size : asset.fileSize ?? 0;
           if (size > MAX_VIDEO_BYTES) throw new ApiError(413, t('workOrder.videoTooLarge'));
           const file = await prepareVideo(asset);
           const uri = await persistForQueue(opId, file.uri, file.ext);
-          await enqueueOp(user.id, workOrderId, 'attachment', { uri, name: file.name, type: file.type }, opId);
+          await enqueueOp(user.id, workOrderId, 'attachment', { uri, name: file.name, type: file.type, ...(named ? { title: named } : {}) }, opId);
           continue;
         }
         const file = await prepareForUpload(asset);
         const uri = await persistForQueue(opId, file.uri, 'jpg');
-        await enqueueOp(user.id, workOrderId, 'attachment', { uri, name: file.name, type: file.type }, opId);
+        await enqueueOp(user.id, workOrderId, 'attachment', { uri, name: file.name, type: file.type, ...(named ? { title: named } : {}) }, opId);
       }
     },
     onSuccess: () => {
@@ -99,7 +115,7 @@ export default function AttachmentsCard({ workOrderId, attachments, pendingIds, 
       return;
     }
     const res = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 1 });
-    if (!res.canceled) upload.mutate(res.assets);
+    if (!res.canceled) setNaming({ assets: res.assets, title: '' });
   }
 
   async function recordVideo() {
@@ -113,7 +129,7 @@ export default function AttachmentsCard({ workOrderId, attachments, pendingIds, 
       videoMaxDuration: MAX_VIDEO_SECONDS,
       videoQuality: ImagePicker.UIImagePickerControllerQualityType.Medium,
     });
-    if (!res.canceled) upload.mutate(res.assets);
+    if (!res.canceled) setNaming({ assets: res.assets, title: '' });
   }
 
   async function choosePhoto() {
@@ -123,7 +139,7 @@ export default function AttachmentsCard({ workOrderId, attachments, pendingIds, 
       return;
     }
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: true, selectionLimit: 5, quality: 1 });
-    if (!res.canceled) upload.mutate(res.assets);
+    if (!res.canceled) setNaming({ assets: res.assets, title: '' });
   }
 
   const images = attachments.filter((a) => a.mimeType.startsWith('image/'));
@@ -197,7 +213,7 @@ export default function AttachmentsCard({ workOrderId, attachments, pendingIds, 
             >
               <Text style={{ fontSize: 22 }}>{pendingIds.has(a.id) ? '⏳' : openingVideo === a.id ? '⌛' : '🎬'}</Text>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: theme.text, fontSize: font.sm }} numberOfLines={1}>{a.fileName}</Text>
+                <Text style={{ color: theme.text, fontSize: font.sm }} numberOfLines={1}>{labelOf(a)}</Text>
                 <Text style={{ color: theme.textMuted, fontSize: font.xs }}>
                   {(a.fileSize / 1024 / 1024).toFixed(1)} Mo{openingVideo === a.id ? ` · ${t('workOrder.openingVideo')}` : ''}
                 </Text>
@@ -208,7 +224,7 @@ export default function AttachmentsCard({ workOrderId, attachments, pendingIds, 
       )}
       {others.map((a) => (
         <Text key={a.id} style={{ color: theme.textSecondary, fontSize: font.sm }}>
-          📎 {a.fileName} · {(a.fileSize / 1024).toFixed(0)} Ko
+          📎 {labelOf(a)} · {(a.fileSize / 1024).toFixed(0)} Ko
         </Text>
       ))}
       {canUpload && (
@@ -219,7 +235,33 @@ export default function AttachmentsCard({ workOrderId, attachments, pendingIds, 
         </View>
       )}
       {error && <Text style={{ color: theme.danger, fontSize: font.sm }}>{error}</Text>}
-      <PhotoViewer attachment={viewing} onClose={() => setViewing(null)} />
+      {naming && (
+        <Modal visible transparent animationType="fade" onRequestClose={() => setNaming(null)}>
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: spacing.lg }}>
+            <View style={{ backgroundColor: theme.surface, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.sm }}>
+              <Text style={{ color: theme.text, fontWeight: '700', fontSize: font.md }}>{t('workOrder.nameMedia', { count: naming.assets.length })}</Text>
+              <TextInput
+                autoFocus
+                value={naming.title}
+                onChangeText={(v) => setNaming((n) => (n ? { ...n, title: v } : n))}
+                placeholder={t('workOrder.namePlaceholder')}
+                placeholderTextColor={theme.textMuted}
+                maxLength={120}
+                style={{ borderWidth: 1, borderColor: theme.border, borderRadius: radius.md, padding: spacing.md, color: theme.text, backgroundColor: theme.surfaceAlt }}
+              />
+              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                <Pressable onPress={() => { const n = naming; setNaming(null); upload.mutate({ assets: n.assets }); }} style={{ flex: 1, padding: spacing.md, borderRadius: radius.md, alignItems: 'center', borderWidth: 1, borderColor: theme.border }}>
+                  <Text style={{ color: theme.text }}>{t('workOrder.skipName')}</Text>
+                </Pressable>
+                <Pressable onPress={() => { const n = naming; setNaming(null); upload.mutate({ assets: n.assets, title: n.title }); }} style={{ flex: 1, padding: spacing.md, borderRadius: radius.md, alignItems: 'center', backgroundColor: theme.primary }}>
+                  <Text style={{ color: theme.onPrimary, fontWeight: '700' }}>{t('workOrder.confirm')}</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+      <PhotoViewer attachment={viewing} label={viewing ? labelOf(viewing) : ''} canRename={canUpload} onRename={(title) => viewing && void rename(viewing, title)} onClose={() => setViewing(null)} />
       {iosVideo && (
         <Modal visible animationType="slide" onRequestClose={() => setIosVideo(null)}>
           <View style={{ flex: 1, backgroundColor: '#000' }}>
@@ -258,15 +300,37 @@ function Thumb({ attachment, pending }: { attachment: AttachmentRef; pending: bo
 }
 
 /** Full-screen photo (proxy + bearer) ; tap anywhere or ✕ to close. */
-function PhotoViewer({ attachment, onClose }: { attachment: AttachmentRef | null; onClose: () => void }) {
+function PhotoViewer({ attachment, label, canRename, onRename, onClose }: { attachment: AttachmentRef | null; label: string; canRename: boolean; onRename: (title: string) => void; onClose: () => void }) {
   const { width, height } = useWindowDimensions();
   const theme = useTheme();
+  const { t } = useTranslation();
+  const [editing, setEditing] = useState<string | null>(null);
   if (!attachment) return null;
   return (
     <Modal visible animationType="fade" transparent onRequestClose={onClose}>
       <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', alignItems: 'center', justifyContent: 'center' }}>
         <Image source={attachmentContentSource(attachment.id)} style={{ width, height: height * 0.8 }} contentFit="contain" cachePolicy="memory-disk" />
-        <Text style={{ position: 'absolute', bottom: 40, color: '#fff', fontSize: font.sm }}>{attachment.fileName}</Text>
+        {editing === null ? (
+          <Pressable onPress={() => canRename && setEditing(attachment.title ?? '')} style={{ position: 'absolute', bottom: 36, left: 20, right: 20, alignItems: 'center' }}>
+            <Text style={{ color: '#fff', fontSize: font.sm, fontWeight: '600' }} numberOfLines={2}>{canRename ? '✏️ ' : ''}{label}</Text>
+            {label !== attachment.fileName && <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: font.xs }}>{attachment.fileName}</Text>}
+          </Pressable>
+        ) : (
+          <View style={{ position: 'absolute', bottom: 24, left: 16, right: 16, flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }} onStartShouldSetResponder={() => true}>
+            <TextInput
+              autoFocus
+              value={editing}
+              onChangeText={setEditing}
+              placeholder={attachment.fileName}
+              placeholderTextColor="rgba(255,255,255,0.5)"
+              maxLength={120}
+              style={{ flex: 1, borderWidth: 1, borderColor: 'rgba(255,255,255,0.5)', borderRadius: radius.md, padding: spacing.sm, color: '#fff', backgroundColor: 'rgba(0,0,0,0.6)' }}
+            />
+            <Pressable onPress={() => { const v = editing; setEditing(null); onRename(v); }} style={{ paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.md, backgroundColor: theme.primary }}>
+              <Text style={{ color: theme.onPrimary, fontWeight: '700' }}>{t('workOrder.confirm')}</Text>
+            </Pressable>
+          </View>
+        )}
         <Pressable onPress={onClose} style={{ position: 'absolute', top: 50, right: 20, width: 40, height: 40, borderRadius: radius.full, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' }}>
           <Text style={{ color: '#fff', fontSize: font.lg }}>✕</Text>
         </Pressable>

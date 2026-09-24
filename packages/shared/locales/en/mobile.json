@@ -112,7 +112,12 @@
     "videos": "Videos",
     "videoTooLarge": "Video too large (max 100 MB) — record a shorter one.",
     "openingVideo": "Opening video…",
-    "videoOpenFailed": "Could not open the video."
+    "videoOpenFailed": "Could not open the video.",
+    "nameMedia_one": "Photo name",
+    "nameMedia_other": "Name for the {{count}} photos",
+    "namePlaceholder": "e.g. fibre panel rack 2 (optional)",
+    "skipName": "No name",
+    "renameFailed": "Could not rename (offline?)"
   },
   "status": {
     "REQUESTED": "Requested",

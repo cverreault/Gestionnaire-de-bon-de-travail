@@ -12,6 +12,8 @@ import {
   ParseUUIDPipe,
   Res,
   StreamableFile,
+  Body,
+  Patch,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -28,6 +30,7 @@ import { memoryStorage } from 'multer';
 import { Role } from '@prisma/client';
 
 import { AttachmentsService } from './attachments.service';
+import { RenameAttachmentDto, UploadAttachmentDto } from './dto/attachment-title.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Idempotent } from '../../common/decorators/idempotent.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -112,12 +115,13 @@ export class AttachmentsController {
   upload(
     @Param('workOrderId', ParseUUIDPipe) workOrderId: string,
     @UploadedFile() file: Express.Multer.File,
+    @Body() body: UploadAttachmentDto,
     @CurrentUser() currentUser: JwtUser,
   ) {
     if (!file) {
       throw new BadRequestException('Aucun fichier fourni (champ "file" manquant)');
     }
-    return this.attachmentsService.upload(workOrderId, file, currentUser);
+    return this.attachmentsService.upload(workOrderId, file, currentUser, body?.title);
   }
 
   // ── List by WorkOrder ──────────────────────────────────────────────────────
@@ -180,6 +184,17 @@ export class AttachmentsController {
     );
     res.setHeader('Cache-Control', 'private, max-age=3600');
     return new StreamableFile(stream);
+  }
+
+  // ── Rename (B68) ───────────────────────────────────────────────────────────
+  @Patch('attachments/:id')
+  @Roles(Role.ADMIN, Role.DISPATCHER, Role.TECHNICIAN)
+  @ApiOperation({
+    summary: 'B68 — renommer une photo / pièce jointe',
+    description: 'Change le nom affiché (`title`) ; vide = retour au nom du fichier. Un technicien ne peut renommer que sur ses propres BT ouverts.',
+  })
+  rename(@Param('id', ParseUUIDPipe) id: string, @Body() dto: RenameAttachmentDto, @CurrentUser() currentUser: JwtUser) {
+    return this.attachmentsService.rename(id, dto.title ?? null, currentUser);
   }
 
   // ── Delete ─────────────────────────────────────────────────────────────────

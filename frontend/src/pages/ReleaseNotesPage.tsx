@@ -59,6 +59,14 @@ const ENTRY_META: Record<EntryType, { label: string; icon: string; style: CSSPro
 
 const VERSIONS: ReleaseVersion[] = [
   {
+    version: '2.21.0',
+    name: 'Nom des photos',
+    date: 'Septembre 2026',
+    entries: [
+      { type: 'new', text: "🏷 Photos et pièces jointes : on peut leur donner un nom à l'envoi (champ « Nom de la photo » sur le web, question après la prise dans l'app) et le modifier ensuite : clic sur le nom sous la vignette (web) ou sur le nom dans la visionneuse (app). Le nom s'affiche partout à la place du nom de fichier et le changement apparaît dans l'historique du BT" },
+    ],
+  },
+  {
     version: '2.20.4',
     name: 'Calendrier : BT sans heure',
     date: 'Septembre 2026',

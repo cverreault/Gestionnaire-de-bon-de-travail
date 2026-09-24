@@ -14,6 +14,8 @@ export class AttachmentResponseDto {
   mimeType: string;
 
   @ApiProperty({ description: 'Clé de stockage MinIO (chemin interne)' })
+  /** B68 — user-given name, null when the file name is used. */
+  title?: string | null;
   storageKey: string;
 
   @ApiProperty({ description: 'UUID du bon de travail associé' })

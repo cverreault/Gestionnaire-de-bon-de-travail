@@ -92,7 +92,7 @@ async function uploadFile(workOrderId: string, file: AttachmentPayload, idempote
       uploadType: FileSystem.FileSystemUploadType.MULTIPART,
       fieldName: 'file',
       mimeType: file.type,
-      parameters: {},
+      parameters: file.title ? { title: file.title } : {},
       headers: authHeaders({ [IDEMPOTENCY_KEY_HEADER]: idempotencyKey }),
     });
   const info = await FileSystem.getInfoAsync(file.uri);

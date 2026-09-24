@@ -92,6 +92,8 @@ export interface NoteRef {
 export interface AttachmentRef {
   id: string;
   fileName: string;
+  /** B68 — user-given name ; show it instead of fileName when present. */
+  title?: string | null;
   fileSize: number;
   mimeType: string;
   uploadedAt: string;

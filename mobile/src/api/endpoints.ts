@@ -86,6 +86,11 @@ export function addNote(workOrderId: string, content: string, idempotencyKey?: s
   return api<NoteRef>(`/work-orders/${workOrderId}/notes`, { method: 'POST', body: { content }, idempotencyKey });
 }
 
+/** B68 — rename a photo / attachment (online only ; empty = back to the file name). */
+export function renameAttachment(attachmentId: string, title: string): Promise<AttachmentRef> {
+  return api<AttachmentRef>(`/attachments/${attachmentId}`, { method: 'PATCH', body: { title } });
+}
+
 export function fetchAttachments(workOrderId: string): Promise<AttachmentRef[]> {
   return api<AttachmentRef[]>(`/work-orders/${workOrderId}/attachments`);
 }
@@ -97,10 +102,11 @@ export interface LocalFile {
 }
 
 /** Multipart upload (field `file`), same endpoint as the web app. */
-export function uploadAttachment(workOrderId: string, file: LocalFile, idempotencyKey?: string): Promise<AttachmentRef> {
+export function uploadAttachment(workOrderId: string, file: LocalFile, idempotencyKey?: string, title?: string): Promise<AttachmentRef> {
   const form = new FormData();
   // React Native's FormData accepts { uri, name, type } for files.
   form.append('file', file as unknown as Blob);
+  if (title?.trim()) form.append('title', title.trim());
   return api<AttachmentRef>(`/work-orders/${workOrderId}/attachments`, { method: 'POST', body: form, timeoutMs: 60_000, idempotencyKey });
 }
 
